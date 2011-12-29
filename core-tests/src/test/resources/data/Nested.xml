@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Default xmlns="urn:default">
+  
+  <DontRedeclare/>
+
+  <NoNamespace type="interesting" xmlns=""  xmlns:justHere="urn:justHere" justHere:attr="only">
+    <DontRedeclare/>
+    <DontRedeclare/>
+    <ShouldRedeclare xmlns="urn:default"/>
+    start mix mode
+    <ns1:prefixed xmlns:ns1="urn:prefix" ns1:attr="namespaced">
+      <NoNamespace type="interesting" xmlns=""  xmlns:justHere="urn:justHere" justHere:attr="only">
+	<DontRedeclare/>
+	<DontRedeclare/>
+	<ShouldRedeclare xmlns="urn:default"/>
+	<ns1:prefixed xmlns:ns1="urn:prefix" ns1:attr="namespaced">
+	  <NoNamespace type="interesting" xmlns=""  xmlns:justHere="urn:justHere" justHere:attr="only">
+	    <DontRedeclare/>
+	    <DontRedeclare/>
+	    <ShouldRedeclare xmlns="urn:default"/>
+	  </NoNamespace>	
+	</ns1:prefixed>
+	<ns1:prefixed xmlns:ns1="urn:prefix" ns1:attr="namespaced">
+	  <NoNamespace type="interesting" xmlns=""  xmlns:justHere="urn:justHere" justHere:attr="only">
+	    <DontRedeclare/>
+	    <DontRedeclare/>
+	    <ShouldRedeclare xmlns="urn:default"/>
+	  </NoNamespace>	
+	</ns1:prefixed>
+	<ns1:prefixed xmlns:ns1="urn:prefix" ns1:attr="namespaced">
+	  <NoNamespace type="interesting" xmlns=""  xmlns:justHere="urn:justHere" justHere:attr="only">
+	    <DontRedeclare/>
+	    <DontRedeclare/>
+	    <ShouldRedeclare xmlns="urn:default"/>
+	  </NoNamespace>	
+	</ns1:prefixed>
+      </NoNamespace>
+    </ns1:prefixed>
+    end mix mode
+  </NoNamespace>
+
+</Default>

@@ -1,0 +1,507 @@
+= Introduction =
+
+Scales Xml, in addition to immutability, aims to focus on these separate concerns:
+
+; '''Correctness'''
+;* XmlItems such as Text, Comments, PIs and CData are not containing nodes, they statically cannot have children and they cannot contain invalid characters 
+;* QNames are a fundamental piece of XML and are treated as first class citizens
+;* Elements are a QName, the attributes they contain, the namespaces they declare and also do not directly have children
+;* Attributes are combinations of either a PrefixedQName or NoNamespaceQName and a value
+
+; '''Structure and manipulation'''
+;* Structure of XML (Tree) is separated from the contents of the Xml, allowing maximal re-use
+;* Operations on XML (Path - a Zipper over Tree) is separated from both the contents and the structure
+;* Changing any update to individual XML Element or Items will not cause cascading changes in the rest of the structure (function of Path)
+;* Transformations on XML Trees (via Path) should be composable and simple to follow.
+
+; '''XML Comprehensions - XPath'''
+;* Navigation through XML is either through Path directly or the inbuilt XPath syntax
+;* Syntax closely resembles normal XPath leveraging, for example, Paths ability to navigate parents
+;* Syntax should separate the navigation of elements from available predicates as far as possible (niceties such as \*QName remain) 
+;* Syntax should not rely on string interpretation but on types (QName objects used directly)
+
+; '''Pull API'''
+;* Based on javax.xml.stream, allowing optimisations from jaxp/stax upgrades
+;* Uses the same types as the SAX based parser
+;* Leverages Scalaz Iteratees to provide processing of the event stream
+;* Provides an Iteratee to process XPath like locations via a ${cscala}<nowiki>List[QName]</nowiki>${cend}
+;* Provides a combinator (onDone) to iterate over ResumableIters allowing simplified XML parsing
+;* Scales adds the concept of resumable iteration:
+
+${cscala}
+  // think resumable folds without cps plugin
+  type ResumableIter[E,A] = IterV[E, (A, IterV[E,_])]
+${cend}
+
+; '''Comprehensive Serialization Support'''
+;* SerializerFactory / Serializer Typeclasses allow plugable serialization schemes
+;* SerializeableXml Typeclass allows serializing of all XML through a single consistent interface
+;** Lazily create XML using EphemeralStreams and <nowiki>Iterator[PullType]</nowiki>
+;* Developers can customise the serialization process while maintaining correctness
+;** Use XHTML style tag ends <el /> for empty elements
+;** Serialize your attributes in an order of your choosing
+;** Or choose to abandon certain correctness checks in favour of speed when you know that your XML inputs and outputs are always correct
+
+; '''JAXP Support'''
+;* XSLT transformation support
+;* Conversion to other XML DOMs
+;* Use of JAXP serialization - e.g. pretty printing
+;* javax.xml.validation support
+;* Aims to hide all JAXP implementation inconsistencies
+
+''As a disclaimer the only theoretical paper and research used was Huets Zipper paper, which forms the basis of much of Scales Xmls approach.  This will change after 0.1 is released, there are many other ideas to build on.''
+
+= How to use =
+
+The M2 style repo for snapshots is at https://scala-scales.googlecode.com/svn/repo-snapshots.
+
+So for sbt 0.7 its:
+
+${cscala}
+val scalesSnapshots = "Scales Snapshots" at "http://scala-scales.googlecode.com/svn/repo-snapshots"
+val scalesRepo = "Scales Repo" at "http://scala-scales.googlecode.com/svn/repo"
+val scalesXml = "scales" %% "scales-xml" % "0.2.1"
+${cend}
+
+Maven repos should therefore use scales-xml_2.9.1 as the dependency.
+
+[http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.1/0.2.1/index.html The documentation site is here] and zip of the site documentation is available at [http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.1/0.2.1/scales-xml_2.9.1-0.2.1-site.zip scales-xml.zip].  
+
+_Warning_ local file based sites do not work in Chrome, use Firefox or IE in preference.
+
+= Simple Usage Examples =
+
+To use ScalesXml you must use the following imports (where the objects ScalesUtils and ScalesXml import implicits).
+
+${cscala}
+import scales.utils._
+import ScalesUtils._
+import scales.xml._
+import ScalesXml._
+${cend}
+
+== Parse and XPaths ==
+
+${cscala}
+
+  val testXml = loadXml(new FileReader("./tests/data/BaseXmlTest.xml"))
+
+  val path = top(testXml)
+
+  path.\*("NoNamespace").\*(Elements.localName("prefixed"))
+  /*
+   Note that \+ is the only major difference to XPath style syntax
+   and allows expansion of child nodes (E1\E2 in XPath requires E2 to
+   be evaluated within the context of E1, which is tricky to mimic
+   in static code)
+  */
+  path.\\*("urn:default"::"ShouldRedeclare").\^.\+.text.pos(4)
+
+${cend}
+
+== XML DSL == 
+
+${cscala}
+
+  val ns = Namespace("test:uri")
+  val nsa = Namespace("test:uri:attribs")
+  val nsp = nsa.prefixed("pre")
+
+  val builder = 
+      <(ns{ "Elem" }) /@ (nsa("pre", "attr1") -> "val1", // prefixed attribute
+      	    	   "attr2" -> "val2", // no namespace attribute
+		   nsp { "attr3" } -> "val3") // prefixed attribute
+          /(
+      	    ns("Child"), // no prefix
+	    Text("Mixed Content"),
+	    <(ns("Child2")) ~> "All previous nodes below are replaced with this text"
+	    )
+
+  val removed = builder -/@("attr") -/(ns("Child"))
+
+${cend}
+
+== In-Place Transformations ==
+
+${cscala}
+
+    import Elements.Functions.localName
+
+    val builder = <(ns("i0")) / (ns("i2"), ns("i3"), ns("i40"), ns("i20"), ns("i5"), ns("i7"), ns("i10"), ns("i50"), ns("i11"), ns("i14") )
+
+    val folded = foldPositions(all)( implicit p =>
+      localName match {
+	// test inserting before the start
+	case "i2" => AddBefore( ns("i1") )
+	// replace in the middle
+	case "i40" => Replace( ns("i4") )
+	// remove in the middle
+	case "i20" | "i50" => Remove()
+	// after followed by after
+	case "i5" => AddAfter( ns("i6") ) 
+	// after followed by before
+	case "i7" => AddAfter( ns("i8") )
+	case "i10" => AddBefore( ns("i9") )
+	// after followed by before without any previous after
+	case "i11" => AddAfter( ns("i12") )
+	case "i14" => AddBefore( ns("i13") )
+	// just copy it over - noop
+	case _ @ x => AsIs()
+      }
+    )
+
+${cend}
+
+== Nested Transformations ==
+
+From http://stackoverflow.com/questions/4313032/scala-xml-transform-throws-away-transformed-elements-with-multiple-attributes
+
+${cscala}
+
+  def fooIdBits(i : Int) : Stream[XmlTree] = Stream[XmlTree]( <("foo"l)/@("id" -> i.toString) /( ("bar"l)/@("id" -> "0")) /(
+      (("baz"l)/@("id" -> "0", "blah" -> "blah", "etc" -> "etc")) /( (("buz"l)/@("id" -> "0")) ),
+      (("buz"l)/@("id" -> "0"))
+    ) ).append( fooIdBits( i + 1 ) )
+ 
+  val fooIdBuilder = <("root"l) /( fooIdBits(1).take(5) )
+  
+  // replace every child's id attribute with the id param
+  // Note with \.\\ the leading \ is necessary as the first \\ also includes
+  // the context node in XPath, and we don't want that here
+  def toId( id : String )( op : XmlPath ) = 
+    foldPositions( top(op.tree).\.\\.*@("id").\^ ){ p => Replace(elem(p) /@("id"-> id) toTree) }
+      
+  import Elements.Functions.attributes
+
+  val folded = foldPositions( top(fooIdBuilder).\* )( p => 
+    ReplaceWith( toId(attributes(p)("id"l).get.value) ) )
+
+${cend}
+
+The above attributes(p) and elem(p) can also use an implicitly scoped path.
+
+== Pull Parsing Iterator ==
+
+Shows the basic iterating over a file, upon the last event the file source is closed.
+
+${cscala}
+
+    val pull = pullXml(new FileReader("./tests/data/BaseXmlTest.xml"))
+
+    def out(it : String) : Unit = 
+      () // write it to a file, processs the data etc...
+    
+    for{event <- pull}{
+      event match {
+	case Left(x) => x match {
+	  case Elem(qname, attrs, ns) =>
+	    out("<" + qname + attrs.map( x => " "+x.name +"='"+x.value+"'" ).mkString(" ") + ">")
+
+	  case item : XmlItem =>
+	    out(itemAsString(item))
+	} 
+	case Right(EndElem(qname, ns)) =>
+	  out("</"+ qname +">")
+	
+      }
+    }
+
+    assertTrue("Should have been closed", pull.isClosed)
+${cend}
+
+== Pull Parsing Iteratees ==
+
+Drop all events until the end element of Fred is reached
+
+${cscala}
+
+    val pull = pullXml(reader)
+
+    val isEndFred = (x : PullType) => {
+      x match {
+        case Right(EndElem(qname, _) ) if qname.local == "Fred" =>
+             false
+      	case _ => 
+	     true      
+    }}
+    
+    val iteratee2 = dropWhile[PullType]( isEndFred )
+    val endOfFred = iteratee2(pull.it) run
+${cend}
+
+== Pull Parsing ResumableIteratees ==
+
+Note the cont item in the match, this is the continuation Iteratee to process the rest of the xml.
+
+${cscala}
+
+    val iter : Iterator[PullType] = .....
+
+    val QNames = List("root"l, "child"l, "subChild"l)
+
+    val eachSubChild = onDone(List(onQNames(QNames)))
+
+    def processSubChild( res : ResumableIterList[PullType,QNamesMatch]) = 
+      res match {
+	case Done(((QNames, Some(x)) :: Nil,cont), y)  => 
+	  // use the resulting Path, each child below subChild is captured
+	case _ => // any other combination is likely Eol in this example
+      }
+
+    var res = eachSubChild(iter).eval // to use eachSubChild(iter) eval a new line must follow
+    processSubChild(res)
+    // extract cont from the match, and process it again.
+    res = extractCont(res)(iter).eval
+    processSubChild(res)
+${cend}
+
+As Iteratees are composable onDone uses this property and ResumableIter to allow nesting of many different folds.  When an Iteratee returns Done its resumable state is included with the state of each Iteratee in the input list, allowing restart of all of the lists Iteratees as if they operated alone.
+
+In the above example the QNames are returned as well from onQNames, allowing the caller to identify which of the QName lists actually matched onDone.
+
+This allows constant space progress through XML with the following helpful and automatic collection patterns:
+
+=== Alternating and Repeating Elements ===
+
+${cxml}
+
+  <root>
+    <nested>
+      <ofInterest> <!-- Collect all of these -->
+        <lotsOfInterestingSubTree>
+        </lotsOfInterestingSubTree>
+      </ofInterest>
+      <alsoOfInterest> <!-- Collect all of these -->
+	just some text
+      </alsoOfInterest>
+    </nested>
+...
+    <nested>
+....
+  </root>
+
+${cend}
+
+It should be noted that monadic serial composition of onQNames would also work here, onDone is not absolutely necessary, although as we will see it is more general..
+
+=== Grouped Repeating ===
+
+${cxml}
+
+  <root>
+    <nested>
+      <ofInterest> <!-- Collect all of these -->
+        <lotsOfInterestingSubTree>
+        </lotsOfInterestingSubTree>
+      </ofInterest>      
+    </nested>
+...
+    <nested>
+      <alsoOfInterest> <!-- Collect all of these -->
+	just some text
+      </alsoOfInterest>	
+    </nested>
+....
+  </root>
+
+${cend}
+
+=== Repeating nested ===
+
+${cxml}
+
+  <root>
+    <nested>
+      <ofInterest> <!-- Collect all of these -->
+        <lotsOfInterestingSubTree>
+          <smallKeyValues> <!-- Collect all of these -->
+            <key>toLock</key>
+            <value>fred</value>
+          </smallKeyValues>
+        </lotsOfInterestingSubTree>
+      </ofInterest>
+    </nested>
+...
+    <nested>
+....
+  </root>
+
+${cend}
+
+=== Sectioned Grouped Repeating, onDone calling onDone ===
+
+${cxml}
+
+  <root>
+    <section>
+      <!-- Necessary for processing the below events -->
+      <sectionHeader>header 1</sectionHeader>
+
+      <ofInterest> <!-- Collect all of these -->
+        <lotsOfInterestingSubTree>
+	  <value>1</value>
+        </lotsOfInterestingSubTree>
+      </ofInterest>
+      <ofInterest> <!-- Collect all of these -->
+        <lotsOfInterestingSubTree>
+	  <value>2</value>
+        </lotsOfInterestingSubTree>
+      </ofInterest>
+      <ofInterest> <!-- Collect all of these -->
+        <lotsOfInterestingSubTree>
+	  <value>3</value>
+        </lotsOfInterestingSubTree>
+      </ofInterest>
+    </sectionHeader>
+...
+    <sectionHeader>
+      <!-- Necessary for processing the below events -->
+      <sectionHeader>header 2</sectionHeader>
+....
+  </root>
+
+${cend}
+
+Its possible using onDone with onQNames to process the above document with a single call to:
+
+${cscala}
+
+  onDone(List(
+    onQNames(List("root"l,"section"l,"sectionHeader"l)),
+    onQNames(List("root"l,"section"l,"ofInterest"l)),
+  ))
+
+${cend}
+
+and the events will be fired in the correct order.  The only unpleasant issue is that a stack of current sectionHeader must be kept, which again looks like a fold.
+
+=== Sectioned with Folds ===
+
+${cscala}
+
+  val Headers = List("root"l,"section"l,"sectionHeader"l)
+  val OfInterest = List("root"l,"section"l,"ofInterest"l)
+
+  val ofInterestOnDone = onDone(List(onQNames(Headers), onQNames(OfInterest)))
+
+  val total = foldOnDone(xml)( (0, 0), ofInterestOnDone ){ 
+    (t, qnamesMatch) =>
+    if (qnamesMatch.size == 0) {
+      t // no matches
+    } else {
+      // only one at a time
+      assertEquals(1, qnamesMatch.size)
+      val head = qnamesMatch.head
+      assertTrue("Should have been defined",head._2.isDefined)
+	  
+      // we should never have more than one child in the parent
+      // and thats us
+      assertEquals(1, head._2.get.zipUp.children.size)
+
+      val i =  text(head._2.get).toInt
+      if (head._1 eq Headers) {
+	assertEquals(t._1, t._2)
+	// get new section
+	(i, 1)
+      } else (t._1, i)
+    }
+  }
+ 
+  assertEquals(total._1, total._2)
+
+${cend}
+
+However often its easier to structure the code as a for comprehension upon xml.
+
+=== For/Monad Comprehension - parsing SVN logs ===
+
+Sometimes a foreach or flatMap the most appropriate choice for a developer to use.
+
+${cscala}
+
+    val LogEntries = List("log"l,"logentry"l)
+
+    val bits = for{ entry <- iterate(LogEntries, xml)
+	revision <- entry.\.*@("revision"l).one // ensure its only got one revision
+	author <- entry.\*("author"l).one
+	path <- entry.\*("paths"l).\*("path"l) // more than one path is allowed
+	kind <- path.\.*@("kind"l)
+	action <- path.\.*@("action"l)
+    } yield (text(revision), value(author), text(kind), text(action), value(path))
+
+${cend}
+
+Bits is lazy in this case, use toSeq to make it eager, but will not retain memory used for xml parsing (outside of any unpleasant substring reuse leaks).
+
+NB: instead of .one which implicitly forces that only one matches, oneOr can be used allowing throwing of exceptions, logging etc, calling one is optional when the developer knows the data has only one.
+
+=== Combination Fold and For Comprehension - parsing svn logs ===
+
+A benefit of Scales XML is that the types for xml are the same for both XML Pull and Push.  In particular the developer need not care what produced the XPath.
+
+The path processing logic can therefore be separated from what generated it.
+
+${cscala}
+
+    val LogEntries = List("log"l,"logentry"l)
+    val ionDone = onDone(List(onQNames(LogEntries)))
+
+    val entries = foldOnDone(pull.it)( List[(String,String,String,String,String)](), ionDone ){ 
+      (t, qnamesMatch) =>
+	if (qnamesMatch.size == 0) {
+	  t // no matches
+	} else {
+	  val entry = qnamesMatch.head._2.get
+	  val bits = for{ 
+			 revision <- entry.\.*@("revision"l).one // ensure its only got one revision
+			 author <- entry.\*("author"l).one
+			 path <- entry.\*("paths"l).\*("path"l) // more than one path is allowed
+			 kind <- path.\.*@("kind"l).one
+			 action <- path.\.*@("action"l).one
+		       } yield (text(revision), value(author), text(kind), text(action), value(path))
+	  t ++ bits
+	}
+    }
+${cend}
+
+=== Position based pulls ===
+
+When the xml contents itself is unknown and the processing is dependent on the type it can be useful to identify based on position information, for example what the root element is or a doc-literal first element in a soap message.
+
+Another possible scenario is that you know you are only interested in a given message element but you don't want to parse a 50mb xml file to find out if it was that message type.
+
+Because of these two use cases it is possible to perform a search based on position information. doc-literal SOAP identifying would be List(2,1) representing Envelope, (Header, Body), and finally the request node.  The first root position is assumed.
+
+${cscala}
+
+  var res = skip(List(2, 1))(iter) run
+  val path = res.get // can be None (see below)
+  println("Request nodes qname "+ Elements.Functions.qname(path))    
+${cend}
+
+The result from skip is not a ResumableIterable and simply returns <nowiki>Option[XmlPath]</nowiki>.  If the stream runs out or its no longer possible to get that position it is None.  Only as much of the stream is read as needed, it will stop on the Left(Elem) event.
+
+skip also has a variable arg version, so skipv(2,1) is also usable.
+
+== Capturing and restarting / Buffering Pull Events == 
+
+If the developer wishes to "peek" deep into an event steam then the events must be captured to allow replaying.  This allows, for example, using qname or index (then presumably qname) based matching to identify a message type and the correct processing option.
+
+The correctly identified processing can then restart from the beginning with the expectation of the message structure.
+
+A simple example is processing soap messages based on the first body element, you may want to choose different code paths based on this, but require elements in the header to do so.  The usage is simple:
+
+${cscala}
+
+  val xmlpull = // stream capture
+
+  val captured = capture(xmlpull)
+  
+  // either the path or None if its EOF or no longer possible
+  val identified = skip(List(2, 1))(captured) run
+
+  val processor = identified.map(........
+
+  // restart the stream from scratch
+  processor.process(captured.restart)
+${cend}

@@ -1,0 +1,41 @@
+= Scales Xml ${projectVersion} =
+
+Scales Xml is an alternative XML library for Scala, its design started with the question - ''what if the structure of XML was separated from its contents?''.
+
+The answer for XML tends naturally to trees and zippers, it enables a combined model for both XML Tree handling and XML Event handling and allows opportunities for saving memory usage.
+
+The design aims of Scales Xml also target correctness first, an Iteratee based processing for Pull, an XPath like syntax for querying and manipulation and deep support for JAXP.
+
+; '''Correctness for Scala Xml implies'''
+;* QNames are first class citizens and validated (allowing simple re-use)
+;* You can't create invalid XML nodes or trees
+;* Full Serialization of an incorrect document via Scales Xml is impossible
+
+; '''Combined model for Xml Types implies'''
+;* An Elem is an Elem regardless of where it has come from
+;* The only concession is an EndElem event for XmlPull
+;* Your code can work on the types not the source
+
+; '''Iteratee based processing for Pull implies'''
+;* You can choose how to process an xml stream, should your code control the flow, the enumerator or a mixture?
+;* You can structure immutable transformations on streams
+;* You can combine those transformations
+;* Provided Iteratees allow for reading specific sub-trees of a large xml document with low memory overhead
+
+; '''XPath processing allows'''
+;* Simple but exact tree querying
+;* Combination of different queries
+;* Using XPath as a basis for Tree Transformation
+
+; '''JAXP support provides'''
+;* Direct support for XSLT transformations
+;* Direct support for the validation API
+;* Use of the JAXP serialization libary - when desired
+
+; '''Performance'''
+;* Up to 20% faster than scala.xml
+;* Lower memory usage than both scala.xml and JAXP/DOM
+;* Parsing memory usage can be optimised for given usage
+
+<br/>
+== Generated Documentation ==

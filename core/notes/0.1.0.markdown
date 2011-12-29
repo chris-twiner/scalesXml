@@ -1,0 +1,11 @@
+### Initial Release
+
+Scales Xml is an alternative XML library, providing correctness first, a unified model for push and pull, Scalaz Iteratee based pulls, performance gains and possible customisations for parsing, serializing and transformations. 
+
+The content of the DOM is separated from the structure itself.  This lends itself to space savings in both parsing and the resulting DOM, but doesn't sacrifice performance in doing so. 
+
+Manipulation and querying is based on tree Zippers (Path), with the XPath like querying system based directly upon them.  A DSL provides simple construction and aids in transformations, which can be performed via paths across the tree. 
+
+See [the release site][rd] for the docs including performance information and many examples.
+
+[rd]: http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.0-1/0.1/index.html
