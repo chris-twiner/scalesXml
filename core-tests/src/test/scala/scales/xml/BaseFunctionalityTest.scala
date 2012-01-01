@@ -353,7 +353,6 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
   def testDescendantMultipleRoots = {
     val expected = List("{urn:default}DontRedeclare",
 			"{}DontRedeclare")
-    expected.
     compare(expected,
       descendantMultipleRoots
       ) { Elements.Functions.pqName(_) }
