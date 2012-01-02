@@ -1,41 +1,40 @@
-## Scales Xml 0.3
 
-This is a feature release, adding a the full set of useful XPath Axe, string based XPath evaluation - via a popular open source XPath library and many smaller improvements in syntax and usability.
+\0.3 is a feature release, adding a the full set of useful XPath Axe, string based XPath evaluation - via a popular open source XPath library and many smaller improvements in syntax and usability.
 
-This version has been built with xsbt 0.11.x.  The next major version (hopefully released soon) will target Scalaz 7's new Iteratee framework, and likely provide IO based processing.  (Oh yeah and a probably move to GitHub/Git)
+This version has been built with xsbt 0.11.x and migrated to [github](https://github.com/chris-twiner/scalesXml).  The next major version will target Scalaz 7's new Iteratee framework, and likely provide optional IO based processing.
 
 ### All the Axe you'll ever need
 
 Scales 0.3 adds the following axe:
 
-* preceding-sibling (preceding_sibling_::)
-* following-sibling (following_sibling_::)
-* descendant (descendant_::)
-* following (following_::)
-* preceding (preceding_::)
-* ancestor (ancestor_::)
-* ancestor-or-self (ancestor_or_self_::)
-* descendant-or-self (descendant_or_self_::)
+* preceding-sibling (preceding\_sibling\_::)
+* following-sibling (following\_sibling\_::)
+* descendant (descendant\_::)
+* following (following\_::)
+* preceding (preceding\_::)
+* ancestor (ancestor\_::)
+* ancestor-or-self (ancestor\_or\_self\_::)
+* descendant-or-self (descendant\_or\_self\_::)
 
 This provides (namespace exluded all of the XPath 1 and 2 axe)
 
 ### Enhanced internal XPath queries
 
 * position() (pos)
-** pos_<, pos_==, pos_>
+        pos\_<, pos\_==, pos\_>
 * last() (last)
-** last_<, last_==, last_>
-* position() == last() (pos_eq_last)
-* Easier to extend and re-use queries
-** xfilter, xmap, xflatMap
+        last\_<, last\_==, last\_>
+* position() == last() (pos\_eq\_last)
+* Easier to extend and re-use queries and axe
+        xfilter, xmap, xflatMap
 
 ### String base XPath evaluation
 
 * Evaluate normal XPath 1.0 strings but get back XmlPath's
 * Evaluates to an Iterable[Either[AttributePath, XmlPath]] or,
-* get[T] a value directly from XPath 1.0 (e.g. get[String]("normalize(//*)")) 
-* Allows querying for the few predicates and XPaths that Scales cannot process (and dynamic queries of course)
-* Optional dependency
++ get[T] a value directly from XPath 1.0 (e.g. get[String]\("normalize(//\*)")) 
++ Allows querying for the few predicates and XPaths that Scales cannot process (and dynamic queries of course)
++ Optional dependency
 
 ### Extra Fun
 

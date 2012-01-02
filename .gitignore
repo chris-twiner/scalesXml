@@ -6,6 +6,7 @@
 *.log
 *~
 *#
+.emacs.desktop.lock
 
 # sbt specific
 dist/*
