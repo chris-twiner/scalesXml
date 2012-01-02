@@ -133,7 +133,16 @@ object ExtraTypesImplicits {
     new AttributeKey(q.local, q.namespace.uri)
   }
 
+}
 
+/**
+ * Simple constructor for Attributes
+ */ 
+object Attribs {
+  def apply( attribs : Attribute * ) : Attributes = {
+    import EqualsHelpers._
+    ListSet[Attribute](attribs :_*)
+  }
 }
 
 sealed trait FromParser
