@@ -16,7 +16,10 @@ Scales 0.3 adds the following axe:
 * ancestor-or-self (ancestor\_or\_self\_::)
 * descendant-or-self (descendant\_or\_self\_::)
 
-This provides (namespace exluded all of the XPath 1 and 2 axe)
+This provides all of the XPath 1 and 2 axe (namespace excluded), for example:
+
+<iframe src="http://urlspoiler.co/gists?id=1553843&file=Axe.scala" width="100%" height="117px">
+</iframe>
 
 ### Enhanced internal XPath queries
 
@@ -35,6 +38,9 @@ This provides (namespace exluded all of the XPath 1 and 2 axe)
 + get[T] a value directly from XPath 1.0 (e.g. get[String]\("normalize(//\*)")) 
 + Allows querying for the few predicates and XPaths that Scales cannot process (and dynamic queries of course)
 + Optional dependency
+
+<iframe src="http://urlspoiler.co/gists?id=1553843&file=JaxenXPaths.scala" width="100%" height="400px">
+</iframe>
 
 ### Extra Fun
 

@@ -11,15 +11,15 @@ libraryDependencies ++= Seq(
 )
 
 
-fullRunTask(reconPerf, Test, "com.google.caliper.Runner", "scales.xml.ParsingPerformanceRecon", "-JmaxMem=-Xmx256M")
+caliperRunTask(reconPerf, Test, "scales.xml.ParsingPerformanceRecon", "-JmaxMem=-Xmx256M")
 
 fork in reconPerf := true
 
-//javaOptions in reconPerf ++= Seq("-cp","fdafdsffasd")
+//javaOptions in reconPerf <+= () { cp => Seq("-cp","fdafdsffasd") }
 
 //javaOptions in reconPerf <<= ((fullClasspath in reconPerf) apply {( cp: Classpath) => Seq(cp.files.mkString(";"))}) 
 
-fullRunTask(filePerf, Test, "com.google.caliper.Runner", "scales.xml.SpecificFilePerformance")                                           
+caliperRunTask(filePerf, Test, "com.google.caliper.Runner", "scales.xml.SpecificFilePerformance")                                           
 
 fork in filePerf := true
 

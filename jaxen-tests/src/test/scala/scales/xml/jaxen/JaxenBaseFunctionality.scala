@@ -4,9 +4,9 @@ import scales.utils._
 import ScalesUtils._
 import scales.xml._
 import ScalesXml._
-import org.jaxen._
+//import org.jaxen._
 
-import strategies._
+//import strategies._
 
 class JaxenBaseFunctionalityTest extends BaseFunctionalityTest {
 

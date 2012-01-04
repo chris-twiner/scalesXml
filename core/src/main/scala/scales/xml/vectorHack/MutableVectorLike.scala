@@ -34,12 +34,12 @@ final class MutableVectorLike[+A](val copyArray : Boolean = false) extends Immut
 
   private var len = 0
 
-  def apply(idx : Int ) = 
-    if (idx != (len -1))
+  def apply(idx : Int ) = err
+/*    if (idx != (len -1))
       err
     else
       display0(lo-1).asInstanceOf[A]
-
+*/
   @inline override def length = len
   
   @inline override def +:[B >: A, That](elem: B)(implicit bf: CanBuildFrom[ImmutableArrayProxy[A], B, That]): That = err
@@ -60,14 +60,14 @@ final class MutableVectorLike[+A](val copyArray : Boolean = false) extends Immut
   /**
    * Basically optimised version for back, hint used directly, one new array creation
    */ 
-  @inline override def updated[B >: A, That](index: Int, elem: B)(implicit bf: CanBuildFrom[ImmutableArrayProxy[A], B, That]): That =
-    if (index != (len - 1))
+  @inline override def updated[B >: A, That](index: Int, elem: B)(implicit bf: CanBuildFrom[ImmutableArrayProxy[A], B, That]): That = err
+/*    if (index != (len - 1))
       err
     else {
       display0(lo - 1) = elem.asInstanceOf[AnyRef]
       this.asInstanceOf[That]
     }
-
+*/
   override def iterator() = err
 
   def ar = err

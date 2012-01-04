@@ -45,6 +45,9 @@ object Implicits {
     }
 }
 
+/**
+ * Useful constructors for String XPaths
+ */ 
 object ScalesXPath {
 
   def apply(xpath : String, nsMap : Map[String, String] = Map()) =
@@ -65,7 +68,10 @@ object ScalesXPath {
 }
 
 /**
- * use evaluate every time, select nodes will not work.
+ * Use evaluate every time, select nodes will not work.
+ *
+ * NB: This class is only available with the scales-jaxen dependencies.
+ * 
  * @nsMap a prefix -> namespace map.  Use the companion object to pass in PrefixedNamespaces
  */ 
 class ScalesXPath(val xpath : String, val nsMap : Map[String,String] = Map()) extends ScalesBaseJaxenXPath(xpath, ScalesXPathFactory, ScalesNavigator) {
