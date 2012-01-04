@@ -124,109 +124,31 @@ object ScalesXmlRoot extends Build {
     ),
     autoCompilerPlugins := false,
     fork in run := true,
-    // see notes below
-    commands ++= Seq(myRun), 
   //  cpTask,
     ensimeConfig := sexp(
       key(":compiler-args"), sexp("-Ywarn-dead-code", "-Ywarn-shadowing"),
       key(":formatting-prefs"), sexp(
         key(":spaceBeforeColon"), true
       )
-    )/*,
-    // scala for-each benchmarker, thanks Daniel / Mark
-    parallelExecution := false,
-    runner in Compile in run <<= (thisProject, taskTemporaryDirectory, scalaInstance, baseDirectory, javaOptions, outputStrategy, javaHome, connectInput) map {
-      (tp, tmp, si, base, options, strategy, javaHomeDir, connectIn) =>
-        new MyRunner(tp.id, ForkOptions(scalaJars = si.jars, javaHome = javaHomeDir, connectInput = connectIn, outputStrategy = strategy,
-          runJVMOptions = options, workingDirectory = Some(base)) )
-    }*/
+    )
   )
 
-class MyRunner(subproject: String, config: ForkScalaRun) extends sbt.ScalaRun {
-  def run(mainClass: String, classpath: Seq[File], options: Seq[String], log: Logger): Option[String] = {
-    log.info("Running " + subproject + " " + mainClass + " " + options.mkString(" "))
-                                                                                                  
-    val javaOptions = classpathOption(classpath) ::: mainClass :: options.toList                 
-    val strategy = config.outputStrategy getOrElse LoggedOutput(log)                              
-    val process =  Fork.java.fork(config.javaHome, 
-                                  config.runJVMOptions ++ javaOptions,
-                                  config.workingDirectory,
-                                  Map.empty,
-                                  config.connectInput,
-                                  strategy)
-    def cancel() = {                                                                              
-      log.warn("Run canceled.")                                                             
-      process.destroy()                                                                     
-      1                                                                                     
-    }                                                                                             
-    val exitCode = try process.exitValue() catch { case e: InterruptedException => cancel() }     
-    processExitCode(exitCode, "runner")                                                           
-  }                                                                                                     
-  private def classpathOption(classpath: Seq[File]) = "-classpath" :: Path.makeString(classpath) :: Nil 
-  private def processExitCode(exitCode: Int, label: String) = {                                                                                                     
-    if(exitCode == 0) None                                                                                  
-    else Some("Nonzero exit code returned from " + label + ": " + exitCode)                    
-  }                                                                                                     
-}   
+  // below is a far finer version than before, ripped from Defaults
 
-// below from a post on the newsgroup
-
-  // define the classpath task key 
-  val cpath = TaskKey[String]("get-classpath", 
-                              "Returns the runtime classpath") 
-
-  // define the classpath task 
-  val cpTask = cpath <<= fullClasspath.in(
-    Runtime) map { (cp: 
-		    Classpath) => 
-		      cp.files.map(_.getAbsolutePath.replace('\\','/')).mkString(java.io.File.separator) 
-                } 
-
-  // define the new run command 
-  def myRun = Command.args("my-run", "<main to run>") { (state, args) => { 
-    // get the results of the classpath task 
-    val result: Option[Result[String]] = Project.evaluateTask(cpath, 
-							      state) 
-    // match based on the results of the task 
-    result match { 
-      case None => { 
-        println("key isn't defined") 
-        state.fail 
-      } 
-      case Some(Inc(inc)) => { 
-        println("error: " + inc) 
-        // return a failure 
-        state.fail 
-      } 
-      case Some(Value(v)) => { 
-        // extract the string from the task results 
-        val classpath: String = v 
-        // don't know how to set a setting in a command, so just build 
-        //  the command that sets it: 
-        // javaOptions in run ++= Seq("-cp", classpath) 
-        val cmd: String = "set javaOptions in run ++= Seq(\"-cp\", \"" + 
-        classpath + 
-        "\", \""+ args.mkString("\",\"") + "\")" 
-        // return a new state that has the setting command and the run cmd 
-        //  (because I don't know how to run an InputTask, just a Task) 
-        //   prepended to the list of remaining commands 
-        state.copy( 
-          remainingCommands = Seq (cmd, "run") ++ state.remainingCommands 
-        ) 
-      } 
-    } 
-  } }
-
+  /**
+   * At this late stage the properties can be used
+   */ 
   def cpRunnerInit(config: sbt.Configuration) : Project.Initialize[Task[ScalaRun]] = 
-    (taskTemporaryDirectory, scalaInstance, baseDirectory, javaOptions, outputStrategy, fork, javaHome, trapExit, fullClasspath in config ) map { (tmp, si, base, options, strategy, forkRun, javaHomeDir, trap, cp) =>
+    (taskTemporaryDirectory, scalaInstance, baseDirectory, javaOptions, outputStrategy, fork, javaHome, trapExit, fullClasspath in config ) map { (tmp, si, base, options, strategy, forkRun, javaHomeDir, trap, cpa) =>
       if(forkRun) {
+
+	val cp = "-classpath" :: Path.makeString(cpa.files) :: Nil 
+
 	new ForkRun( 
 	  ForkOptions
 	  (scalaJars = si.jars, javaHome = javaHomeDir, outputStrategy = strategy, 
-	   runJVMOptions = options ++ Seq("-cp",  
-	     cp.files.map(_.getAbsolutePath.replace('\\','/')).mkString(java.io.File.pathSeparator)), 
+	   runJVMOptions = options ++ cp, 
 	   workingDirectory = Some(base)) )
-	
       } else
 	new Run(si, trap, tmp)
     }
@@ -234,7 +156,8 @@ class MyRunner(subproject: String, config: ForkScalaRun) extends sbt.ScalaRun {
   def caliperRunTask(scoped: ScopedTask[Unit], config: sbt.Configuration, arguments: String*): Setting[Task[Unit]] =
     scoped <<= ( initScoped(scoped.scopedKey, cpRunnerInit(config)) zipWith (fullClasspath in config, streams).identityMap ) { case (rTask, t) =>
       (t :^: rTask :^: KNil) map { case (cp, s) :+: r :+: HNil =>
-	sbt.toError(r.run( "com.google.caliper.Runner", Build.data(cp), /*Seq("-cp "+cp.files.map(_.getAbsolutePath.replace('\\','/')).mkString(java.io.File.separator)) ++*/ arguments, s.log))
+	sbt.toError(r.run( "com.google.caliper.Runner", Build.data(cp), 
+	  arguments, s.log))
       }
     }
 

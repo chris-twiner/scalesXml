@@ -15,13 +15,11 @@ caliperRunTask(reconPerf, Test, "scales.xml.ParsingPerformanceRecon", "-JmaxMem=
 
 fork in reconPerf := true
 
-//javaOptions in reconPerf <+= () { cp => Seq("-cp","fdafdsffasd") }
 
-//javaOptions in reconPerf <<= ((fullClasspath in reconPerf) apply {( cp: Classpath) => Seq(cp.files.mkString(";"))}) 
-
-caliperRunTask(filePerf, Test, "com.google.caliper.Runner", "scales.xml.SpecificFilePerformance")                                           
+caliperRunTask(filePerf, Test, "scales.xml.SpecificFilePerformance")
 
 fork in filePerf := true
+
 
 fullRunTask(runHighMemory, Test, "scales.xml.RunMemoryOptimised")
 
