@@ -1,4 +1,4 @@
-package scales.xml {
+package scales.xml
 
 import scales.utils._
 
@@ -158,39 +158,6 @@ trait QNameOptimisationT[Token <: QNameToken] extends MemoryOptimisationStrategy
 
 }
 
-/**
- * A Mutable vector is used internally, only update on the last element and :+/append is supported, the result of elementEnd is however immutable and safe to re-use via a super call.
- */ 
-trait MutableVectorLikeStrategy[Token <: OptimisationToken] extends PathOptimisationStrategy[Token] {
-  
-  import ScalesXml.xmlCBF
-  import scala.collection.immutable.MutableVectorLike
-
-  /**
-   * Reproduced zipUp
-   */ 
-  override def elementEnd( proxies : TreeProxies, token : Token) {
-    val l = proxies.current
-    l.children = l.children.asInstanceOf[MutableVectorLike[ItemOrElem]].immutable
-    if (proxies.depth > 0) {
-      proxies.depth -= 1
-      val newC = proxies.proxies( proxies.depth )
-      proxies.current = newC
-      newC.children = (newC.children :+ Tree(l.elem, l.children))
-    } else {
-      proxies.depth -= 1
-    }
-  }
-  
-  /**
-   * Start a new tree, substitutes a MutableVectorLike instead of an immutable
-   */ 
-  override def beginSubTree( proxies : TreeProxies, elem : Elem, token : Token) {
-    proxies.beginSub(elem, new MutableVectorLike[ItemOrElem](true))
-  }
-   
-}
-
 import strategies._
 
 /**
@@ -199,6 +166,4 @@ import strategies._
  * For the lowest memory consumption possible, for example where memory is more important than raw performance, see MemoryAndSpeedierStrategy
  *
  */
-object QNameAndSpeedierStrategy extends MutableVectorLikeStrategy[ElemToken] with ElemQNameOptimisationT[ElemToken] with ElemTokenF
-
-}
+object QNameMemoryOptimisation extends PathOptimisationStrategy[QNameToken] with QNameOptimisationT[QNameToken] with QNameTokenF

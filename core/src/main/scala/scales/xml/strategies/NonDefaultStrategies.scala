@@ -72,8 +72,6 @@ object ElemMemoryOptimisation extends PathOptimisationStrategy[ElemToken] with E
  */ 
 object HighMemoryOptimisation extends PathOptimisationStrategy[ElemToken] with ElemOptimisationT[ElemToken] with QNameOptimisationT[ElemToken] with ElemTokenF
 
-
-
 /**
  * As this adds extra processing time, but better fits XPath rules (i.e. all text children below are joined) its available to be mixed in, but isn't added by default.
  *
@@ -102,10 +100,3 @@ trait TextNodeJoiner[Token <: OptimisationToken] extends PathOptimisationStrateg
 
 }
 
-
-/**
- * Reduces memory consumption at a 5-10% perfromance hit over the default QNameAndSpeedierStrategy
- */ 
-object MemoryAndSpeedierStrategy extends MutableVectorLikeStrategy[ElemToken] with FullMemoryOptimisationT[ElemToken] with ElemTokenF
-
-object QNameMemoryOptimisation extends PathOptimisationStrategy[QNameToken] with QNameOptimisationT[QNameToken] with QNameTokenF

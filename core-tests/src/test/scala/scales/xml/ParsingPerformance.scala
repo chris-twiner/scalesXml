@@ -15,7 +15,7 @@ import stream._
 
 import strategies._
 
-object QNameAndAttr extends MutableVectorLikeStrategy[ElemToken] with ElemQNameOptimisationT[ElemToken] with ElemTokenF {
+object QNameAndAttr extends PathOptimisationStrategy[ElemToken] with ElemQNameOptimisationT[ElemToken] with ElemTokenF {
 
   // register the qname for eq style
   val tyype = {
@@ -101,13 +101,10 @@ class SpecificFilePerformance extends SimpleScalaBenchmark {
     scala.xml.XML.loadString(s)
   }  
 
-  def timeQNameAndSpeed(reps: Int) = repeat(reps) {
-    loadXmlS(s, QNameAndSpeedierStrategy)
+  def timeQNameOnly(reps: Int) = repeat(reps) {
+    loadXmlS(s, QNameMemoryOptimisation)
   }
-/*
-  def timeMemoryAndSpeed(reps: Int) = repeat(reps) {
-    loadXmlS(s, MemoryAndSpeedierStrategy)
-  }*/
+
   def timeTyped(reps: Int) = repeat(reps) {
     loadXmlS(s, QNameAndAttr)
   }
@@ -173,14 +170,7 @@ class ParsingPerformanceRecon extends SimpleScalaBenchmark {
     scala.xml.XML.loadString(s)
   }  
 
-  def timeMemoryAndSpeed(reps: Int) = repeat(reps) {
-    loadXmlS(s, MemoryAndSpeedierStrategy)
-  }
 */
-  def timeQNameAndSpeed(reps: Int) = repeat(reps) {
-    loadXmlS(s, QNameAndSpeedierStrategy)
-  }
-
 
   def timeQNameOnly(reps: Int) = repeat(reps) {
     loadXmlS(s, QNameMemoryOptimisation)

@@ -14,8 +14,8 @@ package object xml extends XmlTypes
 
   import strategies.ElemToken
 
-  val defaultPathOptimisation : PathOptimisationStrategy[ElemToken] = QNameAndSpeedierStrategy
-  val defaultOptimisation : MemoryOptimisationStrategy[ElemToken] = QNameAndSpeedierStrategy
+  val defaultPathOptimisation : PathOptimisationStrategy[QNameToken] = QNameMemoryOptimisation
+  val defaultOptimisation : MemoryOptimisationStrategy[QNameToken] = QNameMemoryOptimisation
 
   // work around my own version of SI-5031
   val Attributes = xpath.Attributes

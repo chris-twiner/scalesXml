@@ -8,6 +8,7 @@
 *#
 .emacs.desktop.lock
 experiments.scalaScript
+continue.txt
 
 # sbt specific
 dist/*
