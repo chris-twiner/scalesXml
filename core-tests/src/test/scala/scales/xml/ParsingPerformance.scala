@@ -176,11 +176,15 @@ class ParsingPerformanceRecon extends SimpleScalaBenchmark {
   def timeMemoryAndSpeed(reps: Int) = repeat(reps) {
     loadXmlS(s, MemoryAndSpeedierStrategy)
   }
-
+*/
   def timeQNameAndSpeed(reps: Int) = repeat(reps) {
     loadXmlS(s, QNameAndSpeedierStrategy)
   }
-*/
+
+
+  def timeQNameOnly(reps: Int) = repeat(reps) {
+    loadXmlS(s, QNameMemoryOptimisation)
+  }
 
   /**
    * How long for pull based, low memory onqnames action
@@ -213,7 +217,7 @@ class ParsingPerformanceRecon extends SimpleScalaBenchmark {
 	}			   
     
     }
-  }*/
+  }
 
   def processFullParseCollect = {
     import Recon._
@@ -227,7 +231,7 @@ class ParsingPerformanceRecon extends SimpleScalaBenchmark {
     
     (parts, boms, recs)
   }
-
+*/
   /**
    * How long does it take for a full parse and collect?
   def timeFullParseCollect( reps: Int) = repeat(reps) {
@@ -273,7 +277,7 @@ class ParsingPerformanceRecon extends SimpleScalaBenchmark {
 
   /**
    * Test deep and filter, to evaluate differences in flatMap vs whileloop
-   */ 
+   
   def timeFullParseDF( reps: Int) = repeat(reps) {
     import Elements.Functions.text
     
@@ -291,7 +295,7 @@ class ParsingPerformanceRecon extends SimpleScalaBenchmark {
     // 10000 is 495500035950
     //if (res != "495500035950") sys.error("Was not the expected result but "+res)
     res
-  }
+  }*/
 
   /**
    * Full parse and collect lazily but evaluate via raw
