@@ -12,7 +12,7 @@ A very flexible XML stream handling approach is based upon StAX and Iteratees (c
 
 Currently the stable 0.2.1 release [site](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.1/0.2.1/index.html) has focused on performance tuning, including fast parsing and low memory usage (which, of course, are coupled).
 
-The upcoming release (2.9.1 only so far) 0.3, has an RC2 version and provides ScalesXPath - a string based XPath 1.0 evaluator, a full compliment of useful axe in the internal XPath syntax and general improvements in usability.  
+The upcoming release 0.3, has an RC2 version and provides ScalesXPath - a string based XPath 1.0 evaluator, a full compliment of useful axe in the internal XPath syntax and general improvements in usability.  
 
 It represents the first xsbt based release and, as such, will have a site after sbtPlugins are migrated. Use "0.3-RC2" as the revision to use this version.
 

@@ -1,3 +1,5 @@
+import Utils._
+
 resolvers += "Sonatype OSS Repo" at "http://oss.sonatype.org/content/repositories/snapshots"
 
 libraryDependencies ++= Seq(
@@ -9,7 +11,6 @@ libraryDependencies ++= Seq(
   "com.google.code.gson" % "gson" % "1.7.2" % "test",
   "com.google.code.caliper" % "caliper" % "1.0-SNAPSHOT" % "test"
 )
-
 
 caliperRunTask(reconPerf, Test, "scales.xml.ParsingPerformanceRecon", "-JmaxMem=-Xmx256M")
 
