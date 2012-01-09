@@ -12,22 +12,29 @@ A very flexible XML stream handling approach is based upon StAX and Iteratees (c
 
 Currently the stable 0.2.1 release [site](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.1/0.2.1/index.html) has focused on performance tuning, including fast parsing and low memory usage (which, of course, are coupled).
 
-The upcoming release 0.3, has an RC2 version and provides ScalesXPath - a string based XPath 1.0 evaluator, a full compliment of useful axe in the internal XPath syntax and general improvements in usability.  
+The upcoming release 0.3, has an RC4 version and provides ScalesXPath - a string based XPath 1.0 evaluator, a full compliment of useful axe in the internal XPath syntax and general improvements in usability.  
 
-It represents the first xsbt based release and, as such, will have a site after sbtPlugins are migrated. Use "0.3-RC2" as the revision to use this version.
+It represents the first xsbt based release and, as such, will have a site after sbtPlugins are migrated. Use "0.3-RC4" as the revision to use this version.
 
 # How To Use
 
-The M2 style repo for snapshots is at https://scala-scales.googlecode.com/svn/repo-snapshots.  Currently 2.8.1, 2.9.0-1 and 2.9.1 are built against.
+The M2 style repo for snapshots is at https://scala-scales.googlecode.com/svn/repo-snapshots.  Currently 2.8.1 and 2.9.1 are built against.
 
 So for sbt its:
 
     val scalesRepo = "Scales Repo" at "http://scala-scales.googlecode.com/svn/repo"
-    val scalesXml = "scales" %% "scales-xml" % "0.2.1"
+    val scalesXml = "scales" %% "scales-xml" % "0.3-RC4"
+
+xsbt 0.10+ its:
+
+    libraryDependencies ++= Seq(
+      "scales" %% "scales-xml" % "0.3-RC4",
+      "scales" %% "scales-jaxen" % "0.3-RC4" // optional for string based xpaths
+      )
 
 Maven repos should therefore use scales-xml_2.8.1 as the dependency.
 
-[The documentation site is here](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.1/0.2.1/index.html) and zip of the site documentation is available at [scales-xml.zip](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.1/0.2.1/scales-xml_2.9.1-0.2.1-site.zip).  
+[The last 0.2.1 documentation site is here - 0.3 is pending](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.1/0.2.1/index.html) and zip of the site documentation is available at [scales-xml.zip](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.1/0.2.1/scales-xml_2.9.1-0.2.1-site.zip).  
 
 _Warning_ local file based sites do not work in Chrome, use Firefox or IE in preference.
 
