@@ -21,6 +21,19 @@ case class AttributePaths[PT <: Iterable[XmlPath]](attributes: Iterable[Attribut
   /** Parents of the attributepaths */
   def \^(): XPath[PT] = new XPath[PT](path.copy(nodes = List(attributes.map(_.parent))), cbf)
 
+  // the following are to provide similar chained predicates as expected by me and the spec
+
+  def *@(pred : AttributePath => Boolean) : AttributePaths[PT] =
+    AttributePaths(attributes.filter { pred(_) }, path, cbf)
+
+  /** Special case for AttributeQNames, only local and namespace match */
+  def *@(attrQName : AttributeQName) : AttributePaths[PT] =
+    *@({ attributePath : AttributePath => toQName(attributePath.attribute.name) =:= toQName(attrQName) })
+
+  /** Loose match for UnprefixedQNames only, only matches local and namespace */
+  def *@(qname : UnprefixedQName) : AttributePaths[PT] =
+    *@({ attributePath : AttributePath => toQName(attributePath.attribute.name) =:= qname })
+
   /**
    * Some if there is one, else none
    */

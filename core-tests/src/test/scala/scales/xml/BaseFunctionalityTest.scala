@@ -147,6 +147,13 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
     compare( expected, allAttribs ){ implicit attr => pqName + "=" + value }
   }
 
+  def testChainedAttributes = {
+    val expected = List("justHere:{urn:justHere}attr=only")
+    import Attributes.Functions._
+    compare( expected, allAttribsX.*@(jh("attr")).*@(_.value == "only") ){
+      implicit attr => pqName + "=" + value }
+  }
+
   def allElementsWithAttributes : XmlPaths = allAttribsX \^
   
   def testAllElementsWithAttributes = {
