@@ -27,6 +27,8 @@ So for sbt its:
 
 xsbt 0.10+ its:
 
+    resolvers += "Scales Repo" at "http://scala-scales.googlecode.com/svn/repo"
+
     libraryDependencies ++= Seq(
       "scales" %% "scales-xml" % "0.3-RC4",
       "scales" %% "scales-jaxen" % "0.3-RC4" // optional for string based xpaths
@@ -38,10 +40,10 @@ Maven repos should therefore use scales-xml_2.8.1 as the dependency.
 
 _Warning_ local file based sites do not work in Chrome, use Firefox or IE in preference.
 
-!YourKit has been used to great effect in the creation of scales-xml:
+YourKit has been used to great effect in the creation of scales-xml:
 
-!YourKit is kindly supporting open source projects with its full-featured Java Profiler.
-!YourKit, LLC is the creator of innovative and intelligent tools for profiling
+*YourKit* is kindly supporting open source projects with its full-featured Java Profiler.
+*YourKit*, LLC is the creator of innovative and intelligent tools for profiling
 Java and .NET applications. Take a look at !YourKit's leading software products:
 [YourKit Java Profiler](http://www.yourkit.com/java/profiler/index.jsp) and
 [YourKit .NET Profiler](http://www.yourkit.com/.net/profiler/index.jsp).
