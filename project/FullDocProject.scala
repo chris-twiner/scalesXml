@@ -12,7 +12,7 @@ object FullDocs {
    * Nicked from Scalaz - thanks once again Jason and co.
    * @projects The projects that are packaged in the full distribution.
    */ 
-  def fullDocsNSources( projects : Seq[Project], projectId : String, projectRoot : java.io.File, sxrVersionMap : (String) => sbt.ModuleID, rootProjectId : String, projectDependencies : Seq[sbt.ClasspathDep[sbt.ProjectReference]], standardSettings : Seq[sbt.Project.Setting[_]] = Defaults.defaultSettings){
+  def fullDocsNSources( projects : Seq[Project], projectId : String, projectRoot : java.io.File, sxrVersionMap : (String) => sbt.ModuleID, rootProjectId : String, projectDependencies : Seq[sbt.ClasspathDep[sbt.ProjectReference]], standardSettings : Seq[sbt.Project.Setting[_]] = Defaults.defaultSettings) = {
 
     // Some intermediate keys to simplify extracting a task or setting from `projects`.
     val allPackagedArtifacts = TaskKey[Seq[Map[Artifact, File]]]("all-packaged-artifacts")
