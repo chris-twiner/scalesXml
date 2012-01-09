@@ -154,6 +154,15 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
       implicit attr => pqName + "=" + value }
   }
 
+  def testElementsWithAttributes = {
+    val expected = List("{}NoNamespace")
+    
+    // the attrib list to boolean should get picked up
+    compare( expected, path.\\*("NoNamespace").*{
+      implicit p => p.\@("type").*@(_.value == "interesting")}) { 
+	Elements.Functions.pqName(_) }
+  }
+
   def allElementsWithAttributes : XmlPaths = allAttribsX \^
   
   def testAllElementsWithAttributes = {
