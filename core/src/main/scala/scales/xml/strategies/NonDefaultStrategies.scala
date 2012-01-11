@@ -61,7 +61,7 @@ trait ElemOptimisationT[Token <: OptimisationToken] extends MemoryOptimisationSt
 
   override def elem( name : QName, attributes : Attributes, namespaces : Map[String, String], token : Token) : Elem = {
     import token._
-    value(Elem(name, attributes, namespaces), cache) (Elem(name, attributes, namespaces))
+    valueOf(Elem(name, attributes, namespaces), cache) (Elem(name, attributes, namespaces))
   }  
 }
 

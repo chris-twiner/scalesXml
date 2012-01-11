@@ -51,8 +51,22 @@ class DIF()
 
 /**
  * Collects all type class based xpath functions, exposed via Functions in package
+ *
+ * Also adds aliases for the common functions
  */ 
-object Functions extends NameFunctions with TextFunctions {}
+object Functions extends NameFunctions with TextFunctions {
+  /**
+   * localName_== for XmlPaths
+   */ 
+  def localNameX_==( local : String ) : XmlPath => Boolean =
+    (x : XmlPath) =>XmlPathNames.localName(local)(x)
+
+  /**
+   * localName_== for AttributePaths
+   */ 
+  def localNameA_==( local : String ) : AttributePath => Boolean =
+    (x : AttributePath) =>AttributePathNames.localName(local)(x)
+}
 
 /**
  * Functions providing access to QNames
@@ -70,13 +84,11 @@ trait NameFunctions {
   def localName[T](t : T)(implicit name : Names[T]) : String =
     name.localName(t)
 
-  /** curried to allow direct drop in for predicates, if it is an item then it will return false */
-  def localName[T](localName : String)(t : T)(implicit name : Names[T] ) : Boolean =
-    name.localName(localName)(t)
-
-  /** curried to allow direct drop in for predicates, if it is an item then it will return false */
-  def localName[T](localName : String)(implicit t : T, name : Names[T], d : DIF ) : Boolean =
-    name.localName(localName)    
+  /**
+   * curried to allow direct drop in for predicates, if it is an item then it will return false
+   */
+  def localName_==[T](localName : String)(implicit name : Names[T] ) : T => Boolean =
+    (t : T) => name.localName(localName)(t)
   
   /**
    * Does the qname match exactly (prefix included if present)
@@ -99,7 +111,7 @@ trait NameFunctions {
   /**
    * Matches on prefix and namespace only
    */ 
-  def equivalent[T](qname : QName)(t : T)(implicit name : Names[T] ) : Boolean = 
+  def equivalent[T](qname : QName, t : T)(implicit name : Names[T] ) : Boolean = 
     name.equivalent(qname)(t)
 
   /**
@@ -139,14 +151,18 @@ trait NameFunctions {
     name.pqName(t)
 }
 
+/**
+ * Name type classes
+ */ 
 trait NamesImplicits {
   // only used to seperate the interfaces, fully implicit gets this as well
   implicit val dif = new DIF()
 
+  implicit val attribNames = AttributeNames
+  implicit val attributePathNames = AttributePathNames
+  implicit val xpathNames = XmlPathNames
   implicit val elemNames = ElemNames
   implicit val xtreeNames = XmlTreeNames 
-  implicit val attribNames = AttributeNames
-  implicit val xpathNames = XmlPathNames
 }
 
 /**
@@ -199,6 +215,10 @@ trait QNameUsers[T] extends Names[T] {
 
 object AttributeNames extends QNameUsers[Attribute] {
   def convert(t : Attribute) : QName = EqualsHelpers.toQName(t.name)
+}
+
+object AttributePathNames extends QNameUsers[AttributePath] {
+  def convert(t : AttributePath) : QName = EqualsHelpers.toQName(t.attribute.name)
 }
 
 object ElemNames extends QNameUsers[Elem] {
@@ -276,15 +296,14 @@ trait TextFunctions {
 trait TextImplicits {
   implicit val xtreeText = XmlTreeText
   implicit val attribText = AttributeText
+  implicit val attribPathText = AttributePathText
   implicit val xpathText = XmlPathText
   implicit val itemText = XmlItemText
 }
 
-trait TextTrees[T] extends TextValue[T] {
-  def convert(t : T) : XmlTree
-
-  def text(implicit t: T): String = {
-    convert(t).fold(new StringBuilder()) 
+object XmlTreeText extends TextValue[XmlTree] {
+  def text(implicit t: XmlTree): String = {
+    t.fold(new StringBuilder()) 
     { (walker, sb) =>
       if (walker.isLeft) {
         walker.left.get match {
@@ -297,16 +316,17 @@ trait TextTrees[T] extends TextValue[T] {
   }
 }
 
-object XmlTreeText extends TextTrees[XmlTree] {
-  def convert(t : XmlTree) : XmlTree = t
-}
-
-object XmlPathText extends TextTrees[XmlPath] {
-  def convert(t : XmlPath) : XmlTree = t.tree
+object XmlPathText extends TextValue[XmlPath] {
+  def text(implicit t : XmlPath) = 
+    t.focus(_.value, XmlTreeText.text(_))
 }
 
 object AttributeText extends TextValue[Attribute] {
   def text(implicit a : Attribute) = a.value
+}
+
+object AttributePathText extends TextValue[AttributePath] {
+  def text(implicit a : AttributePath) = a.attribute.value
 }
 
 object XmlItemText extends TextValue[XmlItem] {

@@ -11,7 +11,8 @@ trait ScalesXmlImplicits extends XmlTypesImplicits
   with XmlUtilsImplicits
   with OptimisingStrategiesImplicits
   with serializers.SerializerImplicits
-  with xpath.NamesImplicits {
+  with xpath.NamesImplicits
+  with xpath.TextImplicits {
 }
 
 object ScalesXml extends ScalesXmlImplicits

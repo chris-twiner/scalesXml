@@ -60,6 +60,12 @@ case class Path[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] 
     else children.length != 0
 
   /**
+   * Folds over child or tree
+   */ 
+  def focus[R]( i : Item => R, t : Tree[Item,Section,CC] => R) : R =
+    node.focus.fold(i, t)
+
+  /**
    * Children for a path, don't call unless it is not an item
    */ 
   def children : CC[ItemOrTree[Item,Section,CC]]  = node.focus.right.get.children

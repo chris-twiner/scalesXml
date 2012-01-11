@@ -114,7 +114,7 @@ trait LSSerializerConcurrentCacheFactory extends LSSerializerFactoryBase {
     if (encoding.contains(defaultCharset)) { s: String => None }
     else { s: String =>
 
-      calcOnce(encoding, value(s, globalEncMap)(new ConcurrentHashMap[Charset, Once[Option[Throwable]]]())) {
+      calcOnce(encoding, valueOf(s, globalEncMap)(new ConcurrentHashMap[Charset, Once[Option[Throwable]]]())) {
         if (encoder.canEncode(s))
           None // it can do it
         else

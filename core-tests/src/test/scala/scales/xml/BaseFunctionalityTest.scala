@@ -1,12 +1,12 @@
 package scales.xml
 
 class BaseFunctionalityTest extends junit.framework.TestCase {
-
   import junit.framework.Assert._
   import java.io._
   import scales.utils._
   import ScalesUtils._
   import ScalesXml._
+
   import Functions._
 
   import strategies.TextNodeJoiner
@@ -33,8 +33,8 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
     el.namespaces assert_=== mua.namespaces
     mua.namespaces assert_=== mu.namespaces
   }
-
-  val prefixed = path.\*("NoNamespace").\*(Elements.localName("prefixed"))
+// path.\*("NoNamespace").\*(localName_==("prefixed"))
+  val prefixed = path \* "NoNamespace" \* localNameX_==("prefixed")
 
   def testLocalNamePredicate = {
     assertTrue(prefixed.size == 1)
@@ -53,7 +53,7 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
   }
    
   def testLocalNamePredicateAttributesDirect = {
-    doAttrTest(prefixed \@ Attributes.localName("attr"))
+    doAttrTest(prefixed \@ localNameA_==("attr"))
   }
 
   def testNSAttributes = {
@@ -69,23 +69,17 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
   }
 
   def testLocalNamePredicateAttributes = {
-    doAttrTest(prefixed.\.*@(Attributes.localName("attr")))
+    doAttrTest(prefixed.\.*@(localNameA_==("attr")))
   }
 
   def doExistsTest( f : (XPath[_]) => XPath[_]) = {
     val res = f(path \* ("NoNamespace"l))
     assertTrue("Did not find the attr in an element", res.size == 1)
-    assertEquals("prefixed", Elements.Functions.localName(res.head))
+    assertEquals("prefixed", localName(res.head))
   }
 
   def testExistsAttributes = {
-    import Attributes.*@
-    doExistsTest{ _ \* ( *@("urn:prefix" :: "attr") ) }
-  }
-
-  def testExistsAttributesMethod = {
-    import Attributes.Functions.*@
-    doExistsTest( _ .\*{ *@("urn:prefix" :: "attr")(_) } )
+    doExistsTest{ _ \* (_.*@("urn:prefix" :: "attr") ) }
   }
  
   import TestUtils._
@@ -96,17 +90,17 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
     val expected = List(dontRedeclareNoNS, dontRedeclareNoNS,
       shouldRedeclareDefaultNS, prefixedPQN)
     
-    compare(expected, positionAllKids)(Elements.Functions.pqName(_))
+    compare(expected, positionAllKids)(pqName(_))
   }
 
-  val dontRedeclaresX = path.\\.*(Elements.localName("DontRedeclare"))
+  val dontRedeclaresX = path.\\.*(localNameX_==("DontRedeclare"))
   def dontRedeclares : XmlPaths = dontRedeclaresX
 
   def testDescendentLocalNamePredicate = {
     val expected = List("{urn:default}DontRedeclare",
       "{}DontRedeclare", "{}DontRedeclare");
 
-    compare(expected, dontRedeclares)(Elements.Functions.pqName(_))
+    compare(expected, dontRedeclares)(pqName(_))
   }
 
   def unions : XmlPaths = dontRedeclaresX | dontRedeclaresX | (dontRedeclaresX.\^)
@@ -118,7 +112,7 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
       "{}DontRedeclare", "{}DontRedeclare");
 
     compare(expected, unions)(
-      Elements.Functions.pqName(_))
+      pqName(_))
   }
 
   def parentsDuplicates : XmlPaths = dontRedeclaresX.\^
@@ -128,7 +122,7 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
     val expected = List("{urn:default}Default",
       "{}NoNamespace");
 
-    compare(expected, parentsDuplicates )(Elements.Functions.pqName(_))
+    compare(expected, parentsDuplicates )(pqName(_))
   }
     
   val allAttribsX = path.\\.*@
@@ -139,15 +133,13 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
   def testAllAttributes = {
     val expected = List("justHere:{urn:justHere}attr=only", "{}type=interesting", 
   			"ns1:{urn:prefix}attr=namespaced");
-    import Attributes.Functions._
-    compare( expected, allAttribs ){ implicit attr => pqName + "=" + value }
+    compare( expected, allAttribs ){ a => pqName(a) + "=" + value(a) }
   }
 
   def testChainedAttributes = {
     val expected = List("justHere:{urn:justHere}attr=only")
-    import Attributes.Functions._
     compare( expected, allAttribsX.*@(jh("attr")).*@(_.value == "only") ){
-      implicit attr => pqName + "=" + value }
+      a => pqName(a) + "=" + value(a) }
   }
 
   def testElementsWithAttributes = {
@@ -156,7 +148,7 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
     // the attrib list to boolean should get picked up
     compare( expected, path.\\*("NoNamespace").*{
       implicit p => p.\@("type").*@(_.value == "interesting")}) { 
-	Elements.Functions.pqName(_) }
+	pqName(_) }
   }
 
   def allElementsWithAttributes : XmlPaths = allAttribsX \^
@@ -165,38 +157,38 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
     val expected = List("{}NoNamespace", 
   			"ns1:{urn:prefix}prefixed");
     
-    compare( expected, allElementsWithAttributes ){ Elements.Functions.pqName(_) }
+    compare( expected, allElementsWithAttributes ){ pqName(_) }
   }
   
   def testElementText = {
     val expected = List("prefixed text")
-    compare(expected, path.\\*("urn:prefix" :: "prefixed")) { Elements.Functions.text(_) }
+    compare(expected, path.\\*("urn:prefix" :: "prefixed")) { text(_) }
   }
 
   def elementsPredicate : XmlPaths = path.\\*(_ === "prefixed text")
 
   def testElementPredicate = {
     val expected = List("ns1:{urn:prefix}prefixed")
-    compare(expected, elementsPredicate) { Elements.Functions.pqName(_) }
+    compare(expected, elementsPredicate) { pqName(_) }
   }
 
-  def normalizePredicate : XmlPaths = path.\\.*(Elements.Functions.normalizeSpace(_) == "start mix mode prefixed text end mix mode")
+  def normalizePredicate : XmlPaths = path.\\.*(normalizeSpace(_) == "start mix mode prefixed text end mix mode")
 
   def testNormalizePredicate = {
     val expected = List("{}NoNamespace")
-    compare(expected, normalizePredicate) { Elements.Functions.pqName(_) }
+    compare(expected, normalizePredicate) { pqName(_) }
   }
 
   def testCData = {
     // we have two nodes before so 3 whitespaces.  Of course we actually should be getting path as well I think...
     val expected = List("should not have to be & < escaped @ all \"\"&")
-    compare(expected, path.\\.cdata) { TextFunctions.value(_).trim }
+    compare(expected, path.\\.cdata) { value(_).trim }
   }
 
   def testComments = {
     val expected = List(" some comments are better than others ",
       " this wouldn't be one of them. ")
-    compare(expected, path.\+.comment) { TextFunctions.value(_) }
+    compare(expected, path.\+.comment) { value(_) }
   }
 
   /**
