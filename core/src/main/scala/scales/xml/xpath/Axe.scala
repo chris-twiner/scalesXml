@@ -3,8 +3,6 @@ package scales.xml.xpath
 import scales.xml._
 
 import scales.utils._
-import scala.collection.generic.CanBuildFrom
-import scales.utils.one
 
 /**
  * Unlike XPath spec no reverse axis are directly provided by the dsl

@@ -17,8 +17,13 @@ package object xml extends XmlTypes
   val defaultPathOptimisation : PathOptimisationStrategy[QNameToken] = QNameMemoryOptimisation
   val defaultOptimisation : MemoryOptimisationStrategy[QNameToken] = QNameMemoryOptimisation
 
+  val Functions = xpath.Functions
+
   // work around my own version of SI-5031
+  @deprecated(message="Please import Functions._ instead - since 0.3")
   val Attributes = xpath.Attributes
+  @deprecated(message="Please import Functions._ instead - since 0.3")
   val Elements = xpath.Elements
-  val TextFunctions = xpath.TextFunctions
+  @deprecated(message="Please import Functions._ instead - since 0.3")
+  val TextFunctions = xpath.OldTextFunctions
 }

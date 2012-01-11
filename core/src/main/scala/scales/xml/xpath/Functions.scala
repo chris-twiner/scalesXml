@@ -2,125 +2,313 @@ package scales.xml.xpath
 
 import scales.xml._
 import scales.utils._
-import scala.collection.generic.CanBuildFrom
-import scales.utils.one
-
-import ScalesXml._
 
 /**
- * Functions for use with attributes
- */
-object Attributes {
+ * Type class representing Xml objects which provide qnames.  Most of the
+ * functions allow for implicit scope to ease use in xpaths.
+ */ 
+trait Names[T] {
+  /**
+   * Returns the localName
+   */ 
+  def localName(implicit t : T) : String
 
-    /**
-     */
-    object Functions {
-
-      /** curried to allow direct drop in for predicates */
-      def localName(localName: String)(implicit attribute: AttributePath): Boolean = attribute.attribute.name.local == localName
-
-      /** curried to allow direct drop in for predicates */
-      def exact(qname: QName)(implicit attribute: AttributePath): Boolean = attribute.attribute.name === qname
-
-      /** returns the qname of an AttributePath, using implicit scope */
-      def qname(implicit attribute: AttributePath): String = attribute.attribute.name.qName
-
-      /** returns the pqName of an AttributePath, using implicit scope */
-      def pqName(implicit attribute: AttributePath): String = attribute.attribute.name.pqName
-
-      /** returns the value of an AttributePath, using implicit scope */
-      def value(implicit attribute: AttributePath): String = attribute.attribute.value
-
-      /** returns the value of an AttributePath, using implicit scope */
-      def text(implicit attribute: AttributePath) = value
-
-      /** true if the element contains this attribute */
-      def *@(qName: QName)(implicit path: XmlPath) = path.tree.section.attributes.contains(qName)
-
-    }
-
-    val *@ = (qName: QName) => (path: XmlPath) => Functions.*@(qName)(path)
-    val localName = (l: String) => (a: AttributePath) => Functions.localName(l)(a)
-    val exact = (q: QName) => (a: AttributePath) => Functions.exact(q)(a)
-  }
+  /** curried to allow direct drop in for predicates, if it is an item then it will return false */
+  def localName(localName : String)(implicit t : T ) : Boolean
+  
+  /**
+   * Does the qname match exactly (prefix included if present)
+   */ 
+  def exact(qname : QName)(implicit t : T ) : Boolean
 
   /**
-   * Functions related to text nodes
+   * Matches on prefix and namespace only
    */ 
-  object TextFunctions {
-
-    /**
-     * Either the value of an XmlItem or the direct text subchildren.
-     * @param xmlpath
-     * @return
-     */
-    def value(implicit xmlpath: XmlPath) =
-      if (xmlpath.isItem)
-        xmlpath.item.value
-      else
-        xmlpath.flatMap(x => if (isText(x)) Some(x.item.value)
-        else None).addString(new StringBuilder()).toString
-
-  }
+  def equivalent(qname : QName)(implicit t : T ) : Boolean
 
   /**
-   * Functions related to Elems, including the string( . ) xpath function
+   * Returns the XPath QName - prefix:local or local
    */ 
-  object Elements {
+  def qname(implicit t : T) : String
 
-    /**
-     * Only use these items on XmlPaths that are actual trees, doing otherwise is a runtime exception, if used in XPath predicates then they will always be trees.
-     *
-     * Note the majority of these functions have an implicit arguement that matches the current context of a given predicate.  This allows:
-     *
-     *
-     */
-    object Functions {
+  /**
+   * Returns the qualified name {namespace}local
+   */ 
+  def qualifiedName(implicit t : T) : String
 
-      /** curried to allow direct drop in for predicates, if it is an item then it will return false */
-      def localName(localName: String)(implicit path: XmlPath): Boolean = path.tree.section.name.local == localName
+  /**
+   * Returns either qualifiedName or prefix:{namespace}local when a prefix is present
+   */ 
+  def pqName(implicit t : T) : String
+}
 
-      /** curried to allow direct drop in for predicates, if it is an item then it will return false */
-      def exact(qname: QName)(implicit path: XmlPath): Boolean = path.tree.section.name === qname
+// Note - 2.8.x doesn't allow multiple implicit lists so we must combine them and duplicate the interface
 
-      /** returns the localname of an XmlPath, using implicit scope */
-      def localName(implicit path: XmlPath): String = path.tree.section.name.local
+/**
+ * Dummy implicit filler for easing interface issues
+ */ 
+class DIF()
 
-      /** returns the qname (pre:local) of an XmlPath, using implicit scope */
-      def qname(implicit path: XmlPath): String = path.tree.section.name.qName
+/**
+ * Collects all type class based xpath functions, exposed via Functions in package
+ */ 
+object Functions extends NameFunctions with TextFunctions {}
 
-      /** returns the qualified name ({namespace}local) of an XmlPath, using implicit scope */
-      def qualifiedName(implicit path: XmlPath): String = path.tree.section.name.qualifiedName
+/**
+ * Functions providing access to QNames
+ */ 
+trait NameFunctions {
+  /**
+   * Returns the localName
+   */ 
+  def localName[T](implicit t : T, name : Names[T], d : DIF) : String =
+    name.localName
 
-      /** returns the qname of an XmlPath with prefix if defined pre:{ns}qname, using implicit scope */
-      def pqName(implicit path: XmlPath): String = path.tree.section.name.pqName
+  /**
+   * Returns the localName
+   */ 
+  def localName[T](t : T)(implicit name : Names[T]) : String =
+    name.localName(t)
 
-      /** returns the text of an XmlPath, using implicit scope. Returns all text children joined, does not trim whitespace etc */
-      def text(implicit path: XmlPath): String = {
-        path.tree.fold(new StringBuilder()) { (walker, sb) =>
-          if (walker.isLeft) {
-            walker.left.get match {
-              case Text(text) => sb.append(text)
-              case _ => ()
-            }
-          }
-          sb
-        }.toString
+  /** curried to allow direct drop in for predicates, if it is an item then it will return false */
+  def localName[T](localName : String)(t : T)(implicit name : Names[T] ) : Boolean =
+    name.localName(localName)(t)
+
+  /** curried to allow direct drop in for predicates, if it is an item then it will return false */
+  def localName[T](localName : String)(implicit t : T, name : Names[T], d : DIF ) : Boolean =
+    name.localName(localName)    
+  
+  /**
+   * Does the qname match exactly (prefix included if present)
+   */ 
+  def exact[T](qname : QName)(implicit t : T, name : Names[T], d : DIF ) : Boolean =
+    name.exact(qname)
+
+  /**
+   * Does the qname match exactly (prefix included if present)
+   */ 
+  def exact[T](qname : QName)(t : T)(implicit name : Names[T] ) : Boolean =
+    name.exact(qname)(t)
+
+  /**
+   * Matches on prefix and namespace only
+   */ 
+  def equivalent[T](qname : QName)(implicit t : T, name : Names[T], d : DIF ) : Boolean = 
+    name.equivalent(qname)
+    
+  /**
+   * Matches on prefix and namespace only
+   */ 
+  def equivalent[T](qname : QName)(t : T)(implicit name : Names[T] ) : Boolean = 
+    name.equivalent(qname)(t)
+
+  /**
+   * Returns the XPath QName - prefix:local or local
+   */ 
+  def qname[T](implicit t : T, name : Names[T], d : DIF) : String = 
+    name.qname
+
+  /**
+   * Returns the XPath QName - prefix:local or local
+   */ 
+  def qname[T](t : T)(implicit name : Names[T]) : String = 
+    name.qname(t)
+
+  /**
+   * Returns the qualified name {namespace}local
+   */ 
+  def qualifiedName[T](implicit t : T, name : Names[T], d : DIF) : String =
+    name.qualifiedName
+
+  /**
+   * Returns the qualified name {namespace}local
+   */ 
+  def qualifiedName[T](t : T)(implicit name : Names[T]) : String =
+    name.qualifiedName(t)
+
+  /**
+   * Returns either qualifiedName or prefix:{namespace}local when a prefix is present
+   */ 
+  def pqName[T](implicit t : T, name : Names[T], d : DIF) : String =
+    name.pqName
+
+  /**
+   * Returns either qualifiedName or prefix:{namespace}local when a prefix is present
+   */ 
+  def pqName[T](t : T)(implicit name : Names[T]) : String =
+    name.pqName(t)
+}
+
+trait NamesImplicits {
+  // only used to seperate the interfaces, fully implicit gets this as well
+  implicit val dif = new DIF()
+
+  implicit val elemNames = ElemNames
+  implicit val xtreeNames = XmlTreeNames 
+  implicit val attribNames = AttributeNames
+  implicit val xpathNames = XmlPathNames
+}
+
+/**
+ * Base impl for QNames
+ */ 
+trait QNameUsers[T] extends Names[T] {
+
+  implicit def convert(t : T) : QName
+
+  /**
+   * Returns the localName
+   */ 
+  def localName(implicit t : T) : String = 
+    t.local
+
+  /** curried to allow direct drop in for predicates, if it is an item then it will return false */
+  def localName(localName : String)(implicit t : T ) : Boolean = 
+    t.local == localName
+  
+  /**
+   * Does the qname match exactly (prefix included if present)
+   */ 
+  def exact(qname : QName)(implicit t : T ) : Boolean = 
+    t === qname
+
+  /**
+   * Matches on prefix and namespace only
+   */ 
+  def equivalent(qname : QName)(implicit t : T ) : Boolean =
+    t =:= qname
+
+  /**
+   * Returns the XPath QName - prefix:local or local
+   */ 
+  def qname(implicit t : T) : String =
+    t.qName
+
+  /**
+   * Returns the qualified name {namespace}local
+   */ 
+  def qualifiedName(implicit t : T) : String =
+    t.qualifiedName
+
+  /**
+   * Returns either qualifiedName or prefix:{namespace}local when a prefix is present
+   */ 
+  def pqName(implicit t : T) : String =
+    t.pqName
+}
+
+object AttributeNames extends QNameUsers[Attribute] {
+  def convert(t : Attribute) : QName = EqualsHelpers.toQName(t.name)
+}
+
+object ElemNames extends QNameUsers[Elem] {
+  def convert(t : Elem) : QName = t.name
+}
+
+object XmlTreeNames extends QNameUsers[XmlTree] {
+  def convert(t : XmlTree) : QName = t.section.name
+}
+
+object XmlPathNames extends QNameUsers[XmlPath] {
+  def convert(t : XmlPath) : QName = t.tree.section.name
+}
+
+/**
+ * Type class for text values
+ */ 
+trait TextValue[T] {
+  /**
+   * The text value of a given object, .value for attributes & items, the accumalated text if its an elem
+   */
+  def text(implicit t : T) : String
+} 
+
+trait TextFunctions {
+  /**
+   * The text value of a given object, .value for attributes & items, the accumalated text if its an elem
+   */
+  def text[T](implicit t : T, value : TextValue[T], d : DIF ) : String =
+    value.text
+
+  /**
+   * XPath name for text
+   */ 
+  def string[T](implicit t : T, value : TextValue[T], d : DIF ) : String =
+    value.text
+
+  /**
+   * More readable version for XmlItems and Attributes, same as text
+   */ 
+  def value[T](implicit t : T, value : TextValue[T], d : DIF ) : String =
+    value.text
+ 
+  /**
+   * XPath normalize-space function, replaces all consecutive whitespace with " " and trims.
+   */
+  def normalizeSpace[T](implicit t : T, value : TextValue[T], d : DIF ) : String =
+    normalizeSpaceS(value.text)
+
+  /**
+   * The text value of a given object, .value for attributes & items, the accumalated text if its an elem
+   */
+  def text[T](t : T)(implicit value : TextValue[T]) : String =
+    value.text(t)
+
+  /**
+   * XPath name for text
+   */ 
+  def string[T](t : T)(implicit value : TextValue[T]) : String =
+    value.text(t)
+
+  /**
+   * More readable version for XmlItems and Attributes, same as text
+   */ 
+  def value[T](t : T)(implicit value : TextValue[T] ) : String =
+    value.text(t)
+ 
+  /**
+   * XPath normalize-space function, replaces all consecutive whitespace with " " and trims.
+   */
+  def normalizeSpace[T](t : T)(implicit value : TextValue[T] ) : String =
+    normalizeSpaceS(value.text(t))
+}
+
+trait TextImplicits {
+  implicit val xtreeText = XmlTreeText
+  implicit val attribText = AttributeText
+  implicit val xpathText = XmlPathText
+  implicit val itemText = XmlItemText
+}
+
+trait TextTrees[T] extends TextValue[T] {
+  def convert(t : T) : XmlTree
+
+  def text(implicit t: T): String = {
+    convert(t).fold(new StringBuilder()) 
+    { (walker, sb) =>
+      if (walker.isLeft) {
+        walker.left.get match {
+          case Text(text) => sb.append(text)
+          case _ => ()
+        }
       }
-
-      /**
-       * XPath standard name
-       */ 
-      def string(implicit path: XmlPath): String = text
-
-      def normalizeSpace(implicit path: XmlPath) = normalizeSpaceS(text)
-
-    }
-
-    val !! = (f: (XmlPath) => Boolean) => (a: XmlPath) => {
-      val res = f(a)
-      !res
-    }
-    val localName = (l: String) => (a: XmlPath) => Functions.localName(l)(a)
-    val exact = (q: QName) => (a: XmlPath) => Functions.exact(q)(a)
+     sb
+   }.toString
   }
+}
+
+object XmlTreeText extends TextTrees[XmlTree] {
+  def convert(t : XmlTree) : XmlTree = t
+}
+
+object XmlPathText extends TextTrees[XmlPath] {
+  def convert(t : XmlPath) : XmlTree = t.tree
+}
+
+object AttributeText extends TextValue[Attribute] {
+  def text(implicit a : Attribute) = a.value
+}
+
+object XmlItemText extends TextValue[XmlItem] {
+  def text(implicit a : XmlItem) = a.value
+}

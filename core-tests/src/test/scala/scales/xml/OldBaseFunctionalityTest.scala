@@ -1,13 +1,13 @@
 package scales.xml
 
-class BaseFunctionalityTest extends junit.framework.TestCase {
+@deprecated(message="No further tests will be added here, newer tests use Functions._ - since 0.3")
+class OldBaseFunctionalityTest extends junit.framework.TestCase {
 
   import junit.framework.Assert._
   import java.io._
   import scales.utils._
   import ScalesUtils._
   import ScalesXml._
-  import Functions._
 
   import strategies.TextNodeJoiner
 
@@ -34,11 +34,16 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
     mua.namespaces assert_=== mu.namespaces
   }
 
+  /* uncomment in times of need
+  def testPrint = {
+	  foldPrint(XmlOutput(System.out))(testXml)
+  }*/
+
   val prefixed = path.\*("NoNamespace").\*(Elements.localName("prefixed"))
 
   def testLocalNamePredicate = {
     assertTrue(prefixed.size == 1)
-    assertEquals(prefixedPQN, pqName(prefixed.head))
+    assertEquals(prefixedPQN, Elements.Functions.pqName(prefixed.head))
   }
 /* */
   def doAttrTest(res: Iterable[AttributePath]) {

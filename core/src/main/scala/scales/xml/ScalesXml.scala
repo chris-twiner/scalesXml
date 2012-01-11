@@ -10,7 +10,8 @@ trait ScalesXmlImplicits extends XmlTypesImplicits
   with TraxConversionImplicits 
   with XmlUtilsImplicits
   with OptimisingStrategiesImplicits
-  with serializers.SerializerImplicits {
+  with serializers.SerializerImplicits
+  with xpath.NamesImplicits {
 }
 
 object ScalesXml extends ScalesXmlImplicits
