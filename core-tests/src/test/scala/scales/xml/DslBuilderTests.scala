@@ -10,6 +10,8 @@ class DslBuildersTest extends junit.framework.TestCase {
 
   import ScalesXml._
 
+  import Functions._
+
   val ns = Namespace("test:uri")
   val nsa = Namespace("test:uri:attribs")
   val nsp = nsa.prefixed("pre")
@@ -49,7 +51,7 @@ class DslBuildersTest extends junit.framework.TestCase {
 
   def testQNames = {
     val builder = ns("Root") /( "Child"l ) // the l for localonly is needed to help the type checking
-    assertEquals("", builder.children(0).right.get.section.name.namespace.uri)
+    assertEquals("", namespaceUri(builder.children(0).getRight))
   }
 
   def testTextNodes = {

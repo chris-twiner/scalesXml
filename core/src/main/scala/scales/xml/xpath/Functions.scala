@@ -8,38 +8,12 @@ import scales.utils._
  * functions allow for implicit scope to ease use in xpaths.
  */ 
 trait Names[T] {
-  /**
-   * Returns the localName
-   */ 
-  def localName(implicit t : T) : String
-
-  /** curried to allow direct drop in for predicates, if it is an item then it will return false */
-  def localName(localName : String)(implicit t : T ) : Boolean
-  
-  /**
-   * Does the qname match exactly (prefix included if present)
-   */ 
-  def exact(qname : QName)(implicit t : T ) : Boolean
 
   /**
-   * Matches on prefix and namespace only
+   * Returns the QName
    */ 
-  def equivalent(qname : QName)(implicit t : T ) : Boolean
+  def name(implicit t : T) : QName
 
-  /**
-   * Returns the XPath QName - prefix:local or local
-   */ 
-  def qname(implicit t : T) : String
-
-  /**
-   * Returns the qualified name {namespace}local
-   */ 
-  def qualifiedName(implicit t : T) : String
-
-  /**
-   * Returns either qualifiedName or prefix:{namespace}local when a prefix is present
-   */ 
-  def pqName(implicit t : T) : String
 }
 
 // Note - 2.8.x doesn't allow multiple implicit lists so we must combine them and duplicate the interface
@@ -56,100 +30,147 @@ class DIF()
  */ 
 object Functions extends NameFunctions with TextFunctions {
   /**
-   * localName_== for XmlPaths
+   * hasLocalName for XmlPaths
    */ 
-  def localNameX_==( local : String ) : XmlPath => Boolean =
-    (x : XmlPath) =>XmlPathNames.localName(local)(x)
+  def hasLocalNameX( local : String ) : XmlPath => Boolean =
+    (x : XmlPath) => hasLocalName[XmlPath](local)(XmlPathNames)(x)
 
   /**
-   * localName_== for AttributePaths
+   * hasLocalName for AttributePaths
    */ 
-  def localNameA_==( local : String ) : AttributePath => Boolean =
-    (x : AttributePath) =>AttributePathNames.localName(local)(x)
+  def hasLocalNameA( local : String ) : AttributePath => Boolean =
+    (x : AttributePath) => hasLocalName[AttributePath](local)(AttributePathNames)(x)
 }
 
 /**
  * Functions providing access to QNames
  */ 
 trait NameFunctions {
+
+  private implicit def toQName[T]( t : T )(implicit name : Names[T]) =
+    name.name(t)
+  
   /**
    * Returns the localName
    */ 
   def localName[T](implicit t : T, name : Names[T], d : DIF) : String =
-    name.localName
+    t.local
 
   /**
    * Returns the localName
    */ 
   def localName[T](t : T)(implicit name : Names[T]) : String =
-    name.localName(t)
+    t.local
 
   /**
    * curried to allow direct drop in for predicates, if it is an item then it will return false
    */
-  def localName_==[T](localName : String)(implicit name : Names[T] ) : T => Boolean =
-    (t : T) => name.localName(localName)(t)
+  def hasLocalName[T](localName : String)(implicit name : Names[T] ) : T => Boolean =
+    (t : T) => t.local == localName
   
   /**
    * Does the qname match exactly (prefix included if present)
    */ 
-  def exact[T](qname : QName)(implicit t : T, name : Names[T], d : DIF ) : Boolean =
-    name.exact(qname)
-
-  /**
-   * Does the qname match exactly (prefix included if present)
-   */ 
-  def exact[T](qname : QName)(t : T)(implicit name : Names[T] ) : Boolean =
-    name.exact(qname)(t)
-
-  /**
-   * Matches on prefix and namespace only
-   */ 
-  def equivalent[T](qname : QName)(implicit t : T, name : Names[T], d : DIF ) : Boolean = 
-    name.equivalent(qname)
+  def isExactly[T](qname : QName)(implicit name : Names[T] ) :  T => Boolean =
+    (t : T) => t === qname
     
   /**
    * Matches on prefix and namespace only
    */ 
-  def equivalent[T](qname : QName, t : T)(implicit name : Names[T] ) : Boolean = 
-    name.equivalent(qname)(t)
+  def isEquivalent[T](qname : QName)(implicit name : Names[T] ) : T => Boolean =
+    (t : T) => t =:= qname
 
   /**
    * Returns the XPath QName - prefix:local or local
    */ 
   def qname[T](implicit t : T, name : Names[T], d : DIF) : String = 
-    name.qname
+    t.qName
 
   /**
    * Returns the XPath QName - prefix:local or local
    */ 
   def qname[T](t : T)(implicit name : Names[T]) : String = 
-    name.qname(t)
+    t.qName
+
+  /**
+   * Returns the XPath QName - prefix:local or local
+   */ 
+  def qName[T](implicit t : T, name : Names[T], d : DIF) : String = 
+    t.qName
+
+  /**
+   * Returns the XPath QName - prefix:local or local
+   */ 
+  def qName[T](t : T)(implicit name : Names[T]) : String = 
+    t.qName
+
+  /**
+   * Returns the QName
+   */ 
+  def name[T](implicit t : T, name : Names[T], d : DIF) : QName = t
+
+  /**
+   * Returns the QName
+   */ 
+  def name[T](t : T)(implicit name : Names[T]) : QName = t
 
   /**
    * Returns the qualified name {namespace}local
    */ 
   def qualifiedName[T](implicit t : T, name : Names[T], d : DIF) : String =
-    name.qualifiedName
+    t.qualifiedName
 
   /**
    * Returns the qualified name {namespace}local
    */ 
   def qualifiedName[T](t : T)(implicit name : Names[T]) : String =
-    name.qualifiedName(t)
+    t.qualifiedName
 
   /**
    * Returns either qualifiedName or prefix:{namespace}local when a prefix is present
    */ 
   def pqName[T](implicit t : T, name : Names[T], d : DIF) : String =
-    name.pqName
+    t.pqName
 
   /**
    * Returns either qualifiedName or prefix:{namespace}local when a prefix is present
    */ 
   def pqName[T](t : T)(implicit name : Names[T]) : String =
-    name.pqName(t)
+    t.pqName
+
+  /**
+   * Returns the namespace object
+   */ 
+  def namespace[T](implicit t : T, name : Names[T], d : DIF) : Namespace =
+    t.namespace
+
+  /**
+   * matches only the namespace
+   */
+  def hasNamespace[T](namespace : Namespace)(implicit name : Names[T]) : T => Boolean =
+    (t : T) => t.namespace == namespace
+
+  /**
+   * XPath namespace-uri function, returns the uri
+   */ 
+  def namespaceUri[T](implicit t : T, name : Names[T], d : DIF) : String =
+    t.namespace.uri
+
+  /**
+   * XPath namespace-uri function, returns the uri
+   */ 
+  def namespaceUri[T](t : T)(implicit name : Names[T]) : String =
+    t.namespace.uri
+
+  /**
+   * matches only the namespace
+   */
+  def hasNamespace[T](namespaceUri : String)(implicit name : Names[T]) : T => Boolean =
+    (t : T) => t.namespace.uri == namespaceUri
+
 }
+
+trait FunctionImplicits extends TextImplicits with NamesImplicits
 
 /**
  * Name type classes
@@ -163,74 +184,36 @@ trait NamesImplicits {
   implicit val xpathNames = XmlPathNames
   implicit val elemNames = ElemNames
   implicit val xtreeNames = XmlTreeNames 
+  implicit val qnameNames = QNameNames
+  implicit val aqnameNames = AQNameNames
 }
 
-/**
- * Base impl for QNames
- */ 
-trait QNameUsers[T] extends Names[T] {
-
-  implicit def convert(t : T) : QName
-
-  /**
-   * Returns the localName
-   */ 
-  def localName(implicit t : T) : String = 
-    t.local
-
-  /** curried to allow direct drop in for predicates, if it is an item then it will return false */
-  def localName(localName : String)(implicit t : T ) : Boolean = 
-    t.local == localName
-  
-  /**
-   * Does the qname match exactly (prefix included if present)
-   */ 
-  def exact(qname : QName)(implicit t : T ) : Boolean = 
-    t === qname
-
-  /**
-   * Matches on prefix and namespace only
-   */ 
-  def equivalent(qname : QName)(implicit t : T ) : Boolean =
-    t =:= qname
-
-  /**
-   * Returns the XPath QName - prefix:local or local
-   */ 
-  def qname(implicit t : T) : String =
-    t.qName
-
-  /**
-   * Returns the qualified name {namespace}local
-   */ 
-  def qualifiedName(implicit t : T) : String =
-    t.qualifiedName
-
-  /**
-   * Returns either qualifiedName or prefix:{namespace}local when a prefix is present
-   */ 
-  def pqName(implicit t : T) : String =
-    t.pqName
+object AttributeNames extends Names[Attribute] {
+  def name(implicit t : Attribute) : QName = EqualsHelpers.toQName(t.name)
 }
 
-object AttributeNames extends QNameUsers[Attribute] {
-  def convert(t : Attribute) : QName = EqualsHelpers.toQName(t.name)
+object AttributePathNames extends Names[AttributePath] {
+  def name(implicit t : AttributePath) : QName = EqualsHelpers.toQName(t.attribute.name)
 }
 
-object AttributePathNames extends QNameUsers[AttributePath] {
-  def convert(t : AttributePath) : QName = EqualsHelpers.toQName(t.attribute.name)
+object ElemNames extends Names[Elem] {
+  def name(implicit t : Elem) : QName = t.name
 }
 
-object ElemNames extends QNameUsers[Elem] {
-  def convert(t : Elem) : QName = t.name
+object XmlTreeNames extends Names[XmlTree] {
+  def name(implicit t : XmlTree) : QName = t.section.name
 }
 
-object XmlTreeNames extends QNameUsers[XmlTree] {
-  def convert(t : XmlTree) : QName = t.section.name
+object XmlPathNames extends Names[XmlPath] {
+  def name(implicit t : XmlPath) : QName = t.tree.section.name
 }
 
-object XmlPathNames extends QNameUsers[XmlPath] {
-  def convert(t : XmlPath) : QName = t.tree.section.name
+object QNameNames extends Names[QName] {
+  def name(implicit t : QName) : QName = t 
+}
+
+object AQNameNames extends Names[AttributeQName] {
+  def name(implicit t : AttributeQName) : QName = EqualsHelpers.toQName(t) 
 }
 
 /**

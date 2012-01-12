@@ -1,6 +1,6 @@
 package scales.xml
 
-@deprecated(message="No further tests will be added here, newer tests use Functions._ - since 0.3")
+@deprecated(message="No further tests will be added here, newer tests use Functions._, this is only here to make sure no bugs are in the OldFunctions - since 0.3")
 class OldBaseFunctionalityTest extends junit.framework.TestCase {
 
   import junit.framework.Assert._

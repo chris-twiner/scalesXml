@@ -34,7 +34,7 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
     mua.namespaces assert_=== mu.namespaces
   }
 // path.\*("NoNamespace").\*(localName_==("prefixed"))
-  val prefixed = path \* "NoNamespace" \* localNameX_==("prefixed")
+  val prefixed = path \* "NoNamespace" \* hasLocalNameX("prefixed")
 
   def testLocalNamePredicate = {
     assertTrue(prefixed.size == 1)
@@ -53,7 +53,7 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
   }
    
   def testLocalNamePredicateAttributesDirect = {
-    doAttrTest(prefixed \@ localNameA_==("attr"))
+    doAttrTest(prefixed \@ hasLocalNameA("attr"))
   }
 
   def testNSAttributes = {
@@ -69,7 +69,7 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
   }
 
   def testLocalNamePredicateAttributes = {
-    doAttrTest(prefixed.\.*@(localNameA_==("attr")))
+    doAttrTest(prefixed.\.*@(hasLocalNameA("attr")))
   }
 
   def doExistsTest( f : (XPath[_]) => XPath[_]) = {
@@ -79,7 +79,7 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
   }
 
   def testExistsAttributes = {
-    doExistsTest{ _ \* (_.*@("urn:prefix" :: "attr") ) }
+    doExistsTest{ _ \*{ p : XmlPath => p.*@("urn:prefix" :: "attr") } }
   }
  
   import TestUtils._
@@ -93,7 +93,7 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
     compare(expected, positionAllKids)(pqName(_))
   }
 
-  val dontRedeclaresX = path.\\.*(localNameX_==("DontRedeclare"))
+  val dontRedeclaresX = path.\\.*(hasLocalNameX("DontRedeclare"))
   def dontRedeclares : XmlPaths = dontRedeclaresX
 
   def testDescendentLocalNamePredicate = {
@@ -220,7 +220,7 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
     val expected = List("start mix mode","start mix mode")
     compare(expected, 
       parentTextNodesRepeats(path)
-      ) { TextFunctions.value(_).trim }
+      ) { value(_).trim }
   }
 
   def parentTextNodesMainRepeats : XmlPaths = path.\\.*("urn:default"::"ShouldRedeclare").\^.\+.text.pos(4)  |> { x => assertEquals("was not size 1", 1, x.path.nodes.size);x} 
@@ -229,7 +229,7 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
     val expected = one("start mix mode")
     compare(expected, 
       parentTextNodesMainRepeats
-      ) { TextFunctions.value(_).trim }
+      ) { value(_).trim }
   }
 
   def previousThenSibling : XmlPaths = path.\*("NoNamespace"l).\*.\.preceding_sibling_::.*.\.following_sibling_::.*
@@ -239,7 +239,7 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
 			"{urn:default}ShouldRedeclare",
 			"ns1:{urn:prefix}prefixed")
     compare(expected, previousThenSibling )
-    { Elements.Functions.pqName(_) }
+    { pqName(_) }
   }
 
   val utf8 = {
@@ -252,9 +252,8 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
 
   def testLazyViewed : Unit = {
     var res : List[XmlPath] = Nil
-    import Elements.localName
-
-    val paths = viewed(path).\\.*(localName("DontRedeclare")).
+    
+    val paths = viewed(path).\\*(hasLocalNameX("DontRedeclare")).
       filter{
 	path => 
 	  res = path :: res
@@ -273,9 +272,8 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
 
   def testEager : Unit = {
     var res : List[XmlPath] = Nil
-    import Elements.localName
 
-    val paths = eager(path).\\.*(localName("DontRedeclare")).
+    val paths = eager(path).\\.*(hasLocalNameX("DontRedeclare")).
       filter{
 	path => 
 	  res = path :: res
@@ -298,7 +296,7 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
     val expected = List("", "", "", "", "", "start mix mode", "prefixed text", "end mix mode",
       "\"\n\t" + utf8,
       "mix it up some more", "", "")
-    compare(expected, path.\\.textOnly) { TextFunctions.value(_).trim }
+    compare(expected, path.\\.textOnly) { value(_).trim }
   }
 
   def textP( path : XmlPath ) : XmlPaths = path.\\.text
@@ -316,7 +314,7 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
       "mix it up some more",
       "", "")
     // we, like Jaxen work correctly, Saxon can't see the n-3 and 4
-    compare( expected, textP(path)){ TextFunctions.value(_).trim }
+    compare( expected, textP(path)){ value(_).trim }
   }
 
   def followingSiblings : XmlPaths = path.\\.*.\.following_sibling_::.*(2)
@@ -327,7 +325,7 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
 			"ns1:{urn:prefix}prefixed");
     compare(expected,
       followingSiblings
-      ) { Elements.Functions.pqName(_) }
+      ) { pqName(_) }
   }
 
   def precedingSiblings : XmlPaths  = path.\\.*.\.preceding_sibling_::.*(2)
@@ -338,20 +336,22 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
 			"{}DontRedeclare");
     compare(expected,
       precedingSiblings
-      ) { Elements.Functions.pqName(_) }
+      ) { pqName(_) }
   }
 
-  def descendantSingleRoot : XmlPaths = path.\.descendant_::.*(Elements.localName("DontRedeclare")).pos(1)
+  val loDontRedeclare = hasLocalNameX("DontRedeclare")
+
+  def descendantSingleRoot : XmlPaths = path.\.descendant_::.*(loDontRedeclare).pos(1)
 
   // greedily swallows up, doesn't flatmap
   def testDescendantSingleRoot = {
     val expected = one("{urn:default}DontRedeclare")
     compare(expected,
       descendantSingleRoot
-      ) { Elements.Functions.pqName(_) }
+      ) { pqName(_) }
   }
 
-  def descendantMultipleRoots : XmlPaths = path.\\.descendant_::.*(Elements.localName("DontRedeclare")).*(1)
+  def descendantMultipleRoots : XmlPaths = path.\\.descendant_::.*(loDontRedeclare).*(1)
 
   // two paths are opened up by \\ so it greedily works on two paths
   def testDescendantMultipleRoots = {
@@ -359,76 +359,72 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
 			"{}DontRedeclare")
     compare(expected,
       descendantMultipleRoots
-      ) { Elements.Functions.pqName(_) }
+      ) { pqName(_) }
   }
 
-  def descendantMultipleRootsGt1 : XmlPaths = path.\\.descendant_::.*(Elements.localName("DontRedeclare")).pos_>(1)
+  def descendantMultipleRootsGt1 : XmlPaths = path.\\.descendant_::.*(loDontRedeclare).pos_>(1)
  
   def testDescendantMultipleRootsGt1 = {
     val expected = List("{}DontRedeclare",
 			"{}DontRedeclare")
     compare(expected,
       descendantMultipleRootsGt1
-      ) { Elements.Functions.pqName(_) }
+      ) { pqName(_) }
   }
   
-  def descendantMultipleRootsLt2 : XmlPaths = path.\\.descendant_::.*(Elements.localName("DontRedeclare")).*.pos_<(2)
+  def descendantMultipleRootsLt2 : XmlPaths = path.\\.descendant_::.*(loDontRedeclare).*.pos_<(2)
 
   def testDescendantMultipleRootsLt2 = {
     val expected = List("{urn:default}DontRedeclare",
 			"{}DontRedeclare")
     compare(expected,
       descendantMultipleRootsLt2
-      ) { Elements.Functions.pqName(_) }
+      ) { pqName(_) }
   }
 
   def descendantText : XmlPaths = {
-    import TextFunctions.{value => tvalue}
-    path.\\.descendant_::.text.filter{ implicit p => tvalue.trim.length > 2}.pos_==(3)
+    path.\\.descendant_::.text.filter{ value(_).trim.length > 2}.pos_==(3)
   }
 
   // /descendant::text()[string-length(normalize-space(.)) > 2][3] "end mix mode"
   /** descendant doesn't just work on elems */ 
   def testDescendantText = {
-    import TextFunctions.{value => tvalue}
     val expected = one("end mix mode")
 
     compare(expected, 
       descendantText
-      ) { tvalue(_).trim }
-  } 
+      ) { value(_).trim }
+  }
 
   val nestedXmlFile = resource(this, "/data/Nested.xml")
   val nestedXml = loadXml(nestedXmlFile)
   val nested = top(nestedXml)
 
   def descendantTextNested : XmlPaths = {
-    import TextFunctions.{value => tvalue}
-    nested.\.descendant_::.text.filter{ implicit p => tvalue.trim.length > 2}      
+    nested.\.descendant_::.text.filter{ value(_).trim.length > 2}      
   }
 
   // this one doesn't test alot directly, its more of a sanity mechanism
   def testDescendantTextNested = {
-    import TextFunctions.{value => tvalue}
     val expected = List("start mix mode","end mix mode")
 
     compare(expected, 
       descendantTextNested
-      ) { tvalue(_).trim }
+      ) { value(_).trim }
   } 
 
-  def descendantSingleRootNested : XmlPaths = nested.\.descendant_::.*(Elements.localName("DontRedeclare")).pos(1)
+  def descendantSingleRootNested : XmlPaths = nested.\.descendant_::.*(loDontRedeclare).pos(1)
 
   // again sanity
   def testDescendantSingleRootNested = {
     val expected = one("{urn:default}DontRedeclare")
     compare(expected,
       descendantSingleRootNested
-      ) { Elements.Functions.pqName(_) }
+      ) { pqName(_) }
   }
 
   def descendantMultipleRootsNested : XmlPaths = 
-    nested.\\.descendant_::.*(Elements.localName("DontRedeclare")).*(1)
+    nested.\\.descendant_::.*(loDontRedeclare).*(1)
 
   // two paths are opened up by \\ so it greedily works on two paths
   def testDescendantMultipleRootsNested = {
@@ -440,11 +436,11 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
 			"{}DontRedeclare")
     compare(expected,
       descendantMultipleRootsNested
-      ) { Elements.Functions.pqName(_) }
+      ) { pqName(_) }
   }
  
   def descendantMultipleRootsGt1Nested : XmlPaths = 
-    nested.\\.descendant_::.*(Elements.localName("DontRedeclare")).pos_>(1)
+    nested.\\.descendant_::.*(loDontRedeclare).pos_>(1)
 
   def testDescendantMultipleRootsGt1Nested = {
     val expected = List("{}DontRedeclare",
@@ -459,11 +455,11 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
 			"{}DontRedeclare")
     compare(expected,
       descendantMultipleRootsGt1Nested
-      ) { Elements.Functions.pqName(_) }
+      ) { pqName(_) }
   }
 
   def descendantMultipleRootsLt2Nested : XmlPaths =
-    nested.\\.descendant_::.*(Elements.localName("DontRedeclare")).*.pos_<(2)
+    nested.\\.descendant_::.*(loDontRedeclare).*.pos_<(2)
   
   def testDescendantMultipleRootsLt2Nested = {
     val expected = List("{urn:default}DontRedeclare",
@@ -474,7 +470,7 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
 			"{}DontRedeclare")
     compare(expected,
       descendantMultipleRootsLt2Nested
-      ) { Elements.Functions.pqName(_) }
+      ) { pqName(_) }
   }
 
   def lastEq : XmlPaths = path.\\*.last_==(4)
@@ -487,7 +483,7 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
 			"ns1:{urn:prefix}prefixed")
     compare(expected,
       lastEq
-      ) { Elements.Functions.pqName(_) }
+      ) { pqName(_) }
   }
 
   def lastLt : XmlPaths = path.\\*("DontRedeclare"l).last_<(3)
@@ -498,7 +494,7 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
 			"{}DontRedeclare")
     compare(expected,
       lastLt
-      ) { Elements.Functions.pqName(_) }
+      ) { pqName(_) }
   }
 
   def lastGt : XmlPaths = path.\\*.last_>(1)
@@ -513,7 +509,7 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
 			"ns1:{urn:prefix}prefixed")
     compare(expected,
       lastGt
-      ) { Elements.Functions.pqName(_) }
+      ) { pqName(_) }
   }
 
   def posIsLast : XmlPaths = path.\*.\\*.pos_eq_last
@@ -524,7 +520,7 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
 			"ns1:{urn:prefix}prefixed")
     compare(expected,
       posIsLast
-      ) { Elements.Functions.pqName(_) }
+      ) { pqName(_) }
   }
 
   def posIsLastFromRoot : XmlPaths = path.\\*.pos_eq_last
@@ -536,7 +532,7 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
 			"ns1:{urn:prefix}prefixed")
     compare(expected,
       posIsLastFromRoot
-      ) { Elements.Functions.pqName(_) }
+      ) { pqName(_) }
   }
 
   def textPosIsLast : XmlPaths = path.\\.text.pos_eq_last
@@ -549,6 +545,6 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
 
     compare(expected,
       textPosIsLast
-      ) { TextFunctions.value(_).trim }
+      ) { value(_).trim }
   }
 }
