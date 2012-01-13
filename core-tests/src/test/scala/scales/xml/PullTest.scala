@@ -9,6 +9,8 @@ class PullTest extends junit.framework.TestCase {
   import ScalesUtils._
   import ScalesXml._
 
+  import Functions._
+
   val Default = Namespace("urn:default")
   val DefaultRoot = Default("Default")
 
@@ -605,7 +607,7 @@ at=0
     def isDone( i : Int, res : ResumableIterList[PullType,QNamesMatch]) = 
       res match {
 	case Done(((QNames, Some(x)) :: Nil,cont), y)  => 
-	  assertEquals( "interesting content "+ i, Elements.Functions.text(x))
+	  assertEquals( "interesting content "+ i, text(x))
 	  assertEquals(1, x.zipUp.children.size)
 	  assertTrue("should have been Empty "+i, isEmpty(res))
 	case Done((list, cont), y) => 
@@ -652,12 +654,12 @@ at += 1
 	case Done(((QNames, Some(x)) :: Nil,cont), y)  =>
 	  // we want to see both sub text nodes
 	  assertEquals( "interesting content "+ i +"interesting content "+ (i + 1)
-		       , Elements.Functions.text(x))
+		       , text(x))
 	  val count = x.zipUp.children.size
 	  if (count != 1){
 	    x.zipUp.children.foreach{x => println(x);println()}
 	    printTree(rootPath(x).tree)
-	    fail("more than one " + count +" at "+ println(x.tree.section))
+	    fail("more than one " + count +" at "+ println(elem(x)))
 	  }
 	  assertTrue("should have been Empty "+i, isEmpty(res))
 	case Done((list, cont), y) => 
@@ -696,7 +698,7 @@ at += 1
 	case Done(((repeatingQNames, Some(x)) :: Nil,cont), y)  =>
 	  // we want to see both sub text nodes
 	  assertEquals( "content "+ (i + 1)
-		       , Elements.Functions.text(x))
+		       , text(x))
 	  assertEquals(1, x.zipUp.children.size)
 	  assertTrue("should have been Empty "+i, isEmpty(res))
 	case Done((list, cont), y) => 
@@ -771,7 +773,7 @@ at += 1
 	case Done(((QNames, Some(x)) :: Nil,cont), y)  =>
 	  // we want to see both sub text nodes
 	  assertEquals( content+" "+ i
-		       , Elements.Functions.text(x))
+		       , text(x))
 	  assertEquals(1, x.zipUp.children.size)
 	  assertTrue("should have been Empty "+i, isEmpty(res))
 	case Done((list, cont), y) => 
@@ -872,8 +874,6 @@ at += 1
 
     val iter = withHeaders(ourMax).iterator
 
-    import Elements.Functions.text
-
     val total = foldOnDone(iter)( (0, 0), ionDone ){ 
       (t, qnamesMatch) =>
 	if (qnamesMatch.size == 0) {
@@ -922,8 +922,6 @@ at += 1
   type FiveStrings = (String,String,String,String,String)
 
   def testIterator = {
-    import Attributes.Functions.text
-    import TextFunctions.value
     val pull = pullXml(sresource(this, "/data/svnLogIteratorEg.xml"))
     val LogEntries = List("log"l,"logentry"l)
 
@@ -952,10 +950,6 @@ at += 1
   val expectedHead = ("264","chris.twiner","dir","M","/trunk/scalesUtils")
 
   def testIteratorCombo = {
-//    import XmlPaths._
-//    import XmlPaths.Implicits._
-    import Attributes.Functions.text
-    import TextFunctions.value
     val pull = pullXml(sresource(this, "/data/svnLogIteratorEg.xml"))
     val LogEntries = List("log"l,"logentry"l)
     val ionDone = onDone(List(onQNames(LogEntries)))
@@ -982,8 +976,6 @@ at += 1
     assertEquals(("51","chris.twiner","dir","A","/trunk/scalesUtils"),entries.last)
     //entries.foreach(println)
   }
-
-  import Elements.Functions.qualifiedName
 
   def testSkipTop = { 
     val iter = events(10).iterator

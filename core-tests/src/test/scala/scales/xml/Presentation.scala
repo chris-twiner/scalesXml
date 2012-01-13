@@ -5,6 +5,8 @@ import ScalesUtils._
 import scales.xml._
 import ScalesXml._
 
+import Functions._
+
 /**
  * Code used in the intro presentation.  Variables aren't re-used as the functions
  * are meant to standalone as piccies in the pressy.
@@ -141,8 +143,6 @@ object Presentation {
     val builder = <("root"l) /( bits(0).take(6) )
     println("transformations "+ asString(builder))
     
-    import Elements.Functions.normalizeSpace
-
     val subnodes = top(builder).\\.*("subnode"l)
     val folded = foldPositions( subnodes )( p => 
       Replace( p.tree ~> ((normalizeSpace( p ).toInt + 1).toString) toTree ) )
@@ -171,8 +171,6 @@ object Presentation {
   }
 
   def iterateEg {
-    import Attributes.Functions.text
-    import TextFunctions.value
     val pull = pullXml(resource(this, "/data/svnLogIteratorEg.xml"))
 
     // here is the cool bit, only this repeating path is interesting
@@ -195,8 +193,6 @@ object Presentation {
   }
 
   def foldNames {
-    import Attributes.Functions.text
-    import TextFunctions.value
     val pull = pullXml(resource(this, "/data/svnLogIteratorEg.xml"))
 
     // Who touched what file at what revision

@@ -4,9 +4,8 @@ import scales.utils._
 import ScalesUtils._
 import scales.xml._
 import ScalesXml._
-//import org.jaxen._
 
-//import strategies._
+import Functions._
 
 class JaxenBaseFunctionalityTest extends BaseFunctionalityTest {
 
@@ -58,7 +57,7 @@ class JaxenBaseFunctionalityTest extends BaseFunctionalityTest {
   def testLocalNamePredicateJaxen = {
     val res = fromPathX(jprefixedPath)
     assertTrue(res.size == 1)
-    assertEquals(prefixedPQN, Elements.Functions.pqName(res.head))
+    assertEquals(prefixedPQN, pqName(res.head))
   }
 
   def testNSAttributesJaxen = {
@@ -79,7 +78,7 @@ class JaxenBaseFunctionalityTest extends BaseFunctionalityTest {
   def testExistsAttributesJaxen = {
     val res = fromPathX("/*/NoNamespace/*[ @pre:attr ]")
     assertTrue("Did not find the attr in an element", res.size == 1)
-    assertEquals("prefixed", Elements.Functions.localName(res.head))
+    assertEquals("prefixed", localName(res.head))
   }
  
   import TestUtils._
@@ -201,13 +200,13 @@ class JaxenBaseFunctionalityTest extends BaseFunctionalityTest {
     doTestAll("following", _.following_::)
 
   def doTestAll(str : String, p : scales.xml.XPath[List[XmlPath]] => scales.xml.XPath[List[XmlPath]]) = {
-    val expected = fromPathX("//"+str+"::*", nested).map(Elements.Functions.pqName(_))
+    val expected = fromPathX("//"+str+"::*", nested).map(pqName(_))
   //  println("expected")
     //expected foreach println
 
     compare( expected ,
       //p(nested .\\).
-	nested.\\.|>(p).*.map(Elements.Functions.pqName(_)) 
+	nested.\\.|>(p).*.map(pqName(_)) 
       ) {identity}
   }
 

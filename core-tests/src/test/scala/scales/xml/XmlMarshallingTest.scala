@@ -15,6 +15,8 @@ class XmlMarshallingTest extends junit.framework.TestCase {
   import ScalesUtils._
   import ScalesXml._
 
+  import Functions._
+
   val ns = Namespace("urn:test:uri")
   val nsa = Namespace("urn:test:uri:attribs")
   val nsp = nsa.prefixed("pre")
@@ -68,7 +70,7 @@ class XmlMarshallingTest extends junit.framework.TestCase {
     //printTree(builder)
     val marshalled = readBack(builder)
     //printTree(marshalled)
-    assertEquals( "A Value" , Elements.Functions.text(top(marshalled)))
+    assertEquals( "A Value" , text(top(marshalled)))
   }
 
   def testElemsDefaultNS_S = 

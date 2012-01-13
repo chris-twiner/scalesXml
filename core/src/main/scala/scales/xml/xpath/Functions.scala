@@ -282,6 +282,7 @@ trait TextImplicits {
   implicit val attribPathText = AttributePathText
   implicit val xpathText = XmlPathText
   implicit val itemText = XmlItemText
+  implicit val itemOrElemText = ItemOrElemText
 }
 
 object XmlTreeText extends TextValue[XmlTree] {
@@ -302,6 +303,11 @@ object XmlTreeText extends TextValue[XmlTree] {
 object XmlPathText extends TextValue[XmlPath] {
   def text(implicit t : XmlPath) = 
     t.focus(_.value, XmlTreeText.text(_))
+}
+
+object ItemOrElemText extends TextValue[ItemOrElem] {
+  def text(implicit t : ItemOrElem) =
+    t.fold(_.value, XmlTreeText.text(_))
 }
 
 object AttributeText extends TextValue[Attribute] {

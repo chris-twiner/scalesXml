@@ -9,6 +9,8 @@ class SaxonBaseFunctionalityTest extends BaseFunctionalityTest {
   import ScalesXml._
   import TestUtils._
 
+  import Functions._
+
   val dom = {
     val dbf = javax.xml.parsers.DocumentBuilderFactory.newInstance
     dbf.setNamespaceAware(true)
@@ -25,19 +27,19 @@ class SaxonBaseFunctionalityTest extends BaseFunctionalityTest {
 
   def testElementTextSaxon = {
     val expected = List("prefixed text")
-    compare(expected, path.\\.*("urn:prefix" :: "prefixed")) { Elements.Functions.text(_) }
+    compare(expected, path.\\.*("urn:prefix" :: "prefixed")) { text(_) }
     compare(expected, nodeSet("//*[local-name()='prefixed' and namespace-uri()='urn:prefix']", dom)) { _.getTextContent.trim }
   }
 
   def testElementPredicateSaxon = {
     val expected = List("ns1:{urn:prefix}prefixed")
-    compare(expected, path.\\.*(_ === "prefixed text")) { Elements.Functions.pqName(_) }
+    compare(expected, path.\\.*(_ === "prefixed text")) { pqName(_) }
     compare(expected, nodeSet("//*[. = 'prefixed text']", dom)) { x => x.getPrefix + ":" + qname(x) }
   }
 
   def testNormalizePredicateSaxon = {
     val expected = List("{}NoNamespace")
-    compare(expected, path.\\.*(Elements.Functions.normalizeSpace(_) == "start mix mode prefixed text end mix mode")) { Elements.Functions.pqName(_) }
+    compare(expected, path.\\.*(normalizeSpace(_) == "start mix mode prefixed text end mix mode")) { pqName(_) }
     compare(expected, nodeSet("//*[normalize-space(.) = 'start mix mode prefixed text end mix mode']", dom)) { qname(_) }
     // /*(fn:normalize-space(.) = 'start mix mode prefixed text end mix mode'
   }

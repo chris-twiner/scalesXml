@@ -68,7 +68,7 @@ class DslBuildersTest extends junit.framework.TestCase {
 
     assertTrue("Should have had only 1 child", reset.children.size == 1)
     assertTrue("Only child should be a text node", reset.children(0).isLeft)
-    assertEquals("Just the facts mam", reset.children(0).left.get.value)
+    assertEquals("Just the facts mam", value(reset.children(0)))
   }
 
   def testQNameMatchers : Unit = {
@@ -266,7 +266,7 @@ class DslBuildersTest extends junit.framework.TestCase {
     val fredpos = fredi.head.position
     val res = moveTo(childi.head, fredpos)
 
-    assertEquals(ns("fred"),res.tree.section.name)
+    assertEquals(ns("fred"), name(res.tree))
   }
 
   def testReplace = {
@@ -279,7 +279,7 @@ class DslBuildersTest extends junit.framework.TestCase {
     
     assertTrue("Could not find a child below", subchildi.size == 1)
     
-    assertEquals(ns("SubChild"),subchildi.head.tree.section.name)
+    assertEquals(ns("SubChild"),name(subchildi.head.tree))
   }
 
   def testNestedReplace = {
@@ -315,7 +315,7 @@ class DslBuildersTest extends junit.framework.TestCase {
     val otherchildi = newRoot.\*
     
     assertTrue("Should have two other children", otherchildi.size == 2)
-    assertEquals(ns("Child2"),otherchildi.head.tree.section.name)
+    assertEquals(ns("Child2"), name(otherchildi.head.tree))
   }
 
   def testAddBefore = {
@@ -331,8 +331,8 @@ class DslBuildersTest extends junit.framework.TestCase {
     
     assertTrue("Fred only has one child", freds.size == 2)
     
-    assertEquals(ns("Before"),freds.head.tree.section.name)
-    assertEquals(ns("Child"),freds.last.tree.section.name)
+    assertEquals(ns("Before"),name(freds.head.tree))
+    assertEquals(ns("Child"),name(freds.last.tree))
   }
 
   def testAddAfter = {
@@ -348,8 +348,8 @@ class DslBuildersTest extends junit.framework.TestCase {
     
     assertTrue("Fred only has one child", freds.size == 2)
     
-    assertEquals(ns("Child"),freds.head.tree.section.name)
-    assertEquals(ns("After"),freds.last.tree.section.name)
+    assertEquals(ns("Child"),name(freds.head.tree))
+    assertEquals(ns("After"),name(freds.last.tree))
   }
 
   def testCombinedSimpleFolds = {
@@ -357,11 +357,10 @@ class DslBuildersTest extends junit.framework.TestCase {
     //printTree(builder.toTree)
     val all = top(builder).\\.*
 
-    import Elements.Functions.localName 
     assertEquals("i0,i2,i3,i40,i20,i5,i7,i10,i50,i11,i14",all.map(localName(_)).mkString(",") )
 
-    val folded = foldPositions(all)( implicit p =>
-      localName match {
+    val folded = foldPositions(all)( p =>
+      localName(p) match {
 	// test inserting before the start
 	case "i2" => AddBefore( ns("i1") )
 	// replace in the middle
@@ -396,11 +395,10 @@ class DslBuildersTest extends junit.framework.TestCase {
     //printTree(builder.toTree)
 
     val all = top(builder).\\.*
-    import Elements.Functions.localName 
     assertEquals("i0,i1,i30,i70,i100",all.map(localName(_)).mkString(",") )
 
     val folded = foldPositions(all)( p =>
-      p.tree.section.name.local match {
+      localName(p.tree) match {
 	case "i30" => Replace(ns("i2"), ns("i3") )
 	case "i70" => Replace(ns("i4"), ns("i5") , ns("i6") ,ns("i7") )
 	case "i100" => Replace(ns("i8"), ns("i9") , ns("i10") ) 
@@ -456,8 +454,6 @@ class DslBuildersTest extends junit.framework.TestCase {
 
     val builder = <("root"l) /( bits(0).take(6) )
     
-    import Elements.Functions.normalizeSpace
-
     /* <solution> although I'm also adding not just setting to "2" for testing purposes */
     val subnodes = top(builder).\\.*("subnode"l)
     val folded = foldPositions( subnodes )( p => 
@@ -477,10 +473,10 @@ class DslBuildersTest extends junit.framework.TestCase {
   // variation on id setting but with combination of the operations
   def testIdAndBlahAndFailOnNoPathsSetting = {
     def toId( id : String )( op : XmlPath ) =
-      foldPositions( top(op.tree).\.\\.*@("id").\^ ){ p => Replace(p.tree.section /@("id"-> id) toTree) }
+      foldPositions( top(op.tree).\.\\.*@("id").\^ ){ p => Replace(elem(p) /@("id"-> id) toTree) }
 
     val toBlahs = ( op : XmlPath ) =>
-      foldPositions( top(op.tree).\.\\.*@("blah").\^ ){ p => Replace(p.tree.section /@("blah"-> "blahs") toTree) }
+      foldPositions( top(op.tree).\.\\.*@("blah").\^ ){ p => Replace(elem(p) /@("blah"-> "blahs") toTree) }
 
     val willFail = ( op : XmlPath ) =>
       foldPositions( top(op.tree).\.\\.*@("orange_raspberries").\^ ){ p => AsIs() }
@@ -489,7 +485,7 @@ class DslBuildersTest extends junit.framework.TestCase {
 
     val foos = top(fooIdBuilder).\*
     val folded = foldPositions( foos )( p => 
-      ReplaceWith( willFail | clearFail | toBlahs & toId( p.tree.section.attributes("id"l).get.value) ) )
+      ReplaceWith( willFail | clearFail | toBlahs & toId( elem(p).attributes("id"l).get.value) ) )
     
     assertTrue("Was not left, was " + folded, folded.isLeft)
     val newRoot = folded.left.get
@@ -497,7 +493,7 @@ class DslBuildersTest extends junit.framework.TestCase {
     val fooos = newRoot.\\.*("foo" localOnly)
 
     fooos.foreach{ a =>
-      val id = a.tree.section.attributes("id").get.value
+      val id = elem(a).attributes("id").get.value
 
       a.\\.*@("id").foreach(
 	i => assertEquals(id, i.value))
@@ -509,7 +505,7 @@ class DslBuildersTest extends junit.framework.TestCase {
   def testSimpleConvert = {
     val orig = <root><child/></root>
     val converted = orig.asScales
-    assertEquals("root", converted.rootElem.section.name.local)
+    assertEquals("root", localName(converted.rootElem))
   }
 
   def testEmbedElems = {
@@ -529,7 +525,7 @@ class DslBuildersTest extends junit.framework.TestCase {
 
   def testBuilderFold : Unit = {
     val b = builderFold.fold{ _.\*(ns("i40")) }{
-      p => Replace(p.tree.section /@("blah"-> "blahs") toTree)
+      p => Replace(elem(p) /@("blah"-> "blahs") toTree)
     }
     
     assertTrue("should have been left", b.isLeft)
