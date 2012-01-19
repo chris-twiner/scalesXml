@@ -76,21 +76,9 @@ object ScalesXmlRoot extends Build {
       key(":formatting-prefs"), sexp(
         key(":spaceBeforeColon"), true
       )
-    ),
-    setSM <<= streams map 
-      { (s: TaskStreams) =>
-	s.log.info("Setting the security manager")
-        s
-      },
-    runItSecurely <<= (setSM, (test in Test).task) flatMap { 
-	(s, test) => s.log.info("Running the tests")
-	test },
-    runSecurely <<= streams map 
-      { (s: TaskStreams) =>
-	s.log.info("Resetting the security manager")
-      } dependsOn(runItSecurely)
+    )
     , parallelExecution in runSecurely := false
-  )
+  )// ++ crazyness
 
   val reconPerf = TaskKey[Unit]("recon-perf")
 
@@ -124,4 +112,24 @@ object ScalesXmlRoot extends Build {
   val runItSecurely = TaskKey[Unit]("run-it-securely")
 
   val setSM = TaskKey[TaskStreams]("set-security-manager")
+
+  val semaphore = new java.util.concurrent.Semaphore(1, true)
+
+  def crazyness : Seq[sbt.Project.Setting[_]] = Seq(    
+    setSM <<= streams map 
+      { (s: TaskStreams) =>
+	s.log.info("Setting the security manager")
+        //semaphore.acquire
+        s
+      },
+    runItSecurely <<= (setSM, (test in Runtime).task) flatMap { 
+	(s, testt) => s.log.info("Running the tests")
+	testt },
+    runSecurely <<= streams map 
+      { (s: TaskStreams) =>
+	s.log.info("Resetting the security manager")
+	//semaphore.release
+      } dependsOn(runItSecurely)
+    )
+
 }

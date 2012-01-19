@@ -6,6 +6,11 @@ import org.ensime.sbt.Plugin.Settings.ensimeConfig
 import org.ensime.sbt.util.SExp._
 import Defaults._
 
+import java.io.File
+
+import IO._
+import Path._
+
 object Utils {
 
   /**
@@ -37,4 +42,260 @@ object Utils {
       }
     }
 
+
+  lazy val utf8 = java.nio.charset.Charset.forName("UTF-8")
+
+  /**
+   * I don't find the orElse helps with reading ~> seems to indicate flow more
+   */ 
+  implicit def toSquiglyOrElseAndCata[A]( option : => Option[A] ) = new {
+    // cache it, just evaluating the option when creating forces it twice when used with ~~>
+    lazy val eoption = option
+    def ~~>[B >: A](alternative : => Option[B]) : Option[B] = eoption.orElse(alternative)
+    def fold[B]( whenFull : (A) => B, whenEmpty : => B) = 
+      if (eoption.isDefined) 
+	whenFull(eoption.get)
+      else
+	whenEmpty
+  }
+
+  /**
+   * For forcing token evaluation
+   */ 
+  implicit def evalVals( orig : Map[String, ()=>String] ) : Map[String, String] = Map[String,String]() ++ orig.map((x) => (x._1,x._2()))
+
+  /**
+   * doesn't force the original not to exist.
+   */
+  def copyDir(source: File, target: File, filterOut : Iterable[FileFilter], log: Logger): Option[String] = copyDir(source, target, filterOut.foldLeft(NothingFilter:FileFilter){_ || _}, log)
+
+  def ioCatching( t : => Option[String])(log : Logger ) : Option[String] = {
+    try {
+      t
+    } catch {
+      case e => log.error("Could not perform io because of " + e.getMessage)
+	Some(e.getMessage)
+    } 
+  }
+
+  def ioCatchingRes[T]( t : => T)(log : Logger ) : Either[String, T] = {
+    try {
+      Right(t)
+    } catch {
+      case e => log.error("Could not perform io because of " + e.getMessage)
+	Left(e.getMessage)
+    } 
+  }
+
+  def createDirectory(source : File, log : Logger) : Option[String] =
+    ioCatching{
+      IO.createDirectory(source)
+      if (source.exists)
+	None
+      else
+	Some("Could not create direct for an unknown reason "+source.getAbsolutePath)
+    }(log)
+
+  def copyFile(source: File, target : File, log: Logger) : Option[String] =
+    ioCatching{
+      IO.copyFile(source, target)
+      None
+    }(log)
+
+  /**
+   * doesn't force the original not to exist.
+   */
+  def copyDir(source: File, target: File, filterOut : FileFilter, log: Logger): Option[String] = {
+    require(source.isDirectory, "Source '" + source.getAbsolutePath + "' is not a directory.")
+
+    def copyDirectory(sourceDir: File, targetDir: File): Option[String] =
+      if (filterOut.accept(sourceDir))
+	None
+      else
+	createDirectory(targetDir, log) ~~> copyContents(sourceDir, targetDir)
+
+    def copyContents(sourceDir: File, targetDir: File): Option[String] =
+      sourceDir.listFiles.foldLeft(None: Option[String]) {
+      (result, file) =>
+	result ~~> {
+	  val targetFile = new File(targetDir, file.getName)
+	  if(file.isDirectory)
+	    copyDirectory(file, targetFile)
+	  else {
+	    if (filterOut.accept(targetFile))
+	      None
+	    else
+	      copyFile(file, targetFile, log)
+	  }
+	}
+      }
+
+    copyDirectory(source, target)
+  }
+
+  def copyFiles( dir : File , files : Iterable[String], to : File, log : Logger ) : Option[String] = 
+    files.foldLeft(None : Option[String]){
+      (x,y) =>
+	x ~~> {
+	  copyFile(dir / y, to / y, log)
+	}
+    }
+
+  def toForwards( str : String ) = str.replaceAll("\\" + java.io.File.separator, "/")
+
+  def depth( str : String ) = {
+    def idepth(str : String,  pos : Int, acc: Int ) : Int = {
+      val npos = str.indexOf( '/', pos + 1)
+      if (npos < 0) acc
+      else idepth(str, npos, acc + 1)
+    }
+      
+    val start = toForwards(str)
+    idepth(start, 0, 0)
+  }
+
+  def captureErrors( itr : Iterable[Option[String]]) = 
+    itr.foldLeft(None : Option[String]){ 
+      (x, y) => 
+      if (y.isDefined) x.map(_ + y).orElse(y)
+      else x
+    }
+  
+  /**
+   * The either returns a good result for Right or an error for left
+   */ 
+  def manip( path : File, log: Logger ) ( f : String => Either[String,String]) =
+    ioCatchingRes(IO.read(path.asFile, utf8))(log).
+    fold( Some(_) , str =>
+      ioCatching(
+	f(str).fold( Some(_) , x => {
+	  write(path.asFile, x, utf8);None} )
+      )(log)
+    )
+
+  /**
+   * Replaces replaceToken in all files identified by paths with replaceWith prefixed by a number of "../".
+   * This number is based on the relative depth of basePaths' files against path + depthAdjustment.
+   * In a multiproject setup each fullDoc project list should have its path provided
+   */ 
+  def replaceAll( basePaths : Iterable[File], paths : PathFinder, replaceWith : String, depthAdjustment : Int, replaceToken : String, log : Logger ) = 
+    captureErrors(paths.get.map{
+    x => manip(x,log){
+      str =>
+	
+	basePaths.foldLeft(None : Option[String]){ 
+	  (current, y) => 
+	  current ~~> {// go until one can be relativized
+	    IO.relativize( y, x).map
+	    { rp =>
+	      
+	      // for the package depth replace the generated root with ""
+	      val d = depth(rp)
+
+	      val dots = (1 to (d + depthAdjustment - 1)).foldLeft(""){(x, y) => x + "../"}
+	      //println(d + " " + dots + " " + x.relativePath)
+	      val newStr = str.replace(replaceToken, dots + replaceWith)
+	      newStr
+	    }
+	  }
+	}.map{ Right(_) }.
+	  getOrElse(Left("Couldn't relativize against file "+x.getAbsolutePath))
+    }
+    })
+
+  /**
+   * Commands split by ; use spaces in commands to pass params to calls.  No spaces calls an action.  they don't work quite like that in xsbt land.
+   *
+  def callCommands( cmds : String, project : Project, canFail : List[String]) = 
+    cmds.split(";").foldLeft(None: Option[String]){ (x,y) => 
+      x ~~> {
+	val command = y.trim
+	val (res, cmd) = if (command.isEmpty) (x,command)
+	else if (command.indexOf(' ') > -1){
+	  val bits = command.split(' ').toList
+	  (project.call(bits.head, bits.tail.toArray),
+	    bits.head)
+	} else 
+	  (project.act(command), command)
+	
+	if (canFail.contains(cmd))
+	    None
+	else {
+	  res.flatMap{ x=> 
+		  if (x.matches("(Action|Method) '.*' does not exist.")) {
+		    project.log.warn("Can't run siteAllAction fully: "+x+" <-- Check the siteAllAction for non valid tasks or commands.")
+		    None
+		  } else Some(x) }
+	}
+      }
+    }*/
+  
+  /**
+   * returns a css link for this path
+   */ 
+  def css(path : String) = "<link href=\""+path+"\" rel=\"stylesheet\" type=\"text/css\" media=\"screen\" />"
+
+  /**
+   * return js
+   */ 
+  def js(path : String) = "<script src=\""+path+"\" type=\"text/javascript\"></script>"
+
+  /**
+   * default base css
+   */ 
+//  def baseCss(base : String) = base / "scales_base.css"
+  
+  /**
+   */
+  def title(tit : String) = "<title>"+tit+"</title>"
+
+  val resourcesName = "scales.sbtplugins.resources"
+
+  /**
+   * Unpacks the resources from the jar into the temporary resources dir
+   *
+   * Doesn't unpack if the directory is there
+   */
+  def unpackResources( to : File, logger : Logger ) : Option[String] = {
+    if (!to.exists) {
+      createDirectory(to, logger)
+      val cl = this.getClass.getClassLoader
+      val stream = cl.getResourceAsStream(resourcesName+"/filelist.txt")
+      if (stream eq null) Some("Could not find filelist.txt")
+      else {
+	val res = scala.io.Source.fromInputStream(stream).getLines.foldLeft(None : Option[String]){ (x , oline ) =>
+	  val line = oline.trim
+	  x ~~> {
+	    val fs = cl.getResourceAsStream(resourcesName+"/"+line)
+	    if (fs eq null) Some("Could not open "+line)
+	    else
+	      ioCatching{
+		val tos = getOStream(to / line asFile)
+		tos.map{ toss =>
+		  transferAndClose(fs, toss)
+		  
+		  None
+		}.getOrElse(Some("Could not open the file "+(to / line asFile)))
+	      }(logger)
+	  }
+	}
+	stream.close()
+	res
+      }
+    } else None
+  }
+
+  def getStream( f : File ) : Option[java.io.FileInputStream] = 
+    try{
+      Some(new java.io.FileInputStream(f))
+    } catch {
+      case e => None
+    }
+
+  def getOStream( f : File ) : Option[java.io.FileOutputStream] = 
+    try{
+      Some(new java.io.FileOutputStream(f))
+    } catch {
+      case e => None
+    }
 }

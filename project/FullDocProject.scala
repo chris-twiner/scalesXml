@@ -7,6 +7,15 @@ import org.ensime.sbt.util.SExp._
 import Defaults._
 
 object FullDocs {
+  
+  import Utils._
+
+  lazy val replaceToken = docPathToken
+  val siteLinkToken = docPathToken
+
+  val docPathToken = "http://fred.com/docs/"
+
+  val fullDocs = TaskKey[Unit]("full-docs")
 
   /**
    * Nicked from Scalaz - thanks once again Jason and co.
@@ -62,7 +71,27 @@ object FullDocs {
 
         // Include SXR in the Scaladoc Build to generated HTML annotated sources.
         (scaladocOptions in Compile in doc) <++= (baseDirectory, allSourceDirectories) map sxrOptions,
+       	
+	/*scalacOptions in (Compile, doc) <++= (baseDirectory in LocalProject(projectId)).map {
+	  bd => Seq("-sourcepath", projectRoot.getAbsolutePath, "-doc-source-url", docPathToken + "€{FILE_PATH}.scala.html")
+	},
+	*/
+	
+	scalacOptions in (Compile, doc) <++= (baseDirectory in LocalProject(projectId)).map {
+	  bd => Seq("-doc-source-url", docPathToken + "€{FILE_PATH}.scala.html")
+	},
 
+	fullDocs in Compile <<= (streams, allSourceDirectories, target in LocalProject(projectId)) map { (s,sourceDirs,target) =>
+	  
+	  val sxrReplaceWith = "../../api.sxr"
+
+	  replaceAll(sourceDirs.flatten /* target source dirs */, 
+	    /* this docs dir*/ target ** "*.html", 
+	    sxrReplaceWith, 0, replaceToken, s.log)
+
+	  s.log.info("My docs are finished ta much ")
+	} dependsOn(doc in Compile),
+	
         // Package an archive containing all artifacts, readme, licence, and documentation.
         // Use `LocalProject("scalaz")` rather than `scalaz` to avoid a circular reference.
         (mappings in packageBin in Compile) <<= (
