@@ -92,14 +92,13 @@ object FullDocs {
 	    /* this docs dir*/ target ** "*.html", 
 	    sxrReplaceWith, 0, replaceToken, s.log)
 
-	  res.map{x=>
-	    s.log.error("fullDocs could not be run: "+x)
+	  res.foreach{x=>
+	    s.log.debug("fullDocs could not be run: "+x)
 	    x
-	  }.orElse{
-	    s.log.info("fullDocs successful")
-	    None
 	  }
-	  ()
+
+	  s.log.info("fullDocs completed")
+	  
 	} dependsOn(doc in Compile),
 	
         // Package an archive containing all artifacts, readme, licence, and documentation.

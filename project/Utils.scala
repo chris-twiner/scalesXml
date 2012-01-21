@@ -197,10 +197,28 @@ object Utils {
 		val pos = str.indexOf(rep)
 
 		if (pos > -1) { // don't like doing it twice
-		  val newStr = str.replace(rep , dots + replaceWith)
-		  Some(newStr)
+		  val sb = new java.lang.StringBuilder()
+		  sb.append(str.substring(0,pos))
+		  sb.append(dots+replaceWith)
+		  
+		  // is it a java bit? copy up to the next bit
+		  val quote = str.indexOf("\"", pos)
+		  val bjava = str.indexOf(".java.scala.html", pos)
+		  if (bjava > -1 && bjava < quote) {
+		    sb.append(str.substring(pos + rep.length, bjava))
+		    sb.append(".java")
+		    sb.append(str.substring(bjava + 11))
+		  } else {
+		    sb.append(str.substring(pos + rep.length))
+		  }
+
+		  //val newStr = str.replace(rep , dots + replaceWith)
+		  // does it have a java bit on the end? .java.scala.html" is a bit funny
+		  
+
+		  Some(sb.toString)
 		} else {
-		  log.error("Didn't find "+ rep+ "in file "+x.getAbsolutePath)
+		  log.debug("Didn't find "+ rep+ "in file "+x.getAbsolutePath)
 		  None
 		}
 	    }
