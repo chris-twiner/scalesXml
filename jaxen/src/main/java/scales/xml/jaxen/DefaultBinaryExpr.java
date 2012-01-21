@@ -1,7 +1,7 @@
 /*
  * $Header$
- * $Revision: 1261 $
- * $Date: 2006-11-30 10:49:27 -0800 (Thu, 30 Nov 2006) $
+ * $Revision: 1345 $
+ * $Date: 2009-10-22 07:25:23 -0400 (Thu, 22 Oct 2009) $
  *
  * ====================================================================
  *
@@ -43,76 +43,61 @@
  * James Strachan <jstrachan@apache.org>.  For more information on the
  * Jaxen Project, please see <http://www.jaxen.org/>.
  *
- * $Id: ScalesDefaultAbsoluteLocationPath.java 545 2011-10-22 19:01:04Z chris.twiner $
+ * $Id: DefaultLocationPath.java 1345 2009-10-22 11:25:23Z elharo $
  */
 package scales.xml.jaxen;
 
-import java.util.Collections;
-import java.util.List;
+import org.jaxen.expr.*;
+import org.jaxen.*;
 
-import org.jaxen.Context;
-import org.jaxen.ContextSupport;
-import org.jaxen.JaxenException;
-import org.jaxen.Navigator;
-import org.jaxen.util.SingletonList;
-
-
-/**
- * @deprecated this class will become non-public in the future;
- *     use the interface instead
- */
-public class ScalesDefaultAbsoluteLocationPath extends ScalesDefaultLocationPath 
+abstract class DefaultBinaryExpr extends DefaultExpr implements BinaryExpr
 {
-    /**
-     * 
-     */
-    private static final long serialVersionUID = 2174836928310146874L;
+    private Expr lhs;
+    private Expr rhs;
 
-    public ScalesDefaultAbsoluteLocationPath()
+    DefaultBinaryExpr(Expr lhs, Expr rhs)
     {
+        this.lhs = lhs;
+        this.rhs = rhs;
+    }
+
+    public Expr getLHS()
+    {
+        return this.lhs;
+    }
+
+    public Expr getRHS()
+    {
+        return this.rhs;
+    }
+
+    public void setLHS(Expr lhs)
+    {
+        this.lhs = lhs;
+    }
+
+    public void setRHS(Expr rhs)
+    {
+        this.rhs = rhs;
+    }
+
+    public abstract String getOperator();
+
+    public String getText()
+    {
+        return "(" + getLHS().getText() + " " + getOperator() + " " + getRHS().getText() +")";
     }
 
     public String toString()
     {
-        return "[(DefaultAbsoluteLocationPath): " + super.toString() + "]";
+        return "[" + getClass().getName() + ": " + getLHS() + ", " + getRHS() + "]";
     }
 
-    public boolean isAbsolute() 
+    public Expr simplify()
     {
-        return true;
+        setLHS( getLHS().simplify() );
+        setRHS( getRHS().simplify() );
+
+        return this;
     }
-
-    public String getText()
-    {
-        return "/" + super.getText();
-    }
-
-    public Object evaluate(Context context) throws JaxenException
-    {
-        ContextSupport support = context.getContextSupport();
-        Navigator      nav     = support.getNavigator();
-        Context absContext = new Context( support );
-        List contextNodes = context.getNodeSet();
-
-        if ( contextNodes.isEmpty() )
-        {
-            return Collections.EMPTY_LIST;
-        }
-
-        Object firstNode = contextNodes.get( 0 );
-        Object docNode   = nav.getDocumentNode( firstNode );
-
-        if ( docNode == null )
-        {
-            return Collections.EMPTY_LIST;
-        }
-
-        List list = new SingletonList(docNode);
-
-        absContext.setNodeSet( list );
-
-        return super.evaluate( absContext );
-    }
-
 }
-

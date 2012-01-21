@@ -1,4 +1,4 @@
-package org.jaxen.expr
+package scales.xml.jaxen
 
 import org.jaxen._
 import pattern.Pattern
@@ -10,7 +10,6 @@ import scales.utils._
 import ScalesUtils._
 import scales.xml._
 import ScalesXml._
-import scales.xml.jaxen.ScalesComparator
 
 class ScalesDefaultLocationPath() extends DefaultLocationPath {
 
