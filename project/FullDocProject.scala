@@ -27,6 +27,7 @@ object FullDocs {
     val allPackagedArtifacts = TaskKey[Seq[Map[Artifact, File]]]("all-packaged-artifacts")
     val allSources = TaskKey[Seq[Seq[File]]]("all-sources")
     val allSourceDirectories = SettingKey[Seq[Seq[File]]]("all-source-directories")
+    val allTargetDirectories = SettingKey[Seq[File]]("all-target-directories")
 
     def artifactMappings(rootBaseDir: File, baseDir: File, scalaVersion: String, version: String,
                          fullDocDir: File, artifacts: Seq[Map[Artifact, File]]): Seq[(File, String)] = {
@@ -58,6 +59,7 @@ object FullDocs {
         allSources <<= projects.map(sources in Compile in _).join, // join: Seq[Task[A]] => Task[Seq[A]]
         allSourceDirectories <<= projects.map(sourceDirectories in Compile in _).join,
         allPackagedArtifacts <<= projects.map(packagedArtifacts in _).join,
+	allTargetDirectories <<= projects.map(target in Compile in doc in _).join,
 
         // Combine the sources of other modules to generate Scaladoc and SXR annotated sources
         (sources in Compile) <<= (allSources).map(_.flatten),
@@ -77,19 +79,27 @@ object FullDocs {
 	},
 	*/
 	
-	scalacOptions in (Compile, doc) <++= (baseDirectory in LocalProject(projectId)).map {
-	  bd => Seq("-doc-source-url", docPathToken + "€{FILE_PATH}.scala.html")
-	},
+	scalacOptions in (Compile, doc) ++= Seq("-doc-source-url", docPathToken + "€{FILE_PATH}.scala.html"),
 
-	fullDocs in Compile <<= (streams, allSourceDirectories, target in LocalProject(projectId)) map { (s,sourceDirs,target) =>
+// can't be allsourcedirs but the target dir itself is needed
+	fullDocs in Compile <<= (streams, allSourceDirectories, target in Compile in doc in LocalProject(projectId)) map { 
+	  (s, sourceDirectories, target) =>
 	  
 	  val sxrReplaceWith = "../../api.sxr"
 
-	  replaceAll(sourceDirs.flatten /* target source dirs */, 
+	  val res = repointSxr(target,
+	    sourceDirectories.flatten /* source dirs */, 
 	    /* this docs dir*/ target ** "*.html", 
 	    sxrReplaceWith, 0, replaceToken, s.log)
 
-	  s.log.info("My docs are finished ta much ")
+	  res.map{x=>
+	    s.log.error("fullDocs could not be run: "+x)
+	    x
+	  }.orElse{
+	    s.log.info("fullDocs successful")
+	    None
+	  }
+	  ()
 	} dependsOn(doc in Compile),
 	
         // Package an archive containing all artifacts, readme, licence, and documentation.

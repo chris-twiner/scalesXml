@@ -178,30 +178,37 @@ object Utils {
    * This number is based on the relative depth of basePaths' files against path + depthAdjustment.
    * In a multiproject setup each fullDoc project list should have its path provided
    */ 
-  def replaceAll( basePaths : Iterable[File], paths : PathFinder, replaceWith : String, depthAdjustment : Int, replaceToken : String, log : Logger ) = 
-    captureErrors(paths.get.map{
-    x => manip(x,log){
-      str =>
-	
-	basePaths.foldLeft(None : Option[String]){ 
-	  (current, y) => 
-	  current ~~> {// go until one can be relativized
-	    IO.relativize( y, x).map
-	    { rp =>
-	      
-	      // for the package depth replace the generated root with ""
-	      val d = depth(rp)
+  def repointSxr( base : File, sourcePaths : Iterable[File], paths : PathFinder, replaceWith : String, depthAdjustment : Int, replaceToken : String, log : Logger ) = 
+    captureErrors(paths.get.map{ x => 
+      IO.relativize( base, x).map {
+	rp =>
 
-	      val dots = (1 to (d + depthAdjustment - 1)).foldLeft(""){(x, y) => x + "../"}
-	      //println(d + " " + dots + " " + x.relativePath)
-	      val newStr = str.replace(replaceToken, dots + replaceWith)
-	      newStr
+	// for the package depth replace the generated root with ""
+	val d = depth(rp)
+
+	val dots = (1 to (d + depthAdjustment - 1)).foldLeft(""){(x, y) => x + "../"}
+
+	manip(x,log){
+	  str =>	
+	  sourcePaths.foldLeft(None : Option[String]){ 
+	    (current, y) => 
+	      current ~~> {// go until one matches
+		val rep = replaceToken + toForwards(y.getAbsolutePath)
+		val pos = str.indexOf(rep)
+
+		if (pos > -1) { // don't like doing it twice
+		  val newStr = str.replace(rep , dots + replaceWith)
+		  Some(newStr)
+		} else {
+		  log.error("Didn't find "+ rep+ "in file "+x.getAbsolutePath)
+		  None
+		}
 	    }
-	  }
-	}.map{ Right(_) }.
-	  getOrElse(Left("Couldn't relativize against file "+x.getAbsolutePath))
-    }
-    })
+	  }.map{ Right(_) }.
+	    getOrElse(Left("Couldn't find a source path to replace for file "+x.getAbsolutePath))
+	}
+      }
+    }.flatten)
 
   /**
    * Commands split by ; use spaces in commands to pass params to calls.  No spaces calls an action.  they don't work quite like that in xsbt land.
