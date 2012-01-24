@@ -1,0 +1,41 @@
+### Performance, Flexibility and Correctness Improvements
+
+Scales 0.2 is an incremental release aimed at improved overall performance for the Xml Pull api and correctness.  
+
+It now reaches my correctness, usability and performance aims from almost 2 years ago when I started the project.
+
+Additional functionality includes:
+
+* XPath union
+* Path sorting now allows sorting tuples of (T, Path)
+
+## Performance Improvements
+
+* Iteratee based parsing with onDone (onQNames) is now 40-50% faster and allocates even less memory
+* Deep XPath searches (\\\\\\) are 20-25% faster
+* XPath non-sorted / duplicate filtered results can be >30% faster (due to evaluation choice)
+
+* Document order sorting and filtering only when required (15-20% faster for exact or non matching XPaths)
+* XPath general performance gains of 5-10% and lower memory allocations
+
+## Additional Flexibility For XPath Evaluation Choices
+
+* The developer can now choose to lazily evaluate XPaths
+* The resulting Iterable[XPath] can be lazily traversed
+* The raw unfiltered and unsorted paths can be traversed
+
+## Correctness Improvements
+
+* Attribute axis results are now typed
+* Document order results from Attribute Axis
+* XPath union (|) maintains ordering
+
+## Release Improvements
+
+* Reduced dependencies (now only Scalaz, slf4j and commons-codec)
+* Removed JUnit test helpers
+* Scalaz version upped to 6.0.3
+
+See [the release site][rd] for the docs including performance information and many examples.
+
+[rd]: http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.1/0.2/index.html
