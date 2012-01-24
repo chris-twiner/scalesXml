@@ -22,8 +22,8 @@ object ScalesXmlRoot extends Build {
   lazy val jaxenTests = Project("jaxen-tests", file("jaxen-tests"), settings = standardSettings ++ dontPublishSettings ++ dontBuildIn28) dependsOn(jaxen % "compile->test", coreTests % "test->test") //  % "compile->compile;test->test"
 
   lazy val fullDocsAndSxr = FullDocs.fullDocsNSources(
-    projects = Seq(core, jaxen), projectId = "scales-full-docs",
-    projectRoot = file("fullDocs"), 
+    projects = Seq(core, jaxen), projectId = "site",
+    projectRoot = file("site"), 
     sxrVersionMap = { v =>
       if (v.startsWith("2.8"))
 	"org.scala-tools.sxr" % "sxr_2.8.0" % "0.2.7"
@@ -31,7 +31,8 @@ object ScalesXmlRoot extends Build {
 	"org.scala-tools.sxr" % "sxr_2.9.0" % "0.2.7"
     }, 
     rootProjectId = "scales-xml-root", projectDependencies = Seq(core, jaxen),
-    standardSettings = standardSettings ++ Utils.resourceSettings
+    standardSettings = standardSettings ++ Utils.resourceSettings ++ 
+      SiteSettings.settings(LocalProject("core"))
   )
 
   lazy val dontBuildIn28 = Seq(skip <<= scalaVersion map { v => v startsWith "2.8." })
