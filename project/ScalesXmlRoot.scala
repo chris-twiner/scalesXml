@@ -7,6 +7,9 @@ import org.ensime.sbt.util.SExp._
 import Defaults._
 
 import scales.sbtplugins._
+import SiteKeys.{siteCSS, siteResourceDir, 
+		 siteMarkupDocs,
+		 siteMarkupDocHeaders}
 
 object ScalesXmlRoot extends Build {
   lazy val root = Project("scales-xml-root", file("."), settings = standardSettings ++ dontPublishSettings) aggregate(core, coreTests, jaxen, saxonTests, jaxenTests)
@@ -32,7 +35,12 @@ object ScalesXmlRoot extends Build {
     }, 
     rootProjectId = "scales-xml-root", projectDependencies = Seq(core, jaxen),
     standardSettings = standardSettings ++ Utils.resourceSettings ++ 
-      SiteSettings.settings(LocalProject("core"))
+      SiteSettings.settings(LocalProject("core")) ++ Seq(
+	siteCSS <<= siteResourceDir apply { _ / "scales_xml.css" },
+	siteMarkupDocs := List("ScalesXmlIntro"->"An Introduction to Scales Xml",
+			  "MemoryOptimisation"->"An Overview of Memory Optimisation and Performance"),
+	siteMarkupDocHeaders := Map[String, MarkupHeader]( "ScalesXmlIntro.mw" -> MarkupHeader("Scales Xml Introduction"))
+      )
   )
 
   lazy val dontBuildIn28 = Seq(skip <<= scalaVersion map { v => v startsWith "2.8." })
