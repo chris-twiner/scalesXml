@@ -1,3 +1,5 @@
+package scales.sbtplugins
+
 import sbt._
 import Keys._
 import sbt.Package._
@@ -42,8 +44,8 @@ object Utils {
       }
     }
 
-
-  lazy val utf8 = java.nio.charset.Charset.forName("UTF-8")
+// provided by IO now
+//  lazy val utf8 = java.nio.charset.Charset.forName("UTF-8")
 
   /**
    * I don't find the orElse helps with reading ~> seems to indicate flow more
@@ -52,7 +54,7 @@ object Utils {
     // cache it, just evaluating the option when creating forces it twice when used with ~~>
     lazy val eoption = option
     def ~~>[B >: A](alternative : => Option[B]) : Option[B] = eoption.orElse(alternative)
-    def fold[B]( whenFull : (A) => B, whenEmpty : => B) = 
+    def cata[B]( whenFull : (A) => B, whenEmpty : => B) = 
       if (eoption.isDefined) 
 	whenFull(eoption.get)
       else
@@ -268,8 +270,23 @@ object Utils {
   /**
    * default base css
    */ 
-//  def baseCss(base : String) = base / "scales_base.css"
-  
+  val baseCss = SettingKey[File]("site.baseCss")
+
+  /**
+   * Default location for the expanded plugin resources
+   */
+  val resourcesOutDir = SettingKey[File]("site.resourcesOutDir")
+
+  val unpackResourcesTask = TaskKey[Option[String]]("site-unpackResources")
+
+  def resourceSettings = Seq(
+    resourcesOutDir <<= (resourceManaged in compile) apply { _ / resourcesName },
+    baseCss <<= (resourcesOutDir) apply { _ / "scales_base.css" },
+    unpackResourcesTask <<= (resourcesOutDir, streams) map { (d, s) =>
+      unpackResources(d, s.log)
+    } 
+  )
+
   /**
    */
   def title(tit : String) = "<title>"+tit+"</title>"
@@ -286,7 +303,7 @@ object Utils {
       createDirectory(to, logger)
       val cl = this.getClass.getClassLoader
       val stream = cl.getResourceAsStream(resourcesName+"/filelist.txt")
-      if (stream eq null) Some("Could not find filelist.txt")
+      if (stream eq null) Some("Could not find filelist.txt, cannot unpack to "+to.getAbsolutePath)
       else {
 	val res = scala.io.Source.fromInputStream(stream).getLines.foldLeft(None : Option[String]){ (x , oline ) =>
 	  val line = oline.trim
@@ -307,7 +324,10 @@ object Utils {
 	stream.close()
 	res
       }
-    } else None
+    } else {
+      logger.debug("To directory already exists (already unpacked) : "+to.getAbsolutePath)
+      None
+    }
   }
 
   def getStream( f : File ) : Option[java.io.FileInputStream] = 

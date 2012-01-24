@@ -6,6 +6,8 @@ import org.ensime.sbt.Plugin.Settings.ensimeConfig
 import org.ensime.sbt.util.SExp._
 import Defaults._
 
+import scales.sbtplugins._
+
 object FullDocs {
   
   import Utils._

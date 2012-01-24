@@ -3,7 +3,7 @@
 libraryDependencies ++= Seq(
   "commons-codec" % "commons-codec" % "1.4",
   "org.slf4j" % "slf4j-api" % "1.6.1",
-  "org.scalaz" %% "scalaz-core" % "6.0.3"
+  "org.scalaz" %% "scalaz-core" % "6.0.4"
 //,
   //"commons-jxpath" % "commons-jxpath" % "1.3"
 )

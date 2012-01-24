@@ -6,6 +6,8 @@ import org.ensime.sbt.Plugin.Settings.ensimeConfig
 import org.ensime.sbt.util.SExp._
 import Defaults._
 
+import scales.sbtplugins._
+
 object ScalesXmlRoot extends Build {
   lazy val root = Project("scales-xml-root", file("."), settings = standardSettings ++ dontPublishSettings) aggregate(core, coreTests, jaxen, saxonTests, jaxenTests)
 
@@ -29,7 +31,7 @@ object ScalesXmlRoot extends Build {
 	"org.scala-tools.sxr" % "sxr_2.9.0" % "0.2.7"
     }, 
     rootProjectId = "scales-xml-root", projectDependencies = Seq(core, jaxen),
-    standardSettings = standardSettings
+    standardSettings = standardSettings ++ Utils.resourceSettings
   )
 
   lazy val dontBuildIn28 = Seq(skip <<= scalaVersion map { v => v startsWith "2.8." })

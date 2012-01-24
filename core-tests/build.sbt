@@ -1,4 +1,4 @@
-import Utils._
+import scales.sbtplugins.Utils._
 
 resolvers += "Sonatype OSS Repo" at "http://oss.sonatype.org/content/repositories/snapshots"
 
