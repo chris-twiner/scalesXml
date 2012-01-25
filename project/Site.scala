@@ -140,7 +140,7 @@ object SiteKeys {
 
   private[sbtplugins] val siteParams = SettingKey[SiteParams]("obfuscated.site-params")
 
-  private[sbtplugins] case class SiteDocParams(siteResourceDir : File, siteOutputPath : File, siteCSS : File, siteJQuery : File, resourcesOutDir : File, siteDocsIgnore : Seq[FileFilter], siteHeaders : String, siteTokens : Map[String, ()=>String], siteMarkupDelete : Boolean = false, siteMarkupDocHeaders : Map[String, MarkupHeader] = Map(), siteMediaWikiTemplates : List[(String, String)] = List())
+  private[sbtplugins] case class SiteDocParams(siteResourceDir : File, siteJQuery : File, resourcesOutDir : File, siteDocsIgnore : Seq[FileFilter], siteMarkupDelete : Boolean = false, siteMarkupDocHeaders : Map[String, MarkupHeader], siteMediaWikiTemplates : List[(String, String)])
 
   private[sbtplugins] val siteDocParams = SettingKey[SiteDocParams]("obfuscated.site-doc-params")
 }
@@ -257,20 +257,14 @@ object SiteSettings {
     siteIgnore <<= (siteIndexHeader, siteIndexFooter) apply { (h,f) => List(new ExactFilter(h.name), new ExactFilter(f.name), new ExactFilter(".svn"), // all svn files
 GlobFilter("*.*~")) }, // all emacs backups
     siteDocsIgnore <<= siteIgnore,
-    siteDocParams <<= (siteResourceDir, siteOutputPath, siteCSS, siteJQuery, resourcesOutDir, siteDocsIgnore, siteHeaders, siteTokens) apply {
-      //(srd, upt, sop, sc, sj, ro, sd, sh, st) =>
-      SiteDocParams(_,_,_,_,_,_,_,_)
-    },
-    siteDocParams <<= (siteDocParams, siteMarkupDelete, siteMarkupDocHeaders, siteMediaWikiTemplates) apply { (a, c, d, e) =>
-      a.copy( siteMarkupDelete = c, siteMarkupDocHeaders = d, siteMediaWikiTemplates = e)
-    },
-    siteDocs <<= (siteDocParams, unpackResourcesTask, streams) map makeSite,
     siteOutputPath <<= (crossTarget in compile) apply { _ / "site" },
     packageSiteZip := new java.io.File("C:/root.zip"),
     siteParams <<= (siteOutputPath, siteIgnore, sites, siteIndexHeader, siteIndexFooter, siteMarkupDocs, siteCSS, packageSiteZip, crossTarget in compile) apply {
       SiteParams(_,_,_,_,_,_,_,_,_)
     },
     siteParams <<= (siteParams, siteTokens, siteHeaders) apply { (a, b, c) => a.copy(siteTokens = b, siteHeaders = c) },
+    siteDocParams <<= (siteResourceDir, siteJQuery, resourcesOutDir, siteDocsIgnore, siteMarkupDelete, siteMarkupDocHeaders, siteMediaWikiTemplates) apply SiteDocParams,
+    siteDocs <<= (siteDocParams, siteParams, unpackResourcesTask, streams) map makeSite,
     site <<= (siteParams, streams, siteDocs, unpackResourcesTask) map siteTask
   )
 
@@ -361,8 +355,9 @@ $("pre[class^='language-']").each(function(i,elem) {
   }
 */
  
-  def makeSite(params : SiteDocParams, unpackResources : Option[String], streams : std.TaskStreams[_]) =  { // TODO - allow the source zip for highlighting and site_docs to be replaceds
+  def makeSite(params : SiteDocParams, siteParams : SiteParams, unpackResources : Option[String], streams : std.TaskStreams[_]) =  { // TODO - allow the source zip for highlighting and site_docs to be replaceds
     import params._
+    import siteParams._
     val log = streams.log
 
     ( if (siteResourceDir.exists) None else Some("The site directory "+siteResourceDir+" does not exist, please create it, or override siteResourceDir before calling site.") ) ~~>
