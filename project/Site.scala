@@ -1,11 +1,16 @@
 package scales.sbtplugins
 
 import sbt._
-import IO._
+import IO.{unzip, read, utf8, write}
 import Utils._
 import SbtWiki._
 
 object SiteKeys {
+
+  /**
+   * location of the zip file
+   */
+  val packageSiteZip = SettingKey[File]("site-package-zip")
 
   /**
    * The project used to fill the tokens, e.g. version number org etc
@@ -89,7 +94,6 @@ object SiteKeys {
    * List of files to ignore when generating the site docs, defaults to siteIgnore
    */ 
   val siteDocsIgnore = SettingKey[Seq[FileFilter]]("site-docs-ignore")
-
   
   /**
    * Generates user documentation from the
@@ -132,9 +136,13 @@ object SiteKeys {
    */ 
   val siteOutputPath = SettingKey[File]("site-output-path")
 
-  case class MakeSiteParams(siteResourceDir : File, siteOutputPath : File, siteCSS : File, siteJQuery : File, resourcesOutDir : File, siteDocsIgnore : Seq[FileFilter], siteHeaders : String, siteTokens : Map[String, ()=>String], siteMarkupDelete : Boolean = false, siteMarkupDocHeaders : Map[String, MarkupHeader] = Map(), siteMediaWikiTemplates : List[(String, String)] = List())
+  private[sbtplugins] case class SiteParams(siteOutputPath : File, siteIgnore : Seq[FileFilter], sites : Seq[Site], siteIndexHeader : File, siteIndexFooter : File, siteMarkupDocs : List[(String, String)], siteCSS : File, packageSiteZip : File, outputPath : File, siteTokens : Map[String, ()=>String] = Map(), siteHeaders : String = "")
 
-  val makeSiteParams = SettingKey[MakeSiteParams]("obfuscated-make-site-params")
+  private[sbtplugins] val siteParams = SettingKey[SiteParams]("obfuscated.site-params")
+
+  private[sbtplugins] case class SiteDocParams(siteResourceDir : File, siteOutputPath : File, siteCSS : File, siteJQuery : File, resourcesOutDir : File, siteDocsIgnore : Seq[FileFilter], siteHeaders : String, siteTokens : Map[String, ()=>String], siteMarkupDelete : Boolean = false, siteMarkupDocHeaders : Map[String, MarkupHeader] = Map(), siteMediaWikiTemplates : List[(String, String)] = List())
+
+  private[sbtplugins] val siteDocParams = SettingKey[SiteDocParams]("obfuscated.site-doc-params")
 }
 /*
 trait ArtifactsHelper extends BasicManagedProject {
@@ -249,15 +257,21 @@ object SiteSettings {
     siteIgnore <<= (siteIndexHeader, siteIndexFooter) apply { (h,f) => List(new ExactFilter(h.name), new ExactFilter(f.name), new ExactFilter(".svn"), // all svn files
 GlobFilter("*.*~")) }, // all emacs backups
     siteDocsIgnore <<= siteIgnore,
-    makeSiteParams <<= (siteResourceDir, siteOutputPath, siteCSS, siteJQuery, resourcesOutDir, siteDocsIgnore, siteHeaders, siteTokens) apply {
+    siteDocParams <<= (siteResourceDir, siteOutputPath, siteCSS, siteJQuery, resourcesOutDir, siteDocsIgnore, siteHeaders, siteTokens) apply {
       //(srd, upt, sop, sc, sj, ro, sd, sh, st) =>
-      MakeSiteParams(_,_,_,_,_,_,_,_)
+      SiteDocParams(_,_,_,_,_,_,_,_)
     },
-    makeSiteParams <<= (makeSiteParams, siteMarkupDelete, siteMarkupDocHeaders, siteMediaWikiTemplates) apply { (a, c, d, e) =>
+    siteDocParams <<= (siteDocParams, siteMarkupDelete, siteMarkupDocHeaders, siteMediaWikiTemplates) apply { (a, c, d, e) =>
       a.copy( siteMarkupDelete = c, siteMarkupDocHeaders = d, siteMediaWikiTemplates = e)
     },
-    siteDocs <<= (makeSiteParams, unpackResourcesTask, streams) map makeSite,
-    siteOutputPath <<= (crossTarget in compile) apply { _ / "site" }
+    siteDocs <<= (siteDocParams, unpackResourcesTask, streams) map makeSite,
+    siteOutputPath <<= (crossTarget in compile) apply { _ / "site" },
+    packageSiteZip := new java.io.File("C:/root.zip"),
+    siteParams <<= (siteOutputPath, siteIgnore, sites, siteIndexHeader, siteIndexFooter, siteMarkupDocs, siteCSS, packageSiteZip, crossTarget in compile) apply {
+      SiteParams(_,_,_,_,_,_,_,_,_)
+    },
+    siteParams <<= (siteParams, siteTokens, siteHeaders) apply { (a, b, c) => a.copy(siteTokens = b, siteHeaders = c) },
+    site <<= (siteParams, streams, siteDocs, unpackResourcesTask) map siteTask
   )
 
   def getSiteTokens(version : String, name: String, org : String) = Map[String, ()=>String]( "User" -> userF, "timestamp" -> { () => {new java.util.Date().toString}}, 
@@ -347,7 +361,7 @@ $("pre[class^='language-']").each(function(i,elem) {
   }
 */
  
-  def makeSite(params : MakeSiteParams, unpackResources : Option[String], streams : std.TaskStreams[_]) =  { // TODO - allow the source zip for highlighting and site_docs to be replaceds
+  def makeSite(params : SiteDocParams, unpackResources : Option[String], streams : std.TaskStreams[_]) =  { // TODO - allow the source zip for highlighting and site_docs to be replaceds
     import params._
     val log = streams.log
 
@@ -363,10 +377,12 @@ $("pre[class^='language-']").each(function(i,elem) {
     }
   }
 
-/*  lazy val site = siteAction
-  def siteAction = task {
-    import FileUtilities._
+  def siteTask( siteParams : SiteParams, streams : std.TaskStreams[_], siteDocRes : Option[String], unpackResources : Option[String] ) = siteDocRes.map{ s => streams.log.error("Cannot make site as siteDocs has failed due to "+s); s} ~~> {
     // create target dir
+    import siteParams._
+    import streams.log
+    import Path._
+
     val outDir = siteOutputPath
     val siteIndex = outDir / "index.html"
     val siteIndexMd = outDir / "index.mw"
@@ -375,7 +391,7 @@ $("pre[class^='language-']").each(function(i,elem) {
     val siteIgnores = siteIgnore
 
     // doesn't matter if it fails
-    createDirectory(outDir, log)
+    IO.createDirectory(outDir)
 
     val sitesc = sites
     // copy them over
@@ -393,9 +409,9 @@ $("pre[class^='language-']").each(function(i,elem) {
 	}
     } ~~> {
       // create cover page..
-      val wikiBase = if (siteIndexHeader.exists) readString(siteIndexHeader.asFile, utf8, log)
+      val wikiBase = if (siteIndexHeader.exists) ioCatchingRes(read(siteIndexHeader.asFile, utf8))(log)
 	else Right("= ${FullVersion} Site =\n")
-      wikiBase.fold(Some(_),{b => write(siteIndexMdf, b+"\n<br/>\n", utf8, log) ~~> {
+      wikiBase.fold(Some(_),{b => ioCatching{write(siteIndexMdf, b+"\n<br/>\n", utf8);None}(log) ~~> {
 	// middle
 	sitesc.foldLeft( None : Option[String] ){
 	  (x,y) =>
@@ -420,22 +436,21 @@ $("pre[class^='language-']").each(function(i,elem) {
 	  } else None
 	) ~~> {
 	  // footer
-	  val wikiEnd = if (siteIndexFooter.exists) readString(siteIndexFooter.asFile, utf8, log)
+	  val wikiEnd = if (siteIndexFooter.exists) ioCatchingRes(read(siteIndexFooter.asFile, utf8))(log)
 			else Right("<br/>\n[./"+packageSiteZip.name+" Download Site Zip]\n\nBuilt By: ${User}, ${timestamp}")
 	  wikiEnd.fold(Some(_),{f=>append(siteIndexMdf, f, utf8, log)})
 	}
       }}) ~~> {
 	// convert to html
 	try{
-	  unpackResources(this) ~~>
-	  FileUtilities.copyFile(siteCSS, outDir / "scales_base.css", log) ~~>
+	  unpackResources ~~>
+	  copyFile(siteCSS, outDir / "scales_base.css", log) ~~>
 	  convert(siteIndexMd, siteIndex, title("${FullVersion} Site") + siteHeaders, siteTokens, log)
 	} catch {
 	  case e : Exception => Some(e.getMessage)
 	}
       }
     }
-  } dependsOn siteDocs
-*/
+  }
 
 }

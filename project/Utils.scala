@@ -175,6 +175,9 @@ object Utils {
       )(log)
     )
 
+  def append( path : File, str : String, enc : java.nio.charset.Charset, log : Logger) = 
+    ioCatching{IO.append(path, str, enc); None;}(log)
+
   /**
    * Replaces replaceToken in all files identified by paths with replaceWith prefixed by a number of "../".
    * This number is based on the relative depth of basePaths' files against path + depthAdjustment.
