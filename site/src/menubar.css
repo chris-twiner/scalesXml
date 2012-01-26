@@ -1,0 +1,30 @@
+ul {
+    list-style: none;
+    padding-left: 0.4em;
+    margin-left: -0.4em;
+}
+
+dt > ul {
+    margin-left: 0px;
+}
+
+li {
+    margin-left: -0.4em;
+    padding-left: 0.9em;
+}
+
+.menuPlus {
+    //left: -14px;
+    //top: -1px;
+    background-image: url(img/menubar_plus.gif);
+    background-position: 0 0.2em;
+    background-repeat: no-repeat;
+}
+
+.menuMinus {
+//    left: -14px;
+//    top: -1px;
+    background-image: url(img/menubar_minus.gif);
+    background-position: 0 0.5em;
+    background-repeat: no-repeat;
+}

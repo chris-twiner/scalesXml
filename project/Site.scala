@@ -258,7 +258,7 @@ object SiteSettings {
     menuBarJS := menuBarJSDefault,
     siteTokens <<= (version in siteInfoProject, moduleName in siteInfoProject, organization in siteInfoProject) apply getSiteTokens,
     siteMarkupDelete := true,
-    siteMarkupDocHeaders <<= (menuBar, menuBarJS) apply { (f,j) => Map(f.name -> MarkupHeader("Menu Bar", j))},
+    siteMarkupDocHeaders <<= (menuBar, menuBarJS) apply { (f,j) => Map(f.name -> MarkupHeader("Menu Bar", css("menubar.css") + j ))},
     highlightScripts := getHighlightScripts,
     siteHeaders <<= (highlightStyle, highlightScripts) apply {
       (s, sc) => 
@@ -462,10 +462,13 @@ $("pre[class^='language-']").each(function(i,elem) {
 
   val menuBarJSDefault = js("./jquery.js")+"""
   <script type="text/javascript">
-$(function(){
-  $('ul').children('li').click(function(event){
+  $(function(){
+  $('li:has(ul)').toggleClass('menuPlus');
+  $('ul').children('li:has(ul)').click(function(event){
             if (this == event.target) {                
                 $(this).children('ul').toggle('fast');
+		$(this).toggleClass('menuPlus');
+		$(this).toggleClass('menuMinus');		
             }
             return false;
         })
