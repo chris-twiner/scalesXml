@@ -39,9 +39,8 @@ object ScalesXmlRoot extends Build {
 	siteCSS <<= siteResourceDir apply { _ / "scales_xml.css" },
 	siteMarkupDocs := List("ScalesXmlIntro"->"An Introduction to Scales Xml",
 			  "MemoryOptimisation"->"An Overview of Memory Optimisation and Performance"),
-	siteMarkupDocHeaders := Map[String, MarkupHeader]( "ScalesXmlIntro.mw" -> MarkupHeader("Scales Xml Introduction"))
+	siteMarkupDocHeaders <<= siteMarkupDocHeaders apply {_ + ( "ScalesXmlIntro.mw" -> MarkupHeader("Scales Xml Introduction"))}
       )
-    //site <<= 
   )
 
   lazy val dontBuildIn28 = Seq(skip <<= scalaVersion map { v => v startsWith "2.8." })

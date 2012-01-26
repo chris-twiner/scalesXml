@@ -1,3 +1,5 @@
+__TOC__
+
 = Introduction =
 
 Scales Xml, in addition to immutability, aims to focus on these separate concerns:
@@ -49,8 +51,6 @@ ${cend}
 ;* javax.xml.validation support
 ;* Aims to hide all JAXP implementation inconsistencies
 
-''As a disclaimer the only theoretical paper and research used was Huets Zipper paper, which forms the basis of much of Scales Xmls approach.  This will change after 0.1 is released, there are many other ideas to build on.''
-
 = How to use =
 
 The M2 style repo for snapshots is at https://scala-scales.googlecode.com/svn/repo-snapshots.
@@ -60,12 +60,12 @@ So for sbt 0.7 its:
 ${cscala}
 val scalesSnapshots = "Scales Snapshots" at "http://scala-scales.googlecode.com/svn/repo-snapshots"
 val scalesRepo = "Scales Repo" at "http://scala-scales.googlecode.com/svn/repo"
-val scalesXml = "scales" %% "scales-xml" % "0.2.1"
+val scalesXml = "scales" %% "scales-xml" % "0.3"
 ${cend}
 
 Maven repos should therefore use scales-xml_2.9.1 as the dependency.
 
-[http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.1/0.2.1/index.html The documentation site is here] and zip of the site documentation is available at [http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.1/0.2.1/scales-xml_2.9.1-0.2.1-site.zip scales-xml.zip].  
+[http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.1/0.3/index.html The documentation site is here] and zip of the site documentation is available at [http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.1/0.3/scales-xml_2.9.1-0.3-site.zip scales-xml.zip].  
 
 _Warning_ local file based sites do not work in Chrome, use Firefox or IE in preference.
 
@@ -74,10 +74,10 @@ _Warning_ local file based sites do not work in Chrome, use Firefox or IE in pre
 To use ScalesXml you must use the following imports (where the objects ScalesUtils and ScalesXml import implicits).
 
 ${cscala}
-import scales.utils._
-import ScalesUtils._
-import scales.xml._
-import ScalesXml._
+  import scales.utils._
+  import ScalesUtils._
+  import scales.xml._
+  import ScalesXml._
 ${cend}
 
 == Parse and XPaths ==

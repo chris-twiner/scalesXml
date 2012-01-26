@@ -132,6 +132,16 @@ object SiteKeys {
   val site = TaskKey[ Option[String] ]("site-site")
 
   /**
+   * Defaults to a markup file called menubar.mw in siteResourceDir
+   */ 
+  val menuBar = SettingKey[ File ]("site-menu-bar")
+
+  /**
+   * Override to provide different js behaviour for the menubar
+   */ 
+  val menuBarJS = SettingKey[ String ]("site-menu-bar-js")
+
+  /**
    * Default output for the site (site:target)??
    */ 
   val siteOutputPath = SettingKey[File]("site-output-path")
@@ -244,9 +254,11 @@ object SiteSettings {
     siteResourceDir <<= sourceDirectory in compile,
     siteIndexHeader <<= siteResourceDir apply { _ / "siteIndexHeader.mw" },
     siteIndexFooter <<= siteResourceDir apply { _ / "siteIndexFooter.mw" },
+    menuBar <<= siteResourceDir apply { _ / "menubar.mw" },
+    menuBarJS := menuBarJSDefault,
     siteTokens <<= (version in siteInfoProject, moduleName in siteInfoProject, organization in siteInfoProject) apply getSiteTokens,
     siteMarkupDelete := true,
-    siteMarkupDocHeaders := Map(),
+    siteMarkupDocHeaders <<= (menuBar, menuBarJS) apply { (f,j) => Map(f.name -> MarkupHeader("Menu Bar", j))},
     highlightScripts := getHighlightScripts,
     siteHeaders <<= (highlightStyle, highlightScripts) apply {
       (s, sc) => 
@@ -447,5 +459,19 @@ $("pre[class^='language-']").each(function(i,elem) {
       }
     }
   }
+
+  val menuBarJSDefault = js("./jquery.js")+"""
+  <script type="text/javascript">
+$(function(){
+  $('ul').children('li').click(function(event){
+            if (this == event.target) {                
+                $(this).children('ul').toggle('fast');
+            }
+            return false;
+        })
+        .children('ul').hide();
+});
+</script>
+"""
 
 }
