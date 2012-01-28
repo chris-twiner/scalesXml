@@ -132,14 +132,31 @@ object SiteKeys {
   val site = TaskKey[ Option[String] ]("site-site")
 
   /**
-   * Defaults to a markup file called menubar.mw in siteResourceDir
+   * Defaults to a markup file called menubar.mw in siteResourceDir.
+   * When this file exists the menu bar will be added to all Site generated files.
    */ 
   val menuBar = SettingKey[ File ]("site-menu-bar")
+
+  /**
+   * Generates the html for the menu bar, returning left for menu bar and right for an error.
+   */ 
+  val menuBarHtml = TaskKey[ Either[String, String] ]("site-menu-bar-html")
 
   /**
    * Override to provide different js behaviour for the menubar
    */ 
   val menuBarJS = SettingKey[ String ]("site-menu-bar-js")
+
+  /**
+   * Override to provide a different css File for the menubar
+   */ 
+  val menuBarCSS = SettingKey[ File ]("site-menu-bar-css")
+
+  /**
+   * This is added to the bottom of all generated pages.
+   * By default it will include the content of the menuBar
+   */ 
+  val siteBodyEnd = TaskKey[ String ]("site-body-end")
 
   /**
    * Default output for the site (site:target)??
@@ -255,14 +272,15 @@ object SiteSettings {
     siteIndexHeader <<= siteResourceDir apply { _ / "siteIndexHeader.mw" },
     siteIndexFooter <<= siteResourceDir apply { _ / "siteIndexFooter.mw" },
     menuBar <<= siteResourceDir apply { _ / "menubar.mw" },
+    menuBarCSS <<= siteResourceDir apply { _ / "menubar.css" },
     menuBarJS := menuBarJSDefault,
     siteTokens <<= (version in siteInfoProject, moduleName in siteInfoProject, organization in siteInfoProject) apply getSiteTokens,
     siteMarkupDelete := true,
-    siteMarkupDocHeaders <<= (menuBar, menuBarJS) apply { (f,j) => Map(f.name -> MarkupHeader("Menu Bar", css("menubar.css") + j ))},
+    siteMarkupDocHeaders := Map(),
     highlightScripts := getHighlightScripts,
-    siteHeaders <<= (highlightStyle, highlightScripts) apply {
-      (s, sc) => 
-      css("./scales_base.css") + css("./site_docs.css") + s + js("./jquery.js") + sc
+    siteHeaders <<= (highlightStyle, highlightScripts, menuBarJS ) apply {
+      (s, sc, ms) => "<meta http-equiv=\"X-UA-Compatible\" content=\"IE=8\" />" +
+      css("./scales_base.css") + css("./site_docs.css") + s + js("./jquery.js") + sc + css("./menubar.css") + ms
     },
     siteMediaWikiTemplates := List(("code","""<code class="{{{lang}}}"><pre>{{{2}}}</pre></code>""")),
     highlightStyle := css("./highlight/styles/idea.css"),
@@ -274,10 +292,12 @@ GlobFilter("*.*~")) }, // all emacs backups
     siteParams <<= (siteOutputPath, siteIgnore, sites, siteIndexHeader, siteIndexFooter, siteMarkupDocs, siteCSS, packageSiteZip, crossTarget in compile) apply {
       SiteParams(_,_,_,_,_,_,_,_,_)
     },
+    siteBodyEnd := "",
     siteParams <<= (siteParams, siteTokens, siteHeaders) apply { (a, b, c) => a.copy(siteTokens = b, siteHeaders = c) },
     siteDocParams <<= (siteResourceDir, siteJQuery, resourcesOutDir, siteDocsIgnore, siteMarkupDelete, siteMarkupDocHeaders, siteMediaWikiTemplates) apply SiteDocParams,
-    siteDocs <<= (siteDocParams, siteParams, unpackResourcesTask, streams) map makeSite,
-    site <<= (siteParams, streams, siteDocs, unpackResourcesTask) map siteTask
+    menuBarHtml <<= (siteParams, menuBar, streams) map getMenuBar,
+    siteDocs <<= (siteDocParams, siteParams, siteBodyEnd, menuBarHtml, unpackResourcesTask, streams) map makeSite,
+    site <<= (siteParams, streams, siteDocs, siteBodyEnd, menuBarHtml, unpackResourcesTask) map siteTask
   )
 
   def getSiteTokens(version : String, name: String, org : String) = Map[String, ()=>String]( "User" -> userF, "timestamp" -> { () => {new java.util.Date().toString}}, 
@@ -366,11 +386,45 @@ $("pre[class^='language-']").each(function(i,elem) {
     callCommands(siteAllActions+";site", this, if (ignoreFailActionsForSite) canFailActions else Nil)
   }
 */
+
+  def getMenuBar( siteParams: SiteParams, menuBarFile : File, stream : std.TaskStreams[_]) : Either[String, String] = {
+    import siteParams._
+    import stream.log
+
+    if (menuBarFile.exists) {
+      // generate the menu bar 
+      val th = java.io.File.createTempFile("scales_sit_mb_","_mb")
+      try{
+	val r = convert(menuBarFile, th, siteHeaders, "", siteTokens, log, 
+		false // not copying
+		)
+	r.map{ x => log.error("Menubar file could not be generated "+x); Right(x) }.getOrElse{
+	  // transformation worked, grab the body...
+	  val full = IO.read(th, utf8)
+	  val p = full.indexOf("<body>") // NB not sure if this changes per type
+	  val ep = full.lastIndexOf("</body>")
+	  if ((p < 0) || (ep < 0)) {
+	    val r = "Could not find a body in the menu bar ("+p+","+ep+")"
+	    log.error(r)
+	    Right(r)
+	  } else {
+	    val innerM = full.substring(p+ 6, ep)
+	    Left("<div id=\"scales-site-menubar\">"+innerM+"</div>")
+	  }
+	}
+      } finally {
+	th.delete
+      }
+    } else {
+      Left("") // doesn't exist so don't add any extra to the output
+    }
+  }
  
-  def makeSite(params : SiteDocParams, siteParams : SiteParams, unpackResources : Option[String], streams : std.TaskStreams[_]) =  { // TODO - allow the source zip for highlighting and site_docs to be replaceds
+  def makeSite(params : SiteDocParams, siteParams : SiteParams, siteBodyEnd : String, menuBarHtml : Either[String, String], unpackResources : Option[String], streams : std.TaskStreams[_]) =  { // TODO - allow the source zip for highlighting and site_docs to be replaceds
     import params._
     import siteParams._
-    val log = streams.log
+    import streams.log
+    val bodyEnd = siteBodyEnd + menuBarHtml.fold( x=>x, _ => "");
 
     ( if (siteResourceDir.exists) None else Some("The site directory "+siteResourceDir+" does not exist, please create it, or override siteResourceDir before calling site.") ) ~~>
     unpackResources ~~>
@@ -380,15 +434,17 @@ $("pre[class^='language-']").each(function(i,elem) {
     {ioCatching{unzip(resourcesOutDir./("highlight.zip"), siteOutputPath);None}(log) } ~~> 
     SbtWiki.templates.withValue(siteMediaWikiTemplates) {
       copyAndConvert(siteResourceDir, siteOutputPath, siteDocsIgnore, 
-	  siteHeaders, siteTokens, log, siteMarkupDelete, siteMarkupDocHeaders)
+	  siteHeaders, bodyEnd, siteTokens, log, siteMarkupDelete, siteMarkupDocHeaders)
     }
   }
 
-  def siteTask( siteParams : SiteParams, streams : std.TaskStreams[_], siteDocRes : Option[String], unpackResources : Option[String] ) = siteDocRes.map{ s => streams.log.error("Cannot make site as siteDocs has failed due to "+s); s} ~~> {
+  def siteTask( siteParams : SiteParams, streams : std.TaskStreams[_], siteDocRes : Option[String], siteBodyEnd : String, menuBarHtml : Either[String, String], unpackResources : Option[String] ) = siteDocRes.map{ s => streams.log.error("Cannot make site as siteDocs has failed due to "+s); s} ~~> {
     // create target dir
     import siteParams._
     import streams.log
     import Path._
+
+    val bodyEnd = siteBodyEnd + menuBarHtml.fold( x=>x, _ => "");
 
     val outDir = siteOutputPath
     val siteIndex = outDir / "index.html"
@@ -452,7 +508,7 @@ $("pre[class^='language-']").each(function(i,elem) {
 	try{
 	  unpackResources ~~>
 	  copyFile(siteCSS, outDir / "scales_base.css", log) ~~>
-	  convert(siteIndexMd, siteIndex, title("${FullVersion} Site") + siteHeaders, siteTokens, log)
+	  convert(siteIndexMd, siteIndex, title("${FullVersion} Site") + siteHeaders, bodyEnd, siteTokens, log)
 	} catch {
 	  case e : Exception => Some(e.getMessage)
 	}
@@ -460,11 +516,12 @@ $("pre[class^='language-']").each(function(i,elem) {
     }
   }
 
-  val menuBarJSDefault = js("./jquery.js")+"""
+  val menuBarJSDefault = """
   <script type="text/javascript">
   $(function(){
-  $('li:has(ul)').toggleClass('menuPlus');
-  $('ul').children('li:has(ul)').click(function(event){
+
+  $('#scales-site-menubar li:has(ul)').toggleClass('menuPlus');
+  $('#scales-site-menubar ul').children('li:has(ul)').click(function(event){
             if (this == event.target) {                
                 $(this).children('ul').toggle('fast');
 		$(this).toggleClass('menuPlus');
@@ -473,6 +530,7 @@ $("pre[class^='language-']").each(function(i,elem) {
             return false;
         })
         .children('ul').hide();
+
 });
 </script>
 """

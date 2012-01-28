@@ -54,7 +54,7 @@ object SbtWiki {
    * and the original optionally deleted.
    *
    */
-  def copyAndConvert( from : File, to : File, filterOut : Iterable[FileFilter], extraHeaders : String, tokens : Map[String, String], log: Logger, delete : Boolean, documentHeaders : Map[String, MarkupHeader]) : Option[String] = 
+  def copyAndConvert( from : File, to : File, filterOut : Iterable[FileFilter], extraHeaders : String, bodyEnd : String, tokens : Map[String, String], log: Logger, delete : Boolean, documentHeaders : Map[String, MarkupHeader]) : Option[String] = 
     // copy all of them over
     copyDir(from, to, filterOut, log) ~~>
       markupExtensions.foldLeft(None : Option[String]){
@@ -71,7 +71,7 @@ object SbtWiki {
 			  else extraHeaders)+"<title>"+x.title+"</title>"+x.extraHeaders }.
 		      getOrElse{extraHeaders}
 	      }
-, tokens, log, delete)
+, bodyEnd, tokens, log, delete)
 	    }
 	  }
 	}
@@ -80,12 +80,12 @@ object SbtWiki {
   /**
    * Converts wiki formats to html with a given set of extra headers then removes the original file.  Only use this when the html path is in target :-)
    */ 
-  def convert( markup : File, html : File, extraHeaders : String, tokens : Map[String, String], log : Logger) : Option[String] = convert(markup, html, extraHeaders, tokens, log, true)
+  def convert( markup : File, html : File, extraHeaders : String, bodyEnd : String, tokens : Map[String, String], log : Logger) : Option[String] = convert(markup, html, extraHeaders, bodyEnd, tokens, log, true)
 
   /**
    * Converts wiki formats to html with a given set of extra headers
    */ 
-  def convert( markup : File, html : File, extraHeaders : String, tokens : Map[String, String], log : Logger, delete : Boolean) : Option[String] = {
+  def convert( markup : File, html : File, extraHeaders : String, bodyEnd : String, tokens : Map[String, String], log : Logger, delete : Boolean) : Option[String] = {
     try {
       import org.eclipse.mylyn.wikitext.core.parser.builder.HtmlDocumentBuilder
       import java.io.StringWriter
@@ -113,6 +113,11 @@ object SbtWiki {
 	  override def emitHeadContents() {
 	    super.emitHeadContents()
 	    charactersUnescaped(replaceTokens(extraHeaders,tokens))
+	  }
+
+	  override def endBody() {
+	    charactersUnescaped(replaceTokens(bodyEnd,tokens))
+	    super.endBody()
 	  }
 	}
 	

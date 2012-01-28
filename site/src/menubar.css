@@ -1,16 +1,23 @@
-ul {
+#scales-site-menubar ul {
     list-style: none;
     padding-left: 0.4em;
     margin-left: -0.4em;
 }
 
-dt > ul {
+#scales-site-menubar dt > ul {
     margin-left: 0px;
 }
 
-li {
+#scales-site-menubar li {
     margin-left: -0.4em;
     padding-left: 0.9em;
+}
+
+div#scales-site-menubar {
+    left: 2px;
+    top: 1px;
+    float: left;
+    position: absolute;
 }
 
 .menuPlus {
