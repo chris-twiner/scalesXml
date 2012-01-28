@@ -15,7 +15,7 @@ object SiteKeys {
   /**
    * The project used to fill the tokens, e.g. version number org etc
    */
-  val siteInfoProject = SettingKey[LocalProject]("site-info-project")
+  val siteInfoProject = SettingKey[Project]("site-info-project")
 
   /**
    * Site wide base css
@@ -263,7 +263,7 @@ object SiteSettings {
    */
   def cbs(lang : String) = () => "<pre class=\"language-"+lang+"\">"
 
-  def settings(infoProject : LocalProject) = Seq(
+  def settings(infoProject : Project) = Seq(
     siteInfoProject := infoProject,
     siteCSS <<= baseCss,
     siteJQuery <<= (resourcesOutDir) apply { _ / "jquery-1.5.min.js"},
@@ -274,7 +274,8 @@ object SiteSettings {
     menuBar <<= siteResourceDir apply { _ / "menubar.mw" },
     menuBarCSS <<= siteResourceDir apply { _ / "menubar.css" },
     menuBarJS := menuBarJSDefault,
-    siteTokens <<= (version in siteInfoProject, moduleName in siteInfoProject, organization in siteInfoProject) apply getSiteTokens,
+    //siteTokens <<= (version in siteInfoProject, moduleName in siteInfoProject, organization in siteInfoProject) apply getSiteTokens,
+    siteTokens <<= (projectID in infoProject) apply getSiteTokens,
     siteMarkupDelete := true,
     siteMarkupDocHeaders := Map(),
     highlightScripts := getHighlightScripts,
@@ -300,14 +301,19 @@ GlobFilter("*.*~")) }, // all emacs backups
     site <<= (siteParams, streams, siteDocs, siteBodyEnd, menuBarHtml, unpackResourcesTask) map siteTask
   )
 
-  def getSiteTokens(version : String, name: String, org : String) = Map[String, ()=>String]( "User" -> userF, "timestamp" -> { () => {new java.util.Date().toString}}, 
+//  def getSiteTokens(version : String, name: String, org : String) = 
+  def getSiteTokens(module : ModuleID) = {
+    import module._
+
+Map[String, ()=>String]( "User" -> userF, "timestamp" -> { () => {new java.util.Date().toString}}, 
 		   "datetime" -> {() => {java.text.DateFormat.getDateTimeInstance.format(new java.util.Date())}},
-//		   "moduleID" -> {() => id},
+		   "artifactID" -> {() => name + "-" + revision},
+		   "moduleID" -> {() => name + "-" + revision},
 		   "projectName" -> {() => name},
-		   "projectVersion" -> {() => version},
-		   "projectOrganization" -> {() => org}, 
-		   "projectOrganisation" -> {() => org}, 
-		   "FullVersion" -> {() => org + " : " + name + "-" + version},
+		   "projectVersion" -> {() => revision},
+		   "projectOrganization" -> {() => organization}, 
+		   "projectOrganisation" -> {() => organization}, 
+		   "FullVersion" -> {() => organization + " : " + name + "-" + revision},
 		   "cscala" -> cbs("scala"), 
 		   "bxml" -> (() => "<code class=\"xml\">"),
 		   "cxml" -> cbs("xml"),
@@ -315,6 +321,7 @@ GlobFilter("*.*~")) }, // all emacs backups
 		   "cjava" -> cbs("java"),
 		   "cend" -> cend
 		     ) ++ sysEnv ++ sysProperties
+  }
 
   def getHighlightScripts =  
       js("./highlight/highlight.pack.js") +

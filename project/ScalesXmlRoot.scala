@@ -35,7 +35,7 @@ object ScalesXmlRoot extends Build {
     }, 
     rootProjectId = "scales-xml-root", projectDependencies = Seq(core, jaxen),
     standardSettings = standardSettings ++ Utils.resourceSettings ++ 
-      SiteSettings.settings(LocalProject("core")) ++ Seq(
+      SiteSettings.settings(core) ++ Seq(
 	siteCSS <<= siteResourceDir apply { _ / "scales_xml.css" },
 	siteMarkupDocs := List("ScalesXmlIntro"->"An Introduction to Scales Xml",
 			  "MemoryOptimisation"->"An Overview of Memory Optimisation and Performance"),
