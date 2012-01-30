@@ -18,6 +18,12 @@ div#scales-site-menubar {
     top: 1px;
     float: left;
     position: absolute;
+    width: 18%;
+}
+
+#scales-site-menubar h2 {
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
 }
 
 .menuPlus {

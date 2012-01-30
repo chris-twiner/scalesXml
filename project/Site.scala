@@ -110,6 +110,11 @@ object SiteKeys {
   val siteDocs = TaskKey[Option[String]]("site-docs")
 
   /**
+   * An html index of the generated files and main doc links, also copys the generated files over
+   */ 
+  val siteIndex = TaskKey[String]("site-index")
+
+  /**
    * A list of markup docs that will be shown in the index.
    * The pair is relative filename without extension -> description.
    */ 
@@ -296,7 +301,8 @@ GlobFilter("*.*~")) }, // all emacs backups
     siteBodyEnd := "",
     siteParams <<= (siteParams, siteTokens, siteHeaders) apply { (a, b, c) => a.copy(siteTokens = b, siteHeaders = c) },
     siteDocParams <<= (siteResourceDir, siteJQuery, resourcesOutDir, siteDocsIgnore, siteMarkupDelete, siteMarkupDocHeaders, siteMediaWikiTemplates) apply SiteDocParams,
-    menuBarHtml <<= (siteParams, menuBar, streams) map getMenuBar,
+    siteIndex <<= (siteParams, streams) map getSiteIndex,
+    menuBarHtml <<= (siteParams, menuBar, siteIndex, streams) map getMenuBar,
     siteDocs <<= (siteDocParams, siteParams, siteBodyEnd, menuBarHtml, unpackResourcesTask, streams) map makeSite,
     site <<= (siteParams, streams, siteDocs, siteBodyEnd, menuBarHtml, unpackResourcesTask) map siteTask
   )
@@ -394,7 +400,7 @@ $("pre[class^='language-']").each(function(i,elem) {
   }
 */
 
-  def getMenuBar( siteParams: SiteParams, menuBarFile : File, stream : std.TaskStreams[_]) : Either[String, String] = {
+  def getMenuBar( siteParams: SiteParams, menuBarFile : File, siteIndex : String, stream : std.TaskStreams[_]) : Either[String, String] = {
     import siteParams._
     import stream.log
 
@@ -416,7 +422,7 @@ $("pre[class^='language-']").each(function(i,elem) {
 	    Right(r)
 	  } else {
 	    val innerM = full.substring(p+ 6, ep)
-	    Left("<div id=\"scales-site-menubar\">"+innerM+"</div>")
+	    Left("<div id=\"scales-site-menubar\">"+siteIndex+innerM+"</div>")
 	  }
 	}
       } finally {
@@ -426,6 +432,80 @@ $("pre[class^='language-']").each(function(i,elem) {
       Left("") // doesn't exist so don't add any extra to the output
     }
   }
+
+  def getSiteIndex( siteParams: SiteParams, stream : std.TaskStreams[_]) : String = {
+    import siteParams._
+    import stream.log
+
+    val sb = new java.lang.StringBuilder()
+
+    sb.append("== Generated Documentation ==\n")
+
+    val sitesc = sites
+    // copy them over
+    sitesc.foldLeft( None : Option[String]){
+      (x, y) =>
+	x ~~> {
+	  val from = new java.io.File(outputPath.asFile, y.copy.from)
+	  val to = new java.io.File( siteOutputPath.asFile, y.copy.to)
+	  if (from.exists)
+	    copyDir(from, to, siteIgnore ++ y.ignore, log) 
+	  else {
+	    log.debug("Could not find directory "+from.getAbsolutePath+" skipping copy")
+	    None
+	  }
+	}
+    } ~~> {
+	sitesc.foldLeft( sb ){
+	  (x,y) =>
+	    if (new java.io.File(outputPath.asFile, y.copy.from).exists) {
+	      val link = y.siteLink.getOrElse{"./"+y.copy.to+"/index.html"}
+	      x.append("* ["+link+" "+y.siteDesc+"]\n")
+	    } else x
+	}
+	  if (siteMarkupDocs.size > 0) {
+	    sb.append( "\n== Project Documentation ==\n")
+	    siteMarkupDocs.foldLeft( sb ){
+	      (x,y) =>
+	       val f = new java.io.File(siteOutputPath, y._1 + ".html") 
+	       if (f.exists) {
+		 x.append("* [./"+y._1+".html "+y._2+"]\n")
+	       } else x
+	    }
+	  }
+	
+      None
+    }.orElse{
+      
+      // generate the index 
+      val th = java.io.File.createTempFile("scales_site_index_","_si")
+      val fh = java.io.File.createTempFile("scales_site_index_from",".mw")
+      try{
+	IO.write(fh, sb.toString, utf8)
+
+	val r = convert(fh, th, siteHeaders, "", siteTokens, log, 
+			false // not copying
+		      )
+	Some(r.map{ x => log.error("Generated header could not be generated "+x); "" }.getOrElse{
+	  // transformation worked, grab the body...
+	  val full = IO.read(th, utf8)
+	  val p = full.indexOf("<body>") // NB not sure if this changes per type
+	  val ep = full.lastIndexOf("</body>")
+	  if ((p < 0) || (ep < 0)) {
+	    val r = "Could not find a body in the site index ("+p+","+ep+")"
+	    log.error(r)
+	    ""
+	  } else {
+	    full.substring(p+ 6, ep)
+	  }
+	})
+      } finally {
+	fh.delete
+	th.delete
+      }
+    }
+  }.getOrElse("")
+
  
   def makeSite(params : SiteDocParams, siteParams : SiteParams, siteBodyEnd : String, menuBarHtml : Either[String, String], unpackResources : Option[String], streams : std.TaskStreams[_]) =  { // TODO - allow the source zip for highlighting and site_docs to be replaceds
     import params._
@@ -530,7 +610,7 @@ $("pre[class^='language-']").each(function(i,elem) {
   $('#scales-site-menubar li:has(ul)').toggleClass('menuPlus');
   $('#scales-site-menubar ul').children('li:has(ul)').click(function(event){
             if (this == event.target) {                
-                $(this).children('ul').toggle('fast');
+                $(this).children('ul').fadeToggle('fast');
 		$(this).toggleClass('menuPlus');
 		$(this).toggleClass('menuMinus');		
             }
