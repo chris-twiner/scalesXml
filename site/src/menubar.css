@@ -24,6 +24,11 @@ div#scales-site-menubar {
 #scales-site-menubar h2 {
     margin-top: 0.5em;
     margin-bottom: 0.5em;
+    font-size: 16px;
+}
+
+#scales-site-menubar a {
+    font-size: 14px;
 }
 
 .menuPlus {

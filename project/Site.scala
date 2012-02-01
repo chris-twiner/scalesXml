@@ -109,16 +109,18 @@ object SiteKeys {
    */
   val siteDocs = TaskKey[Option[String]]("site-docs")
 
+  case class SiteIndex( menuBar : String, indexPage : String)
+
   /**
    * An html index of the generated files and main doc links, also copys the generated files over
    */ 
-  val siteIndex = TaskKey[String]("site-index")
+  val siteIndex = TaskKey[SiteIndex]("site-index")
 
   /**
-   * A list of markup docs that will be shown in the index.
-   * The pair is relative filename without extension -> description.
+   * A list of markup docs, without extension, that will be shown in the index.
+   * The path is relative to src.
    */ 
-  val siteMarkupDocs = SettingKey[ List[(String, String)] ]("site-markup-docs")
+  val siteMarkupDocs = SettingKey[ Seq[String] ]("site-markup-docs")
 
   /**
    * Users wishing to add a title or override other headers should
@@ -168,11 +170,11 @@ object SiteKeys {
    */ 
   val siteOutputPath = SettingKey[File]("site-output-path")
 
-  private[sbtplugins] case class SiteParams(siteOutputPath : File, siteIgnore : Seq[FileFilter], sites : Seq[Site], siteIndexHeader : File, siteIndexFooter : File, siteMarkupDocs : List[(String, String)], siteCSS : File, packageSiteZip : File, outputPath : File, siteTokens : Map[String, ()=>String] = Map(), siteHeaders : String = "")
+  private[sbtplugins] case class SiteParams(siteOutputPath : File, siteIgnore : Seq[FileFilter], sites : Seq[Site], siteIndexHeader : File, siteIndexFooter : File, siteCSS : File, siteResourceDir : File, packageSiteZip : File, outputPath : File, siteTokens : Map[String, ()=>String] = Map(), siteHeaders : String = "", siteMarkupDocHeaders : Map[String, MarkupHeader] = Map(), siteMarkupDocs : Seq[String] = List())
 
   private[sbtplugins] val siteParams = SettingKey[SiteParams]("obfuscated.site-params")
 
-  private[sbtplugins] case class SiteDocParams(siteResourceDir : File, siteJQuery : File, resourcesOutDir : File, siteDocsIgnore : Seq[FileFilter], siteMarkupDelete : Boolean = false, siteMarkupDocHeaders : Map[String, MarkupHeader], siteMediaWikiTemplates : List[(String, String)])
+  private[sbtplugins] case class SiteDocParams(siteJQuery : File, resourcesOutDir : File, siteDocsIgnore : Seq[FileFilter], siteMarkupDelete : Boolean = false, siteMediaWikiTemplates : List[(String, String)])
 
   private[sbtplugins] val siteDocParams = SettingKey[SiteDocParams]("obfuscated.site-doc-params")
 }
@@ -224,25 +226,15 @@ object Copy {
  *
  * The ignore list can be tailored for just a site, it will be added to 
  * the siteIgnore list upon running site.
+ *
+ * shortDesc is used for the menu bar, siteDesc for the main index  
  */
-case class Site( copy : Copy, siteDesc : String, siteLink : Option[String], ignore : Iterable[FileFilter])
-
-object Site{
-  def apply( copy : Copy, siteDesc : String ) : Site = Site(copy,siteDesc, None, List())
-
-  def apply( copy : Copy, siteDesc : String, siteLink : String ) : Site = Site(copy,siteDesc, Some(siteLink), List())
-
-  def apply( copy : Copy, siteDesc : String, siteLink : Option[String] ) : Site = Site(copy,siteDesc, siteLink, List())
-
-  def apply( copy : Copy, siteDesc : String, siteLink : String, ignore : Iterable[FileFilter] ) : Site = Site(copy,siteDesc, Some(siteLink), ignore)
-
-}
-
+case class Site( copy : Copy, shortDesc : String, siteDesc : String, siteLink : Option[String] = None, ignore : Iterable[FileFilter] = List())
 
 object DefaultSites {
 
-  val xraySite = Site(Copy("api.sxr"), "Scala XRay Specs view of the source, also available via the Scaladocs")
-  val docsSite = Site(Copy("api", "doc"), "ScalaDocs for ${artifactID}")
+  val xraySite = Site(Copy("api.sxr"), "SXR Source", "Scala XRay Specs view of the source, also available via the Scaladocs")
+  val docsSite = Site(Copy("api", "doc"), "ScalaDocs", "ScalaDocs for ${artifactID}")
 /*  val xrayTestsSite = Site(Copy("test-classes.sxr"), "Scala XRay Specs view of the test source")
   val scctSite = Site(Copy("coverage-report"), "SCCT - Scala TestCoverage")
   // here we don't have an index just the dir
@@ -282,6 +274,7 @@ object SiteSettings {
     //siteTokens <<= (version in siteInfoProject, moduleName in siteInfoProject, organization in siteInfoProject) apply getSiteTokens,
     siteTokens <<= (projectID in infoProject) apply getSiteTokens,
     siteMarkupDelete := true,
+    siteMarkupDocs := List(),
     siteMarkupDocHeaders := Map(),
     highlightScripts := getHighlightScripts,
     siteHeaders <<= (highlightStyle, highlightScripts, menuBarJS ) apply {
@@ -295,12 +288,12 @@ GlobFilter("*.*~")) }, // all emacs backups
     siteDocsIgnore <<= siteIgnore,
     siteOutputPath <<= (crossTarget in compile) apply { _ / "site" },
     packageSiteZip := new java.io.File("C:/root.zip"),
-    siteParams <<= (siteOutputPath, siteIgnore, sites, siteIndexHeader, siteIndexFooter, siteMarkupDocs, siteCSS, packageSiteZip, crossTarget in compile) apply {
+    siteParams <<= (siteOutputPath, siteIgnore, sites, siteIndexHeader, siteIndexFooter, siteCSS, siteResourceDir, packageSiteZip, crossTarget in compile) apply {
       SiteParams(_,_,_,_,_,_,_,_,_)
     },
     siteBodyEnd := "",
-    siteParams <<= (siteParams, siteTokens, siteHeaders) apply { (a, b, c) => a.copy(siteTokens = b, siteHeaders = c) },
-    siteDocParams <<= (siteResourceDir, siteJQuery, resourcesOutDir, siteDocsIgnore, siteMarkupDelete, siteMarkupDocHeaders, siteMediaWikiTemplates) apply SiteDocParams,
+    siteParams <<= (siteParams, siteTokens, siteHeaders, siteMarkupDocHeaders, siteMarkupDocs) apply { (a, b, c, d, e) => a.copy(siteTokens = b, siteHeaders = c, siteMarkupDocHeaders = d, siteMarkupDocs = e) },
+    siteDocParams <<= (siteJQuery, resourcesOutDir, siteDocsIgnore, siteMarkupDelete, siteMediaWikiTemplates) apply SiteDocParams,
     siteIndex <<= (siteParams, streams) map getSiteIndex,
     menuBarHtml <<= (siteParams, menuBar, siteIndex, streams) map getMenuBar,
     siteDocs <<= (siteDocParams, siteParams, siteBodyEnd, menuBarHtml, unpackResourcesTask, streams) map makeSite,
@@ -400,7 +393,7 @@ $("pre[class^='language-']").each(function(i,elem) {
   }
 */
 
-  def getMenuBar( siteParams: SiteParams, menuBarFile : File, siteIndex : String, stream : std.TaskStreams[_]) : Either[String, String] = {
+  def getMenuBar( siteParams: SiteParams, menuBarFile : File, siteIndex : SiteIndex, stream : std.TaskStreams[_]) : Either[String, String] = {
     import siteParams._
     import stream.log
 
@@ -422,7 +415,7 @@ $("pre[class^='language-']").each(function(i,elem) {
 	    Right(r)
 	  } else {
 	    val innerM = full.substring(p+ 6, ep)
-	    Left("<div id=\"scales-site-menubar\">"+siteIndex+innerM+"</div>")
+	    Left("<div id=\"scales-site-menubar\">"+siteIndex.menuBar+innerM+"</div>")
 	  }
 	}
       } finally {
@@ -433,7 +426,8 @@ $("pre[class^='language-']").each(function(i,elem) {
     }
   }
 
-  def getSiteIndex( siteParams: SiteParams, stream : std.TaskStreams[_]) : String = {
+  def getSiteIndex( siteParams: SiteParams, stream : std.TaskStreams[_]) : SiteIndex = {
+    def inner(siteDesc : Site => String, docDesc : MarkupHeader => String) = {
     import siteParams._
     import stream.log
 
@@ -456,24 +450,28 @@ $("pre[class^='language-']").each(function(i,elem) {
 	  }
 	}
     } ~~> {
-	sitesc.foldLeft( sb ){
+      sitesc.foldLeft( sb ){
+	(x,y) =>
+	  if (new java.io.File(outputPath.asFile, y.copy.from).exists) {
+	    val link = y.siteLink.getOrElse{"./"+y.copy.to+"/index.html"}
+	    x.append("* ["+link+" "+ siteDesc(y) +"]\n")
+	  } else x
+      }
+      if (siteMarkupDocs.size > 0) {
+	sb.append( "\n== Documentation Highlights ==\n")
+	siteMarkupDocs.foldLeft( sb ){
 	  (x,y) =>
-	    if (new java.io.File(outputPath.asFile, y.copy.from).exists) {
-	      val link = y.siteLink.getOrElse{"./"+y.copy.to+"/index.html"}
-	      x.append("* ["+link+" "+y.siteDesc+"]\n")
-	    } else x
+	    siteMarkupDocHeaders.get(y).map{ 
+	      header =>
+		
+		val f = new java.io.File(siteResourceDir, y)
+		if (f.exists) {
+		  x.append("* [./"+f.base+".html "+docDesc(header)+"]\n")
+		} else x
+	    }.getOrElse(x)
 	}
-	  if (siteMarkupDocs.size > 0) {
-	    sb.append( "\n== Project Documentation ==\n")
-	    siteMarkupDocs.foldLeft( sb ){
-	      (x,y) =>
-	       val f = new java.io.File(siteOutputPath, y._1 + ".html") 
-	       if (f.exists) {
-		 x.append("* [./"+y._1+".html "+y._2+"]\n")
-	       } else x
-	    }
-	  }
-	
+      }
+      
       None
     }.orElse{
       
@@ -505,6 +503,8 @@ $("pre[class^='language-']").each(function(i,elem) {
       }
     }
   }.getOrElse("")
+   
+  SiteIndex(inner(_.shortDesc, _.shortDesc),inner(_.siteDesc, _.description))}
 
  
   def makeSite(params : SiteDocParams, siteParams : SiteParams, siteBodyEnd : String, menuBarHtml : Either[String, String], unpackResources : Option[String], streams : std.TaskStreams[_]) =  { // TODO - allow the source zip for highlighting and site_docs to be replaceds
@@ -574,15 +574,7 @@ $("pre[class^='language-']").each(function(i,elem) {
 	} ~~> (
 	  if (siteMarkupDocs.size > 0) {
 	    append(siteIndexMdf, "\n<br/>\n== Project Documentation ==\n<br/>\n", utf8, log)
-	    siteMarkupDocs.foldLeft( None : Option[String] ){
-	     (x,y) =>
-	     x ~~> {
-	       val f = new java.io.File(outDir.asFile, y._1 + ".html") 
-	       if (f.exists) {
-		 append(siteIndexMdf, "* [./"+y._1+".html "+y._2+"]\n", utf8, log)
-	       } else Some("File "+f.getCanonicalPath + " does not exist")
-	     }
-	    }
+	    None
 	  } else None
 	) ~~> {
 	  // footer

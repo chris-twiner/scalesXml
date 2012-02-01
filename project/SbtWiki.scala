@@ -16,11 +16,7 @@ import java.io.File
  * Title gets special treatment as it is likely the most common case, given the siteHeaders.
  * If the user really only wants a certain set of headers then they can set overrideHeaders to true.
  */ 
-case class MarkupHeader( title : String, extraHeaders : String, overrideHeader : Boolean )
-object MarkupHeader {
-  def apply( title : String ) : MarkupHeader = MarkupHeader( title, "", false )
-  def apply( title : String , extraHeaders : String ) : MarkupHeader = MarkupHeader( title, extraHeaders, false )
-}
+case class MarkupHeader( title : String , extraHeaders : String = "", overrideHeader : Boolean = false )(val shortDesc : String = title, val description : String = title)
 
 /**
  * Provides a wrapper around WikiText for simple site operations
