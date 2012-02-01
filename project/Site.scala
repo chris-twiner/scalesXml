@@ -297,7 +297,7 @@ GlobFilter("*.*~")) }, // all emacs backups
     siteIndex <<= (siteParams, streams) map getSiteIndex,
     menuBarHtml <<= (siteParams, menuBar, siteIndex, streams) map getMenuBar,
     siteDocs <<= (siteDocParams, siteParams, siteBodyEnd, menuBarHtml, unpackResourcesTask, streams) map makeSite,
-    site <<= (siteParams, streams, siteDocs, siteBodyEnd, menuBarHtml, unpackResourcesTask) map siteTask
+    site <<= (siteParams, streams, siteDocs, siteBodyEnd, menuBarHtml, unpackResourcesTask, siteIndex) map siteTask
   )
 
 //  def getSiteTokens(version : String, name: String, org : String) = 
@@ -427,7 +427,7 @@ $("pre[class^='language-']").each(function(i,elem) {
   }
 
   def getSiteIndex( siteParams: SiteParams, stream : std.TaskStreams[_]) : SiteIndex = {
-    def inner(siteDesc : Site => String, docDesc : MarkupHeader => String) = {
+    def inner(siteDesc : Site => String, docDesc : MarkupHeader => String) : (String, String) = {
     import siteParams._
     import stream.log
 
@@ -443,13 +443,13 @@ $("pre[class^='language-']").each(function(i,elem) {
 	  val from = new java.io.File(outputPath.asFile, y.copy.from)
 	  val to = new java.io.File( siteOutputPath.asFile, y.copy.to)
 	  if (from.exists)
-	    copyDir(from, to, siteIgnore ++ y.ignore, log) 
+	    copyDir(from, to, siteIgnore ++ y.ignore, log)
 	  else {
 	    log.debug("Could not find directory "+from.getAbsolutePath+" skipping copy")
 	    None
 	  }
 	}
-    } ~~> {
+    }.map(x=>(x,"")) ~~> {
       sitesc.foldLeft( sb ){
 	(x,y) =>
 	  if (new java.io.File(outputPath.asFile, y.copy.from).exists) {
@@ -475,16 +475,18 @@ $("pre[class^='language-']").each(function(i,elem) {
       None
     }.orElse{
       
+      val mu = sb.toString
+
       // generate the index 
       val th = java.io.File.createTempFile("scales_site_index_","_si")
       val fh = java.io.File.createTempFile("scales_site_index_from",".mw")
       try{
-	IO.write(fh, sb.toString, utf8)
+	IO.write(fh, mu, utf8)
 
 	val r = convert(fh, th, siteHeaders, "", siteTokens, log, 
 			false // not copying
 		      )
-	Some(r.map{ x => log.error("Generated header could not be generated "+x); "" }.getOrElse{
+	Some((r.map{ x => log.error("Generated header could not be generated "+x); "" }.getOrElse{
 	  // transformation worked, grab the body...
 	  val full = IO.read(th, utf8)
 	  val p = full.indexOf("<body>") // NB not sure if this changes per type
@@ -496,15 +498,15 @@ $("pre[class^='language-']").each(function(i,elem) {
 	  } else {
 	    full.substring(p+ 6, ep)
 	  }
-	})
+	}, mu))
       } finally {
 	fh.delete
 	th.delete
       }
     }
-  }.getOrElse("")
+  }.getOrElse(("",""))
    
-  SiteIndex(inner(_.shortDesc, _.shortDesc),inner(_.siteDesc, _.description))}
+  SiteIndex(inner(_.shortDesc, _.shortDesc)._1,inner(_.siteDesc, _.description)._2)}
 
  
   def makeSite(params : SiteDocParams, siteParams : SiteParams, siteBodyEnd : String, menuBarHtml : Either[String, String], unpackResources : Option[String], streams : std.TaskStreams[_]) =  { // TODO - allow the source zip for highlighting and site_docs to be replaceds
@@ -525,7 +527,7 @@ $("pre[class^='language-']").each(function(i,elem) {
     }
   }
 
-  def siteTask( siteParams : SiteParams, streams : std.TaskStreams[_], siteDocRes : Option[String], siteBodyEnd : String, menuBarHtml : Either[String, String], unpackResources : Option[String] ) = siteDocRes.map{ s => streams.log.error("Cannot make site as siteDocs has failed due to "+s); s} ~~> {
+  def siteTask( siteParams : SiteParams, streams : std.TaskStreams[_], siteDocRes : Option[String], siteBodyEnd : String, menuBarHtml : Either[String, String], unpackResources : Option[String], siteIndexO : SiteIndex ) = siteDocRes.map{ s => streams.log.error("Cannot make site as siteDocs has failed due to "+s); s} ~~> {
     // create target dir
     import siteParams._
     import streams.log
@@ -543,57 +545,30 @@ $("pre[class^='language-']").each(function(i,elem) {
     // doesn't matter if it fails
     IO.createDirectory(outDir)
 
-    val sitesc = sites
-    // copy them over
-    sitesc.foldLeft( None : Option[String]){
-      (x, y) =>
-	x ~~> {
-	  val from = new java.io.File(outputPath.asFile, y.copy.from)
-	  val to = new java.io.File( outDir.asFile, y.copy.to)
-	  if (from.exists)
-	    copyDir(from, to, siteIgnores ++ y.ignore, log) 
-	  else {
-	    log.debug("Could not find directory "+from.getAbsolutePath+" skipping copy")
-	    None
-	  }
-	}
-    } ~~> {
-      // create cover page..
-      val wikiBase = if (siteIndexHeader.exists) ioCatchingRes(read(siteIndexHeader.asFile, utf8))(log)
+    // create cover page..
+    val wikiBase = if (siteIndexHeader.exists) ioCatchingRes(read(siteIndexHeader.asFile, utf8))(log)
 	else Right("= ${FullVersion} Site =\n")
-      wikiBase.fold(Some(_),{b => ioCatching{write(siteIndexMdf, b+"\n<br/>\n", utf8);None}(log) ~~> {
-	// middle
-	sitesc.foldLeft( None : Option[String] ){
-	  (x,y) =>
-	    x ~~> {
-	      if (new java.io.File(outputPath.asFile, y.copy.from).exists) {
-		val link = y.siteLink.getOrElse{"./"+y.copy.to+"/index.html"}
-		append(siteIndexMdf, "* ["+link+" "+y.siteDesc+"]\n", utf8, log)
-	      } else x
-	    }
-	} ~~> (
-	  if (siteMarkupDocs.size > 0) {
-	    append(siteIndexMdf, "\n<br/>\n== Project Documentation ==\n<br/>\n", utf8, log)
-	    None
-	  } else None
-	) ~~> {
-	  // footer
-	  val wikiEnd = if (siteIndexFooter.exists) ioCatchingRes(read(siteIndexFooter.asFile, utf8))(log)
-			else Right("<br/>\n[./"+packageSiteZip.name+" Download Site Zip]\n\nBuilt By: ${User}, ${timestamp}")
-	  wikiEnd.fold(Some(_),{f=>append(siteIndexMdf, f, utf8, log)})
-	}
-      }}) ~~> {
-	// convert to html
-	try{
-	  unpackResources ~~>
-	  copyFile(siteCSS, outDir / "scales_base.css", log) ~~>
-	  convert(siteIndexMd, siteIndex, title("${FullVersion} Site") + siteHeaders, bodyEnd, siteTokens, log)
-	} catch {
-	  case e : Exception => Some(e.getMessage)
-	}
+    wikiBase.fold(Some(_),{b => ioCatching{write(siteIndexMdf, b+"\n<br/>\n", utf8);None}(log) ~~> {
+      // middle
+      append(siteIndexMdf, siteIndexO.indexPage, utf8, log)
+    } ~~> {
+	// footer
+	val wikiEnd = if (siteIndexFooter.exists) ioCatchingRes(read(siteIndexFooter.asFile, utf8))(log)
+		      else Right("<br/>\n[./"+packageSiteZip.name+" Download Site Zip]\n\nBuilt By: ${User}, ${timestamp}")
+	wikiEnd.fold(Some(_),{f=>append(siteIndexMdf, f, utf8, log)})
+      }
+    }) ~~> {
+      // convert to html
+      try{
+	unpackResources ~~>
+	copyFile(siteCSS, outDir / "scales_base.css", log) ~~>
+	convert(siteIndexMd, siteIndex, title("${FullVersion} Site") + siteHeaders, bodyEnd, siteTokens, log)
+      } catch {
+	case e : Exception => Some(e.getMessage)
       }
     }
   }
+
 
   val menuBarJSDefault = """
   <script type="text/javascript">

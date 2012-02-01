@@ -36,6 +36,3 @@ The design aims of Scales Xml also target correctness first, an Iteratee based p
 ;* Up to 20% faster than scala.xml
 ;* Lower memory usage than both scala.xml and JAXP/DOM
 ;* Parsing memory usage can be optimised for given usage
-
-<br/>
-== Generated Documentation ==
