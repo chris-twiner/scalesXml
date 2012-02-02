@@ -13,17 +13,22 @@
     padding-left: 0.9em;
 }
 
+#scales-site-menubar dt {
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+}
+
 div#scales-site-menubar {
     left: 2px;
     top: 1px;
     float: left;
     position: absolute;
     width: 18%;
+    background-color: #F2F2F2;
+    border-radius: 9px;
 }
 
 #scales-site-menubar h2 {
-    margin-top: 0.5em;
-    margin-bottom: 0.5em;
     font-size: 16px;
 }
 

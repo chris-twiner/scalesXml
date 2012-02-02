@@ -548,7 +548,7 @@ $("pre[class^='language-']").each(function(i,elem) {
     // create cover page..
     val wikiBase = if (siteIndexHeader.exists) ioCatchingRes(read(siteIndexHeader.asFile, utf8))(log)
 	else Right("= ${FullVersion} Site =\n")
-    wikiBase.fold(Some(_),{b => ioCatching{write(siteIndexMdf, b+"\n<br/>\n", utf8);None}(log) ~~> {
+    wikiBase.fold(Some(_),{b => ioCatching{write(siteIndexMdf, b, utf8);None}(log) ~~> {
       // middle
       append(siteIndexMdf, siteIndexO.indexPage, utf8, log)
     } ~~> {
@@ -579,9 +579,13 @@ $("pre[class^='language-']").each(function(i,elem) {
             if (this == event.target) {                
                 $(this).children('ul').fadeToggle('fast');
 		$(this).toggleClass('menuPlus');
-		$(this).toggleClass('menuMinus');		
+		$(this).toggleClass('menuMinus');
             }
-            return false;
+	    if ($(event).get(0).target.tagName.toLowerCase() == "a") {
+	      return true; // we want links to be clickable
+	    } else {
+              return false;
+	    }
         })
         .children('ul').hide();
 

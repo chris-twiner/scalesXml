@@ -25,6 +25,14 @@ h1,h2,h3 {
 	color: white;
 	padding: 1px 4px 1px 0.5em;
 	font-weight: bold;
+
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+}
+
+dl {
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
 }
 
 h1 {

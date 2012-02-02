@@ -1,6 +1,4 @@
-__TOC__
-
-= Introduction =
+= Scales Xml ${projectVersion} Introduction =
 
 Scales Xml, in addition to immutability, aims to focus on these separate concerns:
 
@@ -15,17 +13,22 @@ Scales Xml, in addition to immutability, aims to focus on these separate concern
 ;* Operations on XML (Path - a Zipper over Tree) is separated from both the contents and the structure
 ;* Changing any update to individual XML Element or Items will not cause cascading changes in the rest of the structure (function of Path)
 ;* Transformations on XML Trees (via Path) should be composable and simple to follow.
+;* The data model is the same for both Push and Pull parsing (with the addition of EndElem for XmlPull)
 
 ; '''XML Comprehensions - XPath'''
 ;* Navigation through XML is either through Path directly or the inbuilt XPath syntax
 ;* Syntax closely resembles normal XPath leveraging, for example, Paths ability to navigate parents
 ;* Syntax should separate the navigation of elements from available predicates as far as possible (niceties such as \*QName remain) 
 ;* Syntax should not rely on string interpretation but on types (QName objects used directly)
+;* XPaths are used as a basis for Tree transformation
+;* The full XPath axe are available (with the exception of the namespace axis)
 
 ; '''Pull API'''
 ;* Based on javax.xml.stream, allowing optimisations from jaxp/stax upgrades
 ;* Uses the same types as the SAX based parser
 ;* Leverages Scalaz Iteratees to provide processing of the event stream
+;** You can choose how to process an xml stream, should your code control the flow, the enumerator or a mixture?
+;** Immutable transformations on streams
 ;* Provides an Iteratee to process XPath like locations via a ${cscala}<nowiki>List[QName]</nowiki>${cend}
 ;* Provides a combinator (onDone) to iterate over ResumableIters allowing simplified XML parsing
 ;* Scales adds the concept of resumable iteration:
@@ -51,34 +54,11 @@ ${cend}
 ;* javax.xml.validation support
 ;* Aims to hide all JAXP implementation inconsistencies
 
-= How to use =
+; '''Performance'''
+;* Up to 20% faster than scala.xml
+;* Lower memory usage than both scala.xml and JAXP/DOM
+;* Parsing memory usage can be optimised for given usage
 
-The M2 style repo for snapshots is at https://scala-scales.googlecode.com/svn/repo-snapshots.
-
-So for sbt 0.7 its:
-
-${cscala}
-val scalesSnapshots = "Scales Snapshots" at "http://scala-scales.googlecode.com/svn/repo-snapshots"
-val scalesRepo = "Scales Repo" at "http://scala-scales.googlecode.com/svn/repo"
-val scalesXml = "scales" %% "scales-xml" % "0.3"
-${cend}
-
-Maven repos should therefore use scales-xml_2.9.1 as the dependency.
-
-[http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.1/0.3/index.html The documentation site is here] and zip of the site documentation is available at [http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.1/0.3/scales-xml_2.9.1-0.3-site.zip scales-xml.zip].  
-
-_Warning_ local file based sites do not work in Chrome, use Firefox or IE in preference.
-
-= Simple Usage Examples =
-
-To use ScalesXml you must use the following imports (where the objects ScalesUtils and ScalesXml import implicits).
-
-${cscala}
-  import scales.utils._
-  import ScalesUtils._
-  import scales.xml._
-  import ScalesXml._
-${cend}
 
 == Parse and XPaths ==
 
