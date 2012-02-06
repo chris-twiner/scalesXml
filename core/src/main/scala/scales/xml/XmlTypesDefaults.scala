@@ -91,10 +91,10 @@ trait XmlTypesImplicits {
    */
   implicit def toAttrS(local: String)(implicit ver: XmlVersion): Attribute = Attribute(toAttrQNameN(NoNamespaceQName(local)), "")
 
-  // we don't know if its a CanHavePrefix and we don't care as the prefix we add will be ignored
+  /* we don't know if its a CanHavePrefix and we don't care as the prefix we add will be ignored
   implicit val toAttrQ = (nons: QName) => 
     Attribute(PrefixedQName(nons.local, nons.namespace.prefixed("f")(Xml10,IsFromParser))(Xml10,IsFromParser), "")
-
+*/
   implicit def toAttrKS(local: String)(implicit ver: XmlVersion): Key[Attribute] = new AttributeKey(local, Default.noNamespace.uri)
 
   implicit def toAttrKQ(q : QName) : Key[Attribute] =

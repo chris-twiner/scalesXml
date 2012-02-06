@@ -72,12 +72,24 @@ object QNameCharUtils {
 import QNameCharUtils._
 
 /**
+ * Seperate the notion of a normal Namespace and that of the "empty namespace" - no default namespace
+ */ 
+sealed trait UnderlyingNamespace {
+  val uri : String
+  override def hashCode = uri.hashCode
+  override def equals( other : Any ) = other match {
+    case ons : UnderlyingNamespace => 
+      (this eq ons) || (uri == ons.uri) 
+    case _ => false
+  }
+}
+
+/**
  * Represents a XML Namespace spec compliant Namespace.
  *
  * NOTE Users are recommended to use the prefixed function and work with prefixes directly for qnames.
  */
-sealed trait Namespace {
-  val uri : String
+trait Namespace extends UnderlyingNamespace {
 
   /**
    * Create an UnprefixedQName 
@@ -99,13 +111,13 @@ sealed trait Namespace {
    */ 
   def prefixed( prefix : String, local : String)(implicit ver : XmlVersion, fromParser : FromParser) : PrefixedQName = PrefixedQName(local, prefixed(prefix))
 
-  override def hashCode = uri.hashCode
-  override def equals( other : Any ) = other match {
-    case ons : Namespace => 
-      (this eq ons) || (uri == ons.uri) 
-    case _ => false
-  }
+}
 
+/**
+ * Special case for empty namespaces
+ */ 
+object EmptyNamespace extends UnderlyingNamespace {
+  final val uri = ""
 }
 
 object Namespace {
@@ -189,9 +201,10 @@ object Default {
   /**
    * placeholder for the current element default namespace
    */
-  val namespace = Namespace("")(Xml10,IsFromParser)
+  protected[xml] val namespace = Namespace("")(Xml10,IsFromParser)
+
   /**
    * The no namespace namespace (xmlns="")
    */
-  val noNamespace = namespace
+  val noNamespace = EmptyNamespace
 }

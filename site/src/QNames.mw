@@ -1,0 +1,81 @@
+= QNames =
+
+[http://www.w3.org/TR/2009/REC-xml-names-20091208/#NT-NCName The namespaces spec] introduced namespacing into XML, giving the three following possible types of qualified names:
+
+# Fully Qualified (localname, prefix and namespace)
+# No namespace (localname only xmlns="")
+# Namespaced (localname and namespace - xmlns="a new default scoped namespace")
+
+This can be seen modelled in the JAXP QName class, or as the QName ADT in Scales.
+
+== Namespaces & Scope ==
+
+Namespaces are scoped according to the nesting of XML elements.  If the root declares a default namespace it applies for all of the XML child elements unless overridden by introducing a new scoped default namespace.
+
+This scoping does not apply to attributes, they are either fully qualified or have namespace xmlns="".
+
+== Namespaces in Scales ==
+
+Namespaces are directly modelled as a type in Scales and are used to create QNames.  Namespaces are created simply by
+
+${cscala}
+  // a Namespace
+  val ns = Namespace("test:uri")
+  // a PrefixedNamespace
+  val p = ns.prefixed("p")
+
+  // this QName is fully qualified
+  val qname = p("localname")
+${cend}
+
+PrefixedNamespaces are required to create a PrefixedQName but can also lead to simpler looking code.
+
+== QNames in Scales ==
+
+Scales enforces the use of QNames throughout its api.  Attributes can '''only''' be created with either a NoNamespaceQName or a PrefixedQName.  Elements also can use UnprefixedQNames:
+
+${cscala}
+    val ns = Namespace("uri:namespace")
+    val pre = ns.prefixed("pre")
+    
+    val unprefixedQName = ns("localName")
+    val prefixedQName = pre("localName")
+    // l is a NoNamespaceQName wrapper
+    val nonamespaceQName = "localName"l
+
+    val uelem = Elem(unprefixedQName)
+    
+    // implicitly converted, nonamespaceQName is valid for an attribute
+    val nonamespaceAQN : AttributeQName = 
+      nonamespaceQName
+
+    // won't compile as unprefixed but namespaced QNames are not valid for an attribute
+    //val unprefixedAQN  : AttributeQName = 
+    //  unprefixedQName
+
+    val root = 
+      <(uelem) /@(nonamespaceAQN -> "nv",
+		  prefixedQName -> "pv") /(
+	prefixedQName, // these implicitly create an Elem with this QName
+	nonamespaceQName 
+      )
+${cend}
+
+== Creating QNames ==
+
+=== Direct ===
+
+${cscala}
+  val ns = Namespace("uri:namespace")
+  val pre = ns.prefixed("pre")
+  val prefixed = PrefixedQName( "local", pre )
+
+  // same as above
+  val prefixed2 = pre("local")
+
+  // without a prefix - only for Elems
+  val namespaced = ns("local")
+
+  val noNamespace = NoNamespaceQName("local")
+  
+${cend}

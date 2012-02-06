@@ -21,5 +21,5 @@ object BaseTestConstants {
   val jh = Namespace("urn:justHere").prefixed("jh")
   val defo = Namespace("urn:default").prefixed("def")
 
-  val dontRedeclare = Default.noNamespace("dontRedeclare")
+  val dontRedeclare = NoNamespaceQName("dontRedeclare")
 }

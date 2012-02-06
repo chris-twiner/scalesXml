@@ -139,9 +139,9 @@ trait NameFunctions {
     t.pqName
 
   /**
-   * Returns the namespace object
+   * Returns the underlying namespace object
    */ 
-  def namespace[T](implicit t : T, name : Names[T], d : DIF) : Namespace =
+  def namespace[T](implicit t : T, name : Names[T], d : DIF) : UnderlyingNamespace =
     t.namespace
 
   /**

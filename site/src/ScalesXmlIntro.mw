@@ -60,24 +60,6 @@ ${cend}
 ;* Parsing memory usage can be optimised for given usage
 
 
-== Parse and XPaths ==
-
-${cscala}
-
-  val testXml = loadXml(new FileReader("./tests/data/BaseXmlTest.xml"))
-
-  val path = top(testXml)
-
-  path.\*("NoNamespace").\*(Elements.localName("prefixed"))
-  /*
-   Note that \+ is the only major difference to XPath style syntax
-   and allows expansion of child nodes (E1\E2 in XPath requires E2 to
-   be evaluated within the context of E1, which is tricky to mimic
-   in static code)
-  */
-  path.\\*("urn:default"::"ShouldRedeclare").\^.\+.text.pos(4)
-
-${cend}
 
 == XML DSL == 
 

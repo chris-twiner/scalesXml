@@ -15,7 +15,7 @@ sealed trait QName {
   /**
    * There is always a namespace, but it may be the noNamespace namespace
    */ 
-  val namespace : Namespace
+  val namespace : UnderlyingNamespace
   val prefix : Option[String]
   
   /**
@@ -96,6 +96,9 @@ sealed trait QName {
  * Mixed in to Prefixed and Unprefixed
  */ 
 trait CanHavePrefix extends QName {
+
+  val namespace : Namespace
+
   def withPrefix( prefix : String )(implicit ver : XmlVersion, fromParser: FromParser) : PrefixedQName =
       PrefixedQName( local , namespace.prefixed(prefix))
 }
