@@ -18,17 +18,36 @@ trait XmlParser {
 
   import ScalesXml.xmlCBF
 
+  import org.xml.sax.Locator
+  import org.xml.sax.ext.Locator2
+
   /**
    * Use a custom parserPool to control the sax factory features 
    */ 
   def loadXml[Token <: OptimisationToken](source: InputSource, strategy : PathOptimisationStrategy[Token] = defaultPathOptimisation, parsers : Loaner[SAXParser] = DefaultSAXParserFactoryPool.parsers)(implicit xmlVer : XmlVersion): Doc = {
-    var handler = new Handler(strategy)
+    
     parsers.loan {
       parser =>
+      var handler = new Handler(strategy)
+      
       parser.setProperty("http://xml.org/sax/properties/lexical-handler", handler)
       parser.parse(source, handler)
 
-      Doc(handler.buf.tree, handler.prolog, handler.end)
+      val docVersion = {
+	val f = parser.getProperty("http://xml.org/sax/properties/document-xml-version")
+	if (f eq null) Xml10
+	else {
+	  val v = f.toString
+	  if (v == "1.1") 
+	    Xml11
+	  else
+	    Xml10	  
+	}
+      }
+
+      Doc(handler.buf.tree, handler.prolog.copy( 
+	decl = handler.prolog.decl.copy(version = docVersion)),
+	  handler.end)
     }
   }
   
@@ -98,8 +117,13 @@ trait XmlParser {
     var prolog = Prolog()
     var end = EndMisc()
 
+    var locator : Locator = _
+    
     // used for judging PI or Comments
     var inprolog = true
+
+    def checkit(what: String) {
+    }
 
     override def startDTD(name : String, publicId : String, systemId : String) {
       prolog = prolog.copy(dtd = Some(DTD(name, publicId, systemId)))
@@ -114,10 +138,25 @@ trait XmlParser {
       nsDeclarations += (prefix -> uri)
     }
 
+    override def setDocumentLocator( loc : Locator ) {
+      locator = loc
+    }
+
     override def startElement(uri: String,
       localName: String,
       qName: String,
       attributes: org.xml.sax.Attributes) {
+
+      if (inprolog) {
+	if (locator.isInstanceOf[Locator2]) {
+	  val loc2 = locator.asInstanceOf[Locator2]
+	  prolog = prolog.copy( decl = prolog.decl.copy(encoding = (
+	    if (loc2.getEncoding ne null) {
+	      java.nio.charset.Charset.forName(loc2.getEncoding)
+	    } else scales.utils.defaultCharset
+	  )))	  
+	}
+      }
 
       inprolog = false
 

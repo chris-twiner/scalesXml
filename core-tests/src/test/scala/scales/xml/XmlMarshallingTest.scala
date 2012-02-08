@@ -212,6 +212,22 @@ class XmlMarshallingTest extends junit.framework.TestCase {
     // serialize the stream is enough to read it all
     asString(pull)
   }
+  
+  val test11_val = """<?xml version="1.1" encoding="US-ASCII"?><x xmlns:n1="http://www.w3.org"><n1:a/><x xmlns:n1=""><x xmlns:n1="http://www.w3.org"><n1:a/></x></x></x>"""
+
+  def test11_prefix : Unit = {
+    val tree = loadXml(resource(this, "/data/1.1_prefixes.xml"))
+    val s = asString(tree)
+    assertEquals(test11_val, s)
+  }
+
+  def test11_prefix_pull : Unit = {
+    val tree = pullXmlCompletely(resource(this, "/data/1.1_prefixes.xml"))
+    val s = asString(tree)
+    assertEquals(test11_val, s)
+  }
+
+
 }
 
 object MarshallingTest {

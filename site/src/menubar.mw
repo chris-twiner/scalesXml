@@ -5,7 +5,13 @@
 
 ; '''Xml Model'''
 ;* [QNames.html QNames]
-;** another
+;** [QNames.html#QNames_in_Scales_-_Let_the_compliler_help_us Type System FTW]
+;** [QNames.html#Creating_QNames Creating QNames]
+;*** [QNames.html#Directly Directly]
+;*** [QNames.html#Implicits With Sugar]
+;** [QNames.html#Equality Equality]
+;*** [QNames.html#Scalaz_Equal_and_Scales_Equiv via Scalaz Equal and Scales Equiv]
+
 ;*** yet another
 ;** subs
 ;** subs with sub

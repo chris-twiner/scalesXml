@@ -114,7 +114,17 @@ class DslBuildersTest extends junit.framework.TestCase {
       case ANS(la) => fail("Should not have matched prefixed ns")
       case _ => 1//ok
     }
+  }
+
+  def testEquivalent : Unit = {
+    val ns = Namespace("uri:test")
+    val namespaced = ns( "local" )
+    val prefixed = ns.prefixed("pre", "local")
+    val non = "local"l
     
+    assertTrue(equivalent(namespaced, prefixed))
+
+    assertFalse(equivalent(prefixed, non))
   }
 
   def testPathMatcher : Unit = {

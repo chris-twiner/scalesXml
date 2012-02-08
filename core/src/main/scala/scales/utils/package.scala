@@ -16,12 +16,17 @@ package object utils extends IterableUtils
   import scala.collection.IndexedSeqLike
   import scala.collection.generic.CanBuildFrom
 
-  @inline final def item[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]](item: Item): ItemOrTree[Item, Section, CC] = item//Left[Item, Tree[Item, Section, CC]](item)
+  @inline final def item[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]](item: Item): ItemOrTree[Item, Section, CC] = item
 
-  @inline final def subtree[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[A] <: IndexedSeqLike[A, CC[A]]](section: Section, children: CC[ItemOrTree[Item, Section, CC]])(implicit cbf : TreeCBF[Item, Section, CC]): ItemOrTree[Item, Section, CC] = Tree[Item, Section, CC](section, children)//Right[Item, Tree[Item, Section, CC]](Tree[Item, Section, CC](section, children))
+  @inline final def subtree[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[A] <: IndexedSeqLike[A, CC[A]]](section: Section, children: CC[ItemOrTree[Item, Section, CC]])(implicit cbf : TreeCBF[Item, Section, CC]): ItemOrTree[Item, Section, CC] = Tree[Item, Section, CC](section, children)
 
   @inline final def one[T]( i : T ) : List[T] =
       i :: Nil
+
+  /**
+   * Are these two parameters (convertable to a C) equal for a given Equiv[C] instance
+   */ 
+  def equivalent[A, B, C]( a : A, b : B)(implicit equiv: Equiv[C], viewA: A => C, viewB: B => C) = equiv(a, b)
 
   /**
    * Simple grabber of resources

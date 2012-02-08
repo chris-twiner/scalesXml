@@ -217,7 +217,9 @@ trait XmlPrinter {
    */
   def printTree[T](xml: T)(implicit serf: SerializerFactory, sxml: SerializeableXml[T]): Unit = {
     val out = new java.io.PrintWriter(System.out)
-    serialize(XmlOutput(SerializerData(out, encoding = vmDefaultCharset)))(xml) foreach { e =>
+
+    val decl = sxml.doc(xml).prolog.decl
+    serialize(XmlOutput(SerializerData(out, decl.version, decl.encoding)))(xml) foreach { e =>
       out.println("Could not serialize got the following exception " + e.getClass.getName + " - " + e.getMessage)
       e.printStackTrace(out)
     }
@@ -231,7 +233,9 @@ trait XmlPrinter {
    */
   def asString[T](xml: T)(implicit serf: SerializerFactory, sxml: SerializeableXml[T]): String = {
     val builder = new java.io.StringWriter()
-    foldPrint(XmlOutput(SerializerData(builder)))(xml) foreach {
+
+    val decl = sxml.doc(xml).prolog.decl
+    foldPrint(XmlOutput(SerializerData(builder, decl.version, decl.encoding)))(xml) foreach {
       throw _
     }
     builder.toString
