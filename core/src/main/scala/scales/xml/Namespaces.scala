@@ -65,7 +65,7 @@ object QNameCharUtils {
     if (validLocalName(validLocal)) 
       validLocal
     else
-      error("The local name '"+validLocal+"' is not valid")
+      error("The local name '"+validLocal+"' is not valid for Xml "+ver.version)
 
 }
 
@@ -140,7 +140,7 @@ object Namespace {
 	if (validXmlNamespace(validUri))
 	  swapForKnown(validUri)
 	else
-	  error("Namespaces must have valid URIs, '"+validUri+"' is invalid")
+	  error("Namespaces must have valid URIs, '"+validUri+"' is invalid for Xml "+ver.version)
       else
 	swapForKnown(validUri)
   }
