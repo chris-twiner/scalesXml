@@ -14,7 +14,7 @@ Namespaces are scoped according to the nesting of XML elements.  If the root dec
 
 This scoping does not apply to attributes, they are either fully qualified or have namespace xmlns="".  Namespaces are in XML 1.0 URIs and in XML 1.1 IRIs.
 
-Namespace prefixes also have a different binding relation ship in XML 1.1 documents, where xmlns:pre="" is actually legal (albeit very confusing) and unbinds the "pre" prefix.  This makes it invalid to use the "pre" prefix again (taken from the 1.1 namspaces spec):
+Namespace prefixes also have a different binding relation ship in XML 1.1 documents, where xmlns:pre="" is actually legal (albeit very confusing) and unbinds the "pre" prefix.  This makes it invalid to use the "pre" prefix again (taken from the 1.1 namespaces spec):
 
 ${cxml}
 <?xml version="1.1"?>
@@ -31,6 +31,8 @@ ${cend}
 
 Scales attempts to provide validation of the names via the version, but this is more than a little edge case filled.  Other libraries (XOM for example) have chosen to not support XML 1.1s use at all.
 
+See [XmlVersionSupport.html XML Version Support] for more details.
+
 == Namespaces in Scales ==
 
 Namespaces are directly modelled as a type in Scales and are used to create QNames.  Namespaces are created simply by
@@ -45,7 +47,7 @@ ${cscala}
   val qname = p("localname")
 ${cend}
 
-PrefixedNamespaces are required to create a PrefixedQName but can also lead to simpler looking code.
+PrefixedNamespaces are required to create a PrefixedQName but can also lead to simpler looking code.  In addition they can be used to declare namespace mappings on a particular level of a tree (attached to Elem - which can reduce re-use), the XML 1.1 example above requires this approach of declaring the mappings.
 
 == QNames in Scales - Let the compliler help us ==
 
@@ -167,5 +169,3 @@ ${cscala}
   // PrefixedQName and NoNamespaceQName can be "converted" to QName
   equivalent( prefixedDirect, localOnly) // false
 ${cend}
-
-== What about  ==

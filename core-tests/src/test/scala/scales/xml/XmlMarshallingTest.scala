@@ -229,7 +229,7 @@ class XmlMarshallingTest extends junit.framework.TestCase {
     val x = Elem("x"l, pre)
 
     val tree = x /( a, disabled /( x /( a )))
-    val doc = Doc(tree).copy(prolog = Prolog(Declaration(Xml11, java.nio.charset.Charset.forName("US-ASCII"))))
+    val doc = Doc(tree, Prolog(Declaration(Xml11, java.nio.charset.Charset.forName("US-ASCII"))))
 
     val s = asString(doc)
     assertEquals(test11_val, s)

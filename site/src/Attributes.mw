@@ -1,0 +1,33 @@
+= Attributes =
+
+XML Elements can contain attributes, these are made of a pair: QName and a string value.  Unlike Elements the QName of an Attribute must be either a fully qualified (PrefixedQName) or unqualified name (NoNamespaceQName).
+
+= Defining an Attribute =
+
+== Explicitly ==
+
+${cscala}
+
+  val ns = Namespace("uri:namespace")
+  val pre = ns.prefixed("pre")
+   
+  val prefixedQName = pre("localName")
+  val nonamespaceQName = "localName"l
+  val unprefixedQName = ns("localName")
+
+  val nonamespaceAttr = Attribute(nonamespaceQName, "value")
+  val prefixedAttr = Attribute(prefixedQName, "value")
+
+  // won't compile as Attributes can't have a namespace without a prefix
+  //val unprefixedAttr = Attribute(unprefixedQName, "value")
+
+${cend}
+
+== Implicitly ==
+
+${cscala}
+  val attr : Attribute = nonamespaceQName -> "value"
+
+  // won't compile
+  // val noAttr : Attribute = unprefixedQName -> "value"
+${cend}

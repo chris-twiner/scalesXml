@@ -55,7 +55,7 @@ object QNameCharUtils {
   def validXmlNamespace( namespace : String )(implicit ver : XmlVersion) =
     if ((ver eq Xml10) && (namespace.trim.length == 0))
       false // can't do empties in 1.0, only 1.1
-    else 
+    else // TODO - what else should we validate here, parsing URI / IRI?
       true
 
   /**
@@ -144,6 +144,8 @@ object Namespace {
       else
 	swapForKnown(validUri)
   }
+
+  def unapply( n : Namespace) = Some((n.uri))
 }
 
 sealed trait PrefixedNamespace  {
@@ -195,6 +197,8 @@ object PrefixedNamespace {
       else 
 	swapForKnown(nsprefix)
   }
+
+  def unapply( p : PrefixedNamespace) = Some((p.ns, p.prefix))
 }
 
 object Default {

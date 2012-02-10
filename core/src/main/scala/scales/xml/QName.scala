@@ -25,7 +25,9 @@ sealed trait QName {
   def qNameVersion : XmlVersion = 
     if (validLocalName(local)(Xml10) && 
 	// treat non prefixed as Xml10 prefixes as they are compatible with both
-	(prefix.map{p => validXmlPrefix(p)(Xml10)}.getOrElse(true)))
+	(prefix.map{p => validXmlPrefix(p)(Xml10)}.getOrElse(true)) &&
+	((namespace eq EmptyNamespace)  ||
+	  validXmlNamespace(namespace.uri)(Xml10) ))
       Xml10
     else 
       Xml11
@@ -119,6 +121,8 @@ object NoNamespaceQName {
 
     final val local = locali
   }
+
+  def unapply(n : NoNamespaceQName) = Some((n.local))
 }
 
 /**
@@ -135,6 +139,12 @@ object PrefixedQName {
     final val prefix = Some(prefixedNamespace.prefix)
     final val namespace = prefixedNamespace.ns
   }
+  def unapply(n : PrefixedQName) = Some((n.local, n.prefix.get, n.namespace))
+/*  def unapply(n : PrefixedQName) = 
+    Some((n.local, 
+	  PrefixedNamespace(n.namespace, n.prefix.get)
+	  (n.qNameVersion, IsFromParser)))
+  */
 }
 
 /**
@@ -153,6 +163,8 @@ object UnprefixedQName {
     final val local = locali
     final val namespace = namespacei
   }
+
+  def unapply(n : UnprefixedQName) = Some((n.local, n.namespace))
 }
 
 trait QNameImplicits {

@@ -116,6 +116,34 @@ class DslBuildersTest extends junit.framework.TestCase {
     }
   }
 
+  def testQNameUnapplies : Unit = {
+    val ens = ns("Elem")
+    val ans = ns.prefixed("pre", "attr")
+    val local = "local"l
+
+    ens match {
+      case UnprefixedQName("Elem", Namespace("test:uri")) => 1
+      case _ => fail("Should have matched unprefixed")
+    }
+
+    ans match {
+      case PrefixedQName("attr", "pre", Namespace("test:uri")) => 1
+      case _ => fail("Should have matched prefixed 3 tup")
+    }
+/*
+    ans match {
+      case PrefixedQName("attr", PrefixedNamespace(Namespace("test:uri"), "pre")) => 1
+      case _ => fail("Should have matched prefixed ns tup")
+    }
+*/
+    local match {
+      case NoNamespaceQName("local") => 1
+      case _ => fail("Should have matched no namespace qname")
+    }
+
+    ()
+  }
+
   def testEquivalent : Unit = {
     val ns = Namespace("uri:test")
     val namespaced = ns( "local" )

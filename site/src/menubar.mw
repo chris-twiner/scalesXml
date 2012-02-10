@@ -11,9 +11,9 @@
 ;*** [QNames.html#Implicits With Sugar]
 ;** [QNames.html#Equality Equality]
 ;*** [QNames.html#Scalaz_Equal_and_Scales_Equiv via Scalaz Equal and Scales Equiv]
-
-;*** yet another
-;** subs
-;** subs with sub
-;*** more subs with sub
+;* [XmlVersionSupport.html XML Version Support]
+;** [XmlVersionSupport.html#Differences_Between_1.0_and_1.1 Differences Between Xml 1.0 and 1.1]
+;** [XmlVersionSupport.html#How_Does_Scales_Allow_Both_Versions_.3F Scales Support for Both Versions]
+;*** [XmlVersionSupport.html#In_Parser_We_Trust_-_Users_We_Protect In Parser We Trust - Users We Protect]
+;*** [XmlVersionSupport.html#Runtime_XmlVersion_QName_Related_Correctness Runtime XmlVersion QName Related Correctness]
 
