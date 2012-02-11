@@ -13,7 +13,7 @@ There are four main differences:
 # Namespaces can be "unbound" from their prefixes
 # Namespaces are IRIs not URIs
 
-These differences make 1.1 support difficult to pleasantly achieve and forces checks for correctness into runtime in order to keep a uniform interface.
+These differences make 1.1 support difficult to pleasantly achieve and, in order to keep a uniform interface, forces some correctness checks into the runtime.
 
 == How Does Scales Allow Both Versions ? ==
 
@@ -42,7 +42,6 @@ However for general usage its helpful for the library to safeguard us against mi
 The implicit FromParser is used by Scales to provide this runtime check, and the QNameCharUtils functions provide the helpers for a given version (via Xerces XMLChar and XML11Char.
 
 == Runtime XmlVersion QName Related Correctness ==
-
 The implicitly scoped version dictates what runtime checks are applied.  In particular the namespace, localname and prefix are all validated at runtime for their content.  This is true for both Attribute and Elem QNames.
 
 Serializing is also, of course, affected by the XML version.  The document serialization itself then requires checking the comaptibility of QNames.  The rule here is simply if its an Xml11 QName only (all parts are correct) and the document version is Xml10 its an error.

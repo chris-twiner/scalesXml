@@ -2,9 +2,9 @@
 
 XML Elements can contain attributes, these are made of a pair: QName and a string value.  Unlike Elements the QName of an Attribute must be either a fully qualified (PrefixedQName) or unqualified name (NoNamespaceQName).
 
-= Defining an Attribute =
+== Defining an Attribute ==
 
-== Explicitly ==
+=== Explicitly ===
 
 ${cscala}
 
@@ -23,11 +23,50 @@ ${cscala}
 
 ${cend}
 
-== Implicitly ==
+=== Implicitly ===
 
 ${cscala}
+  // This can be used when defining elements or within the dsl
   val attr : Attribute = nonamespaceQName -> "value"
 
   // won't compile
   // val noAttr : Attribute = unprefixedQName -> "value"
 ${cend}
+
+== Equality ==
+
+The XML specifications require that no two attributes that share namespace and localName may be in the same element.  Attributes however must be testable for equality outside of this constraint:
+
+${cscala}
+  val attr2 : Attribute = nonamespaceQName -> "another value"
+
+  attr.name == attr2.name // true
+
+  attr == attr2 // false, values are different
+
+  val attr3 : Attribute = nonamespaceQName -> "another value"
+  
+  attr3 == attr2 // true
+${cend}
+
+=== Within an Elem ===
+
+Scalaz Equal comes to the rescue again, we can seperate the notion of attribute equality for simple comparisons and those of an Elems requirements:
+
+${cscala}
+  attr3 === attr // true - we don't take the value into account  
+
+  attr3 == attr // false - values are compared
+${cend}
+
+=== Attributes ListSet ===
+
+The Scales Utils class ListSet compares using the notion of Equiv equivalence (see [QNames.html#Scalaz_Equal_and_Scales_Equiv Equiv and Equal] for more details).  To make things easier for developers not using the DSL, Scales adds the Attribs() constructor (which ensures the appropriate Equal and Equiv type classes are always present):
+
+${cscala}
+  val attributes = Attribs(attr, prefixedQName -> "yet another value")
+${cend}
+
+== Testing Against QNames or Namespaces ==
+
+QNameMatcher and Namespace matcher provide simple matching logic that can simplify certain types of pattern matches, just like Scala Regex - see [QNames.html#Testing_For_QNames Testing For QNames] for examples.

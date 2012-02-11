@@ -169,3 +169,49 @@ ${cscala}
   // PrefixedQName and NoNamespaceQName can be "converted" to QName
   equivalent( prefixedDirect, localOnly) // false
 ${cend}
+
+== Testing For QNames ==
+
+Equality and Extractors can cover most usage scenarios but sometimes you want to test and extract in one go - just like Scalas regex support.
+
+As part of the Xml DSL Scales provides both QName and Namespace Matchers.  Starting with the following definitions we'll look at how to use these Matchers:
+
+${cscala}
+  val ns = Namespace("uri:namespace")
+  val name = ns.prefixed("pre","localName")
+
+  val elem = Elem(name)
+  val attrib = Attribute(name, "val")
+${cend}
+
+QNameMatcher allows you to test for whether an Attribute or an Elem is defined by a given QName (via =:=, namespace and localname only are compared):
+
+${cscala}
+  val NamedMatcher = name.matcher // .m is a short cut
+
+  elem match {
+    case NamedMatcher(e) => println("Matched element " + asString(e))
+    case _ => error("oops")
+  }
+
+  attrib match {
+    case NamedMatcher(a) => println("Matched attribute " + a)
+    case _ => error("oops")
+  }
+${cend}
+
+NamespaceMatcher simply checks for the Attribute or an Elem being part of a Namespace:
+
+${cscala}
+  val NamespaceMatcher = ns.m // short for matcher
+  
+  elem match {
+    case NamespaceMatcher(e) => println("Matched element " + asString(e))
+    case _ => error("oops")
+  }
+
+  attrib match {
+    case NamespaceMatcher(a) => println("Matched attribute " + a)
+    case _ => error("oops")
+  }
+${cend}
