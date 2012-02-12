@@ -6,7 +6,39 @@
 # No namespace (localname only xmlns="")
 # Namespaced (localname and namespace - xmlns="a new default scoped namespace")
 
-This can be seen modelled in the JAXP QName class, or as the QName ADT in Scales.
+This can be seen modelled in the JAXP QName class, or as the QName ADT in Scales.  The namespaces spec introduced the letter ":" as a seperator of prefix and localname, as such its use is forbidden in QName prefixes or localNames (runtime check).
+
+== Creating QNames ==
+
+=== Directly ===
+
+${cscala}
+  val ns = Namespace("uri:namespace")
+  val pre = ns.prefixed("pre")
+  val prefixed = PrefixedQName( "local", pre )
+
+  // same as above
+  val prefixed2 = pre("local")
+
+  // without a prefix - only for Elems
+  val namespaced = ns("local")
+
+  val noNamespace = NoNamespaceQName("local")
+
+  val prefixedDirect = ns.prefixed("pre2","local")
+${cend}
+
+=== Implicits ===
+
+${cscala}
+  // implicitly make it, allowing for \*("localNameOnly") XPath 1.0 syntax
+  val localOnly : NoNamespaceQName = "local"
+
+  // "directly" declaring it local with .l
+  val noNamespace = "local"l
+
+  val unprefixed = "test:namespace"::"local"
+${cend}
 
 == Namespaces & Scope ==
 
@@ -80,37 +112,13 @@ ${cscala}
       )
 ${cend}
 
-== Creating QNames ==
+== Runtime Validation ==
 
-=== Directly ===
+Whilst the compiler can help us with correctness on types, we sacrifice a usable api if we force other content checks into the type system.  For example we could model QName.apply functions to return Either[Valid, NonValid] and force combination of all Elem related data, but this would distract from the api (especially considering that incorrect XML is only likely to come from the developer - the parser won't let it through otherwise).
 
-${cscala}
-  val ns = Namespace("uri:namespace")
-  val pre = ns.prefixed("pre")
-  val prefixed = PrefixedQName( "local", pre )
+Scales QNames and Namespaces check for correct localname and prefix content at runtime based on the compile time scoped XmlVersion.  This still implies no object will ever get created with incorrect data, but forces these checks into throwing exceptions (or make the user suffer with the api that follows).
 
-  // same as above
-  val prefixed2 = pre("local")
-
-  // without a prefix - only for Elems
-  val namespaced = ns("local")
-
-  val noNamespace = NoNamespaceQName("local")
-
-  val prefixedDirect = ns.prefixed("pre2","local")
-${cend}
-
-=== Implicits ===
-
-${cscala}
-  // implicitly make it, allowing for \*("localNameOnly") XPath 1.0 syntax
-  val localOnly : NoNamespaceQName = "local"
-
-  // "directly" declaring it local with .l
-  val noNamespace = "local"l
-
-  val unprefixed = "test:namespace"::"local"
-${cend}
+Valid characters for a given xml version are checked by Xerces XML Char utilities with the addition of a simple ":" check from Scales.  Developers may not create a Namespace with "" unless using Xml11.  Declaring PrefixedNamespaces with prefix "xmlns" or "xml" must match their predefined uris.
 
 == Equality ==
 
