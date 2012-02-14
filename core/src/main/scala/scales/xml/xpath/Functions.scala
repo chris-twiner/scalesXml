@@ -186,6 +186,7 @@ trait NamesImplicits {
   implicit val xtreeNames = XmlTreeNames 
   implicit val qnameNames = QNameNames
   implicit val aqnameNames = AQNameNames
+  implicit val dslNames = DslNames
 }
 
 object AttributeNames extends Names[Attribute] {
@@ -202,6 +203,10 @@ object ElemNames extends Names[Elem] {
 
 object XmlTreeNames extends Names[XmlTree] {
   def name(implicit t : XmlTree) : QName = t.section.name
+}
+
+object DslNames extends Names[DslBuilder] {
+  def name(implicit t : DslBuilder) : QName = t.toTree.section.name
 }
 
 object XmlPathNames extends Names[XmlPath] {
@@ -283,6 +288,7 @@ trait TextImplicits {
   implicit val xpathText = XmlPathText
   implicit val itemText = XmlItemText
   implicit val itemOrElemText = ItemOrElemText
+  implicit val dslText = DslText
 }
 
 object XmlTreeText extends TextValue[XmlTree] {
@@ -298,6 +304,10 @@ object XmlTreeText extends TextValue[XmlTree] {
      sb
    }.toString
   }
+}
+
+object DslText extends TextValue[DslBuilder] {
+  def text(implicit t : DslBuilder) = XmlTreeText.text(t.toTree)
 }
 
 object XmlPathText extends TextValue[XmlPath] {

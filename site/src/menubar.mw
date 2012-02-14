@@ -50,3 +50,14 @@
 ;** [XmlDsl.html#Removing_Children Removing Children]
 ;** [XmlDsl.html#Removing_Attributes Removing Attributes]
 ;** [XmlDsl.html#Folding_Within_The_DSL Folding Within The DSL]
+
+; '''Accessing and Querying Data'''
+;* [XPathFunctions.html XPath Functions]
+;** [XPathFunctions.html#Organisation Organisation]
+;** [XPathFunctions.html#Using Using]
+;** [XPathFunctions.html#QName_Functions QName Functions]
+;** [XPathFunctions.html#Text_Functions Text Functions]
+;* XPaths
+;** Introduction
+;** Basic Abstractions
+;** stuff
