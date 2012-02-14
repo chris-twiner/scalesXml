@@ -203,8 +203,9 @@ sealed trait XmlItem extends LeftLike[XmlItem, Tree[XmlItem, Elem, XCC]] with Xm
 
   def doEquals( other : Any, clazz : Class[_] ) = 
     if (clazz.isInstance(other)) {
-      val o = other.asInstanceOf[XmlItem]
-      (o.value == value)
+	val o = other.asInstanceOf[XmlItem]
+	if (o eq this) true
+	else (o.value == value)
     } else false
 
 }
