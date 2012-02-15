@@ -57,7 +57,8 @@
 ;** [XPathFunctions.html#Using Using]
 ;** [XPathFunctions.html#QName_Functions QName Functions]
 ;** [XPathFunctions.html#Text_Functions Text Functions]
-;* XPaths
+;* XPath Embedded DSL
 ;** Introduction
 ;** Basic Abstractions
 ;** stuff
+;* XPath String Evaluation

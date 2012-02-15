@@ -285,10 +285,12 @@ trait TextImplicits {
   implicit val xtreeText = XmlTreeText
   implicit val attribText = AttributeText
   implicit val attribPathText = AttributePathText
-  implicit val xpathText = XmlPathText
+  implicit val xmlpathText = XmlPathText
   implicit val itemText = XmlItemText
   implicit val itemOrElemText = ItemOrElemText
   implicit val dslText = DslText
+
+  implicit def xpathToTextValue[T <: Iterable[XmlPath]] = xpath.XPathText.asInstanceOf[xpath.TextValue[XPath[T]]]
 }
 
 object XmlTreeText extends TextValue[XmlTree] {
@@ -330,4 +332,12 @@ object AttributePathText extends TextValue[AttributePath] {
 
 object XmlItemText extends TextValue[XmlItem] {
   def text(implicit a : XmlItem) = a.value
+}
+
+object XPathText extends TextValue[XPath[_]] {
+  def text(implicit a : XPath[_]) = {
+    val r = ScalesXml.fromXPathToIterable(a) 
+    if (r.size == 0) ""
+    else XmlPathText.text( r.head )
+  }
 }

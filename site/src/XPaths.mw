@@ -1,0 +1,28 @@
+= XPath Embedded DSL =
+
+The XML XPath specifications allows navigation of XML documents via a DSL that describes routes through a document using a combination of axe, steps and predicates.  It has a limited number of these abstractions but together they create a poweverful, often both direct and simple to use, querying language.
+
+Scales provides this power via both a traditional string based approach and an embedded DSL that leverages the power of Scalas syntactical flexibility to mimic the XPath syntax.
+
+The DSL uses the existing Scales abstractions to the full, and works via a zipper over the XmlTree itself.  Each navigation step through the tree creates new zippers and new paths through the tree.
+
+In every case possible (at time 0.3 the only known exception is the namespace:: axis) the range of behaviours is identical to the specification.  Instead of matching on prefixes Scales uses fully qualified expanded QNames (qualifiedName in the [XPathFunctions.html#QName_Functions QName Functions]) to match against, not requiring a context within which to run.
+
+== Simple Usage Examples ==
+
+Given the following document:
+
+${cscala}
+  val ns = Namespace("test:uri")
+  val nsa = Namespace("test:uri:attribs")
+  val nsp = nsa.prefixed("pre")
+
+  val builder = 
+    ns("Elem") /@ (nsa("pre", "attr1") -> "val1",
+      	    	   "attr2" -> "val2",
+		   nsp("attr3") -> "val3") /(
+      ns("Child"),
+      "Mixed Content",
+      ns("Child2") /( ns("Subchild") ~> "text" )
+    )
+${cend}

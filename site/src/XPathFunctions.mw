@@ -8,6 +8,7 @@ The XPath Functions are organised into two main type classes:
 
 # Names
 # TextValue
+# Boolean
 
 Names provides a type class for any type that can represent a QName:
 
@@ -21,8 +22,18 @@ TextValue, representing everything that can produce a text value, has a similar 
 * XmlTrees
 * Attributes
 * XmlItems
+* XPaths (value of the first node)
 
 In general if any logical combination thereof is possible they are also supported (for example XmlPaths themselves)
+
+The boolean family of type class instances:
+
+* XPaths (is it non-empty)
+* Iterables (is it non-empty)
+* String (length > 0)
+* Number (value > 0)
+and of course
+* Boolean
 
 == Using ==
 
@@ -83,3 +94,6 @@ ${cscala}
   value(tree.toTree) // \ndeep  value\n
   normalizeSpace(tree) // deep value, but using type class directly
 ${cend}
+
+== Boolean Functions ==
+

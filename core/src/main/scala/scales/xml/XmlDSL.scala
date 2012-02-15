@@ -24,6 +24,11 @@ trait DslImplicits {
   implicit def fromElemToTree( elem : Elem ) : XmlTree = DslBuilder.elem2tree(elem)
 
   /**
+   * Allows direct use of text where expected
+   */ 
+  implicit def fromStringToText( value : String ): Text = Text(value)
+
+  /**
    * Only works for elems, allows simpler definitions.  Not sure of its usefulness outside of tests though
   implicit def fromQNameToItemOrTree( qname : QName) : ItemOrElem = DslBuilder.q2tree(qname)//Right()
    */
@@ -117,7 +122,6 @@ class DslBuilder private( tree : XmlTree ) {
   
   /**
    * Add a number of child elements (as trees).  Via the implicit DslBuilders can then be embedded
-   */
   def /( elems : XmlTree * ) : DslBuilder = 
     /(elems)
 
@@ -125,6 +129,12 @@ class DslBuilder private( tree : XmlTree ) {
 
   def /( elems : => Iterable[XmlTree] ) : DslBuilder =
     new DslBuilder( tree.copy( children = (tree.children ++ elems  )))
+   */
+
+  def add( itemOrElems : ItemOrElem * ) = /( itemOrElems :_* )
+
+  def /( itemOrElems : => Iterable[ItemOrElem] ) : DslBuilder =
+    new DslBuilder( tree.copy( children = (tree.children ++ itemOrElems  )))
 
   /**
    * Fold over the current tree, allows folding deep within a builder.  Either the fold works or `this` is returned with the FoldError.
@@ -159,8 +169,8 @@ class DslBuilder private( tree : XmlTree ) {
   /**
    * Add a number of xmlITems, text, cdata, comments etc, the two params is to get around /(Seq) erasures.
    */
-  def /( item1 : XmlItem, items: XmlItem * ) = 
-    new DslBuilder( tree.copy( children = (tree.children :+ item[XmlItem, Elem, XCC](item1)) ++ items ))
+  def /( itemOrElems : ItemOrElem * ) = 
+    new DslBuilder( tree.copy( children = (tree.children ++ itemOrElems )))
 
   /**
    * sets the tree to a single Text node child, replacing all others

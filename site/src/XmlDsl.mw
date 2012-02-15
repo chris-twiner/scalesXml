@@ -4,6 +4,23 @@ XML DOMs traditionally create trees by each element "owning" its children.  Scal
 
 To simplify both creating and basic manipulation of trees Scales provides a DSL that closely resembles the structure of XML.  The point of focus in the tree (or the depth) is controlled by nesting of the arguements.
 
+The following example is a quick intro into how to create trees (also used within the [XPaths.html XPath guide]):
+
+${cscala}
+  val ns = Namespace("test:uri")
+  val nsa = Namespace("test:uri:attribs")
+  val nsp = nsa.prefixed("pre")
+
+  val builder = 
+    ns("Elem") /@ (nsa("pre", "attr1") -> "val1",
+      	    	   "attr2" -> "val2",
+		   nsp("attr3") -> "val3") /(
+      ns("Child"),
+      "Mixed Content",
+      ns("Child2") /( ns("Subchild") ~> "text" )
+    )
+${cend}
+
 == Tour of the DSL ==
 
 The tour will use the following definitions:
