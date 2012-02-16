@@ -547,4 +547,34 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
       textPosIsLast
       ) { value(_).trim }
   }
+
+
+
+  val ns = Namespace("test:uri")
+  val nsa = Namespace("test:uri:attribs")
+  val nsp = nsa.prefixed("pre")
+
+  val builder = 
+    ns("Elem") /@ (nsa("pre", "attr1") -> "val1",
+      	    	   "attr2" -> "val2",
+		   nsp("attr3") -> "val3") /(
+      ns("Child"),
+      "Mixed Content",
+      ns("Child2") /( ns("Subchild") ~> "text" )
+    )
+
+  val path2 = top(builder)
+  
+  def testTypes = {
+    val res = path2 \* ns("Child2") \* ns("Subchild")
+
+    assertEquals("text", text(res))
+    assertEquals("{test:uri}Subchild", qualifiedName(res))
+
+    val sub = res.\+.text
+
+    assertEquals("text", text(sub))
+    assertEquals("{}", qualifiedName(sub))
+  }
+
 }

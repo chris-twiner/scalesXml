@@ -24,6 +24,16 @@ trait Names[T] {
 class DIF()
 
 /**
+ * Represents an empty qname for those cases that should return empty string
+ */
+protected[xml] object EmptyQName {
+  /**
+   * Both namespace and localname are empty
+   */ 
+  protected[xml] val empty = NoNamespaceQName("")(Xml10, IsFromParser)
+}
+
+/**
  * Collects all type class based xpath functions, exposed via Functions in package
  *
  * Also adds aliases for the common functions
@@ -187,6 +197,8 @@ trait NamesImplicits {
   implicit val qnameNames = QNameNames
   implicit val aqnameNames = AQNameNames
   implicit val dslNames = DslNames
+
+  implicit def xpathToNames[T <: Iterable[XmlPath]] = xpath.XPathNames.asInstanceOf[xpath.Names[XPath[T]]]
 }
 
 object AttributeNames extends Names[Attribute] {
@@ -219,6 +231,14 @@ object QNameNames extends Names[QName] {
 
 object AQNameNames extends Names[AttributeQName] {
   def name(implicit t : AttributeQName) : QName = EqualsHelpers.toQName(t) 
+}
+
+object XPathNames extends Names[XPath[_]] {
+  def name(implicit a : XPath[_]) = {
+    val r = ScalesXml.fromXPathToIterable(a) 
+    if (r.size == 0) EmptyQName.empty
+    else r.head.focus(_ => EmptyQName.empty, XmlTreeNames.name(_))
+  }
 }
 
 /**
