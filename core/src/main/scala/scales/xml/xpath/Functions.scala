@@ -230,11 +230,20 @@ trait NamesImplicits {
   implicit val aqnameNames = AQNameNames
   implicit val dslNames = DslNames
 
-  implicit def xpathToNames[T <: Iterable[XmlPath]] = xpath.XPathNames.asInstanceOf[xpath.Names[XPath[T]]]
+  implicit def attribPathsNames[T <: Iterable[XmlPath]] = AttributePathsNames.asInstanceOf[Names[AttributePaths[T]]]
+  implicit def xpathToNames[T <: Iterable[XmlPath]] = XPathNames.asInstanceOf[Names[XPath[T]]]
 }
 
 object AttributeNames extends Names[Attribute] {
   def name(implicit t : Attribute) : QName = EqualsHelpers.toQName(t.name)
+}
+
+object AttributePathsNames extends Names[AttributePaths[_]] {
+  def name(implicit a : AttributePaths[_]) = {
+    val r = a.attributes
+    if (r.size == 0) EmptyQName.empty
+    else EqualsHelpers.toQName(r.head.attribute.name)
+  }
 }
 
 object AttributePathNames extends Names[AttributePath] {
@@ -342,7 +351,8 @@ trait TextImplicits {
   implicit val itemOrElemText = ItemOrElemText
   implicit val dslText = DslText
 
-  implicit def xpathToTextValue[T <: Iterable[XmlPath]] = xpath.XPathText.asInstanceOf[xpath.TextValue[XPath[T]]]
+  implicit def attribPathsText[T <: Iterable[XmlPath]] = AttributePathsText.asInstanceOf[TextValue[AttributePaths[T]]]
+  implicit def xpathToTextValue[T <: Iterable[XmlPath]] = XPathText.asInstanceOf[TextValue[XPath[T]]]
 }
 
 object XmlTreeText extends TextValue[XmlTree] {
@@ -380,6 +390,12 @@ object AttributeText extends TextValue[Attribute] {
 
 object AttributePathText extends TextValue[AttributePath] {
   def text(implicit a : AttributePath) = a.attribute.value
+}
+
+object AttributePathsText extends TextValue[AttributePaths[_]] {
+  def text(implicit a : AttributePaths[_]) =
+    if (a.attributes.size == 0) ""
+    else a.attributes.head.attribute.value  
 }
 
 object XmlItemText extends TextValue[XmlItem] {

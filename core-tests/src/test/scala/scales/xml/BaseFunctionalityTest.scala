@@ -589,4 +589,26 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
     assertFalse(hasQName(sub))
   }
 
+  def testAttributePathsTypes = {
+    val res = path2 \@ nsp("attr3")
+
+    assertTrue(hasQName(res))
+
+    assertEquals("val3", string(res))
+    assertEquals("{"+nsa.uri+"}attr3", qualifiedName(res))
+
+    val res2 = path2 \@ nsp("notGonnaFindIt")
+
+    assertEquals("", string(res2))
+    assertFalse(hasQName(res2))
+
+    try{
+      name(res2) // should throw
+      fail("Calling name on sub should not be possible")
+    } catch {
+      case t : Throwable => assertTrue("Was not our error but "+t.getMessage,
+				     t.getMessage.startsWith("A Names instance"))
+    }
+  }
+
 }

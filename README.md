@@ -40,6 +40,10 @@ Maven repos should therefore use scales-xml_2.8.1 as the dependency.
 
 _Warning_ local file based sites do not work in Chrome, use Firefox or IE in preference.
 
+# Mailing List
+
+The Scales dl is: scales-xml at googlegroups.com .  Feel free to ask questions or make suggestions there.  Issues should really be raised on github however.
+
 YourKit has been used to great effect in the creation of scales-xml:
 
 *YourKit* is kindly supporting open source projects with its full-featured Java Profiler.
