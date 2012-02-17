@@ -26,3 +26,39 @@ ${cscala}
       ns("Child2") /( ns("Subchild") ~> "text" )
     )
 ${cend}
+
+we can easily query for the Subchild:
+
+${cscala}
+  // top produces a Path from a Tree, in this case an XPath
+  val path = top(builder)
+
+  val res = path \* ns("Child2") \* ns("Subchild")
+  res.size // 1
+
+  string(res) // text
+  qname(res) // Subchild
+${cend}
+
+== XPath Axe ==
+
+Scales supports the complete useful XPath axe:
+
+* ancestor (ancestor_::)
+* ancestor-or-self (ancestor_or_self::)
+* attribute (*@)
+
+* child (\ or \+ to expand XmlItems)
+* descendant (descendant_::)
+* descendant-or-self (descendant_or_self_::)
+
+* following (following_::)
+* following-sibling (following_sibling_::)
+* parent (\^)
+
+* preceding (preceding_::)
+* preceding-sibling (preceding_sibling_::)
+* self (.)
+
+''NB Scales Embedded XPath DSL does not support the namespace axis''
+

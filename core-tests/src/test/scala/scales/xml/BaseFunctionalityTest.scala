@@ -571,10 +571,22 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
     assertEquals("text", text(res))
     assertEquals("{test:uri}Subchild", qualifiedName(res))
 
+    assertTrue(hasQName(res))
+
     val sub = res.\+.text
 
     assertEquals("text", text(sub))
     assertEquals("{}", qualifiedName(sub))
+
+    try{
+      name(sub) // should throw
+      fail("Calling name on sub should not be possible")
+    } catch {
+      case t : Throwable => assertTrue("Was not our error but "+t.getMessage,
+				     t.getMessage.startsWith("A Names instance"))
+    }
+
+    assertFalse(hasQName(sub))
   }
 
 }

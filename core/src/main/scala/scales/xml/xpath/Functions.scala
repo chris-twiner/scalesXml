@@ -115,14 +115,41 @@ trait NameFunctions {
     t.qName
 
   /**
-   * Returns the QName
+   * We cannot allow the QName to escape if its invalid.
    */ 
-  def name[T](implicit t : T, name : Names[T], d : DIF) : QName = t
+  private[this] def testNonEmpty( r : QName ) = 
+    if (r eq EmptyQName.empty) 
+      error("A Names instance has returned the EmptyQName.  This is not directly accessable")
+    else 
+      r
 
   /**
-   * Returns the QName
+   * Returns the QName, will throw if the QName is "empty"
    */ 
-  def name[T](t : T)(implicit name : Names[T]) : QName = t
+  def name[T](implicit t : T, name : Names[T], d : DIF) : QName = 
+    testNonEmpty(t)
+
+  /**
+   * Returns the QName, will throw if the QName is "empty"
+   */ 
+  def name[T](t : T)(implicit name : Names[T]) : QName = 
+    testNonEmpty(t)
+
+  /**
+   * Will be true for all values of T except when the resulting QName is "empty".
+   *
+   * If hasQName is false then calling name will throw
+   */ 
+  def hasQName[T](implicit t : T, name : Names[T], d : DIF) : Boolean = 
+    name.name(t) ne EmptyQName.empty
+
+  /**
+   * Will be true for all values of T except when the resulting QName is "empty".
+   *
+   * If hasQName is false then calling name will throw
+   */ 
+  def hasQName[T](t : T)(implicit name : Names[T]) : Boolean = 
+    hasQName(t, name, DIF.dif)
 
   /**
    * Returns the qualified name {namespace}local
@@ -182,12 +209,17 @@ trait NameFunctions {
 
 trait FunctionImplicits extends TextImplicits with NamesImplicits
 
+object DIF {
+  // only used to seperate the interfaces, fully implicit gets this as well
+  val dif = new DIF()
+}
+
 /**
  * Name type classes
  */ 
 trait NamesImplicits {
   // only used to seperate the interfaces, fully implicit gets this as well
-  implicit val dif = new DIF()
+  implicit val dif = DIF.dif
 
   implicit val attribNames = AttributeNames
   implicit val attributePathNames = AttributePathNames

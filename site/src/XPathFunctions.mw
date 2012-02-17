@@ -15,6 +15,7 @@ Names provides a type class for any type that can represent a QName:
 * Attributes
 * Elems
 * XmlTrees
+* XPaths (name of the first node, "empty" otherwise)
 * QNames
 
 TextValue, representing everything that can produce a text value, has a similar base list:
@@ -78,6 +79,8 @@ ${cscala}
   pqName(tree) // pre:{uri:namespace}prefixedElem
 ${cend}
 
+Using the `name` function with a non QName XPath (eg an XmlItem) will result in an exception.
+
 == Text Functions ==
 
 The full list of functions is available [doc/scales/xml/xpath/TextFunctions.html here].
@@ -95,5 +98,11 @@ ${cscala}
   normalizeSpace(tree) // deep value, but using type class directly
 ${cend}
 
-== Boolean Functions ==
+== Boolean Function ==
 
+${cscala}
+  boolean("") // false
+  boolean("value") // true
+
+  boolean(true) // true
+${cend}
