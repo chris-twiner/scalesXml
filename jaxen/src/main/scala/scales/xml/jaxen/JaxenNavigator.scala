@@ -115,6 +115,18 @@ class ScalesXPath(val xpath : String, val nsMap : Map[String,String] = Map()) ex
   }
 
   /**
+   * Evaluates path returning only matching XmlPaths
+   */ 
+  def xmlPaths( path : XmlPath ) : Iterable[XmlPath] =
+    evaluate(path).collect{ case Right(x) => x}
+
+  /**
+   * Evaluates path returning only matching AttributePaths
+   */ 
+  def attributePaths( path : XmlPath ) : Iterable[AttributePath] =
+    evaluate(path).collect{ case Left(x) => x}
+
+  /**
    * Single primitive version with hidden cast :<
    */ 
   def get[T]( path : XmlPath ) : T = {

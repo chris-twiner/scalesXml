@@ -40,10 +40,10 @@ class JaxenBaseFunctionalityTest extends BaseFunctionalityTest {
   val jprefixedPath = "/def:Default/NoNamespace/*[local-name(.) = 'prefixed']"
 
   def fromPathX(str : String, path : XmlPath) : Iterable[XmlPath] = 
-    jaxen(str).evaluate(path).map(_.right.get)
+    jaxen(str).xmlPaths(path)
 
   def fromPathA(str : String, path : XmlPath) : Iterable[AttributePath] = 
-    jaxen(str).evaluate(path).map(_.left.get)
+    jaxen(str).attributePaths(path)
 
   def fromPathX(str : String) : Iterable[XmlPath] = 
     fromPathX(str, path)

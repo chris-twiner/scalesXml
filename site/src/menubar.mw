@@ -59,7 +59,13 @@
 ;** [XPathFunctions.html#Text_Functions Text Functions]
 ;** [XPathFunctions.html#Boolean_Function Boolean Function]
 ;* [XPaths.html XPath Embedded DSL]
-;** Simple Usage Example
-;** Basic Abstractions
-;** stuff
-;* XPath String Evaluation
+;** [XPaths.html#Simple_Usage_Examples Simple Usage Examples]
+;** [XPaths.html#XPath_Axe XPath Axe]
+;** [XPaths.html#Node_Tests Node Tests]
+;** [XPaths.html#Predicates Predicates]
+;*** [XPaths.html#Positional_Predicates Positional Predicates]
+;*** [XPaths.html#Direct_Filtering Direct Filtering]
+;** [XPaths.html#Unsorted_Results_and_Views Unsorted Results and Views]
+;* [StringXPaths.html XPath 1.0 String Evaluation]
+;** [StringXPaths.html#How_To_Use How To Use]
+;** [StringXPaths.html#Other_Jaxen_Tricks Other Jaxen Tricks]

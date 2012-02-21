@@ -418,8 +418,8 @@ ${cscala}
 			 revision <- entry.\.*@("revision"l).one // ensure its only got one revision
 			 author <- entry.\*("author"l).one
 			 path <- entry.\*("paths"l).\*("path"l) // more than one path is allowed
-			 kind <- path.\.*@("kind"l).one
-			 action <- path.\.*@("action"l).one
+			 kind <- path.\.*@("kind"l)
+			 action <- path.\.*@("action"l)
 		       } yield (text(revision), value(author), text(kind), text(action), value(path))
 	  t ++ bits
 	}
