@@ -4,6 +4,84 @@ import scala.collection.immutable.Stack
 import scala.collection.IndexedSeqLike
 import scala.collection.generic.CanBuildFrom
 
+object PathFold {
+  def shiftWithBase[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]](base: Position[Item, Section, CC], x: Position[Item, Section, CC], by: Int): Position[Item, Section, CC] = x /*{
+
+    val up = base.position.reverse.pop.reverse // stack needs to be flipped to get parent
+    if (sameBase( up, x.position ) && 
+	up.size < xp.position.size
+      ) {      
+      val (above, below) = x.position.splitAt(up.size)
+      if (below.isEmpty) {
+	println("x is "+ x.position+ " base is "+base.position+" with sizes up: "+up.size+" x:"+x.position.size)
+      }
+      val newpos = {
+	val oldv = below.top
+	val old = below.pop
+	above ++ (old.push(oldv + by))
+      }
+      new PositionImpl[Item, Section, CC](
+        newpos,
+        x.root)
+
+    } else x
+  }*/
+
+  /**
+   * Folds over positions within a single path, for example all given children.  As such positions must be calculated.
+   *
+   * Takes the first root, returning Right(NoSingleRoot) if any of the subsequent roots don't match.
+   *
+   * folder retrieves the current path
+   *
+   * Each iteration folds the resulting tree back into the path. As this function must maintain the Path it does not expose the new path root until the result.
+   */
+  def foldPositions[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]], ACC](locations: Iterable[Path[Item, Section, CC]], accumulator: ACC)(folder: (ACC, Path[Item, Section, CC]) => (ACC, FoldOperation[Item, Section, CC])) (implicit cbf : TreeCBF[Item, Section, CC], cm : ClassManifest[(scales.utils.Position[Item,Section,CC], Path[Item, Section, CC])])  : Either[(ACC, Path[Item, Section, CC]), FoldError] = {
+    if (locations.isEmpty) return Right(NoPaths)
+
+    val sorted = sortPositions(locations, false)
+
+//    println(" list of positions ")
+//    sorted.foreach(p => println(p._1))
+
+    val head = sorted.head
+    var accum = accumulator
+
+    val rootPosition = head._1
+    val differentRoot = sorted.exists(p => p._1.root ne rootPosition.root)
+    if (differentRoot)
+      Right(NoSingleRoot)
+    else {
+
+      def withPositions( opositions : Seq[scales.utils.Position[Item,Section,CC]] ) : Either[(ACC, Path[Item, Section, CC]), FoldError] = {
+	var positions = opositions
+	var path = head._2
+	while (!positions.isEmpty) {
+
+          val (accf, res) = folder(accum, path)
+          accum = accf
+          val matched = res.perform(path) //matchIt( res, path )
+
+          if (matched.isLeft) {
+            path = matched.left.get
+            positions = res.adjust(positions)
+            if (!positions.isEmpty) {
+              path = moveTo(path, positions.head) // else nothing we keep path to call root
+            }
+          } else return Right(matched.right.get)
+	}
+	Left((accum, rootPath(path)))
+      }
+
+      // fold over positions, with the path from head, let each foldop decide what the next position sequence looks like
+      var positions = sorted.map(_._1).toSeq
+	
+      withPositions(positions)
+    }
+  }
+
+}
+
 /**
  * Utility functions for Paths, sorting, moving between Paths, getting to the root etc.
  */ 
@@ -38,68 +116,16 @@ trait Paths {
 
   type FoldR[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]] = Either[Path[Item, Section, CC], FoldError]
 
-  def shiftWithBase[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]](base: Position[Item, Section, CC], x: Position[Item, Section, CC], by: Int): Position[Item, Section, CC] = {
-    val up = base.position.reverse.pop.reverse // stack needs to be flipped to get parent
-    if (sameBase(up, x.position)) {
-      val (above, below) = x.position.splitAt(up.size)
-      val oldv = below.top
-      val old = below.pop
-      val newpos = above ++ (old.push(oldv + by))
-      new PositionImpl[Item, Section, CC](
-        newpos,
-        x.root)
-    } else x
-  }
+  def shiftWithBase[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]](base: Position[Item, Section, CC], x: Position[Item, Section, CC], by: Int): Position[Item, Section, CC] = PathFold.shiftWithBase(base, x, by)
 
-  def cleanBelow[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]](positions: Seq[Position[Item, Section, CC]]): Seq[Position[Item, Section, CC]] = positions.dropWhile { x =>
+  def cleanBelow[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]](positions: Seq[Position[Item, Section, CC]]): Seq[Position[Item, Section, CC]] = positions.drop(1) // take this or loop
+/*.dropWhile { x =>
     sameBase(positions.head.position, x.position)
-  }
+  }*/
 
   type PathFoldR[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]] = (Path[Item, Section, CC]) => FoldR[Item, Section, CC]
 
-  /**
-   * Folds over positions within a single path, for example all given children.  As such positions must be calculated.
-   *
-   * Takes the first root, returning Right(NoSingleRoot) if any of the subsequent roots don't match.
-   *
-   * folder retrieves the current path
-   *
-   * Each iteration folds the resulting tree back into the path. As this function must maintain the Path it does not expose the new path root until the result.
-   */
-  def foldPositions[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]], ACC](locations: Iterable[Path[Item, Section, CC]], accumulator: ACC)(folder: (ACC, Path[Item, Section, CC]) => (ACC, FoldOperation[Item, Section, CC])) (implicit cbf : TreeCBF[Item, Section, CC], cm : ClassManifest[(scales.utils.Position[Item,Section,CC], Path[Item, Section, CC])])  : Either[(ACC, Path[Item, Section, CC]), FoldError] = {
-    if (locations.isEmpty) return Right(NoPaths)
-
-    val sorted = sortPositions(locations)
-
-    val head = sorted.head
-    var accum = accumulator
-
-    val rootPosition = head._1
-    val differentRoot = sorted.exists(p => p._1.root ne rootPosition.root)
-    if (differentRoot)
-      Right(NoSingleRoot)
-    else {
-
-      // fold over positions, with the path from head, let each foldop decide what the next position sequence looks like
-      var positions = sorted.map(_._1).toSeq
-      var path = head._2
-      while (!positions.isEmpty) {
-
-        val (accf, res) = folder(accum, path)
-        accum = accf
-        val matched = res.perform(path) //matchIt( res, path )
-
-        if (matched.isLeft) {
-          path = matched.left.get
-          positions = res.adjust(positions)
-          if (!positions.isEmpty) {
-            path = moveTo(path, positions.head) // else nothing we keep path to call root
-          }
-        } else return Right(matched.right.get)
-      }
-      Left((accum, rootPath(path)))
-    }
-  }
+  def foldPositions[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]], ACC](locations: Iterable[Path[Item, Section, CC]], accumulator: ACC)(folder: (ACC, Path[Item, Section, CC]) => (ACC, FoldOperation[Item, Section, CC])) (implicit cbf : TreeCBF[Item, Section, CC], cm : ClassManifest[(scales.utils.Position[Item,Section,CC], Path[Item, Section, CC])])  : Either[(ACC, Path[Item, Section, CC]), FoldError] = PathFold.foldPositions(locations, accumulator)(folder)(cbf, cm)
 
   /**
    * Folds over positions within a single path, for example all given children.  As such positions must be calculated.
