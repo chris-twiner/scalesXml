@@ -75,9 +75,10 @@ object ScalesXmlRoot extends Build {
 //    scalacOptions ++= Seq("-encoding", "UTF-8", "-deprecation", "-unchecked"),
     packageOptions ++= Seq[PackageOption](ManifestAttributes(
       (IMPLEMENTATION_TITLE, "Scales"),
-      (IMPLEMENTATION_URL, "http://code.google.com/p/scales"),
-      (IMPLEMENTATION_VENDOR, "Scales Xml"),
-      (SEALED, "true"))
+      (IMPLEMENTATION_URL, "https://github.com/chris-twiner/scalesXml"),
+      (IMPLEMENTATION_VENDOR, "Scales Xml")
+      //,(SEALED, "true")
+      )
     ),
     autoCompilerPlugins := false,
     fork in run := true,
