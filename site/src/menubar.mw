@@ -2,7 +2,6 @@
 ;* [Setup.html Setup]
 ;* [HowToUse.html How To Use]
 
-
 ; '''Xml Model'''
 ;* [QNames.html QNames]
 ;** [QNames.html#Creating_QNames Creating QNames]
@@ -69,3 +68,12 @@
 ;* [StringXPaths.html XPath 1.0 String Evaluation]
 ;** [StringXPaths.html#How_To_Use How To Use]
 ;** [StringXPaths.html#Other_Jaxen_Tricks Other Jaxen Tricks]
+
+; '''Transforming XML'''
+;* [Folding.html Folding Xml]
+;** [Folding.html#PathFoldR_-_Catchy_Result_Type PathFoldR - Catchy Result Type]
+;** [Folding.html#Composing_Transformations Composing Transformations]
+;*** [Folding.html#ReplaceWith_-_Nested  ReplaceWith - Nested]
+;*** [Folding.html#.26_-_Fail_Early & - Fail Early]
+;*** [Folding.html#.7C_-_Try_The_Next | - Try The Next]
+;* XSLT Support

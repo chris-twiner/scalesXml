@@ -5,27 +5,6 @@ import scala.collection.IndexedSeqLike
 import scala.collection.generic.CanBuildFrom
 
 object PathFold {
-  def shiftWithBase[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]](base: Position[Item, Section, CC], x: Position[Item, Section, CC], by: Int): Position[Item, Section, CC] = x /*{
-
-    val up = base.position.reverse.pop.reverse // stack needs to be flipped to get parent
-    if (sameBase( up, x.position ) && 
-	up.size < xp.position.size
-      ) {      
-      val (above, below) = x.position.splitAt(up.size)
-      if (below.isEmpty) {
-	println("x is "+ x.position+ " base is "+base.position+" with sizes up: "+up.size+" x:"+x.position.size)
-      }
-      val newpos = {
-	val oldv = below.top
-	val old = below.pop
-	above ++ (old.push(oldv + by))
-      }
-      new PositionImpl[Item, Section, CC](
-        newpos,
-        x.root)
-
-    } else x
-  }*/
 
   /**
    * Folds over positions within a single path, for example all given children.  As such positions must be calculated.
@@ -40,9 +19,6 @@ object PathFold {
     if (locations.isEmpty) return Right(NoPaths)
 
     val sorted = sortPositions(locations, false)
-
-//    println(" list of positions ")
-//    sorted.foreach(p => println(p._1))
 
     val head = sorted.head
     var accum = accumulator
@@ -64,7 +40,7 @@ object PathFold {
 
           if (matched.isLeft) {
             path = matched.left.get
-            positions = res.adjust(positions)
+            positions = positions.drop(1)
             if (!positions.isEmpty) {
               path = moveTo(path, positions.head) // else nothing we keep path to call root
             }
@@ -115,13 +91,6 @@ trait Paths {
   }
 
   type FoldR[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]] = Either[Path[Item, Section, CC], FoldError]
-
-  def shiftWithBase[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]](base: Position[Item, Section, CC], x: Position[Item, Section, CC], by: Int): Position[Item, Section, CC] = PathFold.shiftWithBase(base, x, by)
-
-  def cleanBelow[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]](positions: Seq[Position[Item, Section, CC]]): Seq[Position[Item, Section, CC]] = positions.drop(1) // take this or loop
-/*.dropWhile { x =>
-    sameBase(positions.head.position, x.position)
-  }*/
 
   type PathFoldR[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]] = (Path[Item, Section, CC]) => FoldR[Item, Section, CC]
 

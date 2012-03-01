@@ -137,4 +137,4 @@ ${cscala}
   }
 ${cend}
 
-See XPath folds for more information and how to use it for transformations.
+See [Folding.html XPath Folds] for more information and how to use it for transformations.

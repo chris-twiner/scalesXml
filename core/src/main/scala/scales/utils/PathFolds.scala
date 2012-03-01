@@ -9,8 +9,6 @@ import scala.collection.generic.CanBuildFrom
  */ 
 sealed trait FoldOperation[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]] {
 
-  def adjust(positions: Seq[Position[Item, Section, CC]]): Seq[Position[Item, Section, CC]]
-
   def perform(path: Path[Item, Section, CC]): FoldR[Item, Section, CC]
 
   def add(path: Path[Item, Section, CC], direction: Int, newPath: Iterable[ItemOrTree[Item, Section, CC]])(implicit cbf : TreeCBF[Item, Section, CC]) : FoldR[Item, Section, CC] = {
@@ -32,7 +30,6 @@ sealed trait FoldOperation[Item <: LeftLike[Item, Tree[Item, Section, CC]], Sect
 }
 
 case class Remove[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]](implicit cbf : TreeCBF[Item, Section, CC]) extends FoldOperation[Item, Section, CC] {
-  def adjust(positions: Seq[Position[Item, Section, CC]]): Seq[Position[Item, Section, CC]] = cleanBelow(positions).map { shiftWithBase(positions.head, _, -1) }
 
   def perform(path: Path[Item, Section, CC]): FoldR[Item, Section, CC] = {
     val ores = path.removeAndUp();
@@ -42,13 +39,11 @@ case class Remove[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X
 }
 
 case class AddBefore[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]](newPath: ItemOrTree[Item, Section, CC])(implicit cbf : TreeCBF[Item, Section, CC]) extends FoldOperation[Item, Section, CC] {
-  def adjust(positions: Seq[Position[Item, Section, CC]]): Seq[Position[Item, Section, CC]] = positions.tail.map { shiftWithBase(positions.head, _, 1) }
 
   def perform(path: Path[Item, Section, CC]): FoldR[Item, Section, CC] = add(path, 0, List(newPath))
 }
 
 case class AddAfter[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]](newPath: ItemOrTree[Item, Section, CC])(implicit cbf : TreeCBF[Item, Section, CC]) extends FoldOperation[Item, Section, CC] {
-  def adjust(positions: Seq[Position[Item, Section, CC]]): Seq[Position[Item, Section, CC]] = positions.tail.map { shiftWithBase(positions.head, _, 1) }
 
   def perform(path: Path[Item, Section, CC]): FoldR[Item, Section, CC] = add(path, 1, List(newPath))
 }
@@ -57,10 +52,6 @@ case class AddAfter[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC
  * Use to make it easier to filter out large sets (for those that aren't interesting simply asis them, see tests for use case)
  */
 case class AsIs[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]]() extends FoldOperation[Item, Section, CC] {
-  /**
-   * No OP, just move one one
-   */
-  def adjust(positions: Seq[Position[Item, Section, CC]]): Seq[Position[Item, Section, CC]] = positions.tail
 
   def perform(path: Path[Item, Section, CC]): FoldR[Item, Section, CC] = Left(path)
 }
@@ -78,11 +69,6 @@ object Replace {
  */
 case class Replace[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]](replaceWith: Iterable[ItemOrTree[Item, Section, CC]])(implicit cbf : TreeCBF[Item, Section, CC]) extends FoldOperation[Item, Section, CC] {
 
-  /**
-   * clean below for any that are invalidated by the replace then replaceWiths size minus the 1 that we have removed/replaced
-   */
-  def adjust(positions: Seq[Position[Item, Section, CC]]): Seq[Position[Item, Section, CC]] = cleanBelow(positions).map { shiftWithBase(positions.head, _, replaceWith.size - 1) }
-
   def perform(path: Path[Item, Section, CC]): FoldR[Item, Section, CC] = {
     // modify with tail
     val tpath = path.modify(_ => replaceWith.head)
@@ -94,8 +80,6 @@ case class Replace[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[
  * Allows foldPositions to be nested, only replace makes sense here (afaict)
  */
 case class ReplaceWith[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]](f: PathFoldR[Item, Section, CC])(implicit cbf : TreeCBF[Item, Section, CC]) extends FoldOperation[Item, Section, CC] {
-
-  def adjust(positions: Seq[Position[Item, Section, CC]]): Seq[Position[Item, Section, CC]] = cleanBelow(positions).map { shiftWithBase(positions.head, _, 0) }
 
   def perform(path: Path[Item, Section, CC]): FoldR[Item, Section, CC] =
     // modify back in (allows changes), or pass on the error
