@@ -287,7 +287,7 @@ object SiteSettings {
 GlobFilter("*.*~")) }, // all emacs backups
     siteDocsIgnore <<= siteIgnore,
     siteOutputPath <<= (crossTarget in compile) apply { _ / "site" },
-    packageSiteZip := new java.io.File("C:/root.zip"),
+    packageSiteZip := new java.io.File("${projectOrganisation}-${artifactID}-site.zip"),
     siteParams <<= (siteOutputPath, siteIgnore, sites, siteIndexHeader, siteIndexFooter, siteCSS, siteResourceDir, packageSiteZip, crossTarget in compile) apply {
       SiteParams(_,_,_,_,_,_,_,_,_)
     },
@@ -433,7 +433,7 @@ $("pre[class^='language-']").each(function(i,elem) {
 
     val sb = new java.lang.StringBuilder()
 
-    sb.append("== Generated Documentation ==\n")
+    sb.append("\n== Generated Documentation ==\n")
 
     val sitesc = sites
     // copy them over

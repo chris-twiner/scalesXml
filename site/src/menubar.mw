@@ -69,6 +69,22 @@
 ;** [StringXPaths.html#How_To_Use How To Use]
 ;** [StringXPaths.html#Other_Jaxen_Tricks Other Jaxen Tricks]
 
+; '''Parsing XML'''
+;* [FullParsing.html Full XML Doc Parsing]
+;* [PullParsing.html Pull Parsing]
+;** [PullParsing.html#Pull_Model Pull Model]
+;** [PullParsing.html#Resource_Management Resource Management]
+;** [PullParsing.html#Simple_Reading_Of_Repeated_Sections Simple Reading Of Repeated Sections]
+;** [PullParsing.html#Buffering_And_Identifying_Xml_Messages Buffering And Identifying Xml Messages]
+;* [RepeatedSections.html Pulling Repeated Sections]
+;** [RepeatedSections.html#Supported_Repeating_Section_Examples Supported Repeating Section Examples]
+;*** [RepeatedSections.html#alternating_and_Repeating_Elements Alternating and Repeating Elements]
+;*** [RepeatedSections.html#Grouped_Repeating Grouped Repeating]
+;*** [RepeatedSections.html#Repeating_Nested Repeating Nested]
+;*** [RepeatedSections.html#Sectioned_Grouped_Repeated Sectioned Grouped Repeating]
+;** [RepeatedSections.html#Pull_Parsing_ResumableIter.27atees Pull Parsing ResumableIter'atees]
+
+
 ; '''Transforming XML'''
 ;* [Folding.html Folding Xml]
 ;** [Folding.html#PathFoldR_-_Catchy_Result_Type PathFoldR - Catchy Result Type]
@@ -76,4 +92,5 @@
 ;*** [Folding.html#ReplaceWith_-_Nested  ReplaceWith - Nested]
 ;*** [Folding.html#.26_-_Fail_Early & - Fail Early]
 ;*** [Folding.html#.7C_-_Try_The_Next | - Try The Next]
-;* XSLT Support
+;* [XSLT.html TrAX & XSLT Support]
+;** [XSLT.html#Simple_Usage_Example Simple Usage Example]

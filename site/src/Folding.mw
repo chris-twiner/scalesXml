@@ -15,7 +15,7 @@ A number of transformations are available based on [./doc/scales/utils/FoldOpera
 
 AsIs and ReplaceWith deserve explanation before examples.  When performing transformations it is often useful to query or test against the resulting nodes, if the node should not be changed then AsIs() will make the fold a no-op.
 
-ReplaceWith effectively allows nested folds which an important part of the [Composing_Transformations composing transformations].
+ReplaceWith effectively allows nested folds which an important part of the [Folding.html#Composing_Transformations composing transformations].
 
 == PathFoldR - Catchy Result Type ==
 
