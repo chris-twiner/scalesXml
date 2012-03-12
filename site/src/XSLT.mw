@@ -8,6 +8,8 @@ As with most Scales JAXP integration the fallback position of correctly serializ
 
 The use of TrAX is generally simple enough not to require further wrapping, and Scales offers Folding for a more fitting transformation approach.
 
+Developers wishing pretty printing can also use TrAX to achieve this (as with a DOM object).
+
 == Simple Usage Example ==
 
 Roundtripping with trax:

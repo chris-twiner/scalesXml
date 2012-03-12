@@ -84,8 +84,10 @@
 ;*** [RepeatedSections.html#Sectioned_Grouped_Repeated Sectioned Grouped Repeating]
 ;** [RepeatedSections.html#Pull_Parsing_ResumableIter.27atees Pull Parsing ResumableIter'atees]
 
-
-; '''Transforming XML'''
+; '''Serializing & Transforming XML'''
+;* [SerializingIntro.html Serializing]
+;** [SerializingIntro.html#writeTo_.26_writeTo writeTo & writeTo]
+;** [SerializingIntro.html#What_Can_Be_Serialized.3F What Can Be Serialized?]
 ;* [Folding.html Folding Xml]
 ;** [Folding.html#PathFoldR_-_Catchy_Result_Type PathFoldR - Catchy Result Type]
 ;** [Folding.html#Composing_Transformations Composing Transformations]
@@ -94,3 +96,18 @@
 ;*** [Folding.html#.7C_-_Try_The_Next | - Try The Next]
 ;* [XSLT.html TrAX & XSLT Support]
 ;** [XSLT.html#Simple_Usage_Example Simple Usage Example]
+
+; '''Technical Details'''
+;* [MemoryOptimisation.html Memory Optimisation]
+;** [MemoryOptimisation.html#Disclaimer Disclaimer]
+;** [MemoryOptimisation.html#Introduction Introduction]
+;** [MemoryOptimisation.html#Options_for_memory_optimisation Options for memory optimisation]
+;** [MemoryOptimisation.html#Resulting_Sizes Resulting Sizes]
+;** [MemoryOptimisation.html#Overall_Parsing_Performance Overall Parsing Performance]
+;** [MemoryOptimisation.html#Special_Case_-_Pull_Parsing_via_onQNames Special Case - Pull Parsing via onQNames]
+;* [Serialization.html Serializing Details]
+;** [Serialization.html#Encoding Encoding]
+;*** [Serialization.html#XML_Names XML Names]
+;*** [Serialization.html#Text_Data Text Data]
+;*** [Serialization.html#Other_Markup_Character_Data Other Markup Character Data]
+;** [Serialization.html#Creating_a_SerializerFactory Creating a SerializerFactory]

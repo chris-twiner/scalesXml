@@ -106,6 +106,14 @@ class XmlMarshallingTest extends junit.framework.TestCase {
     assertEquals("ättr",r.get.getMessage())
   }
 
+  def testValidAttrNameEncoding = {
+    val builder = ns("Root") /( (("Child"l) /@("ättr" -> "\"in\"") ) /(ns("Grand")~>"A Value")  ) 
+    val str = new java.io.StringWriter()
+
+    val r = foldPrint(XmlOutput(SerializerData(str)))(builder)
+    r.foreach{ x => fail( "Threw an error " + x.getMessage ) }
+  }
+
   def testAttrEncoding = {
     val builder = ns("Root") /( (("Child"l) /@("attr" -> "ächte") ) /(ns("Grand")~>"A Value")  ) 
     val str = new java.io.StringWriter()
@@ -183,6 +191,39 @@ class XmlMarshallingTest extends junit.framework.TestCase {
 //    printTree(testXml)
     val r = readBackDoc_LSP(testXml)
     MarshallingTest.doMiscTest(r)
+  }
+
+  def testWriteTo = {
+    val testXml = loadXml(miscml)
+    val e = asString(testXml)
+    var out = new java.io.StringWriter()
+    writeTo(testXml, out)
+    assertEquals(e, out.toString)
+
+    out = new java.io.StringWriter()
+    writeTo(testXml, out, encoding = Some(defaultCharset))
+    assertEquals(e, out.toString)
+
+    out = new java.io.StringWriter()
+    writeTo(testXml, out, version = Some(defaultVersion))
+    assertEquals(e, out.toString)
+
+    out = new java.io.StringWriter()
+    writeTo(testXml, out, Some(defaultVersion), Some(defaultCharset))
+    assertEquals(e, out.toString)
+
+    // implicit
+    out = new java.io.StringWriter()
+    testXml writeTo out
+    assertEquals(e, out.toString)
+
+    out = new java.io.StringWriter()
+    (testXml.writeWith(encoding = Some(defaultCharset)) ) writeTo out
+    assertEquals(e, out.toString)
+
+    out = new java.io.StringWriter()
+    (testXml.writeWith(version = Some(defaultVersion)) ) writeTo out
+    assertEquals(e, out.toString)
   }
 
   def testPullMiscRountTripping = {

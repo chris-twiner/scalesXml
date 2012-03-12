@@ -109,4 +109,6 @@ ${cscala}
   processor.process(captured.restart)
 ${cend}
 
+The result from skip is simply Option[XmlPath], if the stream runs out or its no longer possible to get that position it is None. Only as much of the stream is read as needed, it will stop on the Left(Elem) event.
+
 NB to only identify the first element, simply use skip(Nil) instead (or skipv()).

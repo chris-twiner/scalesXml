@@ -11,24 +11,6 @@ import java.nio.charset.Charset
 import serializers._
 
 /**
- * Defaults to correctness and checking everything
- * Possible approach to easily configuring some performance aspects
- * I.e. the are really sure that after the 100th time of sending the same
- * message template they don't need to verify the QNames again.
- *
- * case class SerializationOptions(
- * checkCDataEncoding : Boolean = true,
- * checkCommentEncoding : Boolean = true,
- * checkPIEncoding : Boolean = true,
- * checkNSDeclPrefix : Boolean = true,
- * checkNSDeclPrefixEncoding : Boolean = true,
- * check
- * )
- */
-
-import serializers._
-
-/**
  * This class represents state during a serialization
  */
 case class XmlOutput(data: SerializerData,
@@ -38,7 +20,26 @@ case class XmlOutput(data: SerializerData,
   val serializerF = serializerFI
 }
 
+/**
+ * Wraps the use of writeTo allowing: xml writeTo output
+ */ 
+case class WriteTo[T : SerializeableXml](it: T, version: Option[XmlVersion] = None, encoding: Option[Charset] = None){
+
+  /**
+   * type specific forward to copy, allows overriding of the parameters and converting to WriteTo in one go.
+   */ 
+  def writeWith(it : T = it, version: Option[XmlVersion] = None, encoding: Option[Charset] = None) = copy(it, version, encoding)
+  
+  def writeTo(output : Writer)(implicit serializerFI: SerializerFactory) = scales.xml.writeTo(it, output, version, encoding)
+
+}
+
+
 trait XmlPrinterImplicits {
+
+  implicit def fromSerializeableToWriteTo[T : SerializeableXml]( it : T ) =
+    new WriteTo[T](it)
+
 
   /**
    * Import to _ and replace with your own SerializerFactory if desired
@@ -209,6 +210,18 @@ trait XmlPrinter {
       headerAndFooter(pout, sxml.doc(it))(
         sxml(it))
     }(pout.data)
+
+  /**
+   * Writes the xml to a given Writer with defaults provided for .
+   */ 
+  def writeTo[T](it: T, output : Writer, version: Option[XmlVersion] = None, encoding: Option[Charset] = None)(implicit serializerFI: SerializerFactory, sxml: SerializeableXml[T]) : Option[Throwable] = {
+    val decl = sxml.doc(it).prolog.decl
+    val sd = SerializerData(output, 
+      version.getOrElse(decl.version), 
+      encoding.getOrElse(decl.encoding))
+    serialize(XmlOutput(sd))(it)
+  }
+
 
   /**
    * Prints to stdout, useful for testing etc  Will dump an error if one is found.

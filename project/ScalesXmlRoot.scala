@@ -38,7 +38,7 @@ object ScalesXmlRoot extends Build {
       SiteSettings.settings(core) ++ Seq(
 	siteCSS <<= siteResourceDir apply { _ / "scales_xml.css" },
 	siteMarkupDocs := List("ScalesXmlIntro.mw","MemoryOptimisation.mw"),
-	siteMarkupDocHeaders := Map( "ScalesXmlIntro.mw" -> MarkupHeader("An Introduction to Scales Xml")("Introduction"), "MemoryOptimisation.mw" -> MarkupHeader("An Overview of Memory Optimisation and Performance")("Memory and Performance") )
+	siteMarkupDocHeaders := Map( "ScalesXmlIntro.mw" -> MarkupHeader("An Overview of Scales Xml")("Overview"), "MemoryOptimisation.mw" -> MarkupHeader("An Overview of Memory Optimisation and Performance")("Memory and Performance") )
       )
   )
 

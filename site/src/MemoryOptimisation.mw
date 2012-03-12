@@ -123,6 +123,6 @@ ${cend}
 
 In short the memory requirements for the maps are 13.7MB, whereas the test itself can run in under 45MB, albeit with a high GC overhead. As such thats roughly 25MB required to actually parse the entire document in such a high level api.
 
-_Also worth noting is that it takes 42MB to generate the document_
+''Also worth noting is that it takes 42MB to generate the document''
 
 See the PullTests and intro for examples on how this approach can be best leveraged in your code.
