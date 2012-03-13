@@ -2,9 +2,9 @@
 
 XML DOMs traditionally create trees by each element "owning" its children.  Scales eschews this model, instead using trees to model the containment, allowing re-use for all of the Scales model.
 
-To simplify both creating and basic manipulation of trees Scales provides a DSL that closely resembles the structure of XML.  The point of focus in the tree (or the depth) is controlled by nesting of the arguements.
+To simplify both creating and basic manipulation of trees Scales provides a DSL that closely resembles the structure of XML.  The point of focus in the tree (or the depth) is controlled by nesting of the arguments.
 
-The following example is a quick intro into how to create trees (also used within the [XPaths.html XPath guide]):
+The following example is a quick introduction into how to create trees (also used within the [XPaths.html XPath guide]):
 
 ${cscala}
   val ns = Namespace("test:uri")

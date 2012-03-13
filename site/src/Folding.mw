@@ -91,7 +91,7 @@ ${cend}
 In the [Adding_Children Adding Children] section we've left a possible match error, for example, if we choose not to act on the last child:
 
 ${cscala}
-  // oops, suprising
+  // oops, surprising
   val res = foldPositions( nodes  ){
     case path if (!path.hasPreviousSibling) => AddBefore("start"l)
     // will throw a MatchError

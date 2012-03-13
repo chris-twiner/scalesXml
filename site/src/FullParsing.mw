@@ -15,5 +15,5 @@ PathOptimisationStrategys allow the developer to tweak both the memory consumpti
 
 As the names suggests PathOptimisationStrategies could also choose to optimise whole sub-trees, tests have not shown a general case where this is beneficial however (the cost of matching the tree typically outweighing potential memory savings).  See [./api.sxr/scales/xml/strategies/NonDefaultStrategies.scala.html NonDefaultStrategies] for other optimisation options and traits with which to build your own.
 
-Loaner is a simple interface to obtain SAXParser instances, other non default instances can be provided, such as JTagSoup or simply to allow customisations of SAX properties.  The default sax parser pool also takes care of common threading issues.
+Loaner is a simple interface to obtain SAXParser instances, other non default instances can be provided, such as JTagSoup or simply to allow customisations of SAX properties.  The default SAX parser pool also takes care of common threading issues.
 

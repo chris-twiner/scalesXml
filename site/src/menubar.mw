@@ -9,7 +9,7 @@
 ;*** [QNames.html#Implicits With Sugar]
 ;** [QNames.html#Namespaces_.26_Scope Namespaces & Scope]
 ;** [QNames.html#Namespaces_in_Scales Namespaces in Scales]
-;** [QNames.html#QNames_in_Scales_-_Let_the_compliler_help_us Type System FTW]
+;** [QNames.html#QNames_in_Scales_-_Let_the_compiler_help_us Type System FTW]
 ;** [QNames.html#Runtime_Validation Runtime Validation]
 ;** [QNames.html#Equality Equality]
 ;*** [QNames.html#Scalaz_Equal_and_Scales_Equiv via Scalaz Equal and Scales Equiv]

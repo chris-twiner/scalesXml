@@ -17,15 +17,15 @@ ${cend}
 ${cscala}
   val text = Text("A text value")
   val cdata = CData("Some cdata")
-  val comment = Comment("A commment")
+  val comment = Comment("A comment")
   val pi = PI("Target id","instruction value")
 ${cend}
 
 == XmlItems Are Reusable ==
 
-XmlItems, as with the rest of Scales - having seperated data from structure, have no notion of ownership.
+XmlItems, as with the rest of Scales - having separated data from structure, have no notion of ownership.
 
-This implies they can be re-used both within and across documents.  This follows with Elems and Trees themsevles allowing whole sections of XML to be re-used.
+This implies they can be re-used both within and across documents.  This follows with Elems and Trees themselves allowing whole sections of XML to be re-used.
 
 == Runtime Correctness Checks ==
 
@@ -42,9 +42,9 @@ Text, Comments and PI may contain character references and can be correctly seri
 
 === Serializing CData ===
 
-CData is problematic to serialize due to:
+CData is problematic to serialise due to:
 
-* JAXP differences (Xerces/Xalan, Saxon and Sun jdk) all behave differently with regards to CData serialization
+* JAXP differences (Xerces/Xalan, Saxon and Sun jdk) all behave differently with regards to CData serialisation
 * CData itself can be encoded but not < and &, doing so changes the CData.
 * CData, similar to QNames, cannot be encoded via character references
 

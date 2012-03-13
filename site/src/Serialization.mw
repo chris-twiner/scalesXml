@@ -1,21 +1,21 @@
-= Serializing - Nitty Gritty =
+= Serialising - Nitty Gritty =
 
-While [SerializingIntro.html Serializing] provides a highlevel overview of serializing in Scales, this section gets into the specifics of how its implemented and compatibiltiy issues.
+While [SerializingIntro.html Serialising] provides a high-level overview of serializing in Scales, this section gets into the specifics of how its implemented and compatibility issues.
 
 Scales attempts the following:
 
 # Work around a number of bugs and behavioural differences with the various LSSerializer implementations
 # Stop as soon as possible with usable error messages - and give the user the tools to deal with that situation
 # Correctness checking with both XmlVersion and CData handling along with encoding and markup generation
-# Only perform serialization encoding checks once
+# Only perform serialisation encoding checks once
 # Correctly re-use Charset encodings
-# Allow pluggable Serializers and sensible base implementations - if you don't like the way its working you can enhance it
+# Allow plugable Serializers and sensible base implementations - if you don't like the way its working you can enhance it
 
 == Encoding ==
 
 === XML Names ===
 
-When serializing XML there are two traditional problems with interoperation between creator and reader:
+When serializing XML there are two traditional problems with inter-operation between creator and reader:
 
 * Characterset of stream
 * Encoding of document
@@ -59,12 +59,12 @@ trait SerializerFactory {
 }
 ${cend}
 
-The serialization itself is performed in the context of thunk, where thunk accepts a Serializer.  The serializer itself contains a very small interface, with only one quirk:
+The serialisation itself is performed in the context of thunk, where thunk accepts a Serializer.  The serializer itself contains a very small interface, with only one quirk:
 
 ${cscala}
   path: List[QName]
 ${cend}
 
-this allows even the Serializer to make assumptions about the structure based on its XPath (the same structure to the pull parsing onQName function).  In the case of element starting (emptyElement/startElement) the parameters are calculated by the serialize function itself.  This means that whilst the Serializer instance is free to choose how to serializer it is freed from making decisions on what attributes or namespaces or default namesapces are correctly defined for that scope.
+this allows even the Serializer to make assumptions about the structure based on its XPath (the same structure to the pull parsing onQName function).  In the case of element starting (emptyElement/startElement) the parameters are calculated by the serialize function itself.  This means that whilst the Serializer instance is free to choose how to serializer it is freed from making decisions on what attributes or namespaces or default namespaces are correctly defined for that scope.
 
 Overriding startElement or emptyElement would be the ideal place for applications requiring attributes be ordered.

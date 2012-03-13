@@ -51,7 +51,7 @@ ${cend}
 
 === Within an Elem ===
 
-Scalaz Equal comes to the rescue again, we can seperate the notion of attribute equality for simple comparisons and those of an Elems requirements:
+Scalaz Equal comes to the rescue again, we can separate the notion of attribute equality for simple comparisons and those of an Elem's requirements:
 
 ${cscala}
   attr3 === attr // true - we don't take the value into account  

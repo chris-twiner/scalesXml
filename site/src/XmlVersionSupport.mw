@@ -2,7 +2,7 @@
 
 There are two versions of XML, 1.0 and 1.1, with 1.0 being most commonly used.
 
-1.1 parsers can parse 1.0 xml, but not the otherway around, which adds for another source of potential differences in user experience.
+1.1 parsers can parse 1.0 xml, but not the other way around, which adds for another source of potential differences in user experience.
 
 == Differences Between 1.0 and 1.1 ==
 
@@ -31,7 +31,7 @@ ${cscala}
   }
 ${cend}
 
-All of the above example namespaces, localnames and prefixes are then validated for correctness at runtime.  The above example with Xml10 would throw as "" is not a valid namespace for XML 1.0 (and is only used in XML 1.1 for unbinding namespace prefixes).
+All of the above example namespaces, local names and prefixes are then validated for correctness at runtime.  The above example with Xml10 would throw as "" is not a valid namespace for XML 1.0 (and is only used in XML 1.1 for unbinding namespace prefixes).
 
 === In Parser We Trust - Users We Protect ===
 
@@ -42,7 +42,7 @@ However for general usage its helpful for the library to safeguard us against mi
 The implicit FromParser is used by Scales to provide this runtime check, and the QNameCharUtils functions provide the helpers for a given version (via Xerces XMLChar and XML11Char.
 
 == Runtime XmlVersion QName Related Correctness ==
-The implicitly scoped version dictates what runtime checks are applied.  In particular the namespace, localname and prefix are all validated at runtime for their content.  This is true for both Attribute and Elem QNames.
+The implicitly scoped version dictates what runtime checks are applied.  In particular the namespace, local name and prefix are all validated at runtime for their content.  This is true for both Attribute and Elem QNames.
 
-Serializing is also, of course, affected by the XML version.  The document serialization itself then requires checking the comaptibility of QNames.  The rule here is simply if its an Xml11 QName only (all parts are correct) and the document version is Xml10 its an error.
+Serializing is also, of course, affected by the XML version.  The document serialisation itself then requires checking the compatibility of QNames.  The rule here is simply if its an Xml11 QName only (all parts are correct) and the document version is Xml10 its an error.
 

@@ -16,7 +16,7 @@ ${cscala}
   type PullType = Either[XmlEvent, EndElem]
 ${cend}
 
-Where XmlEvent is exactly the same Elem, XmlItem model as with full Trees.  This is possible because Scales seperates the structure of data and the data itself.
+Where XmlEvent is exactly the same Elem, XmlItem model as with full Trees.  This is possible because Scales separates the structure of data and the data itself.
 
 The developer only has to learn one single difference to be able to use pull parsing.  For example the code to process a stream is simply:
 
@@ -48,7 +48,7 @@ ${cend}
 
 Importantly closeResource only closes a resource once.  This resource is directly available when calling pullXmlResource.
 
-pullXml itself is also a Closable and provides the same gaurantee, close only attempts to close the resource once.
+pullXml itself is also a Closable and provides the same guarantee, close only attempts to close the resource once.
 
 Both results provide the isClosed function (via the IsClosed interface) allowing code to trust that it has been closed. (NB - a future version may choose to expose this in the type system, but integrating with the ARM library makes more sense).
 

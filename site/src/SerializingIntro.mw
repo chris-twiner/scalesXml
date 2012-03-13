@@ -1,8 +1,8 @@
 = An Introduction to Serializing Xml With Scales =
 
-Scales Xml delegates as much serializing as possible to the DOML3 LSSerializer framework.  There are a number of pain points, due to incompatibilities between jaxp implementations and jvm versions, that Scales smooths out for the developer.
+Scales Xml delegates as much serializing as possible to the DOML3 LSSerializer framework.  There are a number of pain points, due to incompatibilities between jaxp implementations and jvm versions, that Scales smoothes out for the developer.
 
-The main aims with Scales serialization are: 
+The main aims with Scales serialisation are: 
 
 * A unified interface
 * Correctness ''especially with a view to encoding issues''
@@ -25,7 +25,7 @@ Typically one of the following functions will be used:
 
 The first two (writeTo) are the most general and the later three useful for debugging.
 
-No SerializeableXml type classs instances are defined for XmlPaths as they can be either an XmlItem or Tree.  As such itemAsString exists for those times you really want to debug just the XmlItem.
+No SerializeableXml type class instances are defined for XmlPaths as they can be either an XmlItem or Tree.  As such itemAsString exists for those times you really want to debug just the XmlItem.
 
 In all cases the xml is written out using the serialize function, which always writes out the xml declaration with the ''pout : XmlOutput'' parameter.  The more general writeTo approach will take the documents declaration unless specifically overridden.
 
@@ -46,9 +46,11 @@ To make life easier in the common case the WriteTo class (and implicits from Sca
 
 ${cscala}
   val testXml = loadXml(...)
-  val out = new java.io.StringWriter()
   val str = asString(testXml)
+
+  val out = new java.io.StringWriter()
   testXml writeTo out
+
   assertEquals(str, out.toString)
 ${cend}
 

@@ -8,7 +8,7 @@ The DSL uses the existing Scales abstractions to the full, and works via a zippe
 
 In every case possible (with the exception of the namespace:: axis) the range of behaviours closely follows the specification, like for like queries matching 100%.  Instead of matching on prefixes Scales uses fully qualified expanded QNames (qualifiedName in the [XPathFunctions.html#QName_Functions QName Functions]) to match against, not requiring a prefix context within which to evaluate.
 
-Internally, perhaps unsuprisingly, XPath is implemented as a combination of filter, map and flatMap.  When retrieving results (e.g. converting to an Iterable) the results are sorted into Document order, this can be expensive for large result sets (see [#Unsorted_Results_and_Views Unsorted Results] for alternatives).
+Internally, perhaps unsurprisingly, XPath is implemented as a combination of filter, map and flatMap.  When retrieving results (e.g. converting to an Iterable) the results are sorted into Document order, this can be expensive for large result sets (see [#Unsorted_Results_and_Views Unsorted Results] for alternatives).
 
 == Simple Usage Examples ==
 
@@ -151,7 +151,7 @@ The xflatMap, xmap, xfilter and filter methods allow extra predicate usage where
 
 The filter method accepts a simple XmlPath => Boolean, whereas the other varieties work on the matching sets themselves.
 
-It is not recommended to use these functions for general use as they primarly exist for internal re-use.
+It is not recommended to use these functions for general use as they primarily exist for internal re-use.
 
 == Unsorted Results and Views ==
 

@@ -13,5 +13,5 @@ The design aims of Scales Xml also target correctness first, an Iteratee based p
 ;* Fast Internal XPath Api
 ;* Full XPath1.0 String evaluation support via Jaxen
 ;* Iteratee based xml Pull handling - you choose what, when and how to process
-;* High Level of JAXP Integration - Validation, TrAX and Serialization (when needed)
+;* High Level of JAXP Integration - Validation, TrAX and Serialisation (when needed)
 ;* Performance - fast with low memory usage

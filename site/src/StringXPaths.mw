@@ -2,7 +2,7 @@
 
 The embedded XPath DSL provides a very flexible and performant way to query xml.  However, being an embedded DSL, it has the negative of being wed to the compilation cycle.  For those seeking a more direct XPath string parsing based experience Scales provides access via the Jaxen project.
 
-The scales-jaxen project is a sub project and must be included seperately as a library dependency.
+The scales-jaxen project is a sub project and must be included separately as a library dependency.
 
 == How To Use ==
 

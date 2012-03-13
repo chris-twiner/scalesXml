@@ -9,7 +9,7 @@ Maven users should use scales-xml_2.9.1 as the dependency.
 
 [http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.1/0.3/index.html The documentation site is here] and zip of the site documentation is available at [http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.1/0.3/scales-xml_2.9.1-0.3-site.zip scales-xml.zip].
 
-Scales is cross commpiled for 2.8.1 and 2.9.1.  Version 0.4 only adds Scalaz 6.0.4 as a dependency and is 100% source compatible with 0.3.
+Scales is cross compiled for 2.8.1 and 2.9.1.  Version 0.4 only adds Scalaz 6.0.4 as a dependency and is 100% source compatible with 0.3.
 
 == Sbt 0.11.x ==
 

@@ -1,12 +1,12 @@
 = QNames =
 
-[http://www.w3.org/TR/2009/REC-xml-names-20091208/#NT-NCName The namespaces spec] introduced namespacing into XML, giving the three following possible types of qualified names:
+[http://www.w3.org/TR/2009/REC-xml-names-20091208/#NT-NCName The namespaces spec] introduced namespaces into XML, giving the three following possible types of qualified names:
 
-# Fully Qualified (localname, prefix and namespace)
-# No namespace (localname only xmlns="")
-# Namespaced (localname and namespace - xmlns="a new default scoped namespace")
+# Fully Qualified (local name, prefix and namespace)
+# No namespace (local name only xmlns="")
+# Namespaced (local name and namespace - xmlns="a new default scoped namespace")
 
-This can be seen modelled in the JAXP QName class, or as the QName ADT in Scales.  The namespaces spec introduced the letter ":" as a seperator of prefix and localname, as such its use is forbidden in QName prefixes or localNames (runtime check).
+This can be seen modelled in the JAXP QName class, or as the QName ADT in Scales.  The namespaces spec introduced the letter ":" as a separator of prefix and local name, as such its use is forbidden in QName prefixes or localNames (runtime check).
 
 == Creating QNames ==
 
@@ -81,7 +81,7 @@ ${cend}
 
 PrefixedNamespaces are required to create a PrefixedQName but can also lead to simpler looking code.  In addition they can be used to declare namespace mappings on a particular level of a tree (attached to Elem - which can reduce re-use), the XML 1.1 example above requires this approach of declaring the mappings.
 
-== QNames in Scales - Let the compliler help us ==
+== QNames in Scales - Let the compiler help us ==
 
 Scales enforces the use of QNames throughout its api.  Attributes can '''only''' be created with either a NoNamespaceQName or a PrefixedQName.  Elements also can use UnprefixedQNames:
 
@@ -116,7 +116,7 @@ ${cend}
 
 Whilst the compiler can help us with correctness on types, we sacrifice a usable api if we force other content checks into the type system.  For example we could model QName.apply functions to return an Either (or Validation) and force combination of all Elem related data, but this would distract from the api (especially considering that incorrect XML is only likely to come from the developer - the parser won't let it through otherwise).
 
-Scales QNames and Namespaces check for correct localname and prefix content at runtime based on the compile time scoped XmlVersion.  This still implies no object will ever get created with incorrect data, but forces these checks into throwing exceptions (or make the user suffer with the api that follows).
+Scales QNames and Namespaces check for correct local name and prefix content at runtime based on the compile time scoped XmlVersion.  This still implies no object will ever get created with incorrect data, but forces these checks into throwing exceptions (or make the user suffer with the api that follows).
 
 Valid characters for a given xml version are checked by Xerces XML Char utilities with the addition of a simple ":" check from Scales.  Developers may not create a Namespace with "" unless using Xml11.  Declaring PrefixedNamespaces with prefix "xmlns" or "xml" must match their predefined uris.
 
@@ -126,7 +126,7 @@ Valid characters for a given xml version are checked by Xerces XML Char utilitie
 
 Namespaces are equal only when their uri is equal, but PrefixedNamespaces also take the prefix into account.
 
-QNames use both namespace + localName to test for equality:
+QNames use both namespace + local name to test for equality:
 
 ${cscala}
   // using the above definitions 
@@ -182,7 +182,7 @@ ${cend}
 
 == Testing For QNames ==
 
-Equality and Extractors can cover most usage scenarios but sometimes you want to test and extract in one go - just like Scalas regex support.
+Equality and Extractors can cover most usage scenarios but sometimes you want to test and extract in one go - just like Scala's regex support.
 
 As part of the Xml DSL Scales provides both QName and Namespace Matchers.  Starting with the following definitions we'll look at how to use these Matchers:
 
@@ -194,7 +194,7 @@ ${cscala}
   val attrib = Attribute(name, "val")
 ${cend}
 
-QNameMatcher allows you to test for whether an Attribute or an Elem is defined by a given QName (via =:=, namespace and localname only are compared):
+QNameMatcher allows you to test for whether an Attribute or an Elem is defined by a given QName (via =:=, namespace and local name only are compared):
 
 ${cscala}
   val NamedMatcher = name.matcher // .m is a short cut

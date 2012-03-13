@@ -20,11 +20,11 @@ The same is true of a simple immutable array, the costs are too high for items l
 
 As such Scales provides an abstraction around array like IndexedSeq - ImmutableArrayProxy, which provides a One, Two and Three Seq, an ImmutableArray for less than 32 and a Vector wrapper for greater than 32.  There is also ImmutableArrayAll, which reduces offset information to further reduce memory usage.
 
-A last concession to memory performance (and cpu performance) was the replacement of Either as a container and the creating of EitherLike.  EitherLike has the similar properties but is a trait applied to classes, fold and projections are still present but the memory usage from the level of indirection is removed.  Tests showed that 10-15% of the memory usage was held purely by the Either ADT, and performance was around 4-5% impact across the board.
+A last concession to memory performance (and CPU performance) was the replacement of Either as a container and the creating of EitherLike.  EitherLike has the similar properties but is a trait applied to classes, fold and projections are still present but the memory usage from the level of indirection is removed.  Tests showed that 10-15% of the memory usage was held purely by the Either ADT, and performance was around 4-5% impact across the board.
 
 == Options for memory optimisation ==
 
-Scales Xmls separation of structure and content in particular allows the following areas of memory optimisation:
+Scales Xml's separation of structure and content in particular allows the following areas of memory optimisation:
 
 * QNames
 * Attributes
@@ -125,4 +125,4 @@ In short the memory requirements for the maps are 13.7MB, whereas the test itsel
 
 ''Also worth noting is that it takes 42MB to generate the document''
 
-See the PullTests and intro for examples on how this approach can be best leveraged in your code.
+See the [PullParsing.html Pull Parsing], [RepeatedSections.html Pulling Repeated Sections] and the PullTests themselves for examples on how this approach can be best leveraged in your code.

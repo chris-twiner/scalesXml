@@ -1,10 +1,10 @@
 = TrAX & XSLT Support =
 
-JAXP's TrAX API provides both serialization and transformation to the jvm.  Scales leverages this api to allow xslt transformation and conversions to other DOMs.  Additionally Scales works around known compatibility issues with the Sun JVM and the Xerces implementations (with a nod to the Saxon for its extra support).
+JAXP's TrAX API provides both serialisation and transformation to the jvm.  Scales leverages this api to allow xslt transformation and conversions to other DOMs.  Additionally Scales works around known compatibility issues with the Sun JVM and the Xerces implementations (with a nod to the Saxon for its extra support).
 
 Scales will attempt to, when the JVM/JAXP impl supports it, provide a StAXSource enabling transformation without intermediary objects.  This too, unfortunately, doesn't always correctly work across JAXP implementations, some versions ignoring prolog content (some even NPEing when any is present).
 
-As with most Scales JAXP integration the fallback position of correctly serializing first is always available via the scales.traxSourceShouldSerialize property, when defined and true serialization will occur before attempting a transformation.  When its not defined a best effort based on the transformer class name is used.
+As with most Scales JAXP integration the fall-back position of correctly serializing first is always available via the scales.traxSourceShouldSerialize property, when defined and true serialisation will occur before attempting a transformation.  When its not defined a best effort based on the transformer class name is used.
 
 The use of TrAX is generally simple enough not to require further wrapping, and Scales offers Folding for a more fitting transformation approach.
 

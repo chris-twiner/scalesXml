@@ -79,7 +79,7 @@ ${cscala}
   pqName(tree) // pre:{uri:namespace}prefixedElem
 ${cend}
 
-Using the `name` function with a non QName XPath (eg an XmlItem) will result in an exception.
+Using the `name` function with a non QName XPath (e.g. an XmlItem) will result in an exception.
 
 == Text Functions ==
 
