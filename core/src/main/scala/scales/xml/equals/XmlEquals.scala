@@ -19,6 +19,8 @@ sealed trait XmlDifference[X] {
 protected[xml] object SomeDifference extends XmlDifference[AnyRef] {
   val left = null
   val right = null
+
+  def unapply(a : XmlDifference[AnyRef]) : Option[(AnyRef, AnyRef)] = Some((left,right))
 }
 
 /**
