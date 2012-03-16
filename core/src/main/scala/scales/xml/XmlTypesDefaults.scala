@@ -30,7 +30,8 @@ trait XmlTypesImplicits {
 
   implicit def toAttr(pair: (String, String))(implicit ver: XmlVersion, fromParser : FromParser) = Attribute(NoNamespaceQName(pair._1)(ver, fromParser), pair._2)
 
-  implicit val aqnameEqual = EqualsHelpers.aqnameEqual
+// this was a mistake to directly expose
+//  implicit val aqnameEqual = EqualsHelpers.aqnameEqual
   implicit val qnameEqual = EqualsHelpers.qnameEqual
   implicit val toQNameF = EqualsHelpers.toQNameF
   implicit val toAQNameF = (a: Attribute) => { a.name }
