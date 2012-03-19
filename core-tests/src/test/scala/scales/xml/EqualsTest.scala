@@ -88,4 +88,80 @@ class EqualsTest extends junit.framework.TestCase {
     
     
   }
+
+  def testAttribute : Unit = {
+    import scales.xml.equals.AttributeEquals._
+
+    val a1 = Attribute("local"l, "value")
+    val a2 = Attribute("local"l, "value")
+    assertTrue("a1 == a2", a1 == a2)
+    assertTrue("a1 === a2", a1 === a2)
+
+    val a3 = Attribute("ellocal"l, "value")
+    assertFalse("a1 === a3", a1 === a3)
+
+    val diffN = defaultAttributeComparisom.compare(true, Nil, a1, a3)
+    assertFalse("diffN.isEmpty", diffN.isEmpty)
+
+    val Some((AttributeNameDifference(diffNl, diffNr), diffNp)) = diffN
+    assertTrue("a1 eq diffNl", a1 eq diffNl)
+    assertTrue("a3 eq diffNr", a3 eq diffNr)
+
+    val a4 = Attribute("local"l, "another")
+    assertFalse("a1 == a4", a1 == a4)
+    assertFalse("a1 === a4", Identity(a1).===(a4)(defaultAttributeEquals))
+
+    val diffV = defaultAttributeComparisom.compare(true, Nil, a1, a4)
+    assertFalse("diffV.isEmpty", diffV.isEmpty)
+
+    val Some((AttributeValueDifference(diffVl, diffVr), diffVp)) = diffV
+    assertTrue("a1 eq diffVl", a1 eq diffVl)
+    assertTrue("a4 eq diffVr", a4 eq diffVr)
+
+    val diffNc = defaultAttributeComparisom.compare(false, Nil, a1, a3)
+    assertFalse("diffNc.isEmpty", diffNc.isEmpty)
+
+    val Some((SomeDifference(diffNcl, diffNcr), Nil)) = diffNc
+    assertTrue("null eq diffNcl", null eq diffNcl)
+    assertTrue("null eq diffNcr", null eq diffNcr)
+
+    val diffVc = defaultAttributeComparisom.compare(false, Nil, a1, a4)
+    assertFalse("diffVc.isEmpty", diffVc.isEmpty)
+
+    val Some((SomeDifference(diffVcl, diffVcr), Nil)) = diffVc
+    assertTrue("null eq diffVl", a1 eq diffVl)
+    assertTrue("null eq diffVr", a4 eq diffVr)    
+  }
+
+  /**
+   * Provided but I really can't recommend anyone to use it
+   */ 
+  def testAttributePrefix : Unit = {
+    val n = Namespace("uri:prefix")
+    val p = n.prefixed("p")
+    val po = n.prefixed("po")
+
+    val a1 = Attribute(p("local"), "value")
+    val a2 = Attribute(po("local"), "value")
+
+    // sanity check
+    {
+      import scales.xml.equals.AttributeEquals._
+
+      assertTrue("a1 == a2", a1 == a2)
+      assertTrue("a1 === a2 with normal prefix ignored", a1 === a2)
+    }
+
+    import scales.xml.equals.AttributeEquals.ExactQName._
+
+    assertTrue("a1 == a2", a1 == a2)
+    assertFalse("a1 === a2", a1 === a2)
+
+    val diffN = prefixAttributeComparisom.compare(true, Nil, a1, a2)
+    assertFalse("diffN.isEmpty", diffN.isEmpty)
+
+    val Some((AttributeNameDifference(diffNl, diffNr), diffNp)) = diffN
+    assertTrue("a1 eq diffNl", a1 eq diffNl)
+    assertTrue("a3 eq diffNr", a2 eq diffNr)
+  }
 }

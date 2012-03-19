@@ -82,7 +82,7 @@ trait NameFunctions {
    * Does the qname match exactly (prefix included if present)
    */ 
   def isExactly[T](qname : QName)(implicit name : Names[T] ) :  T => Boolean =
-    (t : T) => t === qname
+    (t : T) => t ==== qname
     
   /**
    * Matches on prefix and namespace only
