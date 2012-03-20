@@ -25,6 +25,9 @@ class EqualsTest extends junit.framework.TestCase {
   import scalaz._
   import Scalaz._
 
+  // make sure its passed through where it should be
+  val DummyPath : BasicPaths.BasicPath = List(("n"l, Map()))
+
   def testItems : Unit = {
 
     import scales.xml.equals.ItemEquals._
@@ -42,10 +45,10 @@ class EqualsTest extends junit.framework.TestCase {
     assertFalse("t1 == t3", t1 == t3)
     assertFalse("t1 === t3", t1 === t3)
 
-    val t1and3c = DefaultXmlItemComparisom.compare(true, Nil, t1, t3)
+    val t1and3c = DefaultXmlItemComparisom.compare(true, DummyPath, t1, t3)
     assertFalse("t1and3c.isEmpty", t1and3c.isEmpty )
     
-    val Some((ItemDifference(t13cl, t13cr), tp)) = t1and3c 
+    val Some((ItemDifference(t13cl, t13cr), DummyPath)) = t1and3c 
     assertTrue("t13cl", t13cl eq t1)
     assertTrue("t13cr", t13cr eq t3)
     
@@ -100,10 +103,10 @@ class EqualsTest extends junit.framework.TestCase {
     val a3 = Attribute("ellocal"l, "value")
     assertFalse("a1 === a3", a1 === a3)
 
-    val diffN = defaultAttributeComparisom.compare(true, Nil, a1, a3)
+    val diffN = defaultAttributeComparisom.compare(true, DummyPath, a1, a3)
     assertFalse("diffN.isEmpty", diffN.isEmpty)
 
-    val Some((AttributeNameDifference(diffNl, diffNr), diffNp)) = diffN
+    val Some((AttributeNameDifference(diffNl, diffNr), DummyPath)) = diffN
     assertTrue("a1 eq diffNl", a1 eq diffNl)
     assertTrue("a3 eq diffNr", a3 eq diffNr)
 
@@ -111,21 +114,21 @@ class EqualsTest extends junit.framework.TestCase {
     assertFalse("a1 == a4", a1 == a4)
     assertFalse("a1 === a4", Identity(a1).===(a4)(defaultAttributeEquals))
 
-    val diffV = defaultAttributeComparisom.compare(true, Nil, a1, a4)
+    val diffV = defaultAttributeComparisom.compare(true, DummyPath, a1, a4)
     assertFalse("diffV.isEmpty", diffV.isEmpty)
 
-    val Some((AttributeValueDifference(diffVl, diffVr), diffVp)) = diffV
+    val Some((AttributeValueDifference(diffVl, diffVr), DummyPath)) = diffV
     assertTrue("a1 eq diffVl", a1 eq diffVl)
     assertTrue("a4 eq diffVr", a4 eq diffVr)
 
-    val diffNc = defaultAttributeComparisom.compare(false, Nil, a1, a3)
+    val diffNc = defaultAttributeComparisom.compare(false, DummyPath, a1, a3)
     assertFalse("diffNc.isEmpty", diffNc.isEmpty)
 
     val Some((SomeDifference(diffNcl, diffNcr), Nil)) = diffNc
     assertTrue("null eq diffNcl", null eq diffNcl)
     assertTrue("null eq diffNcr", null eq diffNcr)
 
-    val diffVc = defaultAttributeComparisom.compare(false, Nil, a1, a4)
+    val diffVc = defaultAttributeComparisom.compare(false, DummyPath, a1, a4)
     assertFalse("diffVc.isEmpty", diffVc.isEmpty)
 
     val Some((SomeDifference(diffVcl, diffVcr), Nil)) = diffVc
@@ -157,11 +160,87 @@ class EqualsTest extends junit.framework.TestCase {
     assertTrue("a1 == a2", a1 == a2)
     assertFalse("a1 === a2", a1 === a2)
 
-    val diffN = prefixAttributeComparisom.compare(true, Nil, a1, a2)
+    val diffN = prefixAttributeComparisom.compare(true, DummyPath, a1, a2)
     assertFalse("diffN.isEmpty", diffN.isEmpty)
 
-    val Some((AttributeNameDifference(diffNl, diffNr), diffNp)) = diffN
+    val Some((AttributeNameDifference(diffNl, diffNr), DummyPath)) = diffN
     assertTrue("a1 eq diffNl", a1 eq diffNl)
     assertTrue("a3 eq diffNr", a2 eq diffNr)
+  }
+
+  def testAttributes : Unit = {
+    import SomeDifference.noCalculation
+    
+    val n = Namespace("uri:prefix")
+    val no = Namespace("uri:prefixed")
+    val p = n.prefixed("p")
+    val po = no.prefixed("po")
+
+    val a1 = Attribute(p("local"), "value")
+    val a2 = Attribute(po("local"), "value")
+    
+    val a3 = Attribute(p("local1"), "value")
+    val a4 = Attribute(po("local1"), "value")
+    
+    val a5 = Attribute(p("local2"), "value")
+    val a6 = Attribute(po("local2"), "value")
+    
+    import AttributesEquals._
+
+    val attrs1 = Attribs(a1, a2, a3, a4, a5, a6)
+    val attrs2 = Attribs(a1, a2, a3, a4, a5, a6)
+    
+    assertFalse("attrs1 == attrs2 - we expect this false as we don't define equality fully for ListSet, given equals", attrs1 == attrs2)
+    assertTrue("attrs1 === attrs2", attrs1 === attrs2)
+    
+    val attrs3 = Attribs(a1, a3, a4, a5, a6)
+
+    val wrongCount = defaultAttributesComparisom.compare(true, DummyPath, attrs1, attrs3)
+    val Some((DifferentNumberOfAttributes(wcl, wcr), DummyPath)) = wrongCount
+    assertTrue("wcl eq attrs1", wcl eq attrs1)
+    assertTrue("wcr eq attrs3", wcr eq attrs3)
+
+    val wrongCountnc = defaultAttributesComparisom.compare(false, DummyPath, attrs1, attrs3)
+    assertTrue("wrongCountnc eq noCalculation",wrongCountnc eq noCalculation)
+
+    assertFalse("attrs3 === attrs1", attrs3 === attrs1)
+
+    val missing = po("newlocal")
+    val missinga = Attribute(missing, "value")
+    
+    val attrs4 = Attribs(a1, a3, a4, a5, a6, missinga)
+
+    val leftMissing = defaultAttributesComparisom.compare(true, DummyPath, attrs4, attrs1)
+    val Some((MissingAttributes(lml, lmr, lm), DummyPath)) = leftMissing
+
+    assertTrue("lml eq attrs4", lml eq attrs4)
+    assertTrue("lmr eq attrs1", lmr eq attrs1)
+    assertTrue("lm eq missinga", lm eq missinga)
+
+    val missingnc = defaultAttributesComparisom.compare(false, DummyPath, attrs1, attrs4)
+    assertTrue("missingnc eq noCalculation",missingnc eq noCalculation)
+
+    val rightMissing = defaultAttributesComparisom.compare(true, DummyPath, attrs1, attrs4)
+    val Some((MissingAttributes(rml, rmr, rm), DummyPath)) = rightMissing
+
+    assertTrue("rml eq attrs1", rml eq attrs1)
+    assertTrue("rmr eq attrs4", rmr eq attrs4)
+    assertTrue("rm eq a2", rm eq a2)
+   
+    val differentValuea = Attribute(missing, "another value")
+    val attrs5 = Attribs(a1, a3, a4, a5, a6, differentValuea)
+
+    val diffValue = defaultAttributesComparisom.compare(true, DummyPath, attrs5, attrs4)
+    val Some((AttributeValueDifference(dvl, dvr), DummyPath)) = diffValue
+
+    assertTrue("dvl eq attrs5", dvl eq differentValuea)
+    assertTrue("dvr eq attrs4", dvr eq missinga)
+   
+    assertFalse("attrs5 === attrs4", attrs5 === attrs4)
+
+
+    val diffVnc = defaultAttributesComparisom.compare(false, DummyPath, attrs5, attrs4)
+    assertTrue("diffVnc eq noCalculation",diffVnc eq noCalculation)
+    
   }
 }

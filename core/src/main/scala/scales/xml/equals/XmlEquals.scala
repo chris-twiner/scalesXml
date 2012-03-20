@@ -170,6 +170,7 @@ object AttributesEquals {
   class AttributesComparisom( implicit ac : XmlComparisom[Attribute]) extends XmlComparisom[Attributes] {
     def compare( calculate : Boolean, path : BasicPath, left : Attributes, right : Attributes) : Option[(XmlDifference[_], BasicPath)] = {
       import EqualsHelpers._
+      import scales.utils.collectFirst
 
       if (left.size != right.size)
 	if (calculate)
@@ -178,16 +179,15 @@ object AttributesEquals {
 	  noCalculation
       else 
 	// get the first error
-	scales.utils.collectFirst[Attribute, (XmlDifference[_], BasicPath)](left){ 
+	collectFirst[Attribute, (XmlDifference[_], BasicPath)](left){ 
 	  x1 =>
-	    right( x1.name ).flatMap{ x2 => // if we have it check the attributes
-	      ac.compare(calculate, path, x1, x2)
-	    }.orElse{ // right( x1. name ) is none
+	    right( x1.name ).cata( x2 => // if we have it check the attributes
+	      ac.compare(calculate, path, x1, x2),
 	      if (calculate)
 		Some( ( MissingAttributes( left, right, x1 ), path) )
 	      else
-		noCalculation	      
-	    }
+		noCalculation     
+	    )
 	}
     }
   }
