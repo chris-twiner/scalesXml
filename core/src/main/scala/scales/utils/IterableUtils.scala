@@ -14,6 +14,21 @@ trait IterableUtils {
     // remove last 
     builder.delete(builder.length() - separator.length(), builder.length())
   }
+
+  /**
+   * Collects the first Some
+   */ 
+  def collectFirst[A, B]( in : Iterable[A] )( f : A => Option[B]) : Option[B] = {
+    val it = in.iterator
+    while( it.hasNext ) {
+      val a = it.next
+      val res = f(a)
+      if (res.isDefined) {
+	return res
+      }
+    }
+    None
+  }
   
   def capture[A](orig : Iterator[A] ) = new CapturedIterator(orig)
 

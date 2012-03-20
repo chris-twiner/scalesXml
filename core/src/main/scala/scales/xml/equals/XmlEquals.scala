@@ -167,21 +167,6 @@ object AttributeEquals {
 
 object AttributesEquals {
 
-  /**
-   * Collects the first Some
-   */ 
-  def collectFirst[A, B]( in : Iterable[A] )( f : A => Option[B]) : Option[B] = {
-    val it = in.iterator
-    while( it.hasNext ) {
-      val a = it.next
-      val res = f(a)
-      if (res.isDefined) {
-	return res
-      }
-    }
-    None
-  }
-
   class AttributesComparisom( implicit ac : XmlComparisom[Attribute]) extends XmlComparisom[Attributes] {
     def compare( calculate : Boolean, path : BasicPath, left : Attributes, right : Attributes) : Option[(XmlDifference[_], BasicPath)] = {
       import EqualsHelpers._
@@ -193,7 +178,7 @@ object AttributesEquals {
 	  noCalculation
       else 
 	// get the first error
-	collectFirst[Attribute, (XmlDifference[_], BasicPath)](left){ 
+	scales.utils.collectFirst[Attribute, (XmlDifference[_], BasicPath)](left){ 
 	  x1 =>
 	    right( x1.name ).flatMap{ x2 => // if we have it check the attributes
 	      ac.compare(calculate, path, x1, x2)
