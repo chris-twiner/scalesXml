@@ -231,16 +231,59 @@ class EqualsTest extends junit.framework.TestCase {
     val attrs5 = Attribs(a1, a3, a4, a5, a6, differentValuea)
 
     val diffValue = defaultAttributesComparisom.compare(true, DummyPath, attrs5, attrs4)
-    val Some((AttributeValueDifference(dvl, dvr), DummyPath)) = diffValue
+    val Some((DifferentValueAttributes(dvl, dvr, dva), DummyPath)) = diffValue
 
-    assertTrue("dvl eq attrs5", dvl eq differentValuea)
-    assertTrue("dvr eq attrs4", dvr eq missinga)
+    assertTrue("dvl eq attrs5", dvl eq attrs5)
+    assertTrue("dvr eq attrs4", dvr eq attrs4)
+    assertTrue("dva eq differentValuea", dva eq differentValuea)
    
     assertFalse("attrs5 === attrs4", attrs5 === attrs4)
 
 
     val diffVnc = defaultAttributesComparisom.compare(false, DummyPath, attrs5, attrs4)
     assertTrue("diffVnc eq noCalculation",diffVnc eq noCalculation)
+    
+  }
+
+  def testElems : Unit = {
+    import SomeDifference.noCalculation
+    
+    val n = Namespace("uri:prefix")
+    val no = Namespace("uri:prefixed")
+    val p = n.prefixed("p")
+    val po = no.prefixed("po")
+
+    val a1 = Attribute(p("local"), "value")
+    val a2 = Attribute(po("local"), "value")
+    
+    val a3 = Attribute(p("local1"), "value")
+    val a4 = Attribute(po("local1"), "value")
+    
+    val a5 = Attribute(p("local2"), "value")
+    val a6 = Attribute(po("local2"), "value")
+    
+    import ElemEquals._
+
+    val attrs1 = Attribs(a1, a2, a3, a4, a5, a6)
+    val attrs2 = Attribs(a1, a2, a3, a4, a5, a6)
+    
+    val attrs3 = Attribs(a1, a3, a4, a5, a6)
+
+    val elem1 = Elem(po("elem"), attrs1)
+    val elem2 = Elem(po("elem"), attrs1)
+
+    assertTrue("elem1 === elem2", elem1 === elem2)
+    
+    assertTrue("compare elem1 elem2 .isEmpty", defaultElemComparisom.compare(true, DummyPath, elem1, elem2).isEmpty)
+
+    val elem3 = Elem(p("elem"), attrs1)
+    assertFalse("elem1 === elem3", elem1 === elem3)
+    
+    val diffname = defaultElemComparisom.compare(true, DummyPath, elem1, elem3)
+    val Some((ElemNameDifference(dnl, dnr), DummyPath)) = diffname
+    
+    assertTrue( "dnl eq elem1", dnl eq elem1)
+    assertTrue( "dnr eq elem3", dnr eq elem3)
     
   }
 }
