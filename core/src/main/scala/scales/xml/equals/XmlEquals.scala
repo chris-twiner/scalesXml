@@ -9,7 +9,52 @@ import Scalaz._
  * Where did it fail
  */ 
 object BasicPaths {
-  type BasicPath = List[(QName, Map[QName, Int])] 
+  // {ns}Local -> count
+  type BasicPathA = (QName, Map[String, Int])
+  type BasicPath = List[BasicPathA] 
+
+  /**
+   * Pushes a new elem on the stack, modifying the parents counts as it goes
+   */ 
+  def startElem( qname : QName, path : BasicPath ) : BasicPath =
+    if (path.isEmpty) 
+      scales.utils.one((qname, Map[String, Int]()))
+    else {
+      val (h :: r) = path
+      val qn = qname.qualifiedName
+      val count = h._2.get(qn).getOrElse(0)
+      (qname, Map[String, Int]()) :: 
+      (h._1, h._2.updated(qn, count + 1)) :: r
+    }
+
+  /**
+   * Produces an XPath like string.  Make this a full one?
+   */ 
+  def pathString( path : BasicPath ) : String = {
+    var str = ""
+    var l = path//.reverse
+    while( ! l.isEmpty ) {
+      val head :: tail = l
+      l = tail
+
+      val qn = head._1.qualifiedName
+      val count =
+	if (tail.isEmpty) 1 
+	else {
+          val nhead :: rest = tail
+	  nhead._2(qn)
+	}
+      
+      str = "/"+ qn + "["+ count +"]" + str
+    }
+    str
+  }
+
+  /**
+   * path.tail, pops the head off as it moves up, counts are not changed
+   */ 
+  def endElem( path : BasicPath ) : BasicPath = 
+    path.tail
 }
 
 import BasicPaths._
@@ -81,7 +126,7 @@ case class ElemNamespacesDifference( left : Elem, right : Elem ) extends ElemDif
  * Like Equals but also gives a path in addition to the fun reason
  * 
  */ 
-trait XmlComparisom[T] {
+trait XmlComparison[T] {
   /**
    * Takes the path for information reasons (works for streams as well).  The return is either None == boolean or the reason
    */ 
@@ -90,7 +135,7 @@ trait XmlComparisom[T] {
 
 object ItemEquals {
 
-  implicit object DefaultXmlItemComparisom extends XmlComparisom[XmlItem] {
+  implicit object DefaultXmlItemComparison extends XmlComparison[XmlItem] {
     def compare( calculate : Boolean , path : BasicPath, left : XmlItem, right : XmlItem) : Option[(XmlDifference[_], BasicPath)] = {
       def check( str : String, str2 : String ) =
 	  if (str == str2) None
@@ -118,12 +163,12 @@ object ItemEquals {
   
   implicit val defaultXmlItem : Equal[XmlItem] = equal {
     (a : XmlItem, b : XmlItem) =>
-      DefaultXmlItemComparisom.compare(false, Nil, a, b).isEmpty 
+      DefaultXmlItemComparison.compare(false, Nil, a, b).isEmpty 
   }
 }
 
 object AttributeEquals {
-  class AttributeComparisom(implicit eqn : Equal[QName]) extends XmlComparisom[Attribute] {
+  class AttributeComparison(implicit eqn : Equal[QName]) extends XmlComparison[Attribute] {
     import ScalesXml.toQName
 
     def compare( calculate : Boolean, path : BasicPath, left: Attribute, right : Attribute) : Option[(XmlDifference[_], BasicPath)] = {
@@ -146,14 +191,14 @@ object AttributeEquals {
   /**
    * QNames are not compared with prefix
    */ 
-  implicit val defaultAttributeComparisom = new AttributeComparisom()(ScalesXml.qnameEqual)
+  implicit val defaultAttributeComparison = new AttributeComparison()(ScalesXml.qnameEqual)
   
   /**
    * QNames are not compared with prefix
    */ 
   implicit val defaultAttributeEquals = equal { 
     (a : Attribute, b : Attribute) =>
-      defaultAttributeComparisom.compare(false, Nil, a, b).isEmpty
+      defaultAttributeComparison.compare(false, Nil, a, b).isEmpty
   }
 
   /**
@@ -163,21 +208,21 @@ object AttributeEquals {
     /**
      * QNames are compared with prefix
      */ 
-    implicit val prefixAttributeComparisom = new AttributeComparisom()(equal { (a: QName, b: QName) => a.====(b) })
+    implicit val prefixAttributeComparison = new AttributeComparison()(equal { (a: QName, b: QName) => a.====(b) })
     
     /**
      * QNames are compared with prefix
      */ 
     implicit val prefixAttributeEquals = equal { 
       (a : Attribute, b : Attribute) =>
-	prefixAttributeComparisom.compare(false, Nil, a, b).isEmpty
+	prefixAttributeComparison.compare(false, Nil, a, b).isEmpty
     }
   }
 }
 
 object AttributesEquals {
 
-  class AttributesComparisom( implicit ac : XmlComparisom[Attribute]) extends XmlComparisom[Attributes] {
+  class AttributesComparison( implicit ac : XmlComparison[Attribute]) extends XmlComparison[Attributes] {
     def compare( calculate : Boolean, path : BasicPath, left : Attributes, right : Attributes) : Option[(XmlDifference[_], BasicPath)] = {
       import EqualsHelpers._
       import scales.utils.collectFirst
@@ -210,11 +255,11 @@ object AttributesEquals {
     }
   }
 
-  implicit val defaultAttributesComparisom = new AttributesComparisom()( AttributeEquals.defaultAttributeComparisom )
+  implicit val defaultAttributesComparison = new AttributesComparison()( AttributeEquals.defaultAttributeComparison )
 
   implicit val defaultAttributesEquals = equal {
     (a : Attributes, b : Attributes) =>
-      defaultAttributesComparisom.compare(false, Nil, a, b).isEmpty
+      defaultAttributesComparison.compare(false, Nil, a, b).isEmpty
   }
 }
 
@@ -228,7 +273,7 @@ object ElemEquals {
   /**
    * Namespaces by default are not compared.  They aren't marked as implicit as you really have to be explicitly wanting to compare them.
    */ 
-  class ElemComparisom(namespaces : Equal[Map[String, String]] = allwaysTrueNamespacesEqual)( implicit ac : XmlComparisom[Attributes], eqn : Equal[QName]) extends XmlComparisom[Elem] {
+  class ElemComparison(namespaces : Equal[Map[String, String]] = allwaysTrueNamespacesEqual)( implicit ac : XmlComparison[Attributes], eqn : Equal[QName]) extends XmlComparison[Elem] {
     def compare( calculate : Boolean, path : BasicPath, left : Elem, right : Elem) : Option[(XmlDifference[_], BasicPath)] = {
 
       if (!(left.name === right.name))
@@ -254,11 +299,11 @@ object ElemEquals {
     }
   }
 
-  implicit val defaultElemComparisom = new ElemComparisom()( AttributesEquals.defaultAttributesComparisom, ScalesXml.qnameEqual)
+  implicit val defaultElemComparison = new ElemComparison()( AttributesEquals.defaultAttributesComparison, ScalesXml.qnameEqual)
 
   implicit val defaultElemEquals = equal {
     (a : Elem, b : Elem) =>
-      defaultElemComparisom.compare(false, Nil, a, b).isEmpty
+      defaultElemComparison.compare(false, Nil, a, b).isEmpty
   }
 }
 
