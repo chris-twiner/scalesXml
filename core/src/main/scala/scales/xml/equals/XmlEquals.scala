@@ -122,6 +122,8 @@ case class ElemAttributeDifference( left : Elem, right : Elem, attributesDiffere
  */ 
 case class ElemNamespacesDifference( left : Elem, right : Elem ) extends ElemDifference
 
+case class EndElemNameDifference( left : EndElem, right : EndElem ) extends XmlDifference[EndElem]
+
 /**
  * Like Equals but also gives a path in addition to the fun reason
  * 
@@ -304,6 +306,55 @@ object ElemEquals {
   implicit val defaultElemEquals = equal {
     (a : Elem, b : Elem) =>
       defaultElemComparison.compare(false, Nil, a, b).isEmpty
+  }
+}
+
+object StreamEquals {
+
+  /**
+   * Compares based on streams
+   */ 
+  class StreamComparison( implicit ic : XmlComparison[XmlItem], ec : XmlComparison[Elem], endElemQNameEqual : Equal[QName]) extends XmlComparison[Iterator[PullType]] {
+    def compare( calculate : Boolean, opath : BasicPath, lefti : Iterator[PullType], righti : Iterator[PullType] ) : Option[(XmlDifference[_], BasicPath)] = {
+
+      var res : Option[(XmlDifference[_], BasicPath)] = None
+      val joined = lefti.zip(righti)
+      var path = opath
+
+      while( res.isEmpty && joined.hasNext) {
+	joined.next match {
+	  case (Left(x : Elem), Left(y : Elem)) =>
+	    path = startElem(x.name, path)
+	    res = ec.compare(calculate, path, x, y)
+	  case (Left(x : XmlItem), Left(y : XmlItem)) =>
+	    res = ic.compare(calculate, path, x, y)
+	  case (Right(x : EndElem), Right(y  : EndElem)) =>
+	    res = 
+	      if (!endElemQNameEqual.equal(x.name, y.name)) {
+		if (calculate)
+		  Some((EndElemNameDifference(x, y), path))
+		else 
+		  noCalculation
+	      } else None
+	    path = endElem(path)
+	  case (left, right) => 
+	    res = 
+	      if (calculate)
+		Some((DifferentTypes(left, right), path)) 
+	      else
+		noCalculation
+	}
+      }
+
+      res
+    }
+  }
+
+  implicit val defaultStreamComparison : XmlComparison[Iterator[PullType]] = new StreamComparison()( ItemEquals.DefaultXmlItemComparison, ElemEquals.defaultElemComparison, ScalesXml.qnameEqual)
+
+  implicit val defaultStreamEquals = equal {
+    (a : Iterator[PullType], b : Iterator[PullType]) =>
+      defaultStreamComparison.compare(false, Nil, a, b).isEmpty
   }
 }
 
