@@ -356,5 +356,13 @@ object StreamEquals {
     (a : Iterator[PullType], b : Iterator[PullType]) =>
       defaultStreamComparison.compare(false, Nil, a, b).isEmpty
   }
+
 }
 
+object TreeEquals {
+  
+  /**
+   * Allow flexible conversions
+   */ 
+//  class TreeComparison( implicit sc : StreamComparison, 
+}

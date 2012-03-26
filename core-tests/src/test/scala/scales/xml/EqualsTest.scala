@@ -21,6 +21,13 @@ class EqualsTest extends junit.framework.TestCase {
   val nons = ( top(xml) \* 2 ).head
   val nons2 = ( top(xml2) \* 2 ).head
 
+  val n = Namespace("uri:prefix")
+  val no = Namespace("uri:prefixed")
+  val p = n.prefixed("p")
+  val po = no.prefixed("po")
+  
+  val qn = po("elem")
+
   // these guys import a resource
   import scalaz._
   import Scalaz._
@@ -97,6 +104,7 @@ class EqualsTest extends junit.framework.TestCase {
 
     val a1 = Attribute("local"l, "value")
     val a2 = Attribute("local"l, "value")
+    // can be true or false - luck
     assertTrue("a1 == a2", a1 == a2)
     assertTrue("a1 === a2", a1 === a2)
 
@@ -140,8 +148,6 @@ class EqualsTest extends junit.framework.TestCase {
    * Provided but I really can't recommend anyone to use it
    */ 
   def testAttributePrefix : Unit = {
-    val n = Namespace("uri:prefix")
-    val p = n.prefixed("p")
     val po = n.prefixed("po")
 
     val a1 = Attribute(p("local"), "value")
@@ -151,7 +157,7 @@ class EqualsTest extends junit.framework.TestCase {
     {
       import scales.xml.equals.AttributeEquals._
 
-      assertTrue("a1 == a2", a1 == a2)
+      assertTrue("sanity a1 == a2", a1 == a2)
       assertTrue("a1 === a2 with normal prefix ignored", a1 === a2)
     }
 
@@ -170,11 +176,6 @@ class EqualsTest extends junit.framework.TestCase {
 
   def testAttributes : Unit = {
     import SomeDifference.noCalculation
-    
-    val n = Namespace("uri:prefix")
-    val no = Namespace("uri:prefixed")
-    val p = n.prefixed("p")
-    val po = no.prefixed("po")
 
     val a1 = Attribute(p("local"), "value")
     val a2 = Attribute(po("local"), "value")
@@ -247,11 +248,6 @@ class EqualsTest extends junit.framework.TestCase {
 
   def testElems : Unit = {
     import SomeDifference.noCalculation
-    
-    val n = Namespace("uri:prefix")
-    val no = Namespace("uri:prefixed")
-    val p = n.prefixed("p")
-    val po = no.prefixed("po")
 
     val a1 = Attribute(p("local"), "value")
     val a2 = Attribute(po("local"), "value")
@@ -304,11 +300,6 @@ class EqualsTest extends junit.framework.TestCase {
   def testBasicPath : Unit = {
     import BasicPaths._
 
-    val n = Namespace("uri:prefix")
-    val no = Namespace("uri:prefixed")
-    val p = n.prefixed("p")
-    val po = no.prefixed("po")
-
     val qn = po("elem")
 
     // we should therefore get a 2
@@ -354,5 +345,35 @@ class EqualsTest extends junit.framework.TestCase {
     val andDownAgain = startElem(qn, pop2) // new parent elem, new count
     assertEquals("ps(andDownAgain)", "/{}root[1]/{uri:prefixed}elem[3]/{uri:prefixed}elem[1]", pathString(andDownAgain))
     
+  }
+
+  def testStreamEquals : Unit = {
+    import StreamEquals._
+    //xml xml2
+    assertTrue("xml === xml", convertToStream(xml) === convertToStream(xml))
+    assertTrue("xml === xml2", convertToStream(xml) === convertToStream(xml2))
+
+    val nons = top(xml) \* 2
+    val res = foldPositions(nons) {
+      case p => Replace( p.tree.section.copy( attributes = Attribs("ah" -> "so")))
+    }
+
+    assertTrue("its left ", res.isLeft)
+
+    val noAttribs = res.left.get
+//    printTree(noAttribs.tree)
+    assertFalse("xml === noAttribs", convertToStream(xml) === convertToStream(noAttribs.tree))
+    
+    val diff = defaultStreamComparison.compare(true, Nil, convertToStream(xml), convertToStream(noAttribs.tree))
+
+    assertTrue("diff is some", diff.isDefined)
+
+    val Some((ElemAttributeDifference(dal, dar, DifferentNumberOfAttributes(wcl, wcr)), path)) = diff
+    
+    import BasicPaths._
+    assertEquals("/{urn:default}Default[1]/{}NoNamespace[1]", pathString(path))
+
+    assertEquals("da1.name is NoNamespace", "{}NoNamespace", dal.name.qualifiedName)
+    assertTrue("wcr has ah", wcr("ah"l).isDefined)
   }
 }
