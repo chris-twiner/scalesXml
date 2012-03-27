@@ -298,7 +298,7 @@ class EqualsTest extends junit.framework.TestCase {
   }
   
   def testBasicPath : Unit = {
-    import BasicPaths._
+    import XmlEquals._
 
     val qn = po("elem")
 
@@ -370,7 +370,7 @@ class EqualsTest extends junit.framework.TestCase {
 
     val Some((ElemAttributeDifference(dal, dar, DifferentNumberOfAttributes(wcl, wcr)), path)) = diff
     
-    import BasicPaths._
+    import XmlEquals._
     assertEquals("/{urn:default}Default[1]/{}NoNamespace[1]", pathString(path))
 
     assertEquals("da1.name is NoNamespace", "{}NoNamespace", dal.name.qualifiedName)

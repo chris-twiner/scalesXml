@@ -6,12 +6,37 @@ import scalaz._
 import Scalaz._
 
 /**
- * Where did it fail
+ * Why did equality fail, pattern match fun
  */ 
-object BasicPaths {
+sealed trait XmlDifference[X] {
+  val left : X
+  val right : X
+}
+
+trait BasicPaths {
   // {ns}Local -> count
   type BasicPathA = (QName, Map[String, Int])
   type BasicPath = List[BasicPathA] 
+}
+
+object BasicPaths extends BasicPaths {}
+
+/**
+ * Like Equals but also gives a path in addition to the fun reason
+ * 
+ */ 
+trait XmlComparison[T] {
+  import BasicPaths._
+  /**
+   * Takes the path for information reasons (works for streams as well).  The return is either None == boolean or the reason
+   */ 
+  def compare( calculate : Boolean , path : BasicPath, left : T, right : T) : Option[(XmlDifference[_], BasicPath)]
+}
+
+/**
+ * Base functions for equality
+ */ 
+trait XmlEquals extends BasicPaths {
 
   /**
    * Pushes a new elem on the stack, modifying the parents counts as it goes
@@ -55,17 +80,21 @@ object BasicPaths {
    */ 
   def endElem( path : BasicPath ) : BasicPath = 
     path.tail
-}
 
-import BasicPaths._
+  /**
+   * Compare the xml object via the available XmlDifference type class
+   */ 
+  def compare[T : XmlComparison]( path : BasicPath, left : T, right : T) : Option[(XmlDifference[_], BasicPath)] =
+    implicitly[XmlComparison[T]].compare(true, path, left, right)
+}
 
 /**
- * Why did equality fail, pattern match fun
+ * Make it available without dragging the rest of the world in
  */ 
-sealed trait XmlDifference[X] {
-  val left : X
-  val right : X
+object XmlEquals extends XmlEquals {
 }
+
+import XmlEquals._
 
 /**
  * Magik object for when we aren't attempting to calculate whats wrong 
@@ -123,17 +152,6 @@ case class ElemAttributeDifference( left : Elem, right : Elem, attributesDiffere
 case class ElemNamespacesDifference( left : Elem, right : Elem ) extends ElemDifference
 
 case class EndElemNameDifference( left : EndElem, right : EndElem ) extends XmlDifference[EndElem]
-
-/**
- * Like Equals but also gives a path in addition to the fun reason
- * 
- */ 
-trait XmlComparison[T] {
-  /**
-   * Takes the path for information reasons (works for streams as well).  The return is either None == boolean or the reason
-   */ 
-  def compare( calculate : Boolean , path : BasicPath, left : T, right : T) : Option[(XmlDifference[_], BasicPath)]
-}
 
 object ItemEquals {
 
