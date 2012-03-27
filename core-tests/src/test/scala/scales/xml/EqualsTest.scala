@@ -35,6 +35,8 @@ class EqualsTest extends junit.framework.TestCase {
   // make sure its passed through where it should be
   val DummyPath : BasicPaths.BasicPath = List(("n"l, Map()))
 
+  import XmlEquals._
+
   def testItems : Unit = {
 
     import scales.xml.equals.ItemEquals._
@@ -45,7 +47,7 @@ class EqualsTest extends junit.framework.TestCase {
     assertTrue("t1 == t2", t1 == t2)
     assertTrue("t1 === t2", t1 === t2)
 
-    assertTrue("t1 compare t2", DefaultXmlItemComparison.compare(true, Nil, t1, t2).isEmpty )
+    assertTrue("t1 compare t2", compare(Nil, t1, t2).isEmpty )
     
     val t3 = Text("freed")
 
@@ -111,7 +113,7 @@ class EqualsTest extends junit.framework.TestCase {
     val a3 = Attribute("ellocal"l, "value")
     assertFalse("a1 === a3", a1 === a3)
 
-    val diffN = defaultAttributeComparison.compare(true, DummyPath, a1, a3)
+    val diffN = compare(DummyPath, a1, a3)
     assertFalse("diffN.isEmpty", diffN.isEmpty)
 
     val Some((AttributeNameDifference(diffNl, diffNr), DummyPath)) = diffN
@@ -166,7 +168,7 @@ class EqualsTest extends junit.framework.TestCase {
     assertTrue("a1 == a2", a1 == a2)
     assertFalse("a1 === a2", a1 === a2)
 
-    val diffN = prefixAttributeComparison.compare(true, DummyPath, a1, a2)
+    val diffN = compare(DummyPath, a1, a2)
     assertFalse("diffN.isEmpty", diffN.isEmpty)
 
     val Some((AttributeNameDifference(diffNl, diffNr), DummyPath)) = diffN
@@ -196,7 +198,7 @@ class EqualsTest extends junit.framework.TestCase {
     
     val attrs3 = Attribs(a1, a3, a4, a5, a6)
 
-    val wrongCount = defaultAttributesComparison.compare(true, DummyPath, attrs1, attrs3)
+    val wrongCount = compare(DummyPath, attrs1, attrs3)
     val Some((DifferentNumberOfAttributes(wcl, wcr), DummyPath)) = wrongCount
     assertTrue("wcl eq attrs1", wcl eq attrs1)
     assertTrue("wcr eq attrs3", wcr eq attrs3)
@@ -211,7 +213,7 @@ class EqualsTest extends junit.framework.TestCase {
     
     val attrs4 = Attribs(a1, a3, a4, a5, a6, missinga)
 
-    val leftMissing = defaultAttributesComparison.compare(true, DummyPath, attrs4, attrs1)
+    val leftMissing = compare(DummyPath, attrs4, attrs1)
     val Some((MissingAttributes(lml, lmr, lm), DummyPath)) = leftMissing
 
     assertTrue("lml eq attrs4", lml eq attrs4)
@@ -271,12 +273,12 @@ class EqualsTest extends junit.framework.TestCase {
 
     assertTrue("elem1 === elem2", elem1 === elem2)
     
-    assertTrue("compare elem1 elem2 .isEmpty", defaultElemComparison.compare(true, DummyPath, elem1, elem2).isEmpty)
+    assertTrue("compare elem1 elem2 .isEmpty", compare(DummyPath, elem1, elem2).isEmpty)
 
     val elem3 = Elem(p("elem"), attrs1)
     assertFalse("elem1 === elem3", elem1 === elem3)
     
-    val diffname = defaultElemComparison.compare(true, DummyPath, elem1, elem3)
+    val diffname = compare(DummyPath, elem1, elem3)
     val Some((ElemNameDifference(dnl, dnr), DummyPath)) = diffname
     
     assertTrue( "dnl eq elem1", dnl eq elem1)
@@ -298,7 +300,6 @@ class EqualsTest extends junit.framework.TestCase {
   }
   
   def testBasicPath : Unit = {
-    import XmlEquals._
 
     val qn = po("elem")
 
@@ -364,13 +365,13 @@ class EqualsTest extends junit.framework.TestCase {
 //    printTree(noAttribs.tree)
     assertFalse("xml === noAttribs", convertToStream(xml) === convertToStream(noAttribs.tree))
     
-    val diff = defaultStreamComparison.compare(true, Nil, convertToStream(xml), convertToStream(noAttribs.tree))
+    // defaultStreamComparison. true
+    val diff = compare(Nil, convertToStream(xml), convertToStream(noAttribs.tree))
 
     assertTrue("diff is some", diff.isDefined)
 
     val Some((ElemAttributeDifference(dal, dar, DifferentNumberOfAttributes(wcl, wcr)), path)) = diff
     
-    import XmlEquals._
     assertEquals("/{urn:default}Default[1]/{}NoNamespace[1]", pathString(path))
 
     assertEquals("da1.name is NoNamespace", "{}NoNamespace", dal.name.qualifiedName)

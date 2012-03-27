@@ -155,6 +155,11 @@ case class EndElemNameDifference( left : EndElem, right : EndElem ) extends XmlD
 
 object ItemEquals {
 
+  /**
+   * Help inference out
+   */ 
+  implicit def toDefaultXmlItem[T <: XmlItem] : XmlComparison[T] = DefaultXmlItemComparison.asInstanceOf[XmlComparison[T]]
+
   implicit object DefaultXmlItemComparison extends XmlComparison[XmlItem] {
     def compare( calculate : Boolean , path : BasicPath, left : XmlItem, right : XmlItem) : Option[(XmlDifference[_], BasicPath)] = {
       def check( str : String, str2 : String ) =
@@ -328,6 +333,11 @@ object ElemEquals {
 }
 
 object StreamEquals {
+
+  /**
+   * Help inference out
+   */ 
+  implicit def toDefaultStreamComparison[T <: Iterator[PullType]] : XmlComparison[T] = defaultStreamComparison.asInstanceOf[XmlComparison[T]]
 
   /**
    * Compares based on streams
