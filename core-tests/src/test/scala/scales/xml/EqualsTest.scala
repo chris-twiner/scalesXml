@@ -163,7 +163,7 @@ class EqualsTest extends junit.framework.TestCase {
       assertTrue("a1 === a2 with normal prefix ignored", a1 === a2)
     }
 
-    import scales.xml.equals.AttributeEquals.ExactQName._
+    import scales.xml.equals.ExactQName._
 
     assertTrue("a1 == a2", a1 == a2)
     assertFalse("a1 === a2", a1 === a2)
