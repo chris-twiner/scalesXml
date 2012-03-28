@@ -377,4 +377,42 @@ class EqualsTest extends junit.framework.TestCase {
     assertEquals("da1.name is NoNamespace", "{}NoNamespace", dal.name.qualifiedName)
     assertTrue("wcr has ah", wcr("ah"l).isDefined)
   }
+
+  def testDefaultXmlEquals : Unit = {
+    import ExactXmlEquals._
+
+    val attrs1 = Attribs("a1" -> "v1", "a2" -> "v2")
+    val attrs2 = Attribs("a1" -> "v1", "a2" -> "v2")
+
+    val elem1 = Elem(po("elem"), attrs1)
+    val elem2 = Elem(po("elem"), attrs2)
+
+    assertTrue("attrs1 === attrs2", attrs1 === attrs2)
+    assertTrue("elem1 === elem2", elem1 === elem2)   
+  }
+
+  def testJoinTextAndCData : Unit = {
+
+    val root = po("root")
+    val child = po("child")
+    val sub = po("sub")
+
+    import LogicalFilters._
+
+    val x = <(root) /( "0","1",CData("2"),"3","4", 
+      		child /( "s1", CData("s2"), "s3" ),
+      		child /( CData("s22"), "s23" ),
+		"5", CData("6") )
+
+    assertEquals( "Should start with 9", 9 , x.toTree.children.size)
+
+//printTree(new JoinTextAndCData(convertToStream(x)) : Iterator[PullType])
+
+    val str = asString(new JoinTextAndCData(convertToStream(x)) : Iterator[PullType])
+
+    assertEquals("Should have serialized to", """<?xml version="1.0" encoding="UTF-8"?><po:root xmlns:po="uri:prefixed">01234<po:child>s1s2s3</po:child><po:child>s22s23</po:child>56</po:root>""", str)
+
+    val x2 = toTree(new JoinTextAndCData(convertToStream(x)) : Iterator[PullType])
+    assertEquals( "Should now be 4", 4 , x2.toTree.children.size)
+  }
 }

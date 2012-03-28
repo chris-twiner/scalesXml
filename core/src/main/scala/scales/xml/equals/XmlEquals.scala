@@ -150,3 +150,25 @@ case class ElemAttributeDifference( left : Elem, right : Elem, attributesDiffere
 case class ElemNamespacesDifference( left : Elem, right : Elem ) extends ElemDifference
 
 case class EndElemNameDifference( left : EndElem, right : EndElem ) extends XmlDifference[EndElem]
+
+/**
+ * All default exact Xml Equal and XmlComparison trait instances.
+ *
+ * CData, Comments, PI are all kept as is, DTD, encoding and prolog etc are not.  Text nodes are not joined.  Use LogicalXmlEquals to focus more on content only. 
+ */ 
+trait ExactXmlEquals 
+  extends DefaultItemEquals
+  with DefaultAttributeEquals
+  with DefaultAttributesEquals 
+  with DefaultElemEquals
+  with DefaultStreamEquals {
+}
+
+/**
+ * Provides simple access to ExactXmlEquals
+ */ 
+object ExactXmlEquals extends ExactXmlEquals {}
+
+/**
+ * All CData nodes are converted to text nodes, adjoining Text nodes (including CData) are joined, comments and PIs are dopped from the xml stream.
+ */
