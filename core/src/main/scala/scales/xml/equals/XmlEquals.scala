@@ -161,7 +161,7 @@ trait ExactXmlEquals
   with DefaultAttributeEquals
   with DefaultAttributesEquals 
   with DefaultElemEquals
-  with DefaultStreamEquals {
+  with ExactStreamEquals {
 }
 
 /**
@@ -170,5 +170,14 @@ trait ExactXmlEquals
 object ExactXmlEquals extends ExactXmlEquals {}
 
 /**
- * All CData nodes are converted to text nodes, adjoining Text nodes (including CData) are joined, comments and PIs are dopped from the xml stream.
+ * All CData nodes are converted to text nodes, adjoining Text nodes (including CData) are joined.
  */
+trait DefaultXmlEquals 
+  extends DefaultItemEquals
+  with DefaultAttributeEquals
+  with DefaultAttributesEquals 
+  with DefaultElemEquals
+  with DefaultStreamEquals {
+}
+
+object DefaultXmlEquals extends DefaultXmlEquals {}

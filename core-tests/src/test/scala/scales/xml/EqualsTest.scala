@@ -348,8 +348,9 @@ class EqualsTest extends junit.framework.TestCase {
     
   }
 
-  def testStreamEquals : Unit = {
-    import StreamEquals._
+  def doStreamTest( streamEquals : StreamEquals ) = {
+    import streamEquals._
+
     //xml xml2
     assertTrue("xml === xml", convertToStream(xml) === convertToStream(xml))
     assertTrue("xml === xml2", convertToStream(xml) === convertToStream(xml2))
@@ -376,6 +377,14 @@ class EqualsTest extends junit.framework.TestCase {
 
     assertEquals("da1.name is NoNamespace", "{}NoNamespace", dal.name.qualifiedName)
     assertTrue("wcr has ah", wcr("ah"l).isDefined)
+  }
+
+  def testExactStreamEquals : Unit = {
+    doStreamTest( ExactStreamEquals )
+  }
+
+  def testDefaultStreamEquals : Unit = {
+    doStreamTest( DefaultStreamEquals )
   }
 
   def testDefaultXmlEquals : Unit = {

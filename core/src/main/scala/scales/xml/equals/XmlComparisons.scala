@@ -211,11 +211,11 @@ object ElemEquals extends DefaultElemEquals {}
 /**
  * Compares based on streams.  Requires comparisons for XmlItem, Elem and a QName Equal instance for testing EndElems.
  */ 
-class StreamComparison( implicit ic : XmlComparison[XmlItem], ec : XmlComparison[Elem], endElemQNameEqual : Equal[QName]) extends XmlComparison[Iterator[PullType]] {
+class StreamComparison( filter : Iterator[PullType] => Iterator[PullType] = identity)( implicit ic : XmlComparison[XmlItem], ec : XmlComparison[Elem], endElemQNameEqual : Equal[QName]) extends XmlComparison[Iterator[PullType]] {
   def compare( calculate : Boolean, opath : BasicPath, lefti : Iterator[PullType], righti : Iterator[PullType] ) : Option[(XmlDifference[_], BasicPath)] = {
 
     var res : Option[(XmlDifference[_], BasicPath)] = None
-    val joined = lefti.zip(righti)
+    val joined = filter(lefti).zip(filter(righti))
     var path = opath
 
     while( res.isEmpty && joined.hasNext) {
@@ -247,7 +247,19 @@ class StreamComparison( implicit ic : XmlComparison[XmlItem], ec : XmlComparison
   }
 }
 
-trait DefaultStreamEquals {
+trait StreamEquals {
+  /**
+   * Help inference out
+   */ 
+  implicit def toDefaultStreamComparison[T <: Iterator[PullType]] : XmlComparison[T]
+
+  implicit val defaultStreamComparison : XmlComparison[Iterator[PullType]]
+
+  implicit val defaultStreamEquals : Equal[Iterator[PullType]]
+}
+
+
+trait ExactStreamEquals extends StreamEquals {
   /**
    * Help inference out
    */ 
@@ -261,4 +273,25 @@ trait DefaultStreamEquals {
   }
 }
 
-object StreamEquals extends DefaultStreamEquals {}
+object ExactStreamEquals extends ExactStreamEquals {}
+
+/**
+ * Streams compared after transforming via joinTextAndCData
+ */ 
+trait DefaultStreamEquals extends StreamEquals {
+  import LogicalFilters.joinTextAndCData
+
+  /**
+   * Help inference out
+   */ 
+  implicit def toDefaultStreamComparison[T <: Iterator[PullType]] : XmlComparison[T] = defaultStreamComparison.asInstanceOf[XmlComparison[T]]
+
+  implicit val defaultStreamComparison : XmlComparison[Iterator[PullType]] = new StreamComparison(joinTextAndCData _)( ItemEquals.DefaultXmlItemComparison, ElemEquals.defaultElemComparison, ScalesXml.qnameEqual)
+
+  implicit val defaultStreamEquals = equal {
+    (a : Iterator[PullType], b : Iterator[PullType]) =>
+      defaultStreamComparison.compare(false, Nil, a, b).isEmpty
+  }
+}
+
+object DefaultStreamEquals extends DefaultStreamEquals {}
