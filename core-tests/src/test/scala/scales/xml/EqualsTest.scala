@@ -408,11 +408,34 @@ class EqualsTest extends junit.framework.TestCase {
 
 //printTree(new JoinTextAndCData(convertToStream(x)) : Iterator[PullType])
 
-    val str = asString(new JoinTextAndCData(convertToStream(x)) : Iterator[PullType])
+    val str = asString(joinTextAndCData(convertToStream(x)) : Iterator[PullType])
 
     assertEquals("Should have serialized to", """<?xml version="1.0" encoding="UTF-8"?><po:root xmlns:po="uri:prefixed">01234<po:child>s1s2s3</po:child><po:child>s22s23</po:child>56</po:root>""", str)
 
-    val x2 = toTree(new JoinTextAndCData(convertToStream(x)) : Iterator[PullType])
+    val x2 = toTree(joinTextAndCData(convertToStream(x)) : Iterator[PullType])
     assertEquals( "Should now be 4", 4 , x2.toTree.children.size)
+
+    val str2 = asString(joinText(convertToStream(x)) : Iterator[PullType])
+    assertEquals("Should have serialized keeping CData to", """<?xml version="1.0" encoding="UTF-8"?><po:root xmlns:po="uri:prefixed">01<![CDATA[2]]>34<po:child>s1<![CDATA[s2]]>s3</po:child><po:child><![CDATA[s22]]>s23</po:child>5<![CDATA[6]]></po:root>""", str2)
+   
   }
+
+  def testRemovePIAndComments : Unit = {
+
+    val root = po("root")
+    val child = po("child")
+
+    import LogicalFilters._
+
+    val x = <(root) /( "0","1",CData("2"), Comment("c2"),"3","4", 
+		      PI("i","s"),
+      		child /( "s1", CData("s2"), Comment("cs2"), "s3" ),
+      		child /( CData("s22"), Comment("cs22"), PI("i","s"), "s23" ),
+		PI("i","s"), "5", CData("6"), Comment("c6") )
+    
+    val str = asString(removePIAndComments(joinText(convertToStream(x)) : Iterator[PullType]))
+    assertEquals("Should have scrapped all comments", """<?xml version="1.0" encoding="UTF-8"?><po:root xmlns:po="uri:prefixed">01<![CDATA[2]]>34<po:child>s1<![CDATA[s2]]>s3</po:child><po:child><![CDATA[s22]]>s23</po:child>5<![CDATA[6]]></po:root>""", str)
+    
+  }
+
 }
