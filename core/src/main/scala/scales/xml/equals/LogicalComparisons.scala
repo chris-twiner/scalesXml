@@ -2,14 +2,6 @@ package scales.xml.equalsImpl
 
 import scales.xml._
 
-//import scalaz._
-//import Scalaz._
-
-//import XmlEquals._
-
-//import SomeDifference.noCalculation
-
-
 /**
  * Modifies the stream to turn CData nodes into Text nodes and join all adjacent Text nodes togeter i.e. a "tree" with children (Text, CData, Text, CData) will become a single Text child.
  *

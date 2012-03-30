@@ -429,15 +429,33 @@ class EqualsTest extends junit.framework.TestCase {
    
   }
 
+  def testRemovePIAndComments : Unit = {
+
+    val root = po("root")
+    val child = po("child")
+
+    import LogicalFilters._
+
+    val x = <(root) /( "0","1",CData("2"), Comment("c2"),"3","4", 
+		      PI("i","s"),
+      		child /( "s1", CData("s2"), Comment("cs2"), "s3" ),
+      		child /( CData("s22"), Comment("cs22"), PI("i","s"), "s23" ),
+		PI("i","s"), "5", CData("6"), Comment("c6") )
+    
+    val str = asString(removePIAndComments(joinText(convertToStream(x)) : Iterator[PullType]))
+    assertEquals("Should have scrapped all comments", """<?xml version="1.0" encoding="UTF-8"?><po:root xmlns:po="uri:prefixed">01<![CDATA[2]]>34<po:child>s1<![CDATA[s2]]>s3</po:child><po:child><![CDATA[s22]]>s23</po:child>5<![CDATA[6]]></po:root>""", str)
+    
+  }
+
   /**
-   * This test simply looks at the DefaultXmlEquals behaviour
+   * This test simply looks at the test package behaviour
    */
   def testDefault : Unit = {
     val root = po("root")
     val child = po("child")
     val sub = po("sub")
 
-    import DefaultXmlEquals._
+    import scales.testing._
 
     val x1 = <(root) /( "0","1",CData("2"),"3","4", 
       		child /( "s1", CData("s2"), "s3" ),
@@ -460,22 +478,5 @@ class EqualsTest extends junit.framework.TestCase {
     assertFalse("x2 and x3 should not be equal", convertToStream(x2) === convertToStream(x3))
   }
 
-  def testRemovePIAndComments : Unit = {
-
-    val root = po("root")
-    val child = po("child")
-
-    import LogicalFilters._
-
-    val x = <(root) /( "0","1",CData("2"), Comment("c2"),"3","4", 
-		      PI("i","s"),
-      		child /( "s1", CData("s2"), Comment("cs2"), "s3" ),
-      		child /( CData("s22"), Comment("cs22"), PI("i","s"), "s23" ),
-		PI("i","s"), "5", CData("6"), Comment("c6") )
-    
-    val str = asString(removePIAndComments(joinText(convertToStream(x)) : Iterator[PullType]))
-    assertEquals("Should have scrapped all comments", """<?xml version="1.0" encoding="UTF-8"?><po:root xmlns:po="uri:prefixed">01<![CDATA[2]]>34<po:child>s1<![CDATA[s2]]>s3</po:child><po:child><![CDATA[s22]]>s23</po:child>5<![CDATA[6]]></po:root>""", str)
-    
-  }
 
 }
