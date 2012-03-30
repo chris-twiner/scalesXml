@@ -6,7 +6,7 @@ class EqualsTest extends junit.framework.TestCase {
   import scales.utils._
   import ScalesUtils._
   import ScalesXml._
-  import scales.xml.equals._
+  import scales.xml.equalsImpl._
 
   import Functions._
 
@@ -39,7 +39,7 @@ class EqualsTest extends junit.framework.TestCase {
 
   def testItems : Unit = {
 
-    import scales.xml.equals.ItemEquals._
+    import ItemEquals._
     
     val t1 = Text("fred")
     val t2 = Text("fred")
@@ -102,7 +102,7 @@ class EqualsTest extends junit.framework.TestCase {
   }
 
   def testAttribute : Unit = {
-    import scales.xml.equals.AttributeEquals._
+    import AttributeEquals._
 
     val a1 = Attribute("local"l, "value")
     val a2 = Attribute("local"l, "value")
@@ -157,13 +157,13 @@ class EqualsTest extends junit.framework.TestCase {
 
     // sanity check
     {
-      import scales.xml.equals.AttributeEquals._
+      import AttributeEquals._
 
       assertTrue("sanity a1 == a2", a1 == a2)
       assertTrue("a1 === a2 with normal prefix ignored", a1 === a2)
     }
 
-    import scales.xml.equals.ExactQName._
+    import ExactQName._
 
     assertTrue("a1 == a2", a1 == a2)
     assertFalse("a1 === a2", a1 === a2)
@@ -427,6 +427,37 @@ class EqualsTest extends junit.framework.TestCase {
     val str2 = asString(joinText(convertToStream(x)) : Iterator[PullType])
     assertEquals("Should have serialized keeping CData to", """<?xml version="1.0" encoding="UTF-8"?><po:root xmlns:po="uri:prefixed">01<![CDATA[2]]>34<po:child>s1<![CDATA[s2]]>s3</po:child><po:child><![CDATA[s22]]>s23</po:child>5<![CDATA[6]]></po:root>""", str2)
    
+  }
+
+  /**
+   * This test simply looks at the DefaultXmlEquals behaviour
+   */
+  def testDefault : Unit = {
+    val root = po("root")
+    val child = po("child")
+    val sub = po("sub")
+
+    import DefaultXmlEquals._
+
+    val x1 = <(root) /( "0","1",CData("2"),"3","4", 
+      		child /( "s1", CData("s2"), "s3" ),
+      		child /( CData("s22"), "s23" ),
+		"5", CData("6") )
+
+    val x2 = <(root) /( "01",CData("23"),"4", 
+      		child /( CData("s1"), CData("s2"), "s3" ),
+      		child /( CData("s22s"), "23" ),
+		"5", CData("6"), "" )
+
+    assertTrue("x1 and x2 should be equal", convertToStream(x1) === convertToStream(x2))
+
+    // comments and pi are kept
+    val x3 = <(root) /( "01",CData("23"),"4", 
+      		child /( CData("s1"), Comment("comment"), CData("s2"), "s3" ),
+      		child /( CData("s22s"), "23" ),
+		"5", CData("6"), "" )
+
+    assertFalse("x2 and x3 should not be equal", convertToStream(x2) === convertToStream(x3))
   }
 
   def testRemovePIAndComments : Unit = {

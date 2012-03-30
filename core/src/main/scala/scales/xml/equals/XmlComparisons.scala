@@ -1,4 +1,4 @@
-package scales.xml.equals
+package scales.xml.equalsImpl
 
 import scales.xml._
 
