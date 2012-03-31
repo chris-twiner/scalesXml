@@ -269,7 +269,18 @@ trait StreamEquals {
 
   implicit val defaultStreamComparison : XmlComparison[Iterator[PullType]]
 
-  implicit val defaultStreamEquals : Equal[Iterator[PullType]]
+  implicit val defaultStreamEquals = equal {
+    (a : Iterator[PullType], b : Iterator[PullType]) =>
+      defaultStreamComparison.compare(false, Nil, a, b).isEmpty
+  }
+
+  /**
+   * Conversions for Equal
+   */ 
+  implicit def toDefaultStreamEquals[ T <% Iterator[PullType]] : Equal[T] = equal {
+    (a : T, b : T) => 
+      toDefaultStreamComparison.compare(false, Nil, a, b).isEmpty
+  }
 }
 
 
@@ -283,10 +294,6 @@ trait ExactStreamEquals extends StreamEquals {
 
   implicit val defaultStreamComparison : XmlComparison[Iterator[PullType]] = new StreamComparison()( ItemEquals.DefaultXmlItemComparison, ElemEquals.defaultElemComparison, ScalesXml.qnameEqual)
 
-  implicit val defaultStreamEquals = equal {
-    (a : Iterator[PullType], b : Iterator[PullType]) =>
-      defaultStreamComparison.compare(false, Nil, a, b).isEmpty
-  }
 }
 
 object ExactStreamEquals extends ExactStreamEquals {}
@@ -303,10 +310,6 @@ trait DefaultStreamEquals extends StreamEquals {
 
   implicit val defaultStreamComparison : XmlComparison[Iterator[PullType]] = new StreamComparison(joinTextAndCData _)( ItemEquals.DefaultXmlItemComparison, ElemEquals.defaultElemComparison, ScalesXml.qnameEqual)
 
-  implicit val defaultStreamEquals = equal {
-    (a : Iterator[PullType], b : Iterator[PullType]) =>
-      defaultStreamComparison.compare(false, Nil, a, b).isEmpty
-  }
 }
 
 object DefaultStreamEquals extends DefaultStreamEquals {}

@@ -455,6 +455,8 @@ class EqualsTest extends junit.framework.TestCase {
     val child = po("child")
     val sub = po("sub")
 
+    implicit def dslToStream( ds : DslBuilder ) = convertToStream(ds)
+
     import scales.testing._
 
     val x1 = <(root) /( "0","1",CData("2"),"3","4", 
@@ -467,7 +469,7 @@ class EqualsTest extends junit.framework.TestCase {
       		child /( CData("s22s"), "23" ),
 		"5", CData("6"), "" )
 
-    assertTrue("x1 and x2 should be equal", convertToStream(x1) === convertToStream(x2))
+    assertTrue("x1 and x2 should be equal", x1 === x2)
 
     // comments and pi are kept
     val x3 = <(root) /( "01",CData("23"),"4", 
