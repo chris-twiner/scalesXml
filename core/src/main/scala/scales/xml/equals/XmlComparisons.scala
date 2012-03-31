@@ -247,11 +247,25 @@ class StreamComparison( filter : Iterator[PullType] => Iterator[PullType] = iden
   }
 }
 
+/**
+ * Wraps a given T with a conversion from T to an xml stream
+ */ 
+class StreamComparisonWrapper[T <% Iterator[PullType]]( val str : StreamComparison ) extends XmlComparison[T] {
+  def compare( calculate : Boolean, path : BasicPath, lt : T, rt : T) : Option[(XmlDifference[_], BasicPath)] = 
+    str.compare(calculate, path, lt, rt)
+}
+
 trait StreamEquals {
+  
+  /**
+   * Conversions
+   */
+  implicit def toDefaultStreamComparison[T <% Iterator[PullType]] : XmlComparison[T]
+  
   /**
    * Help inference out
-   */ 
-  implicit def toDefaultStreamComparison[T <: Iterator[PullType]] : XmlComparison[T]
+   */
+  implicit def asDefaultStreamComparison[T <: Iterator[PullType]] : XmlComparison[Iterator[PullType]]
 
   implicit val defaultStreamComparison : XmlComparison[Iterator[PullType]]
 
@@ -261,9 +275,11 @@ trait StreamEquals {
 
 trait ExactStreamEquals extends StreamEquals {
   /**
-   * Help inference out
-   */ 
-  implicit def toDefaultStreamComparison[T <: Iterator[PullType]] : XmlComparison[T] = defaultStreamComparison.asInstanceOf[XmlComparison[T]]
+   * Conversions
+   */
+  implicit def toDefaultStreamComparison[T <% Iterator[PullType]] : XmlComparison[T] = new StreamComparisonWrapper(new StreamComparison()( ItemEquals.DefaultXmlItemComparison, ElemEquals.defaultElemComparison, ScalesXml.qnameEqual))
+
+  implicit def asDefaultStreamComparison[T <: Iterator[PullType]] : XmlComparison[Iterator[PullType]] = defaultStreamComparison
 
   implicit val defaultStreamComparison : XmlComparison[Iterator[PullType]] = new StreamComparison()( ItemEquals.DefaultXmlItemComparison, ElemEquals.defaultElemComparison, ScalesXml.qnameEqual)
 
@@ -281,10 +297,9 @@ object ExactStreamEquals extends ExactStreamEquals {}
 trait DefaultStreamEquals extends StreamEquals {
   import LogicalFilters.joinTextAndCData
 
-  /**
-   * Help inference out
-   */ 
-  implicit def toDefaultStreamComparison[T <: Iterator[PullType]] : XmlComparison[T] = defaultStreamComparison.asInstanceOf[XmlComparison[T]]
+  implicit def toDefaultStreamComparison[T <% Iterator[PullType]] : XmlComparison[T] = new StreamComparisonWrapper( new StreamComparison(joinTextAndCData _)( ItemEquals.DefaultXmlItemComparison, ElemEquals.defaultElemComparison, ScalesXml.qnameEqual) )
+
+  implicit def asDefaultStreamComparison[T <: Iterator[PullType]] : XmlComparison[Iterator[PullType]] = defaultStreamComparison
 
   implicit val defaultStreamComparison : XmlComparison[Iterator[PullType]] = new StreamComparison(joinTextAndCData _)( ItemEquals.DefaultXmlItemComparison, ElemEquals.defaultElemComparison, ScalesXml.qnameEqual)
 
