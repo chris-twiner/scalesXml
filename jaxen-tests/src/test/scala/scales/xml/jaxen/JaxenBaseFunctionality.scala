@@ -122,13 +122,13 @@ class JaxenBaseFunctionalityTest extends BaseFunctionalityTest {
   def testNonRootContext = {
     val sub = path \*(2)
     val expected = one( "DontRedeclare"l : QName)
-    compare(expected, fromPathX("/*/*[2]", sub.one.head)) {elem(_).name}
+    assertCompare(expected, fromPathX("/*/*[2]", sub.one.head)) {elem(_).name}
   }
 
   def testNonRootContextDoc = {
     val sub = path \*(2)
     val expected = one( "NoNamespace"l : QName)
-    compare(expected, fromPathX("/*[1]/..", sub.one.head)) {elem(_).name}
+    assertCompare(expected, fromPathX("/*[1]/..", sub.one.head)) {elem(_).name}
   }
 
   def testNonRootContextDocsParentShouldBeEmpty = {
@@ -204,7 +204,7 @@ class JaxenBaseFunctionalityTest extends BaseFunctionalityTest {
   //  println("expected")
     //expected foreach println
 
-    compare( expected ,
+    assertCompare( expected ,
       //p(nested .\\).
 	nested.\\.|>(p).*.map(pqName(_)) 
       ) {identity}

@@ -8,6 +8,14 @@ The input to all pull xml functions is a sax.InputSource, which allows the same 
 
 A curio exists with pullXmlCompletely, which uses the pull parser to load xml Docs.  This may be of use in an environment where the StAX parser performs better than SAX, but tests have shown lower memory consumption and higher performance when using SAX to parse full trees.
 
+Some of the advanced features of Pull Parsing may require importing Scalaz as well:
+
+${cscala}
+  import scalaz._
+  import Scalaz._
+  import IterV._ // may not always be required
+${cend}
+
 == Pull Model ==
 
 The Scales Pull Model adds only EndElem to create PullType:

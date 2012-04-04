@@ -101,7 +101,7 @@ class OldBaseFunctionalityTest extends junit.framework.TestCase {
     val expected = List(dontRedeclareNoNS, dontRedeclareNoNS,
       shouldRedeclareDefaultNS, prefixedPQN)
     
-    compare(expected, positionAllKids)(Elements.Functions.pqName(_))
+    assertCompare(expected, positionAllKids)(Elements.Functions.pqName(_))
   }
 
   val dontRedeclaresX = path.\\.*(Elements.localName("DontRedeclare"))
@@ -111,7 +111,7 @@ class OldBaseFunctionalityTest extends junit.framework.TestCase {
     val expected = List("{urn:default}DontRedeclare",
       "{}DontRedeclare", "{}DontRedeclare");
 
-    compare(expected, dontRedeclares)(Elements.Functions.pqName(_))
+    assertCompare(expected, dontRedeclares)(Elements.Functions.pqName(_))
   }
 
   def unions : XmlPaths = dontRedeclaresX | dontRedeclaresX | (dontRedeclaresX.\^)
@@ -122,7 +122,7 @@ class OldBaseFunctionalityTest extends junit.framework.TestCase {
       "{}NoNamespace",
       "{}DontRedeclare", "{}DontRedeclare");
 
-    compare(expected, unions)(
+    assertCompare(expected, unions)(
       Elements.Functions.pqName(_))
   }
 
@@ -133,7 +133,7 @@ class OldBaseFunctionalityTest extends junit.framework.TestCase {
     val expected = List("{urn:default}Default",
       "{}NoNamespace");
 
-    compare(expected, parentsDuplicates )(Elements.Functions.pqName(_))
+    assertCompare(expected, parentsDuplicates )(Elements.Functions.pqName(_))
   }
     
   val allAttribsX = path.\\.*@
@@ -145,13 +145,13 @@ class OldBaseFunctionalityTest extends junit.framework.TestCase {
     val expected = List("justHere:{urn:justHere}attr=only", "{}type=interesting", 
   			"ns1:{urn:prefix}attr=namespaced");
     import Attributes.Functions._
-    compare( expected, allAttribs ){ implicit attr => pqName + "=" + value }
+    assertCompare( expected, allAttribs ){ implicit attr => pqName + "=" + value }
   }
 
   def testChainedAttributes = {
     val expected = List("justHere:{urn:justHere}attr=only")
     import Attributes.Functions._
-    compare( expected, allAttribsX.*@(jh("attr")).*@(_.value == "only") ){
+    assertCompare( expected, allAttribsX.*@(jh("attr")).*@(_.value == "only") ){
       implicit attr => pqName + "=" + value }
   }
 
@@ -159,7 +159,7 @@ class OldBaseFunctionalityTest extends junit.framework.TestCase {
     val expected = List("{}NoNamespace")
     
     // the attrib list to boolean should get picked up
-    compare( expected, path.\\*("NoNamespace").*{
+    assertCompare( expected, path.\\*("NoNamespace").*{
       implicit p => p.\@("type").*@(_.value == "interesting")}) { 
 	Elements.Functions.pqName(_) }
   }
@@ -170,38 +170,38 @@ class OldBaseFunctionalityTest extends junit.framework.TestCase {
     val expected = List("{}NoNamespace", 
   			"ns1:{urn:prefix}prefixed");
     
-    compare( expected, allElementsWithAttributes ){ Elements.Functions.pqName(_) }
+    assertCompare( expected, allElementsWithAttributes ){ Elements.Functions.pqName(_) }
   }
   
   def testElementText = {
     val expected = List("prefixed text")
-    compare(expected, path.\\*("urn:prefix" :: "prefixed")) { Elements.Functions.text(_) }
+    assertCompare(expected, path.\\*("urn:prefix" :: "prefixed")) { Elements.Functions.text(_) }
   }
 
   def elementsPredicate : XmlPaths = path.\\*(_ === "prefixed text")
 
   def testElementPredicate = {
     val expected = List("ns1:{urn:prefix}prefixed")
-    compare(expected, elementsPredicate) { Elements.Functions.pqName(_) }
+    assertCompare(expected, elementsPredicate) { Elements.Functions.pqName(_) }
   }
 
   def normalizePredicate : XmlPaths = path.\\.*(Elements.Functions.normalizeSpace(_) == "start mix mode prefixed text end mix mode")
 
   def testNormalizePredicate = {
     val expected = List("{}NoNamespace")
-    compare(expected, normalizePredicate) { Elements.Functions.pqName(_) }
+    assertCompare(expected, normalizePredicate) { Elements.Functions.pqName(_) }
   }
 
   def testCData = {
     // we have two nodes before so 3 whitespaces.  Of course we actually should be getting path as well I think...
     val expected = List("should not have to be & < escaped @ all \"\"&")
-    compare(expected, path.\\.cdata) { TextFunctions.value(_).trim }
+    assertCompare(expected, path.\\.cdata) { TextFunctions.value(_).trim }
   }
 
   def testComments = {
     val expected = List(" some comments are better than others ",
       " this wouldn't be one of them. ")
-    compare(expected, path.\+.comment) { TextFunctions.value(_) }
+    assertCompare(expected, path.\+.comment) { TextFunctions.value(_) }
   }
 
   /**
@@ -209,14 +209,14 @@ class OldBaseFunctionalityTest extends junit.framework.TestCase {
    *
   def testPreviousSimple = {
     val expected = List("start mix mode")
-    compare(expected, 
+    assertCompare(expected, 
       path.\\.*("urn:default"::"ShouldRedeclare").\^.\+.text.pos(4).\.preceding_sibling_::.text |> { x =>
 	x.process( x.path.nodes.drop(3).take(1)) 
       }) { TextFunctions.value(_).trim }
-    compare(expected, 
+    assertCompare(expected, 
       path.\\.*("urn:default"::"ShouldRedeclare").\^.\+.text.pos(4).\.preceding_sibling_::.text.pos(3)
       ) { TextFunctions.value(_).trim }
-    /*compare(expected, 
+    /*assertCompare(expected, 
       path.\\.*("urn:default"::"ShouldRedeclare").\^.\.text.pos(4).\.preceding_sibling_::.text.\.previous
       ) { TextFunctions.value(_).trim }*/
   } */
@@ -231,7 +231,7 @@ class OldBaseFunctionalityTest extends junit.framework.TestCase {
     val path = top(testXml)
     
     val expected = List("start mix mode","start mix mode")
-    compare(expected, 
+    assertCompare(expected, 
       parentTextNodesRepeats(path)
       ) { TextFunctions.value(_).trim }
   }
@@ -240,7 +240,7 @@ class OldBaseFunctionalityTest extends junit.framework.TestCase {
 
   def testParentTextNodesMainRepeats = {
     val expected = one("start mix mode")
-    compare(expected, 
+    assertCompare(expected, 
       parentTextNodesMainRepeats
       ) { TextFunctions.value(_).trim }
   }
@@ -251,7 +251,7 @@ class OldBaseFunctionalityTest extends junit.framework.TestCase {
     val expected = List("{}DontRedeclare",
 			"{urn:default}ShouldRedeclare",
 			"ns1:{urn:prefix}prefixed")
-    compare(expected, previousThenSibling )
+    assertCompare(expected, previousThenSibling )
     { Elements.Functions.pqName(_) }
   }
 
@@ -311,7 +311,7 @@ class OldBaseFunctionalityTest extends junit.framework.TestCase {
     val expected = List("", "", "", "", "", "start mix mode", "prefixed text", "end mix mode",
       "\"\n\t" + utf8,
       "mix it up some more", "", "")
-    compare(expected, path.\\.textOnly) { TextFunctions.value(_).trim }
+    assertCompare(expected, path.\\.textOnly) { TextFunctions.value(_).trim }
   }
 
   def textP( path : XmlPath ) : XmlPaths = path.\\.text
@@ -329,7 +329,7 @@ class OldBaseFunctionalityTest extends junit.framework.TestCase {
       "mix it up some more",
       "", "")
     // we, like Jaxen work correctly, Saxon can't see the n-3 and 4
-    compare( expected, textP(path)){ TextFunctions.value(_).trim }
+    assertCompare( expected, textP(path)){ TextFunctions.value(_).trim }
   }
 
   def followingSiblings : XmlPaths = path.\\.*.\.following_sibling_::.*(2)
@@ -338,7 +338,7 @@ class OldBaseFunctionalityTest extends junit.framework.TestCase {
   def testFollowingSiblings = {
     val expected = List( "{urn:default}ShouldRedeclare",
 			"ns1:{urn:prefix}prefixed");
-    compare(expected,
+    assertCompare(expected,
       followingSiblings
       ) { Elements.Functions.pqName(_) }
   }
@@ -349,7 +349,7 @@ class OldBaseFunctionalityTest extends junit.framework.TestCase {
   def testPrecedingSiblings = {
     val expected = List( "{}DontRedeclare",
 			"{}DontRedeclare");
-    compare(expected,
+    assertCompare(expected,
       precedingSiblings
       ) { Elements.Functions.pqName(_) }
   }
@@ -359,7 +359,7 @@ class OldBaseFunctionalityTest extends junit.framework.TestCase {
   // greedily swallows up, doesn't flatmap
   def testDescendantSingleRoot = {
     val expected = one("{urn:default}DontRedeclare")
-    compare(expected,
+    assertCompare(expected,
       descendantSingleRoot
       ) { Elements.Functions.pqName(_) }
   }
@@ -370,7 +370,7 @@ class OldBaseFunctionalityTest extends junit.framework.TestCase {
   def testDescendantMultipleRoots = {
     val expected = List("{urn:default}DontRedeclare",
 			"{}DontRedeclare")
-    compare(expected,
+    assertCompare(expected,
       descendantMultipleRoots
       ) { Elements.Functions.pqName(_) }
   }
@@ -380,7 +380,7 @@ class OldBaseFunctionalityTest extends junit.framework.TestCase {
   def testDescendantMultipleRootsGt1 = {
     val expected = List("{}DontRedeclare",
 			"{}DontRedeclare")
-    compare(expected,
+    assertCompare(expected,
       descendantMultipleRootsGt1
       ) { Elements.Functions.pqName(_) }
   }
@@ -390,7 +390,7 @@ class OldBaseFunctionalityTest extends junit.framework.TestCase {
   def testDescendantMultipleRootsLt2 = {
     val expected = List("{urn:default}DontRedeclare",
 			"{}DontRedeclare")
-    compare(expected,
+    assertCompare(expected,
       descendantMultipleRootsLt2
       ) { Elements.Functions.pqName(_) }
   }
@@ -406,7 +406,7 @@ class OldBaseFunctionalityTest extends junit.framework.TestCase {
     import TextFunctions.{value => tvalue}
     val expected = one("end mix mode")
 
-    compare(expected, 
+    assertCompare(expected, 
       descendantText
       ) { tvalue(_).trim }
   } 
@@ -425,7 +425,7 @@ class OldBaseFunctionalityTest extends junit.framework.TestCase {
     import TextFunctions.{value => tvalue}
     val expected = List("start mix mode","end mix mode")
 
-    compare(expected, 
+    assertCompare(expected, 
       descendantTextNested
       ) { tvalue(_).trim }
   } 
@@ -435,7 +435,7 @@ class OldBaseFunctionalityTest extends junit.framework.TestCase {
   // again sanity
   def testDescendantSingleRootNested = {
     val expected = one("{urn:default}DontRedeclare")
-    compare(expected,
+    assertCompare(expected,
       descendantSingleRootNested
       ) { Elements.Functions.pqName(_) }
   }
@@ -451,7 +451,7 @@ class OldBaseFunctionalityTest extends junit.framework.TestCase {
 			"{}DontRedeclare",
 			"{}DontRedeclare",
 			"{}DontRedeclare")
-    compare(expected,
+    assertCompare(expected,
       descendantMultipleRootsNested
       ) { Elements.Functions.pqName(_) }
   }
@@ -470,7 +470,7 @@ class OldBaseFunctionalityTest extends junit.framework.TestCase {
 			"{}DontRedeclare",
 			"{}DontRedeclare",
 			"{}DontRedeclare")
-    compare(expected,
+    assertCompare(expected,
       descendantMultipleRootsGt1Nested
       ) { Elements.Functions.pqName(_) }
   }
@@ -485,7 +485,7 @@ class OldBaseFunctionalityTest extends junit.framework.TestCase {
 			"{}DontRedeclare",
 			"{}DontRedeclare",
 			"{}DontRedeclare")
-    compare(expected,
+    assertCompare(expected,
       descendantMultipleRootsLt2Nested
       ) { Elements.Functions.pqName(_) }
   }
@@ -498,7 +498,7 @@ class OldBaseFunctionalityTest extends junit.framework.TestCase {
 			"{}DontRedeclare",
 			"{urn:default}ShouldRedeclare",
 			"ns1:{urn:prefix}prefixed")
-    compare(expected,
+    assertCompare(expected,
       lastEq
       ) { Elements.Functions.pqName(_) }
   }
@@ -509,7 +509,7 @@ class OldBaseFunctionalityTest extends junit.framework.TestCase {
   def testLastLt = {
     val expected = List("{}DontRedeclare",
 			"{}DontRedeclare")
-    compare(expected,
+    assertCompare(expected,
       lastLt
       ) { Elements.Functions.pqName(_) }
   }
@@ -524,7 +524,7 @@ class OldBaseFunctionalityTest extends junit.framework.TestCase {
 			"{}DontRedeclare",
 			"{urn:default}ShouldRedeclare",
 			"ns1:{urn:prefix}prefixed")
-    compare(expected,
+    assertCompare(expected,
       lastGt
       ) { Elements.Functions.pqName(_) }
   }
@@ -535,7 +535,7 @@ class OldBaseFunctionalityTest extends junit.framework.TestCase {
   def testPosIsLast = {
     val expected = List("{}NoNamespace",
 			"ns1:{urn:prefix}prefixed")
-    compare(expected,
+    assertCompare(expected,
       posIsLast
       ) { Elements.Functions.pqName(_) }
   }
@@ -547,7 +547,7 @@ class OldBaseFunctionalityTest extends junit.framework.TestCase {
     val expected = List("{urn:default}Default",
 			"{}NoNamespace",
 			"ns1:{urn:prefix}prefixed")
-    compare(expected,
+    assertCompare(expected,
       posIsLastFromRoot
       ) { Elements.Functions.pqName(_) }
   }
@@ -560,7 +560,7 @@ class OldBaseFunctionalityTest extends junit.framework.TestCase {
 			"end mix mode",
 			"") //last bit at the end of the doc after the commment
 
-    compare(expected,
+    assertCompare(expected,
       textPosIsLast
       ) { TextFunctions.value(_).trim }
   }

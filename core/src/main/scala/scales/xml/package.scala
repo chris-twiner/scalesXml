@@ -10,7 +10,8 @@ package object xml extends XmlTypes
   with XmlFactories 
   with TraxSourceConversions
   with XmlUtils
-  with PullIteratees {
+  with PullIteratees
+  with equals.XmlEquals {
 
   import strategies.ElemToken
 

@@ -7,7 +7,7 @@ object TestUtils {
    * Should be an equals type class !!!!!
    * Provides comparisom of two different iterables with a conversion function, (both must support size being called)
    */
-  def compare[A, E](expectVals: Iterable[E], gotVals: Iterable[A])(convert: (A) => E) {
+  def assertCompare[A, E](expectVals: Iterable[E], gotVals: Iterable[A])(convert: (A) => E) {
     if (expectVals.size != gotVals.size) println("got " + gotVals.map(convert))
     assertEquals(expectVals.size, gotVals.size)
 

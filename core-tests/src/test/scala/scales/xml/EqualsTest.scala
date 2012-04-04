@@ -1,14 +1,77 @@
-package scales.xml
+package scales.xml.equalsTest // different to keep default xml._ out
+
+// why the hell can't scala resolve just xml.XmlTypes ??
+import scales.xml.{ XmlTypes ,
+    XmlParser, 
+    XmlPaths,
+    XPathMatcher, 
+    XmlPrinter ,
+    Whitespace, 
+    XmlPulls ,
+    XmlFactories ,
+    TraxSourceConversions,
+    XmlUtils,
+    PullIteratees, 
+    QNameImplicits, 
+    DefaultXmlVersion ,
+    XmlTypesImplicits,
+    XmlPrinterImplicits,
+    DslImplicits,
+    XmlPathImplicits,
+    XmlParserImplicits,
+    PullTypeConversionImplicits  }
+
+import scales.xml.{Elem, Attribs, Attributes, Attribute, XmlItem, Text, PI, CData, Comment, <, Namespace}
 
 class EqualsTest extends junit.framework.TestCase {
+
   import junit.framework.Assert._
   import java.io._
   import scales.utils._
   import ScalesUtils._
-  import ScalesXml._
-  import scales.xml.equalsImpl._
+//  import ScalesXml._
 
-  import Functions._
+  object KeepEmSeperate extends XmlTypes 
+    with XmlParser 
+    with XmlPaths
+    with XPathMatcher 
+    with XmlPrinter 
+    with Whitespace 
+    with XmlPulls 
+    with XmlFactories 
+    with TraxSourceConversions
+    with XmlUtils
+    with PullIteratees {
+
+  }
+
+  import scales.xml.equals._
+    
+  object KeepEmSeperateI extends QNameImplicits 
+    with DefaultXmlVersion 
+    with XmlTypesImplicits
+    with scales.xml.serializers.SerializerImplicits 
+    with XmlPrinterImplicits
+    with DslImplicits
+    with XmlPathImplicits
+    with XmlParserImplicits
+    with PullTypeConversionImplicits {
+
+    implicit def fromIPtoIPComparable( t : Iterator[KeepEmSeperate.PullType] ) =
+      new StreamComparable(t)
+
+    /**
+     * PullType is different for the compiler here
+     */
+    implicit val myStreamSerializeable: KeepEmSeperate.SerializeableXml[Iterator[KeepEmSeperate.PullType]] = 
+      streamSerializeable.asInstanceOf[KeepEmSeperate.SerializeableXml[Iterator[KeepEmSeperate.PullType]]]
+
+  }
+
+  import KeepEmSeperate._
+  import KeepEmSeperateI._
+
+  import scales.xml.Functions._
 
   val xmlFile = loadXml(resource(this, "/data/BaseXmlTest.xml"))
   val xml = xmlFile.rootElem
@@ -54,14 +117,14 @@ class EqualsTest extends junit.framework.TestCase {
     assertFalse("t1 == t3", t1 == t3)
     assertFalse("t1 === t3", t1 === t3)
 
-    val t1and3c = DefaultXmlItemComparison.compare(true, DummyPath, t1, t3)
+    val t1and3c = defaultXmlItemComparison.compare(true, DummyPath, t1, t3)
     assertFalse("t1and3c.isEmpty", t1and3c.isEmpty )
     
     val Some((ItemDifference(t13cl, t13cr), DummyPath)) = t1and3c 
     assertTrue("t13cl", t13cl eq t1)
     assertTrue("t13cr", t13cr eq t3)
     
-    val t1and3nc = DefaultXmlItemComparison.compare(false, Nil, t1, t3)
+    val t1and3nc = defaultXmlItemComparison.compare(false, Nil, t1, t3)
     assertFalse("t1and3nc.isEmpty", t1and3nc.isEmpty )
     
     val Some((SomeDifference(t13ncl, t13ncr), tpn)) = t1and3nc 
@@ -70,7 +133,7 @@ class EqualsTest extends junit.framework.TestCase {
     
     val cd1 = CData("fred")
     
-    val ct = DefaultXmlItemComparison.compare(true, Nil, cd1, t1)
+    val ct = defaultXmlItemComparison.compare(true, Nil, cd1, t1)
     assertFalse("ct.isEmpty", ct.isEmpty)
     
     val Some((DifferentTypes(Left(ctl), Left(ctr)), tpct)) = ct
@@ -455,9 +518,10 @@ class EqualsTest extends junit.framework.TestCase {
     val child = po("child")
     val sub = po("sub")
 
-    implicit def dslToStream( ds : DslBuilder ) = convertToStream(ds)
+    import scales.xml.equals.DefaultXmlEquals._
 
-    import scales.testing._
+    object me extends scales.xml.equals.StreamComparableImplicits {}
+    import me._
 
     val x1 = <(root) /( "0","1",CData("2"),"3","4", 
       		child /( "s1", CData("s2"), "s3" ),
@@ -477,7 +541,7 @@ class EqualsTest extends junit.framework.TestCase {
       		child /( CData("s22s"), "23" ),
 		"5", CData("6"), "" )
 
-    assertFalse("x2 and x3 should not be equal", convertToStream(x2) === convertToStream(x3))
+    assertFalse("x2 and x3 should not be equal", convertToStream(x2.toTree) === convertToStream(x3.toTree))
   }
 
 

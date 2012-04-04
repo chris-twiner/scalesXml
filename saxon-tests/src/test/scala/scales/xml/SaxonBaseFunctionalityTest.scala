@@ -27,20 +27,20 @@ class SaxonBaseFunctionalityTest extends BaseFunctionalityTest {
 
   def testElementTextSaxon = {
     val expected = List("prefixed text")
-    compare(expected, path.\\.*("urn:prefix" :: "prefixed")) { text(_) }
-    compare(expected, nodeSet("//*[local-name()='prefixed' and namespace-uri()='urn:prefix']", dom)) { _.getTextContent.trim }
+    assertCompare(expected, path.\\.*("urn:prefix" :: "prefixed")) { text(_) }
+    assertCompare(expected, nodeSet("//*[local-name()='prefixed' and namespace-uri()='urn:prefix']", dom)) { _.getTextContent.trim }
   }
 
   def testElementPredicateSaxon = {
     val expected = List("ns1:{urn:prefix}prefixed")
-    compare(expected, path.\\.*(_ === "prefixed text")) { pqName(_) }
-    compare(expected, nodeSet("//*[. = 'prefixed text']", dom)) { x => x.getPrefix + ":" + qname(x) }
+    assertCompare(expected, path.\\.*(_ === "prefixed text")) { pqName(_) }
+    assertCompare(expected, nodeSet("//*[. = 'prefixed text']", dom)) { x => x.getPrefix + ":" + qname(x) }
   }
 
   def testNormalizePredicateSaxon = {
     val expected = List("{}NoNamespace")
-    compare(expected, path.\\.*(normalizeSpace(_) == "start mix mode prefixed text end mix mode")) { pqName(_) }
-    compare(expected, nodeSet("//*[normalize-space(.) = 'start mix mode prefixed text end mix mode']", dom)) { qname(_) }
+    assertCompare(expected, path.\\.*(normalizeSpace(_) == "start mix mode prefixed text end mix mode")) { pqName(_) }
+    assertCompare(expected, nodeSet("//*[normalize-space(.) = 'start mix mode prefixed text end mix mode']", dom)) { qname(_) }
     // /*(fn:normalize-space(.) = 'start mix mode prefixed text end mix mode'
   }
 
@@ -52,7 +52,7 @@ class SaxonBaseFunctionalityTest extends BaseFunctionalityTest {
       //"mix it up some more",
       "", "")
     // Saxon can't see the two above nodes, which sucks, we and Jaxen can
-    compare(expected, nodeSet("//text()", 
+    assertCompare(expected, nodeSet("//text()", 
 			      xmlFile
 //			      dom //  both stream and dom are incorrect :<
 			    )) { _.getTextContent.trim }

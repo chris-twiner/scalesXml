@@ -1,6 +1,6 @@
-package scales.xml.equalsImpl
+package scales.xml.equals
 
-import scales.xml._
+import scales.xml.{PullType, QName, Elem, Attribs, Attributes, Attribute, XmlItem, XmlPath, EndElem, XCC}
 
 import scalaz._
 import Scalaz._
@@ -181,3 +181,32 @@ trait DefaultXmlEquals
 }
 
 object DefaultXmlEquals extends DefaultXmlEquals {}
+
+class PathAsPullTypeIterable( val initialPath : XmlPath ) extends scales.utils.AbstractPathIterator[XmlItem, Elem, XCC, PullType] {
+
+  def event : PullType = path.node.focus.fold(x=>x,y=>y.section)
+
+  def end = {
+    val el = path.tree.section
+    EndElem(el.name, el.namespaces) : PullType
+  }
+ 
+}
+
+/**
+ * Collection of all implicit conversions to StreamComparables.
+ *
+ * NOTE: The results are only usable with compare / ===, and should not be used to serialize
+ */
+trait StreamComparableImplicits {
+
+  /**
+   * Converts XmlTree and DslBuilder (when used with PullTypeConversionImplicits 
+   */ 
+  implicit def fromStreamToStreamComparable[T <% Iterator[PullType]](t : T) = 
+    new StreamComparable(t)
+
+  implicit def fromXPathToStreamComparable( x : XmlPath ) = 
+    new StreamComparable(new PathAsPullTypeIterable(x) : Iterator[PullType])
+    
+}

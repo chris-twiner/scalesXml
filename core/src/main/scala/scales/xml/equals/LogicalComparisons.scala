@@ -1,6 +1,6 @@
-package scales.xml.equalsImpl
+package scales.xml.equals
 
-import scales.xml._
+import scales.xml.{PullType, Text, CData, PI, Comment}
 
 /**
  * Modifies the stream to turn CData nodes into Text nodes and join all adjacent Text nodes togeter i.e. a "tree" with children (Text, CData, Text, CData) will become a single Text child.
@@ -76,20 +76,20 @@ object LogicalFilters {
   /**
    * Modifies the stream to turn CData nodes into Text nodes and join all adjacent Text nodes togeter i.e. a "tree" with children (Text, CData, Text, CData) will become a single Text child. 
    */ 
-  def joinTextAndCData( it : Iterator[PullType] ) = 
+  def joinTextAndCData( it : Iterator[PullType] ) : Iterator[PullType] = 
     new JoinTextAndCData(it)
 
   /**
    * Joins all adjacent Text nodes together but keeps CData nodes
    * @see joinTextAndCData
    */ 
-  def joinText( it : Iterator[PullType] ) =
+  def joinText( it : Iterator[PullType] ) : Iterator[PullType] =
     new JoinTextAndCData(it, true)
 
   /**
    * Removes all comments and PIs.  This is not used by default.
    */ 
-  def removePIAndComments( it : Iterator[PullType] ) =
+  def removePIAndComments( it : Iterator[PullType] ) : Iterator[PullType] =
     it.filter{
       case Left(_ : PI) | Left(_ : Comment) => false
       case _ => true
