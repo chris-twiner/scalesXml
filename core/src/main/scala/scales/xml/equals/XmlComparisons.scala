@@ -43,10 +43,10 @@ trait DefaultItemEquals {
     }
   }
   
-  implicit val defaultXmlItem : Equal[XmlItem] = equal {
+/*  implicit val defaultXmlItem : Equal[XmlItem] = equal {
     (a : XmlItem, b : XmlItem) =>
       defaultXmlItemComparison.compare(false, Nil, a, b).isEmpty 
-  }
+  }*/ 
 }
 
 object ItemEquals extends DefaultItemEquals {}
@@ -83,11 +83,11 @@ trait DefaultAttributeEquals {
   
   /**
    * QNames are not compared with prefix
-   */ 
+    
   implicit val defaultAttributeEquals = equal { 
     (a : Attribute, b : Attribute) =>
       defaultAttributeComparison.compare(false, Nil, a, b).isEmpty
-  }
+  }*/
 }
 
 object AttributeEquals extends DefaultAttributeEquals {}
@@ -100,11 +100,11 @@ trait ExactQName{
   
   /**
    * QNames are compared with prefix
-   */ 
+    
   implicit val prefixAttributeEquals = equal { 
     (a : Attribute, b : Attribute) =>
       prefixAttributeComparison.compare(false, Nil, a, b).isEmpty
-  }
+  }*/
 }
 
 /**
@@ -151,10 +151,11 @@ class AttributesComparison( implicit ac : XmlComparison[Attribute]) extends XmlC
 trait DefaultAttributesEquals {
   implicit val defaultAttributesComparison = new AttributesComparison()( AttributeEquals.defaultAttributeComparison )
 
+/*
   implicit val defaultAttributesEquals = equal {
     (a : Attributes, b : Attributes) =>
       defaultAttributesComparison.compare(false, Nil, a, b).isEmpty
-  }
+  } */
 }
 
 object AttributesEquals extends DefaultAttributesEquals {}
@@ -201,10 +202,10 @@ class ElemComparison(namespaces : Equal[Map[String, String]] = ElemEqualHelpers.
 trait DefaultElemEquals {
   implicit val defaultElemComparison = new ElemComparison()( AttributesEquals.defaultAttributesComparison, EqualsHelpers.qnameEqual)
 
-  implicit val defaultElemEquals = equal {
+/*  implicit val defaultElemEquals = equal {
     (a : Elem, b : Elem) =>
       defaultElemComparison.compare(false, Nil, a, b).isEmpty
-  }
+  }*/
 }
 
 object ElemEquals extends DefaultElemEquals {}
@@ -274,11 +275,11 @@ trait StreamEquals {
 
   /**
    * Conversions for Equal
-   */ 
+   
   implicit def toDefaultStreamComparisonEquals[ T <% StreamComparable[T]] : Equal[T] = equal {
     (a : T, b : T) => 
       toDefaultStreamComparison.compare(false, Nil, a, b).isEmpty
-  }
+  }*/
 }
 
 trait ExactStreamEquals extends StreamEquals {

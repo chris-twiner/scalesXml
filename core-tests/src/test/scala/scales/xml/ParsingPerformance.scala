@@ -23,7 +23,7 @@ object QNameAndAttr extends PathOptimisationStrategy[ElemToken] with ElemQNameOp
     noNamespaceQName("type", t)
   }
 
-  val primary = Attribute(tyype, "primary")
+  val primary = Attribute(tyype, "primary") 
   val secondary = Attribute(tyype, "secondary")  
 
   override def attribute( qname : AttributeQName, value : String, token : ElemToken) : Attribute = 
@@ -153,7 +153,7 @@ class ParsingPerformanceRecon extends SimpleScalaBenchmark {
   var s : String = _
 
   override def setUp() {
-    s = asString(PerfData.reconDoc(size).iterator)
+    s = asString((PerfData.reconDoc(size) : Iterable[PullType]).iterator)
   }
   
   def loadXmlS[T <: OptimisationToken]( s : String, ostrategy : PathOptimisationStrategy[T]) = 
@@ -398,7 +398,7 @@ trait ReconTest extends RunTest {
   val size = 40000
 
   def prepare(args: Array[String]) {
-    p.s = asString(PerfData.reconDoc(size).iterator)
+    p.s = asString((PerfData.reconDoc(size) : Iterable[PullType]).iterator)
   }
 }
 

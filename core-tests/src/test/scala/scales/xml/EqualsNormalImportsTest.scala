@@ -1,80 +1,27 @@
 package scales.xml.equalsTest // different to keep default xml._ out
 
-// why the hell can't scala resolve just xml.XmlTypes ??
-import scales.xml.{ XmlTypes ,
-    XmlParser, 
-    XmlPaths,
-    XPathMatcher, 
-    XmlPrinter ,
-    Whitespace, 
-    XmlPulls ,
-    XmlFactories ,
-    TraxSourceConversions,
-    XmlUtils,
-    PullIteratees, 
-    QNameImplicits, 
-    DefaultXmlVersion ,
-    XmlTypesImplicits,
-    XmlPrinterImplicits,
-    DslImplicits,
-    XmlPathImplicits,
-    XmlParserImplicits,
-    PullTypeConversionImplicits  }
+import scales.xml._
+import ScalesXml._
+import Functions._
 
-import scales.xml.{Elem, Attribs, Attributes, Attribute, XmlItem, Text, PI, CData, Comment, <, Namespace}
+import scales.xml.equals._
 
-class EqualsTest extends junit.framework.TestCase {
+class EqualsNormalImportsTest extends junit.framework.TestCase {
+  // these guys import a resource
+  import scalaz._
+  import Scalaz._
+
+  implicit def fromPullsStreamComparable( x : Iterator[PullType] ) = 
+    new StreamComparable(x)
 
   import junit.framework.Assert._
   import java.io._
   import scales.utils._
   import ScalesUtils._
 
-  object KeepEmSeperate extends XmlTypes 
-    with XmlParser 
-    with XmlPaths
-    with XPathMatcher 
-    with XmlPrinter 
-    with Whitespace 
-    with XmlPulls 
-    with XmlFactories 
-    with TraxSourceConversions
-    with XmlUtils
-    with PullIteratees {
-
-  }
-
-  import scales.xml.equals._
-    
-  object KeepEmSeperateI extends QNameImplicits 
-    with DefaultXmlVersion 
-    with XmlTypesImplicits
-    with scales.xml.serializers.SerializerImplicits 
-    with XmlPrinterImplicits
-    with DslImplicits
-    with XmlPathImplicits
-    with XmlParserImplicits
-    with PullTypeConversionImplicits {
-
-    implicit def fromIPtoIPComparable( t : Iterator[KeepEmSeperate.PullType] ) =
-      new StreamComparable(t)
-
-    /**
-     * PullType is different for the compiler here
-     */
-    implicit val myStreamSerializeable: KeepEmSeperate.SerializeableXml[Iterator[KeepEmSeperate.PullType]] = 
-      streamSerializeable.asInstanceOf[KeepEmSeperate.SerializeableXml[Iterator[KeepEmSeperate.PullType]]]
-
-  }
-
-  import KeepEmSeperate._
-  import KeepEmSeperateI._
-
-  import scales.xml.Functions._
-
-  val xmlFile = loadXml(resource(this, "/data/BaseXmlTest.xml"))
+  val xmlFile = loadXml(scales.utils.resource(this, "/data/BaseXmlTest.xml"))
   val xml = xmlFile.rootElem
-  val xmlFile2 = loadXml(resource(this, "/data/BaseXmlTest.xml"))
+  val xmlFile2 = loadXml(scales.utils.resource(this, "/data/BaseXmlTest.xml"))
   val xml2 = xmlFile2.rootElem
 
   val ns = Namespace("urn:default")
@@ -90,19 +37,11 @@ class EqualsTest extends junit.framework.TestCase {
   
   val qn = po("elem")
 
-  // these guys import a resource
-  import scalaz._
-  import Scalaz._
-
   // make sure its passed through where it should be
   val DummyPath : BasicPaths.BasicPath = List(("n"l, Map()))
 
-  import XmlEquals._
-
   def testItems : Unit = {
 
-    import ItemEquals._
-    
     val t1 = Text("fred")
     val t2 = Text("fred")
 
@@ -164,7 +103,6 @@ class EqualsTest extends junit.framework.TestCase {
   }
 
   def testAttribute : Unit = {
-    import AttributeEquals._
 
     val a1 = Attribute("local"l, "value")
     val a2 = Attribute("local"l, "value")
@@ -208,36 +146,6 @@ class EqualsTest extends junit.framework.TestCase {
     assertTrue("null eq diffVr", a4 eq diffVr)    
   }
 
-  /**
-   * Provided but I really can't recommend anyone to use it
-   */ 
-  def testAttributePrefix : Unit = {
-    val po = n.prefixed("po")
-
-    val a1 = Attribute(p("local"), "value")
-    val a2 = Attribute(po("local"), "value")
-
-    // sanity check
-    {
-      import AttributeEquals._
-
-      assertTrue("sanity a1 == a2", a1 == a2)
-      assertTrue("a1 === a2 with normal prefix ignored", a1 === a2)
-    }
-
-    import ExactQName._
-
-    assertTrue("a1 == a2", a1 == a2)
-    assertFalse("a1 === a2", a1 === a2)
-
-    val diffN = compare(DummyPath, a1, a2)
-    assertFalse("diffN.isEmpty", diffN.isEmpty)
-
-    val Some((AttributeNameDifference(diffNl, diffNr), DummyPath)) = diffN
-    assertTrue("a1 eq diffNl", a1 eq diffNl)
-    assertTrue("a3 eq diffNr", a2 eq diffNr)
-  }
-
   def testAttributes : Unit = {
     import SomeDifference.noCalculation
 
@@ -250,8 +158,6 @@ class EqualsTest extends junit.framework.TestCase {
     val a5 = Attribute(p("local2"), "value")
     val a6 = Attribute(po("local2"), "value")
     
-    import AttributesEquals._
-
     val attrs1 = Attribs(a1, a2, a3, a4, a5, a6)
     val attrs2 = Attribs(a1, a2, a3, a4, a5, a6)
     
@@ -311,8 +217,6 @@ class EqualsTest extends junit.framework.TestCase {
   }
 
   def testElems : Unit = {
-    import SomeDifference.noCalculation
-
     val a1 = Attribute(p("local"), "value")
     val a2 = Attribute(po("local"), "value")
     
@@ -412,7 +316,6 @@ class EqualsTest extends junit.framework.TestCase {
 
   def doStreamTest( streamEquals : StreamEquals ) = {
     import streamEquals._
-
     //xml xml2
     assertTrue("xml === xml", convertToStream(xml) === convertToStream(xml))
     assertTrue("xml === xml2", convertToStream(xml) === convertToStream(xml2))
@@ -446,12 +349,10 @@ class EqualsTest extends junit.framework.TestCase {
   }
 
   def testDefaultStreamEquals : Unit = {
-    doStreamTest( DefaultStreamEquals )
+    doStreamTest( ScalesXml )
   }
 
   def testDefaultXmlEquals : Unit = {
-    import ExactXmlEquals._
-
     val attrs1 = Attribs("a1" -> "v1", "a2" -> "v2")
     val attrs2 = Attribs("a1" -> "v1", "a2" -> "v2")
 
@@ -516,11 +417,6 @@ class EqualsTest extends junit.framework.TestCase {
     val root = po("root")
     val child = po("child")
     val sub = po("sub")
-
-    import scales.xml.equals.DefaultXmlEquals._
-
-    object me extends scales.xml.equals.StreamComparableImplicits {}
-    import me._
 
     val x1 = <(root) /( "0","1",CData("2"),"3","4", 
       		child /( "s1", CData("s2"), "s3" ),

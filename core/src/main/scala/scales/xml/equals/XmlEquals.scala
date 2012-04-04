@@ -39,6 +39,15 @@ trait XmlComparison[T] {
 trait XmlEquals extends BasicPaths {
 
   /**
+   * An implicit but its only purpose is to convert, and needs the given comparison to function, which is provided (or not) by ScalesXml
+   */ 
+  implicit def fromCompToEq[T](implicit comp : XmlComparison[T]) : Equal[T] = 
+    equal {
+      ( a : T, b : T) =>
+	comp.compare(false, Nil, a, b).isEmpty
+    }
+
+  /**
    * Pushes a new elem on the stack, modifying the parents counts as it goes
    */ 
   def startElem( qname : QName, path : BasicPath ) : BasicPath =
@@ -200,13 +209,15 @@ class PathAsPullTypeIterable( val initialPath : XmlPath ) extends scales.utils.A
  */
 trait StreamComparableImplicits {
 
+  implicit val xmlPathToIterator : XmlPath => Iterator[PullType] = ( x : XmlPath ) => new PathAsPullTypeIterable(x)
+
   /**
    * Converts XmlTree and DslBuilder (when used with PullTypeConversionImplicits 
    */ 
-  implicit def fromStreamToStreamComparable[T <% Iterator[PullType]](t : T) = 
+  implicit def fromStreamToStreamComparable[T <% Iterator[PullType]](t : T) : StreamComparable[T] = 
     new StreamComparable(t)
 
-  implicit def fromXPathToStreamComparable( x : XmlPath ) = 
-    new StreamComparable(new PathAsPullTypeIterable(x) : Iterator[PullType])
+/*  implicit def fromXPathToStreamComparable( x : XmlPath ) : StreamComparable[XmlPath] = 
+    new StreamComparable[XmlPath](new PathAsPullTypeIterable(x) : Iterator[PullType])*/
     
 }
