@@ -209,15 +209,15 @@ class PathAsPullTypeIterable( val initialPath : XmlPath ) extends scales.utils.A
  */
 trait StreamComparableImplicits {
 
-  implicit val xmlPathToIterator : XmlPath => Iterator[PullType] = ( x : XmlPath ) => new PathAsPullTypeIterable(x)
+  /**
+   * Converts directly to a StreamComparable, its not generally a good idea to automagically  mix XmlPath as an Iterable with XmlPath as an Iterator, make it explicit if thats really desired. 
+   */ 
+  implicit val xmlPathToComparable : XmlPath => StreamComparable[XmlPath] = ( x : XmlPath ) => new StreamComparable[XmlPath](x)(t => new PathAsPullTypeIterable(t))
 
   /**
    * Converts XmlTree and DslBuilder (when used with PullTypeConversionImplicits 
    */ 
   implicit def fromStreamToStreamComparable[T <% Iterator[PullType]](t : T) : StreamComparable[T] = 
     new StreamComparable(t)
-
-/*  implicit def fromXPathToStreamComparable( x : XmlPath ) : StreamComparable[XmlPath] = 
-    new StreamComparable[XmlPath](new PathAsPullTypeIterable(x) : Iterator[PullType])*/
     
 }

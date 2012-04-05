@@ -457,9 +457,6 @@ on both the qname matching (3 of them) and then the above combos
     }
   }
 
-  implicit def toIterator[A](e: WeakStream[A]): Iterator[A] = 
-    (e : Iterable[A]).iterator
-
   
   sealed trait WeakStream[+A] {
 
@@ -601,7 +598,7 @@ on both the qname matching (3 of them) and then the above combos
 
 try{
 
-    val iter = (eevents(ourMax) : Iterable[PullType]).iterator
+    val iter = eevents(ourMax).iterator
 at=0
     val QNames = List("root"l, "child"l, "interesting"l)
 

@@ -11,9 +11,6 @@ class EqualsNormalImportsTest extends junit.framework.TestCase {
   import scalaz._
   import Scalaz._
 
-  implicit def fromPullsStreamComparable( x : Iterator[PullType] ) = 
-    new StreamComparable(x)
-
   import junit.framework.Assert._
   import java.io._
   import scales.utils._

@@ -43,10 +43,6 @@ trait DefaultItemEquals {
     }
   }
   
-/*  implicit val defaultXmlItem : Equal[XmlItem] = equal {
-    (a : XmlItem, b : XmlItem) =>
-      defaultXmlItemComparison.compare(false, Nil, a, b).isEmpty 
-  }*/ 
 }
 
 object ItemEquals extends DefaultItemEquals {}
@@ -81,13 +77,6 @@ trait DefaultAttributeEquals {
    */ 
   implicit val defaultAttributeComparison = new AttributeComparison()(EqualsHelpers.qnameEqual)
   
-  /**
-   * QNames are not compared with prefix
-    
-  implicit val defaultAttributeEquals = equal { 
-    (a : Attribute, b : Attribute) =>
-      defaultAttributeComparison.compare(false, Nil, a, b).isEmpty
-  }*/
 }
 
 object AttributeEquals extends DefaultAttributeEquals {}
@@ -98,13 +87,6 @@ trait ExactQName{
    */ 
   implicit val prefixAttributeComparison = new AttributeComparison()(equal { (a: QName, b: QName) => a.====(b) })
   
-  /**
-   * QNames are compared with prefix
-    
-  implicit val prefixAttributeEquals = equal { 
-    (a : Attribute, b : Attribute) =>
-      prefixAttributeComparison.compare(false, Nil, a, b).isEmpty
-  }*/
 }
 
 /**
@@ -149,13 +131,9 @@ class AttributesComparison( implicit ac : XmlComparison[Attribute]) extends XmlC
 }
 
 trait DefaultAttributesEquals {
+
   implicit val defaultAttributesComparison = new AttributesComparison()( AttributeEquals.defaultAttributeComparison )
 
-/*
-  implicit val defaultAttributesEquals = equal {
-    (a : Attributes, b : Attributes) =>
-      defaultAttributesComparison.compare(false, Nil, a, b).isEmpty
-  } */
 }
 
 object AttributesEquals extends DefaultAttributesEquals {}
@@ -200,12 +178,9 @@ class ElemComparison(namespaces : Equal[Map[String, String]] = ElemEqualHelpers.
 
 
 trait DefaultElemEquals {
+
   implicit val defaultElemComparison = new ElemComparison()( AttributesEquals.defaultAttributesComparison, EqualsHelpers.qnameEqual)
 
-/*  implicit val defaultElemEquals = equal {
-    (a : Elem, b : Elem) =>
-      defaultElemComparison.compare(false, Nil, a, b).isEmpty
-  }*/
 }
 
 object ElemEquals extends DefaultElemEquals {}
@@ -216,7 +191,7 @@ object ElemEquals extends DefaultElemEquals {}
  * This trait boxes a given conversion, stopping accidental serialize calls on the resulting streams.
  */ 
 class StreamComparable[T <% Iterator[PullType]]( val t : T ) {
-  def iterator : Iterator[PullType] = t
+  def underlyingIterator : Iterator[PullType] = t
 }
 
 /**
@@ -226,7 +201,7 @@ class StreamComparison( filter : Iterator[PullType] => Iterator[PullType] = iden
   def compare( calculate : Boolean, opath : BasicPath, lefti : StreamComparable[_], righti : StreamComparable[_] ) : Option[(XmlDifference[_], BasicPath)] = {
 
     var res : Option[(XmlDifference[_], BasicPath)] = None
-    val joined = filter(lefti.iterator).zip(filter(righti.iterator))
+    val joined = filter(lefti.underlyingIterator).zip(filter(righti.underlyingIterator))
     var path = opath
 
     while( res.isEmpty && joined.hasNext) {
@@ -272,14 +247,6 @@ trait StreamEquals {
    * Conversions
    */
   implicit def toDefaultStreamComparison[T <% StreamComparable[T]] : XmlComparison[T]
-
-  /**
-   * Conversions for Equal
-   
-  implicit def toDefaultStreamComparisonEquals[ T <% StreamComparable[T]] : Equal[T] = equal {
-    (a : T, b : T) => 
-      toDefaultStreamComparison.compare(false, Nil, a, b).isEmpty
-  }*/
 }
 
 trait ExactStreamEquals extends StreamEquals {
@@ -287,8 +254,6 @@ trait ExactStreamEquals extends StreamEquals {
    * Conversions
    */
   implicit def toDefaultStreamComparison[T <% StreamComparable[T]] : XmlComparison[T] = new StreamComparisonWrapper(new StreamComparison()( ItemEquals.defaultXmlItemComparison, ElemEquals.defaultElemComparison, EqualsHelpers.qnameEqual))
-
-//  implicit def asDefaultStreamComparison[T <: StreamComparable[T]] : XmlComparison[StreamComparable] = defaultStreamComparison
 
 }
 
@@ -305,8 +270,6 @@ trait DefaultStreamEquals extends StreamEquals {
   import LogicalFilters.joinTextAndCData
 
   implicit def toDefaultStreamComparison[T <% StreamComparable[T]] : XmlComparison[T] = new StreamComparisonWrapper( new StreamComparison(joinTextAndCData _)( ItemEquals.defaultXmlItemComparison, ElemEquals.defaultElemComparison, EqualsHelpers.qnameEqual) )
-
-//  implicit def asDefaultStreamComparison[T <: StreamComparable] : XmlComparison[StreamComparable] = defaultStreamComparison
 
 }
 
