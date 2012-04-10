@@ -412,6 +412,11 @@ class EqualsTest extends junit.framework.TestCase {
 
   def doStreamTest( streamEquals : StreamEquals ) = {
     import streamEquals._
+    import QNameEquals._
+    import AttributeEquals._
+    import AttributesEquals._
+    import ItemEquals._
+    import ElemEquals._
 
     //xml xml2
     assertTrue("xml === xml", convertToStream(xml) === convertToStream(xml))
@@ -447,6 +452,25 @@ class EqualsTest extends junit.framework.TestCase {
 
   def testDefaultStreamEquals : Unit = {
     doStreamTest( DefaultStreamEquals )
+  }
+
+  def testXmlEqualsPrefixRelevant : Unit = {
+    import ExactXmlEquals._
+    import scales.xml.QName
+    implicit val qnameEqual = equal { (a: QName, b: QName) => a ==== b }
+
+    val attrs1 = Attribs("a1" -> "v1", "a2" -> "v2")
+    val attrs2 = Attribs("a1" -> "v1", "a2" -> "v2")
+
+    val pod = no.prefixed("po2")
+
+    val elem1 = Elem(po("elem"), attrs1)
+    val elem2 = Elem(pod("elem"), attrs2)
+
+    // no prefixes
+    assertTrue("attrs1 === attrs2", attrs1 === attrs2)
+    // has prefixes
+    assertFalse("elem1 === elem2", elem1 === elem2)       
   }
 
   def testDefaultXmlEquals : Unit = {

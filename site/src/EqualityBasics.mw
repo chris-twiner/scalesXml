@@ -1,0 +1,46 @@
+= Xml Equality Basics =
+
+Testing Xml Equality is not always straightforward, the simplest approach of Canonalisation and string comaprison is also less than useful for identifying where a problem is and is lossful by design - a difference in whitespace between two documents may be significant.  Additionally Canonical Xml treats QName prefix values as relevant, if an xml processor changes a prefix, that document is no longer comparable under Canonical Xml.
+
+== How To Use ==
+
+Scales Xml Equality leverages two type classes, XmlComparison and the Scalaz Equal typeclass to provide comparison via a simple === .  As such Scalaz must be imported (best after Scales imports):
+
+${cscala}
+  import scalaz._
+  import Scalaz._
+${cend}
+
+Testing equality is therefore as simple as:
+
+${cscala}
+  val t1 = Text("fred")
+  val t2 = Text("fred")
+
+  assertTrue("t1 == t2", t1 == t2) // equals
+  assertTrue("t1 === t2", t1 === t2) // Scalaz Equal type class
+
+  assertTrue("t1 compare t2", 
+    compare(Nil, t1, t2).isEmpty ) // XmlComparison type class
+${cend}
+
+Wherever an XmlComparison exists an Equal instance can be created.
+
+== Types Covered ==
+
+The full set of the Scales Xml Model is covered by the equality framework:
+
+* Attribute
+* Attributes
+* XmlItem
+
+* Elem
+* XmlTree
+* XmlPath
+* Anything that can be seen as Iterator[PullType]
+
+QNames in each model type (unlike Canonical Xml) do not compare with the prefix, only the namespace (as per =:=).  This implies that documents created by different systems using different prefixes are still comparable, a different implicit default Equal[QName] instance can change that behaviour.
+
+XmlTrees/XmlPath's etc are converted to Iterator[PullType] in order to compare.  No attempt to match DTDs, encoding or prolog etc are made, only the core element.  If prolog should be matched it should be compared seperately.
+
+Within the comparison framework the comparison for all the types are combined, the QName comparison is used for the Attribute comparison, which is used in turn by the Elem.  This lookup is performed implicitly, allowing for individual parts to be swapped out, if the developer wants prefixes to be tested.

@@ -213,6 +213,23 @@ class EqualsNormalImportsTest extends junit.framework.TestCase {
     
   }
 
+  def testXmlEqualsPrefixRelevant : Unit = {
+    implicit val qnameEqual = equal { (a: QName, b: QName) => a ==== b }
+
+    val attrs1 = Attribs("a1" -> "v1", "a2" -> "v2")
+    val attrs2 = Attribs("a1" -> "v1", "a2" -> "v2")
+
+    val pod = no.prefixed("po2")
+
+    val elem1 = Elem(po("elem"), attrs1)
+    val elem2 = Elem(pod("elem"), attrs2)
+
+    // no prefixes
+    assertTrue("attrs1 === attrs2", attrs1 === attrs2)
+    // has prefixes
+    assertFalse("elem1 === elem2", elem1 === elem2)       
+  }
+
   def testElems : Unit = {
     val a1 = Attribute(p("local"), "value")
     val a2 = Attribute(po("local"), "value")
@@ -224,7 +241,7 @@ class EqualsNormalImportsTest extends junit.framework.TestCase {
     val a6 = Attribute(po("local2"), "value")
     val a7 = Attribute(po("local3"), "value")
     
-    import ElemEquals._
+//    import ElemEquals._
 
     val attrs1 = Attribs(a1, a2, a3, a4, a5, a6)
     val attrs2 = Attribs(a1, a2, a3, a4, a5, a6)

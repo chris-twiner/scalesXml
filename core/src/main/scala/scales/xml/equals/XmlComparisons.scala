@@ -9,6 +9,13 @@ import Scalaz._
 
 import SomeDifference.noCalculation
 
+trait DefaultQNameEquals {
+  implicit val qnameEqual = equal { (a: QName, b: QName) => a =:= b }
+}
+
+object QNameEquals extends DefaultQNameEquals {
+}
+
 trait DefaultItemEquals {
 
   /**
@@ -75,11 +82,11 @@ trait DefaultAttributeEquals {
   /**
    * QNames are not compared with prefix
    */ 
-  implicit val defaultAttributeComparison = new AttributeComparison()(EqualsHelpers.qnameEqual)
+  implicit def defaultAttributeComparison(implicit qe : Equal[QName]) = new AttributeComparison()(qe)
   
 }
 
-object AttributeEquals extends DefaultAttributeEquals {}
+object AttributeEquals extends DefaultAttributeEquals with DefaultQNameEquals {}
 
 trait ExactQName{
   /**
@@ -132,11 +139,12 @@ class AttributesComparison( implicit ac : XmlComparison[Attribute]) extends XmlC
 
 trait DefaultAttributesEquals {
 
-  implicit val defaultAttributesComparison = new AttributesComparison()( AttributeEquals.defaultAttributeComparison )
+  implicit def defaultAttributesComparison(implicit ac : XmlComparison[Attribute]) = new AttributesComparison()( ac )
 
 }
 
-object AttributesEquals extends DefaultAttributesEquals {}
+object AttributesEquals extends DefaultAttributesEquals 
+  with DefaultAttributeEquals with DefaultQNameEquals {}
 
 object ElemEqualHelpers {
   type NamespacesEqual = Equal[Map[String, String]]
@@ -179,11 +187,13 @@ class ElemComparison(namespaces : Equal[Map[String, String]] = ElemEqualHelpers.
 
 trait DefaultElemEquals {
 
-  implicit val defaultElemComparison = new ElemComparison()( AttributesEquals.defaultAttributesComparison, EqualsHelpers.qnameEqual)
+  implicit def defaultElemComparison(implicit ae : XmlComparison[Attributes], qe : Equal[QName]) = new ElemComparison()( ae, qe )
 
 }
 
-object ElemEquals extends DefaultElemEquals {}
+object ElemEquals extends DefaultElemEquals
+  with DefaultAttributesEquals
+  with DefaultAttributeEquals with DefaultQNameEquals {}
 
 /**
  * This interface allows for non xml matching, for example a forward Iterator from a Text child.  This would be impossible to model as an xml document, but could be useful for comparison.
@@ -246,19 +256,22 @@ trait StreamEquals {
   /**
    * Conversions
    */
-  implicit def toDefaultStreamComparison[T <% StreamComparable[T]] : XmlComparison[T]
+  implicit def toDefaultStreamComparison[T](implicit tv : T => StreamComparable[T], ic : XmlComparison[XmlItem], ec : XmlComparison[Elem], qe : Equal[QName]) : XmlComparison[T]
 }
 
 trait ExactStreamEquals extends StreamEquals {
   /**
    * Conversions
    */
-  implicit def toDefaultStreamComparison[T <% StreamComparable[T]] : XmlComparison[T] = new StreamComparisonWrapper(new StreamComparison()( ItemEquals.defaultXmlItemComparison, ElemEquals.defaultElemComparison, EqualsHelpers.qnameEqual))
+  implicit def toDefaultStreamComparison[T](implicit tv : T => StreamComparable[T], ic : XmlComparison[XmlItem], ec : XmlComparison[Elem], qe : Equal[QName]) : XmlComparison[T] = new StreamComparisonWrapper(new StreamComparison()( ic, ec, qe))
 
 }
 
 object ExactStreamEquals extends ExactStreamEquals {
-  
+  import QNameEquals._
+  import AttributeEquals._
+  import AttributesEquals._
+
   val defaultStreamComparison : XmlComparison[StreamComparable[_]] = new StreamComparison()( ItemEquals.defaultXmlItemComparison, ElemEquals.defaultElemComparison, EqualsHelpers.qnameEqual)
 
 }
@@ -269,12 +282,15 @@ object ExactStreamEquals extends ExactStreamEquals {
 trait DefaultStreamEquals extends StreamEquals {
   import LogicalFilters.joinTextAndCData
 
-  implicit def toDefaultStreamComparison[T <% StreamComparable[T]] : XmlComparison[T] = new StreamComparisonWrapper( new StreamComparison(joinTextAndCData _)( ItemEquals.defaultXmlItemComparison, ElemEquals.defaultElemComparison, EqualsHelpers.qnameEqual) )
+  implicit def toDefaultStreamComparison[T](implicit tv : T => StreamComparable[T], ic : XmlComparison[XmlItem], ec : XmlComparison[Elem], qe : Equal[QName]) : XmlComparison[T] = new StreamComparisonWrapper( new StreamComparison(joinTextAndCData _)( ic, ec, qe) )
 
 }
 
 object DefaultStreamEquals extends DefaultStreamEquals {
- import LogicalFilters.joinTextAndCData
+  import LogicalFilters.joinTextAndCData
+  import QNameEquals._
+  import AttributeEquals._
+  import AttributesEquals._
 
   val defaultStreamComparison : XmlComparison[StreamComparable[_]] = new StreamComparison(joinTextAndCData _)( ItemEquals.defaultXmlItemComparison, ElemEquals.defaultElemComparison, EqualsHelpers.qnameEqual)
 

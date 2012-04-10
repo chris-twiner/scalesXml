@@ -97,6 +97,14 @@
 ;* [XSLT.html TrAX & XSLT Support]
 ;** [XSLT.html#Simple_Usage_Example Simple Usage Example]
 
+; '''Xml Equality'''
+;* [EqualityBasics.html Xml Equality Basics]
+;** [How_To_Use How To Use]
+;** [Types_Covered Types Covered]
+;** [Why_Join_CData Why Join CData]
+;** [Removing_Comments_And_PIs Removing Comments and PIs]
+;* [XmlComparison.html XmlComparison - Where Is It Different?]
+
 ; '''Technical Details'''
 ;* [MemoryOptimisation.html Memory Optimisation]
 ;** [MemoryOptimisation.html#Disclaimer Disclaimer]
