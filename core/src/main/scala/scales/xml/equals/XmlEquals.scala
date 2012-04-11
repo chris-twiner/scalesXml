@@ -122,6 +122,8 @@ protected[xml] object SomeDifference extends XmlDifference[AnyRef] {
  */ 
 case class DifferentTypes( left : PullType, right : PullType ) extends XmlDifference[PullType]
 
+case class QNameDifference( left : QName, right : QName ) extends  XmlDifference[QName]
+
 sealed trait AttributeDifference extends XmlDifference[Attribute]
 sealed trait ElemDifference extends XmlDifference[Elem]
 sealed trait AttributesDifference extends XmlDifference[Attributes]
@@ -170,7 +172,8 @@ trait ExactXmlEquals
   with DefaultAttributeEquals
   with DefaultAttributesEquals 
   with DefaultElemEquals
-  with ExactStreamEquals {
+  with ExactStreamEquals
+  with QNameEquals {
 }
 
 /**
@@ -186,7 +189,8 @@ trait DefaultXmlEquals
   with DefaultAttributeEquals
   with DefaultAttributesEquals 
   with DefaultElemEquals
-  with DefaultStreamEquals {
+  with DefaultStreamEquals
+  with QNameEquals {
 }
 
 object DefaultXmlEquals extends DefaultXmlEquals {}

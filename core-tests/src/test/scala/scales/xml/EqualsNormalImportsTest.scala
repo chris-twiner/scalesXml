@@ -230,6 +230,39 @@ class EqualsNormalImportsTest extends junit.framework.TestCase {
     assertFalse("elem1 === elem2", elem1 === elem2)       
   }
 
+  def testXmlEqualsAttrsPrefixRelevant : Unit = {
+    val prefixQNameEqual = equal { (a: QName, b: QName) => a ==== b }
+    implicit val defaultAttributeComparison : XmlComparison[Attribute] = new AttributeComparison()(prefixQNameEqual)
+
+    val pod = no.prefixed("po2")
+
+    val qn = po("a1")
+    val qnd = pod("a1")
+
+    assertTrue("qn === qnd", qn === qnd)
+    assertFalse("qn ==== qnd", qn ==== qnd)
+    assertTrue("compare(Nil, qn, qnd).isEmpty", compare[QName](Nil, qn, qnd).isEmpty)
+
+    val attr1 : Attribute = qn -> "v1"
+    val attr2 : Attribute = qnd -> "v1"
+
+    assertFalse(".equal toQName", prefixQNameEqual.equal(EqualsHelpers.toQName(attr1.name), EqualsHelpers.toQName(attr2.name)))
+    
+    assertFalse("attr1 === attr2", attr1 === attr2)
+    assertTrue("compare(Nil, attr1, attr2).isDefined", compare(Nil, attr1, attr2).isDefined)
+
+    val attrs1 = Attribs(attr1, "a2" -> "v2")
+    val attrs2 = Attribs(attr2, "a2" -> "v2")
+
+    val elem1 = Elem(po("elem"), attrs1)
+    val elem2 = Elem(pod("elem"), attrs2)
+
+    // no prefixes
+    assertFalse("attrs1 === attrs2", attrs1 === attrs2)
+    // has prefixes
+    assertFalse("elem1 === elem2", elem1 === elem2)       
+  }
+
   def testElems : Unit = {
     val a1 = Attribute(p("local"), "value")
     val a2 = Attribute(po("local"), "value")

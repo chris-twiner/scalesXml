@@ -13,7 +13,26 @@ trait DefaultQNameEquals {
   implicit val qnameEqual = equal { (a: QName, b: QName) => a =:= b }
 }
 
-object QNameEquals extends DefaultQNameEquals {
+/**
+ * Only added to provide a complete `compare` set
+ */ 
+class QNameComparison( implicit qe : Equal[QName] ) extends XmlComparison[QName] {
+  def compare( calculate : Boolean , path : BasicPath, left : QName, right : QName ) = {
+    if (left === right)
+      None
+    else
+      if (calculate)
+	Some((QNameDifference(left, right), path))
+      else
+	noCalculation
+  }
+}
+
+trait QNameEquals {
+  implicit def qnameComparison( implicit qe : Equal[QName] ) : XmlComparison[QName] = new QNameComparison()(qe)
+}
+
+object QNameEquals extends DefaultQNameEquals with QNameEquals {
 }
 
 trait DefaultItemEquals {
@@ -66,14 +85,14 @@ class AttributeComparison(implicit eqn : Equal[QName]) extends XmlComparison[Att
 	Some((AttributeNameDifference( left, right), path))
       else
 	noCalculation
-      else 
-	if (left.value != right.value)
-	  if (calculate)
-	    Some((AttributeValueDifference( left, right), path))
-	  else
-	    noCalculation
+    else 
+      if (left.value != right.value)
+	if (calculate)
+	  Some((AttributeValueDifference( left, right), path))
 	else
-	  None // a ok
+	  noCalculation
+      else
+	None // a ok
   }
 }
 
@@ -82,7 +101,7 @@ trait DefaultAttributeEquals {
   /**
    * QNames are not compared with prefix
    */ 
-  implicit def defaultAttributeComparison(implicit qe : Equal[QName]) = new AttributeComparison()(qe)
+  implicit def defaultAttributeComparison(implicit qe : Equal[QName]) : XmlComparison[Attribute] = new AttributeComparison()(qe)
   
 }
 
@@ -139,7 +158,7 @@ class AttributesComparison( implicit ac : XmlComparison[Attribute]) extends XmlC
 
 trait DefaultAttributesEquals {
 
-  implicit def defaultAttributesComparison(implicit ac : XmlComparison[Attribute]) = new AttributesComparison()( ac )
+  implicit def defaultAttributesComparison(implicit ac : XmlComparison[Attribute]) : XmlComparison[Attributes]  = new AttributesComparison()( ac )
 
 }
 
@@ -187,7 +206,7 @@ class ElemComparison(namespaces : Equal[Map[String, String]] = ElemEqualHelpers.
 
 trait DefaultElemEquals {
 
-  implicit def defaultElemComparison(implicit ae : XmlComparison[Attributes], qe : Equal[QName]) = new ElemComparison()( ae, qe )
+  implicit def defaultElemComparison(implicit ae : XmlComparison[Attributes], qe : Equal[QName]) : XmlComparison[Elem] = new ElemComparison()( ae, qe )
 
 }
 
