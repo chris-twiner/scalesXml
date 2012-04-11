@@ -30,6 +30,7 @@ Wherever an XmlComparison exists an Equal instance can be created.
 
 The full set of the Scales Xml Model is covered by the equality framework:
 
+* QName
 * Attribute
 * Attributes
 * XmlItem
@@ -39,8 +40,10 @@ The full set of the Scales Xml Model is covered by the equality framework:
 * XmlPath
 * Anything that can be seen as Iterator[PullType]
 
-QNames in each model type (unlike Canonical Xml) do not compare with the prefix, only the namespace (as per =:=).  This implies that documents created by different systems using different prefixes are still comparable, a different implicit default Equal[QName] instance can change that behaviour.
+QNames in each model type (unlike Canonical Xml, where string comparisons including prefixes are expected) do not compare with the prefix, only the namespace (as per =:=).  This implies that documents created by different systems using different prefixes are still comparable, a different implicit default Equal[QName] instance can change that behaviour.
 
 XmlTrees/XmlPath's etc are converted to Iterator[PullType] in order to compare.  No attempt to match DTDs, encoding or prolog etc are made, only the core element.  If prolog should be matched it should be compared seperately.
 
-Within the comparison framework the comparison for all the types are combined, the QName comparison is used for the Attribute comparison, which is used in turn by the Elem.  This lookup is performed implicitly, allowing for individual parts to be swapped out, if the developer wants prefixes to be tested.
+Within the comparison framework the comparison for all the types are combined, the QName Equal typeclass is used throughout, including for the Attribute comparison, which is used in turn by the Elem - which is finally used by Stream comparisons.  
+
+This lookup is performed implicitly, allowing for individual parts to be swapped out, if the developer wants prefixes to be tested.  Either use name based overriding in the relevant scope or mix the traits differently to provide custom behaviour (and not import ScalesXml._)

@@ -457,6 +457,29 @@ class EqualsNormalImportsTest extends junit.framework.TestCase {
     
   }
 
+  def testRemovePIAndCommentsEqual : Unit = {
+
+    val root = po("root")
+    val child = po("child")
+
+    import LogicalFilters._
+
+    implicit def toDefaultStreamComparison[T](implicit tv : T => StreamComparable[T], ic : XmlComparison[XmlItem], ec : XmlComparison[Elem], qe : Equal[QName]) : XmlComparison[T] = new StreamComparisonWrapper( new StreamComparison( x => removePIAndComments(joinText(x)))( ic, ec, qe) )
+
+    val x1 = <(root) /( "0","1",CData("2"), Comment("c2"),"3","4", 
+		      PI("i","s"),
+      		  child /( "s1", CData("s2"), Comment("cs2"), "s3" ),
+      		  child /( CData("s22"), Comment("cs22"), PI("i","s"), "s23" ),
+		PI("i","s"), "5", CData("6"), Comment("c6") )
+
+    val x2 = <(root) /( "0","1",CData("2"), "3","4", 
+		  child /( "s1", CData("s2"), "s3" ),
+      		  child /( CData("s22"), "s23" ),
+		"5", CData("6") )
+    
+    assertTrue( " x1 === x2 ", x1 === x2)
+  }
+
   /**
    * This test simply looks at the test package behaviour
    */
