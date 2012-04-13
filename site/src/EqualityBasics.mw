@@ -1,6 +1,10 @@
 = Xml Equality Basics =
 
-Testing Xml Equality is not always straightforward, the simplest approach of Canonalisation and string comaprison is also less than useful for identifying where a problem is and is lossful by design - a difference in whitespace between two documents may be significant.  Additionally Canonical Xml treats QName prefix values as relevant, if an xml processor changes a prefix, that document is no longer comparable under Canonical Xml.
+The Scales Xml equality framework aims to help with both testing applications (similar to XmlUnit) that use Scales and also for runtime comparison activities, e.g. if an element has this attribute with this value do X.
+
+The Scales equality framework does not throw, but returns information allowing decisions to be made.  In the case of `===` a simple boolean is returned, in the case of `compare` a full ADT and path are returned diagnosing the first difference found.
+
+The `compare` function is used by the Equal instances and is documented [XmlComparison.html here].
 
 == How To Use ==
 
@@ -38,7 +42,7 @@ The full set of the Scales Xml Model is covered by the equality framework:
 * Elem
 * XmlTree
 * XmlPath
-* Anything that can be seen as Iterator[PullType]
+* Anything that can be seen as <nowiki>Iterator[PullType]</nowiki>
 
 QNames in each model type (unlike Canonical Xml, where string comparisons including prefixes are expected) do not compare with the prefix, only the namespace (as per =:=).  This implies that documents created by different systems using different prefixes are still comparable, a different implicit default Equal[QName] instance can change that behaviour.
 
@@ -47,3 +51,93 @@ XmlTrees/XmlPath's etc are converted to Iterator[PullType] in order to compare. 
 Within the comparison framework the comparison for all the types are combined, the QName Equal typeclass is used throughout, including for the Attribute comparison, which is used in turn by the Elem - which is finally used by Stream comparisons.  
 
 This lookup is performed implicitly, allowing for individual parts to be swapped out, if the developer wants prefixes to be tested.  Either use name based overriding in the relevant scope or mix the traits differently to provide custom behaviour (and not import ScalesXml._)
+
+_Note_ The three different kinds of QNames each have a different type, and as such you must inform the compiler if you want to use compare with QNames, e.g.:
+
+${cscala}
+  val ns = Namespace("uri:prefixed")
+
+  val po = ns.prefixed("p")
+  val pod = ns.prefixed("po2")
+
+  // Both qn and qnd are PrefixedQNames
+  val qn = po("a1")
+  val qnd = pod("a1")
+
+  assertTrue("qn === qnd", qn === qnd)
+  assertFalse("qn ==== qnd", qn ==== qnd)
+  assertTrue("compare(Nil, qn, qnd).isEmpty", compare[QName](Nil, qn, qnd).isEmpty)
+${cend}
+
+== Why Join Adjacent Text and CData? ==
+
+Scales Xml equality makes two default design decisions, prefixes aren't relevant (only the namespace is) and to join adjacent CData and Text.
+
+The reason for joining adjacent CData and Text nodes is to simplify the comparison of text.  CData can always be written as Text nodes, and a parser is free to "split" a single logical Text node into multiple smaller text nodes.  Scales neither forces joining of the text nodes at parse time nor when adding child nodes, as such to usefully compare they must be joined.
+
+This also allows testing content from different sources without issue.
+
+== Removing Comments And PIs == 
+
+The default comparison logic treats both Comments and PIs as relevant for comparison.  This design choice meets expectations for the majority of XML documents.
+
+In the event that Comments and PIs should not be compared the implicits can be overridden in scope with:
+
+${cscala}
+  val root = po("root")
+  val child = po("child")
+
+  import LogicalFilters._
+
+  implicit def toDefaultStreamComparison[T](
+  	   implicit tv : T => StreamComparable[T], 
+	   ic : XmlComparison[XmlItem],
+	   ec : XmlComparison[Elem], 
+	   qe : Equal[QName]) : XmlComparison[T] = 
+      new StreamComparisonWrapper( 
+        new StreamComparison( 
+          x => removePIAndComments(joinText(x))
+        )( ic, ec, qe) 
+      )
+
+  val x1 = 
+      <(root) /( "0", "1", CData("2"), Comment("c2"), "3", "4", PI("i","s"),
+	child /( 
+	  "s1", CData("s2"), Comment("cs2"), "s3"
+	),
+      	child /( 
+	  CData("s22"), Comment("cs22"), PI("i","s"), "s23" 
+	),
+        PI("i","s"), "5", CData("6"), Comment("c6") )
+
+
+  val x2 = 
+      <(root) /( "0","1",CData("2"), "3","4", 
+	child /( 
+	    "s1", CData("s2"), "s3" 
+	),
+	child /( 
+	    CData("s22"), "s23" 
+	),
+	"5", CData("6") )
+    
+  assertTrue( " x1 === x2 ", x1 === x2)
+${cend}
+
+== Why Not Use Canonical Xml? ==
+
+Testing Xml Equality is not always straightforward, the simplest standard approach of Canonalisation and string comaprison is also less than useful for identifying where a problem is.  Additionally Canonical Xml treats QName prefix values as relevant, if an xml processor changes a prefix, that document is no longer comparable under Canonical Xml (No Namespace Prefix Rewriting).  
+
+Whilst the justifications for the prefix rewriting rule in Canonical Xml is understandable in the context of embedded XPaths or xml QNames (their prefixes only make sense within that document), Scales takes the position that this is a far rare occasion than simple Xml as a data transport usage.  However as with the rest of Scales this default too is customisable.
+
+The problem, and it stops the Canonical Xml reasoning as well, is that a producing application can re-write the prefixes for embedded QNames or XPaths before sending.  WSDM applications often meet this (see Apache Muse for examples of this).  Scales is, of course, not aware of these usages, and would require a customised XmlItem comparison to make use of the BasicPath object and the namespace map provided.
+
+Canonical Xml also forces namespace declarations to be removed (Superfluous Namespace Declarations), Scales only uses these for writing a document out, and are treated by Scales as nothing more than a hint.  This approach allows Scales to very closely approach a 1:1 mapping between parsed documents and re-written documents.
+
+Similarly the following approaches to Canonical Xml actually may break data assumptions of equality:
+
+* normalize line feeds
+* normalize attribute values
+* Default attributes are added to each element
+
+The latter may cause issues with certain receiving processors and depends on a validation / schema enrichement working.  Scales concerns itself with the documents actualy being compared.

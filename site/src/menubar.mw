@@ -99,10 +99,11 @@
 
 ; '''Xml Equality'''
 ;* [EqualityBasics.html Xml Equality Basics]
-;** [How_To_Use How To Use]
-;** [Types_Covered Types Covered]
-;** [Why_Join_CData Why Join CData]
-;** [Removing_Comments_And_PIs Removing Comments and PIs]
+;** [EqualityBasics.html#How_To_Use How To Use]
+;** [EqualityBasics.html#Types_Covered Types Covered]
+;** [EqualityBasics.html#Why_Join_Adjacent_Text_and_CData.3F Why Join Adjacent Text and CData?]
+;** [EqualityBasics.html#Removing_Comments_And_PIs Removing Comments and PIs]
+;** [EqualityBasics.html#Why_Not_Use_Canonical_Xml.3F Why Not Use Canonical Xml?]
 ;* [XmlComparison.html XmlComparison - Where Is It Different?]
 
 ; '''Technical Details'''
