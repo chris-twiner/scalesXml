@@ -19,7 +19,7 @@ import scales.xml.{ XmlTypes ,
     DslImplicits,
     XmlPathImplicits,
     XmlParserImplicits,
-    PullTypeConversionImplicits  }
+    PullTypeConversionImplicits}
 
 import scales.xml.{Elem, Attribs, Attributes, Attribute, XmlItem, Text, PI, CData, Comment, <, Namespace}
 
@@ -363,13 +363,21 @@ class EqualsTest extends junit.framework.TestCase {
   
   def testBasicPath : Unit = {
 
+    object tester extends BasicPathsImplicits {
+    }
+    import tester._
+
     val qn = po("elem")
 
     // we should therefore get a 2
     val StartPath : BasicPath = one(("root"l, Map("{uri:prefixed}parent" -> 1, "{uri:prefixed}elem" -> 1)))
+
+    assertEquals("{}root", qualifiedName(StartPath))
+
     // the parent now has two as we are in this path.
     val EndPath : BasicPath = List((qn, Map()), ("root"l, Map("{uri:prefixed}parent" -> 1, "{uri:prefixed}elem" -> 2)))
 
+    assertEquals("{uri:prefixed}elem", qualifiedName(EndPath))
     
     val testEmpty = startElem(qn, Nil)
     val ((eeq, m : Map[String, Int]) :: Nil) = testEmpty

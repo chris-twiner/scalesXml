@@ -22,6 +22,19 @@ trait BasicPaths {
 object BasicPaths extends BasicPaths {}
 
 /**
+ * Provides an immplicit to easily access the head QName in a path
+ */ 
+trait BasicPathsImplicits {
+  import BasicPaths._
+  
+  implicit object BasicPathNames extends scales.xml.xpath.Names[BasicPath] {
+    def name(implicit t : BasicPath) : Option[scales.xml.QName] = 
+      t.headOption.map( _._1 )
+  }
+
+}
+
+/**
  * Like Equals but also gives a path in addition to the fun reason
  * 
  */ 
