@@ -44,6 +44,8 @@ case class AttributePaths[PT <: Iterable[XmlPath]](attributes: Iterable[Attribut
    */
   def oneOr(handler: Iterable[AttributePath] => Iterable[AttributePath]) = if (attributes.size == 1) scales.utils.one(attributes.head) else handler(attributes)
 
+  def ===( textValue : => String ) = 
+    *@( a => a.attribute.value == textValue )
 }
 
 /**
@@ -319,4 +321,9 @@ object Axis {
     final def filter(pred: XmlPath => Boolean): XPath[T] =
       xmap{ _.filter(pred) }
 
+    /**
+     * simple test for string equality
+     */ 
+    final def ===( textValue : => String ) = 
+      filter(x => xpath.XmlPathText.text(x) == textValue)
   }

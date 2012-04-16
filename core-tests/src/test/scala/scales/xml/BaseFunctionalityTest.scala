@@ -565,6 +565,16 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
 
   val path2 = top(builder)
   
+  def testEqs = {
+    val res = path2 \* ns("Child2") * ( _.\*.===("text") )
+    
+    assertEquals("{test:uri}Child2", qualifiedName(res))
+
+    val res2 = path2.\@.===("val1")
+    
+    assertEquals("{test:uri:attribs}attr1", qualifiedName(res2))
+  }
+
   def testTypes = {
     val res = path2 \* ns("Child2") \* ns("Subchild")
 

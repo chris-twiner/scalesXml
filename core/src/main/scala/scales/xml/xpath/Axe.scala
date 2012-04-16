@@ -140,6 +140,7 @@ trait ElementStep extends Axis {
   def \\*(pred : XmlPath => Boolean ) = \\.*(pred)
   
   def \\*(pos : Int) = \\.*(pos)
+
 }
 
 /**
