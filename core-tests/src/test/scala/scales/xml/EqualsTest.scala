@@ -67,6 +67,8 @@ class EqualsTest extends junit.framework.TestCase {
 
   }
 
+  import BasicPaths._
+
   import KeepEmSeperate._
   import KeepEmSeperateI._
 
@@ -96,6 +98,7 @@ class EqualsTest extends junit.framework.TestCase {
 
   // make sure its passed through where it should be
   val DummyPath : BasicPaths.BasicPath = List(("n"l, Map()))
+  val DummyContext = ComparisonContext(DummyPath)
 
   import XmlEquals._
 
@@ -109,35 +112,36 @@ class EqualsTest extends junit.framework.TestCase {
     assertTrue("t1 == t2", t1 == t2)
     assertTrue("t1 === t2", t1 === t2)
 
-    assertTrue("t1 compare t2", compare(Nil, t1, t2).isEmpty )
+    assertTrue("t1 compare t2", compare(DummyContext, t1, t2).isEmpty )
     
     val t3 = Text("freed")
 
     assertFalse("t1 == t3", t1 == t3)
     assertFalse("t1 === t3", t1 === t3)
 
-    val t1and3c = defaultXmlItemComparison.compare(true, DummyPath, t1, t3)
+    val t1and3c = defaultXmlItemComparison.compare(true, DummyContext, t1, t3)
     assertFalse("t1and3c.isEmpty", t1and3c.isEmpty )
     
-    val Some((ItemDifference(t13cl, t13cr), DummyPath)) = t1and3c 
+    val Some((ItemDifference(t13cl, t13cr), DummyContext)) = t1and3c 
     assertTrue("t13cl", t13cl eq t1)
     assertTrue("t13cr", t13cr eq t3)
     
-    val t1and3nc = defaultXmlItemComparison.compare(false, Nil, t1, t3)
+    val t1and3nc = defaultXmlItemComparison.compare(false, DummyContext, t1, t3)
     assertFalse("t1and3nc.isEmpty", t1and3nc.isEmpty )
     
-    val Some((SomeDifference(t13ncl, t13ncr), tpn)) = t1and3nc 
+    val Some((SomeDifference(t13ncl, t13ncr), tpc)) = t1and3nc 
     assertTrue("t13ncl", t13ncl eq null)
     assertTrue("t13ncr", t13ncr eq null)
     
     val cd1 = CData("fred")
     
-    val ct = defaultXmlItemComparison.compare(true, Nil, cd1, t1)
+    val ct = defaultXmlItemComparison.compare(true, DummyContext, cd1, t1)
     assertFalse("ct.isEmpty", ct.isEmpty)
     
     val Some((DifferentTypes(Left(ctl), Left(ctr)), tpct)) = ct
     assertTrue("ctl", ctl eq cd1)
     assertTrue("ctr", ctr eq t1)
+    assertTrue("tpct is DummyContext", tpct eq DummyContext)
     
     val cd2 = CData("fred")
     assertTrue("cd1 === cd2", cd1 === cd2)
@@ -175,10 +179,10 @@ class EqualsTest extends junit.framework.TestCase {
     val a3 = Attribute("ellocal"l, "value")
     assertFalse("a1 === a3", a1 === a3)
 
-    val diffN = compare(DummyPath, a1, a3)
+    val diffN = compare(DummyContext, a1, a3)
     assertFalse("diffN.isEmpty", diffN.isEmpty)
 
-    val Some((AttributeNameDifference(diffNl, diffNr), DummyPath)) = diffN
+    val Some((AttributeNameDifference(diffNl, diffNr), DummyContext)) = diffN
     assertTrue("a1 eq diffNl", a1 eq diffNl)
     assertTrue("a3 eq diffNr", a3 eq diffNr)
 
@@ -186,24 +190,24 @@ class EqualsTest extends junit.framework.TestCase {
     assertFalse("a1 == a4", a1 == a4)
 //    assertFalse("a1 === a4", Identity(a1).===(a4)(defaultAttributeEquals))
 
-    val diffV = defaultAttributeComparison.compare(true, DummyPath, a1, a4)
+    val diffV = defaultAttributeComparison.compare(true, DummyContext, a1, a4)
     assertFalse("diffV.isEmpty", diffV.isEmpty)
 
-    val Some((AttributeValueDifference(diffVl, diffVr), DummyPath)) = diffV
+    val Some((AttributeValueDifference(diffVl, diffVr), DummyContext)) = diffV
     assertTrue("a1 eq diffVl", a1 eq diffVl)
     assertTrue("a4 eq diffVr", a4 eq diffVr)
 
-    val diffNc = defaultAttributeComparison.compare(false, DummyPath, a1, a3)
+    val diffNc = defaultAttributeComparison.compare(false, DummyContext, a1, a3)
     assertFalse("diffNc.isEmpty", diffNc.isEmpty)
 
-    val Some((SomeDifference(diffNcl, diffNcr), Nil)) = diffNc
+    val Some((SomeDifference(diffNcl, diffNcr), ComparisonContext(None, None, Nil, None))) = diffNc
     assertTrue("null eq diffNcl", null eq diffNcl)
     assertTrue("null eq diffNcr", null eq diffNcr)
 
-    val diffVc = defaultAttributeComparison.compare(false, DummyPath, a1, a4)
+    val diffVc = defaultAttributeComparison.compare(false, DummyContext, a1, a4)
     assertFalse("diffVc.isEmpty", diffVc.isEmpty)
 
-    val Some((SomeDifference(diffVcl, diffVcr), Nil)) = diffVc
+    val Some((SomeDifference(diffVcl, diffVcr), ComparisonContext(None, None, Nil, None))) = diffVc
     assertTrue("null eq diffVl", a1 eq diffVl)
     assertTrue("null eq diffVr", a4 eq diffVr)    
   }
@@ -230,10 +234,10 @@ class EqualsTest extends junit.framework.TestCase {
     assertTrue("a1 == a2", a1 == a2)
     assertFalse("a1 === a2", a1 === a2)
 
-    val diffN = compare(DummyPath, a1, a2)
+    val diffN = compare(DummyContext, a1, a2)
     assertFalse("diffN.isEmpty", diffN.isEmpty)
 
-    val Some((AttributeNameDifference(diffNl, diffNr), DummyPath)) = diffN
+    val Some((AttributeNameDifference(diffNl, diffNr), DummyContext)) = diffN
     assertTrue("a1 eq diffNl", a1 eq diffNl)
     assertTrue("a3 eq diffNr", a2 eq diffNr)
   }
@@ -260,12 +264,12 @@ class EqualsTest extends junit.framework.TestCase {
     
     val attrs3 = Attribs(a1, a3, a4, a5, a6)
 
-    val wrongCount = compare(DummyPath, attrs1, attrs3)
-    val Some((DifferentNumberOfAttributes(wcl, wcr), DummyPath)) = wrongCount
+    val wrongCount = compare(DummyContext, attrs1, attrs3)
+    val Some((DifferentNumberOfAttributes(wcl, wcr), DummyContext)) = wrongCount
     assertTrue("wcl eq attrs1", wcl eq attrs1)
     assertTrue("wcr eq attrs3", wcr eq attrs3)
 
-    val wrongCountnc = defaultAttributesComparison.compare(false, DummyPath, attrs1, attrs3)
+    val wrongCountnc = defaultAttributesComparison.compare(false, DummyContext, attrs1, attrs3)
     assertTrue("wrongCountnc eq noCalculation",wrongCountnc eq noCalculation)
 
     assertFalse("attrs3 === attrs1", attrs3 === attrs1)
@@ -275,18 +279,18 @@ class EqualsTest extends junit.framework.TestCase {
     
     val attrs4 = Attribs(a1, a3, a4, a5, a6, missinga)
 
-    val leftMissing = compare(DummyPath, attrs4, attrs1)
-    val Some((MissingAttributes(lml, lmr, lm), DummyPath)) = leftMissing
+    val leftMissing = compare(DummyContext, attrs4, attrs1)
+    val Some((MissingAttributes(lml, lmr, lm), DummyContext)) = leftMissing
 
     assertTrue("lml eq attrs4", lml eq attrs4)
     assertTrue("lmr eq attrs1", lmr eq attrs1)
     assertTrue("lm eq missinga", lm eq missinga)
 
-    val missingnc = defaultAttributesComparison.compare(false, DummyPath, attrs1, attrs4)
+    val missingnc = defaultAttributesComparison.compare(false, DummyContext, attrs1, attrs4)
     assertTrue("missingnc eq noCalculation",missingnc eq noCalculation)
 
-    val rightMissing = defaultAttributesComparison.compare(true, DummyPath, attrs1, attrs4)
-    val Some((MissingAttributes(rml, rmr, rm), DummyPath)) = rightMissing
+    val rightMissing = defaultAttributesComparison.compare(true, DummyContext, attrs1, attrs4)
+    val Some((MissingAttributes(rml, rmr, rm), DummyContext)) = rightMissing
 
     assertTrue("rml eq attrs1", rml eq attrs1)
     assertTrue("rmr eq attrs4", rmr eq attrs4)
@@ -295,8 +299,8 @@ class EqualsTest extends junit.framework.TestCase {
     val differentValuea = Attribute(missing, "another value")
     val attrs5 = Attribs(a1, a3, a4, a5, a6, differentValuea)
 
-    val diffValue = defaultAttributesComparison.compare(true, DummyPath, attrs5, attrs4)
-    val Some((DifferentValueAttributes(dvl, dvr, dva), DummyPath)) = diffValue
+    val diffValue = defaultAttributesComparison.compare(true, DummyContext, attrs5, attrs4)
+    val Some((DifferentValueAttributes(dvl, dvr, dva), DummyContext)) = diffValue
 
     assertTrue("dvl eq attrs5", dvl eq attrs5)
     assertTrue("dvr eq attrs4", dvr eq attrs4)
@@ -305,7 +309,7 @@ class EqualsTest extends junit.framework.TestCase {
     assertFalse("attrs5 === attrs4", attrs5 === attrs4)
 
 
-    val diffVnc = defaultAttributesComparison.compare(false, DummyPath, attrs5, attrs4)
+    val diffVnc = defaultAttributesComparison.compare(false, DummyContext, attrs5, attrs4)
     assertTrue("diffVnc eq noCalculation",diffVnc eq noCalculation)
     
   }
@@ -335,13 +339,13 @@ class EqualsTest extends junit.framework.TestCase {
 
     assertTrue("elem1 === elem2", elem1 === elem2)
     
-    assertTrue("compare elem1 elem2 .isEmpty", compare(DummyPath, elem1, elem2).isEmpty)
+    assertTrue("compare elem1 elem2 .isEmpty", compare(DummyContext, elem1, elem2).isEmpty)
 
     val elem3 = Elem(p("elem"), attrs1)
     assertFalse("elem1 === elem3", elem1 === elem3)
     
-    val diffname = compare(DummyPath, elem1, elem3)
-    val Some((ElemNameDifference(dnl, dnr), DummyPath)) = diffname
+    val diffname = compare(DummyContext, elem1, elem3)
+    val Some((ElemNameDifference(dnl, dnr), DummyContext)) = diffname
     
     assertTrue( "dnl eq elem1", dnl eq elem1)
     assertTrue( "dnr eq elem3", dnr eq elem3)
@@ -350,8 +354,8 @@ class EqualsTest extends junit.framework.TestCase {
     
     assertFalse("elem4 === elem1", elem4 === elem1)
 
-    val diffattr = defaultElemComparison.compare(true, DummyPath, elem1, elem4)
-    val Some((ElemAttributeDifference(dal, dar, MissingAttributes(mal, mar, ma)), DummyPath)) = diffattr
+    val diffattr = defaultElemComparison.compare(true, DummyContext, elem1, elem4)
+    val Some((ElemAttributeDifference(dal, dar, MissingAttributes(mal, mar, ma)), DummyContext)) = diffattr
 
     assertTrue("dal eq elem1", dal eq elem1)
     assertTrue("dar eq elem4", dar eq elem4)
@@ -363,58 +367,63 @@ class EqualsTest extends junit.framework.TestCase {
   
   def testBasicPath : Unit = {
 
-    object tester extends BasicPathsImplicits {
+    object tester extends ComparisonContextImplicits {
     }
     import tester._
 
     val qn = po("elem")
+    val qne = Elem(qn)
 
     // we should therefore get a 2
     val StartPath : BasicPath = one(("root"l, Map("{uri:prefixed}parent" -> 1, "{uri:prefixed}elem" -> 1)))
 
+    val StartContext = ComparisonContext(StartPath)
+
     assertEquals("{}root", qualifiedName(StartPath))
+    assertEquals("{}root", qualifiedName(StartContext))
 
     // the parent now has two as we are in this path.
     val EndPath : BasicPath = List((qn, Map()), ("root"l, Map("{uri:prefixed}parent" -> 1, "{uri:prefixed}elem" -> 2)))
 
     assertEquals("{uri:prefixed}elem", qualifiedName(EndPath))
     
-    val testEmpty = startElem(qn, Nil)
-    val ((eeq, m : Map[String, Int]) :: Nil) = testEmpty
+    val testEmpty = ComparisonContext().startElems(qne, qne)
+    val ((eeq, m : Map[String, Int]) :: Nil) = testEmpty.path
     assertTrue("eeq eq qn", eeq eq qn)
     assertTrue("m is empty", m.isEmpty)
 
-    assertEquals("ps(testEmpty)", "/{uri:prefixed}elem[1]", pathString(testEmpty))
+    assertEquals("ps(testEmpty)", "/{uri:prefixed}elem[1]", testEmpty.pathString)
     
-    val pop = endElem( testEmpty ) 
-    assertTrue("pop's empty", pop.isEmpty)
+    val pop = testEmpty.endElem 
+    assertTrue("pop's empty", pop.path.isEmpty)
 
-    assertEquals("ps(pop)", "", pathString(pop))
+    assertEquals("ps(pop)", "", pop.pathString)
     
-    val testCounts = startElem(qn, StartPath)
-    testCounts match {
+    val testCounts = StartContext.startElems(qne, qne)
+    testCounts.path match {
       case EndPath => true
       case _ => fail("start on Start did not End well")
     }
 
-    assertEquals("ps(testCounts)","/{}root[1]/{uri:prefixed}elem[2]", pathString(testCounts))
+    assertEquals("ps(testCounts)","/{}root[1]/{uri:prefixed}elem[2]", testCounts.pathString)
 
     val Cont : BasicPath = List((qn, Map()), (qn, Map("{uri:prefixed}elem" -> 1)), ("root"l, Map("{uri:prefixed}parent" -> 1, "{uri:prefixed}elem" -> 2)))
 
-    val testCont = startElem(qn, EndPath)
-    assertEquals("ps(testCont)", "/{}root[1]/{uri:prefixed}elem[2]/{uri:prefixed}elem[1]", pathString(testCont))
+    val testCont = ComparisonContext(EndPath).startElems(qne, qne)
+    assertEquals("ps(testCont)", "/{}root[1]/{uri:prefixed}elem[2]/{uri:prefixed}elem[1]", testCont.pathString)
 
-    val popped = endElem(testCont)
-    assertEquals("ps(popped)", "/{}root[1]/{uri:prefixed}elem[2]", pathString(popped))
+    val popped = testCont.endElem
+    assertEquals("ps(popped)", "/{}root[1]/{uri:prefixed}elem[2]", popped.pathString)
 
-    val up2 = startElem(qn, popped) // we've gone from /1/2/1 to /1/2/2
-    assertEquals("ps(up2)", "/{}root[1]/{uri:prefixed}elem[2]/{uri:prefixed}elem[2]", pathString(up2))
+    val up2 = popped.startElems(qne, qne) // we've gone from /1/2/1 to /1/2/2
+    assertEquals("ps(up2)", "/{}root[1]/{uri:prefixed}elem[2]/{uri:prefixed}elem[2]", up2.pathString)
 
-    val pop2 = startElem(qn, endElem(endElem(up2)))
-    assertEquals("ps(pop2)", "/{}root[1]/{uri:prefixed}elem[3]", pathString(pop2))
+    val upped = up2.endElem.path.tail
+    val pop2 = ComparisonContext(upped).startElems(qne, qne)
+    assertEquals("ps(pop2)", "/{}root[1]/{uri:prefixed}elem[3]", pop2.pathString)
     
-    val andDownAgain = startElem(qn, pop2) // new parent elem, new count
-    assertEquals("ps(andDownAgain)", "/{}root[1]/{uri:prefixed}elem[3]/{uri:prefixed}elem[1]", pathString(andDownAgain))
+    val andDownAgain = pop2.startElems(qne, qne) // new parent elem, new count
+    assertEquals("ps(andDownAgain)", "/{}root[1]/{uri:prefixed}elem[3]/{uri:prefixed}elem[1]", andDownAgain.pathString)
     
   }
 
@@ -442,13 +451,13 @@ class EqualsTest extends junit.framework.TestCase {
     assertFalse("xml === noAttribs", convertToStream(xml) === convertToStream(noAttribs.tree))
     
     // defaultStreamComparison. true
-    val diff = compare(Nil, convertToStream(xml), convertToStream(noAttribs.tree))
+    val diff = compare(convertToStream(xml), convertToStream(noAttribs.tree))
 
     assertTrue("diff is some", diff.isDefined)
 
-    val Some((ElemAttributeDifference(dal, dar, DifferentNumberOfAttributes(wcl, wcr)), path)) = diff
+    val Some((ElemAttributeDifference(dal, dar, DifferentNumberOfAttributes(wcl, wcr)), context)) = diff
     
-    assertEquals("/{urn:default}Default[1]/{}NoNamespace[1]", pathString(path))
+    assertEquals("/{urn:default}Default[1]/{}NoNamespace[1]", context.pathString)
 
     assertEquals("da1.name is NoNamespace", "{}NoNamespace", dal.name.qualifiedName)
     assertTrue("wcr has ah", wcr("ah"l).isDefined)

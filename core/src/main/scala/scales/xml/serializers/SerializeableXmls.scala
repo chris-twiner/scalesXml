@@ -27,18 +27,17 @@ trait SerializerImplicits {
               if (!walk.hasChildren) {
 
                 // x.namespaces can't be used any further
-                val (mappings, (attribs, declMap, addDef)) = doElement(x, output)
-                (output, serializer.emptyElement(x.name, attribs, declMap, addDef, x.name :: output.path))
+                val nc = doElement(x, output.currentMappings.top)
+                (output, serializer.emptyElement(x.name, x.attributes, nc.declMap, nc.addDefault, x.name :: output.path))
               } else {
                 if (walk.isStart) {
 
                   val npath = x.name :: output.path
 
-                  val (mappings, (attribs, declMap, addDef)) = doElement(x, output)
-
-                  (output.copy(currentMappings = output.currentMappings.push(mappings),
+                  val nc = doElement(x, output.currentMappings.top)
+                  (output.copy(currentMappings = output.currentMappings.push(nc.mappings),
                     path = npath),
-                    serializer.startElement(x.name, attribs, declMap, addDef, npath))
+                    serializer.startElement(x.name, x.attributes, nc.declMap, nc.addDefault, npath))
                 } else {
                   // pop the last ones
                   (output.copy(currentMappings = output.currentMappings.pop,
@@ -98,15 +97,14 @@ trait SerializerImplicits {
               if (next.isRight) {
 
                 // x.namespaces can't be used any further
-                val (mappings, (attribs, declMap, addDef)) = doElement(x, output)
-                (output, serializer.emptyElement(x.name, attribs, declMap, addDef, x.name :: output.path), true) // let us know to ignore the next end
+                val nc = doElement(x, output.currentMappings.top)
+                (output, serializer.emptyElement(x.name, x.attributes, nc.declMap, nc.addDefault, x.name :: output.path), true) // let us know to ignore the next end
               } else {
                 val npath = x.name :: output.path
 
-                val (mappings, (attribs, declMap, addDef)) = doElement(x, output)
-
-                (output.copy(currentMappings = output.currentMappings.push(mappings), path = npath),
-                  serializer.startElement(x.name, attribs, declMap, addDef, npath), false)
+                val nc = doElement(x, output.currentMappings.top)
+                (output.copy(currentMappings = output.currentMappings.push(nc.mappings), path = npath),
+                  serializer.startElement(x.name, x.attributes, nc.declMap, nc.addDefault, npath), false)
               }
             case Right(endElem) =>
               if (isEmpty)

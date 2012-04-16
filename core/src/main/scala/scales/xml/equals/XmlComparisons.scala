@@ -17,12 +17,12 @@ trait DefaultQNameEquals {
  * Only added to provide a complete `compare` set
  */ 
 class QNameComparison( implicit qe : Equal[QName] ) extends XmlComparison[QName] {
-  def compare( calculate : Boolean , path : BasicPath, left : QName, right : QName ) = {
+  def compare( calculate : Boolean , context : ComparisonContext, left : QName, right : QName ) = {
     if (left === right)
       None
     else
       if (calculate)
-	Some((QNameDifference(left, right), path))
+	Some((QNameDifference(left, right), context))
       else
 	noCalculation
   }
@@ -44,12 +44,12 @@ trait DefaultItemEquals {
   implicit def toDefaultXmlItem[T <: XmlItem] : XmlComparison[T] = defaultXmlItemComparison.asInstanceOf[XmlComparison[T]]
 
   implicit object defaultXmlItemComparison extends XmlComparison[XmlItem] {
-    def compare( calculate : Boolean , path : BasicPath, left : XmlItem, right : XmlItem) : Option[(XmlDifference[_], BasicPath)] = {
+    def compare( calculate : Boolean , context : ComparisonContext, left : XmlItem, right : XmlItem) : Option[(XmlDifference[_], ComparisonContext)] = {
       def check( str : String, str2 : String ) =
 	  if (str == str2) None
 	  else {
 	    if (calculate) 
-	      Some((ItemDifference(left, right), path))
+	      Some((ItemDifference(left, right), context))
 	    else
 	      noCalculation
 	  }
@@ -62,7 +62,7 @@ trait DefaultItemEquals {
 	  check(ta, tar) orElse check(valu,  value)
 	case _ => 
 	  if (calculate)
-	    Some((DifferentTypes(left, right), path))
+	    Some((DifferentTypes(left, right), context))
 	  else
 	    noCalculation
       }
@@ -79,16 +79,16 @@ object ItemEquals extends DefaultItemEquals {}
 class AttributeComparison(implicit eqn : Equal[QName]) extends XmlComparison[Attribute] {
   import EqualsHelpers.toQName
 
-  def compare( calculate : Boolean, path : BasicPath, left: Attribute, right : Attribute) : Option[(XmlDifference[_], BasicPath)] = {
+  def compare( calculate : Boolean, context : ComparisonContext, left: Attribute, right : Attribute) : Option[(XmlDifference[_], ComparisonContext)] = {
     if (!eqn.equal(toQName(left.name), toQName(right.name)))
       if (calculate)
-	Some((AttributeNameDifference( left, right), path))
+	Some((AttributeNameDifference( left, right), context))
       else
 	noCalculation
     else 
       if (left.value != right.value)
 	if (calculate)
-	  Some((AttributeValueDifference( left, right), path))
+	  Some((AttributeValueDifference( left, right), context))
 	else
 	  noCalculation
       else
@@ -124,31 +124,31 @@ object ExactQName extends ExactQName {}
  * Comparison for attributes, requires a comparison for individual attributes, allowing flexible definitions of equality
  */ 
 class AttributesComparison( implicit ac : XmlComparison[Attribute]) extends XmlComparison[Attributes] {
-  def compare( calculate : Boolean, path : BasicPath, left : Attributes, right : Attributes) : Option[(XmlDifference[_], BasicPath)] = {
+  def compare( calculate : Boolean, context : ComparisonContext, left : Attributes, right : Attributes) : Option[(XmlDifference[_], ComparisonContext)] = {
     import EqualsHelpers._
     import scales.utils.collectFirst
 
     if (left.size != right.size)
       if (calculate)
-	Some((DifferentNumberOfAttributes(left,right), path))
+	Some((DifferentNumberOfAttributes(left,right), context))
       else
 	noCalculation
       else 
 	// get the first error
-	collectFirst[Attribute, (XmlDifference[_], BasicPath)](left){ 
+	collectFirst[Attribute, (XmlDifference[_], ComparisonContext)](left){ 
 	  x1 =>
 	    right( x1.name ).cata( x2 => {// if we have it check the attributes
-	      val r = ac.compare(calculate, path, x1, x2)
+	      val r = ac.compare(calculate, context, x1, x2)
 	      if (r.isDefined) {
 		// it can only be AttributeValueDifference
 		if (calculate)
-		  Some( (DifferentValueAttributes( left, right, x1 ), path) )
+		  Some( (DifferentValueAttributes( left, right, x1 ), context) )
 		else
 		  noCalculation
 	      } else None
 	    } , 
 	    if (calculate)
-	      Some( ( MissingAttributes( left, right, x1 ), path) )
+	      Some( ( MissingAttributes( left, right, x1 ), context) )
 	    else
 	      noCalculation     
 	    )
@@ -178,24 +178,24 @@ object ElemEqualHelpers {
  * An Attributes comparison and a QName Equal instance are required.  This also allows, for example, specification of equality using prefixes for the Elem, but not on the Attributes.
  */ 
 class ElemComparison(namespaces : Equal[Map[String, String]] = ElemEqualHelpers.allwaysTrueNamespacesEqual)( implicit ac : XmlComparison[Attributes], eqn : Equal[QName]) extends XmlComparison[Elem] {
-  def compare( calculate : Boolean, path : BasicPath, left : Elem, right : Elem) : Option[(XmlDifference[_], BasicPath)] = {
+  def compare( calculate : Boolean, context : ComparisonContext, left : Elem, right : Elem) : Option[(XmlDifference[_], ComparisonContext)] = {
 
     if (!(left.name === right.name))
       if (calculate)
-	Some((ElemNameDifference(left,right), path))
+	Some((ElemNameDifference(left,right), context))
       else
 	noCalculation
       else 
-	ac.compare(calculate, path, left.attributes, right.attributes).
+	ac.compare(calculate, context, left.attributes, right.attributes).
     cata( x => 
       if (calculate) {
 	val (attrs : AttributesDifference, p) = x
-	Some( (ElemAttributeDifference( left, right, attrs), path) )
+	Some( (ElemAttributeDifference( left, right, attrs), context) )
       } else noCalculation
     ,
       if (!namespaces.equal(left.namespaces, right.namespaces))
 	if (calculate)
-	  Some( (ElemNamespacesDifference(left, right), path) )
+	  Some( (ElemNamespacesDifference(left, right), context) )
 	else
 	  noCalculation
 	else None
@@ -227,32 +227,32 @@ class StreamComparable[T <% Iterator[PullType]]( val t : T ) {
  * Compares based on streams.  Requires comparisons for XmlItem, Elem and a QName Equal instance for testing EndElems.
  */ 
 class StreamComparison( filter : Iterator[PullType] => Iterator[PullType] = identity)( implicit ic : XmlComparison[XmlItem], ec : XmlComparison[Elem], endElemQNameEqual : Equal[QName]) extends XmlComparison[StreamComparable[_]] {
-  def compare( calculate : Boolean, opath : BasicPath, lefti : StreamComparable[_], righti : StreamComparable[_] ) : Option[(XmlDifference[_], BasicPath)] = {
+  def compare( calculate : Boolean, ocontext : ComparisonContext , lefti : StreamComparable[_], righti : StreamComparable[_] ) : Option[(XmlDifference[_], ComparisonContext)] = {
 
-    var res : Option[(XmlDifference[_], BasicPath)] = None
+    var res : Option[(XmlDifference[_], ComparisonContext)] = None
     val joined = filter(lefti.underlyingIterator).zip(filter(righti.underlyingIterator))
-    var path = opath
+    var context = ocontext
 
     while( res.isEmpty && joined.hasNext) {
       joined.next match {
 	case (Left(x : Elem), Left(y : Elem)) =>
-	  path = startElem(x.name, path)
-	  res = ec.compare(calculate, path, x, y)
+	  context = context.startElems(x, y)
+	  res = ec.compare(calculate, context, x, y)
 	case (Left(x : XmlItem), Left(y : XmlItem)) =>
-	  res = ic.compare(calculate, path, x, y)
+	  res = ic.compare(calculate, context, x, y)
 	case (Right(x : EndElem), Right(y  : EndElem)) =>
 	  res = 
 	    if (!endElemQNameEqual.equal(x.name, y.name)) {
 	      if (calculate)
-		Some((EndElemNameDifference(x, y), path))
+		Some((EndElemNameDifference(x, y), context))
 	      else 
 		noCalculation
 	    } else None
-	  path = endElem(path)
+	  context = context.endElem
 	case (left, right) => 
 	  res = 
 	    if (calculate)
-	      Some((DifferentTypes(left, right), path)) 
+	      Some((DifferentTypes(left, right), context)) 
 	    else
 	      noCalculation
       }
@@ -266,8 +266,8 @@ class StreamComparison( filter : Iterator[PullType] => Iterator[PullType] = iden
  * Wraps a given T with a conversion from T to an xml stream
  */ 
 class StreamComparisonWrapper[T <% StreamComparable[T]]( val str : StreamComparison ) extends XmlComparison[T] {
-  def compare( calculate : Boolean, path : BasicPath, lt : T, rt : T) : Option[(XmlDifference[_], BasicPath)] = 
-    str.compare(calculate, path, lt, rt)
+  def compare( calculate : Boolean, context : ComparisonContext, lt : T, rt : T) : Option[(XmlDifference[_], ComparisonContext)] = 
+    str.compare(calculate, context, lt, rt)
 }
 
 trait StreamEquals {
