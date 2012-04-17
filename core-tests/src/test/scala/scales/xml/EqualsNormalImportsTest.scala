@@ -522,5 +522,69 @@ class EqualsNormalImportsTest extends junit.framework.TestCase {
     assertFalse("x2 and x3 should not be equal", convertToStream(x2.toTree) === convertToStream(x3.toTree))
   }
 
+  val npo = no.prefixed("npo")
+  val x1 = po("root") /( po("child") ~> "po:value" )
+  val x2 = npo("root") /( npo("child") ~> "npo:value" )
+
+  def testNormalQNames : Unit = {
+    // the two documents are logically the same, but straight comparison will be different:
+    assertFalse("x1 === x2 - before qname handling", x1 === x2)
+  }
+
+  // can be in a text or attribute node
+  def testEmbeddedQNames : Unit = {
+    import SomeDifference._
+
+    implicit object defaultXmlItemComparison extends XmlComparison[XmlItem] {
+      def compare( calculate : Boolean , context : ComparisonContext, left : XmlItem, right : XmlItem) : Option[(XmlDifference[_], ComparisonContext)] = {
+	def check( str : String, str2 : String, doQNames : Boolean = false) = {
+	  val res = 
+	    if (doQNames) {
+	      // split both, if one has and the other not, then its false anyway
+	      val sp1 = str.split(":")
+	      val sp2 = str2.split(":")
+	      if (sp1.size == 2 && sp2.size == 2) {
+		sp1(1) == sp2(1) && { // values match
+		  // look up prefixes
+		  (for{ lnc <- context.leftNamespaceContext
+		      rnc <- context.rightNamespaceContext
+		       lns <- lnc.mappings.get(sp1(0))
+		       rns <- rnc.mappings.get(sp2(0))
+		     } yield lns == rns
+		  ).
+		  getOrElse(false)
+		}
+	      } else 
+		str == str2
+	    } else
+	      str == str2
+
+	  if (res) None
+	  else {
+	    if (calculate) 
+	      Some((ItemDifference(left, right), context))
+	    else
+	      noCalculation
+	  }
+	}
+
+	(left, right) match { // we have to do it on types as well
+	  case (Text(valu), Text(value)) => check(valu, value, true)
+	  case (Comment(com), Comment(comm)) => check(com, comm)
+	  case (CData(cd), CData(cda)) => check(cd, cda, true)
+	  case (PI(ta, valu), PI(tar, value)) => 
+	    check(ta, tar) orElse check(valu,  value)
+	  case _ => 
+	    if (calculate)
+	      Some((DifferentTypes(left, right), context))
+	    else
+	      noCalculation
+	}
+      }
+    }
+
+    
+    assertTrue("x1 === x2 - qname is in", x1 === x2)
+  }
 
 }

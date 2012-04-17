@@ -142,7 +142,7 @@ trait ComparisonContextImplicits {
  * Like Equals but also gives a path in addition to the fun reason
  * 
  */ 
-trait XmlComparison[T] {
+trait XmlComparison[-T] {
 
   /**
    * Takes the context for information reasons (works for streams as well).  The return is either None == boolean or the reason
@@ -188,7 +188,7 @@ import XmlEquals._
 /**
  * Magik object for when we aren't attempting to calculate whats wrong 
  */ 
-protected[xml] object SomeDifference extends XmlDifference[AnyRef] {
+object SomeDifference extends XmlDifference[AnyRef] {
   val left = null
   val right = null
 

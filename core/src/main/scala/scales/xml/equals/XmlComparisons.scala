@@ -41,7 +41,6 @@ trait DefaultItemEquals {
    * Help inference out
    * 
    */ 
-  implicit def toDefaultXmlItem[T <: XmlItem] : XmlComparison[T] = defaultXmlItemComparison.asInstanceOf[XmlComparison[T]]
 
   implicit object defaultXmlItemComparison extends XmlComparison[XmlItem] {
     def compare( calculate : Boolean , context : ComparisonContext, left : XmlItem, right : XmlItem) : Option[(XmlDifference[_], ComparisonContext)] = {
