@@ -35,38 +35,57 @@ trait QNameEquals {
 object QNameEquals extends DefaultQNameEquals with QNameEquals {
 }
 
+trait DefaultQNameToken {
+
+  /**
+   * Finally decides if a Text/CData node or Attribute value should be compared as if containing a qname (prefix:local). 
+   */ 
+  implicit val defaultQNameTokenComparison : Option[(ComparisonContext, String, String) => Boolean] = None
+
+}
+
+/**
+ * Compares XmlItems, providing Some qnameTokenComparison will force that to be used to decide if qname comparison should be used or not
+ */ 
+class XmlItemComparison()(implicit qnameTokenComparison : Option[(ComparisonContext, String, String) => Boolean]) extends XmlComparison[XmlItem] {
+  def compare( calculate : Boolean , context : ComparisonContext, left : XmlItem, right : XmlItem) : Option[(XmlDifference[_], ComparisonContext)] = {
+    def check( str : String, str2 : String, isQNameRelevant : Boolean = false ) = {
+      val res = 
+	if (isQNameRelevant)
+	  compareTokens(context, qnameTokenComparison, str, str2)
+	else
+	  str == str2 // qnames don't make sense for non Text / CData
+
+      if (res) None
+      else {
+	if (calculate) 
+	  Some((ItemDifference(left, right), context))
+	else
+	  noCalculation
+      }
+    }
+
+    (left, right) match { // we have to do it on types as well
+      case (Text(valu), Text(value)) => check(valu, value, true)
+      case (Comment(com), Comment(comm)) => check(com, comm)
+      case (CData(cd), CData(cda)) => check(cd, cda, true)
+      case (PI(ta, valu), PI(tar, value)) => 
+	check(ta, tar) orElse check(valu,  value)
+      case _ => 
+	if (calculate)
+	  Some((DifferentTypes(left, right), context))
+	else
+	  noCalculation
+    }
+  }
+}
+
 trait DefaultItemEquals {
 
   /**
-   * Help inference out
-   * 
+   * creates an XmlItem comparison given a given qnameTokenComparison function (should it compare using qnames or not).
    */ 
-
-  implicit object defaultXmlItemComparison extends XmlComparison[XmlItem] {
-    def compare( calculate : Boolean , context : ComparisonContext, left : XmlItem, right : XmlItem) : Option[(XmlDifference[_], ComparisonContext)] = {
-      def check( str : String, str2 : String ) =
-	  if (str == str2) None
-	  else {
-	    if (calculate) 
-	      Some((ItemDifference(left, right), context))
-	    else
-	      noCalculation
-	  }
-
-      (left, right) match { // we have to do it on types as well
-	case (Text(valu), Text(value)) => check(valu, value)
-	case (Comment(com), Comment(comm)) => check(com, comm)
-	case (CData(cd), CData(cda)) => check(cd, cda)
-	case (PI(ta, valu), PI(tar, value)) => 
-	  check(ta, tar) orElse check(valu,  value)
-	case _ => 
-	  if (calculate)
-	    Some((DifferentTypes(left, right), context))
-	  else
-	    noCalculation
-      }
-    }
-  }
+  implicit def defaultXmlItemComparison(implicit qnameTokenComparison : Option[(ComparisonContext, String, String) => Boolean]) : XmlComparison[XmlItem] = new XmlItemComparison()(qnameTokenComparison)
   
 }
 
@@ -75,7 +94,7 @@ object ItemEquals extends DefaultItemEquals {}
 /**
  * Comparison between attributes, requires an Equal type class for QNames
  */ 
-class AttributeComparison(implicit eqn : Equal[QName]) extends XmlComparison[Attribute] {
+class AttributeComparison(implicit eqn : Equal[QName], qnameTokenComparison : Option[(ComparisonContext, String, String) => Boolean]) extends XmlComparison[Attribute] {
   import EqualsHelpers.toQName
 
   def compare( calculate : Boolean, context : ComparisonContext, left: Attribute, right : Attribute) : Option[(XmlDifference[_], ComparisonContext)] = {
@@ -84,23 +103,23 @@ class AttributeComparison(implicit eqn : Equal[QName]) extends XmlComparison[Att
 	Some((AttributeNameDifference( left, right), context))
       else
 	noCalculation
-    else 
-      if (left.value != right.value)
+    else {
+      if (!compareTokens( context, qnameTokenComparison, left.value, right.value ))
 	if (calculate)
 	  Some((AttributeValueDifference( left, right), context))
 	else
 	  noCalculation
       else
 	None // a ok
+    }
   }
 }
-
 
 trait DefaultAttributeEquals {
   /**
    * QNames are not compared with prefix
    */ 
-  implicit def defaultAttributeComparison(implicit qe : Equal[QName]) : XmlComparison[Attribute] = new AttributeComparison()(qe)
+  implicit def defaultAttributeComparison(implicit qe : Equal[QName], qnameTokenComparison : Option[(ComparisonContext, String, String) => Boolean]) : XmlComparison[Attribute] = new AttributeComparison()(qe, qnameTokenComparison)
   
 }
 
@@ -110,7 +129,7 @@ trait ExactQName{
   /**
    * QNames are compared with prefix
    */ 
-  implicit val prefixAttributeComparison = new AttributeComparison()(equal { (a: QName, b: QName) => a.====(b) })
+  implicit def prefixAttributeComparison(implicit qnameTokenComparison : Option[(ComparisonContext, String, String) => Boolean]) = new AttributeComparison()(equal { (a: QName, b: QName) => a.====(b) }, qnameTokenComparison)
   
 }
 
@@ -290,7 +309,7 @@ object ExactStreamEquals extends ExactStreamEquals {
   import AttributeEquals._
   import AttributesEquals._
 
-  val defaultStreamComparison : XmlComparison[StreamComparable[_]] = new StreamComparison()( ItemEquals.defaultXmlItemComparison, ElemEquals.defaultElemComparison, EqualsHelpers.qnameEqual)
+  def defaultStreamComparison(implicit qnameTokenComparison : Option[(ComparisonContext, String, String) => Boolean]) : XmlComparison[StreamComparable[_]] = new StreamComparison()( ItemEquals.defaultXmlItemComparison, ElemEquals.defaultElemComparison, EqualsHelpers.qnameEqual)
 
 }
 
@@ -310,6 +329,6 @@ object DefaultStreamEquals extends DefaultStreamEquals {
   import AttributeEquals._
   import AttributesEquals._
 
-  val defaultStreamComparison : XmlComparison[StreamComparable[_]] = new StreamComparison(joinTextAndCData _)( ItemEquals.defaultXmlItemComparison, ElemEquals.defaultElemComparison, EqualsHelpers.qnameEqual)
+  def defaultStreamComparison(implicit qnameTokenComparison : Option[(ComparisonContext, String, String) => Boolean]) : XmlComparison[StreamComparable[_]] = new StreamComparison(joinTextAndCData _)( ItemEquals.defaultXmlItemComparison, ElemEquals.defaultElemComparison, EqualsHelpers.qnameEqual)
 
 }

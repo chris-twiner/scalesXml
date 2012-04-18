@@ -165,6 +165,42 @@ trait XmlEquals {
     }
 
   /**
+   * Allows comparison of Text nodes or Attribute values that contain QNames, i.e. prefix:value.  In order to perform this comparison both the left and right sides must have a NamespaceContext.
+   */ 
+  def qnamesEqual(context : ComparisonContext, str : String, str2 : String) = {
+    // split both, if one has and the other not, then its false anyway
+    val sp1 = str.split(":")
+    val sp2 = str2.split(":")
+    if (sp1.size == 2 && sp2.size == 2) {
+      sp1(1) == sp2(1) && { // values match
+	// look up prefixes
+	(for{ lnc <- context.leftNamespaceContext
+	     rnc <- context.rightNamespaceContext
+	     lns <- lnc.mappings.get(sp1(0))
+	     rns <- rnc.mappings.get(sp2(0))
+	   } yield lns == rns
+       ).
+	getOrElse(false)
+      }
+    } else 
+      str == str2
+  }
+
+  /**
+   * Perform an actual token comparison (Text/CData and Attribute value relevant).
+   */ 
+  def compareTokens( context : ComparisonContext, qnameTokenComparison : Option[(ComparisonContext, String, String) => Boolean], str : String, str2 : String) =
+    qnameTokenComparison.
+      map( f =>
+	if (f(context, str, str2))
+	  qnamesEqual(context, str, str2)
+	else
+	  str == str2
+	).
+      getOrElse(str == str2)
+
+
+  /**
    * Compare the xml object via the available XmlDifference type class
    */ 
   def compare[T : XmlComparison]( left : T, right : T) : Option[(XmlDifference[_], ComparisonContext)] =
@@ -253,7 +289,8 @@ trait ExactXmlEquals
   with DefaultAttributesEquals 
   with DefaultElemEquals
   with ExactStreamEquals
-  with QNameEquals {
+  with QNameEquals
+  with DefaultQNameToken {
 }
 
 /**
@@ -270,7 +307,8 @@ trait DefaultXmlEquals
   with DefaultAttributesEquals 
   with DefaultElemEquals
   with DefaultStreamEquals
-  with QNameEquals {
+  with QNameEquals
+  with DefaultQNameToken {
 }
 
 object DefaultXmlEquals extends DefaultXmlEquals {}

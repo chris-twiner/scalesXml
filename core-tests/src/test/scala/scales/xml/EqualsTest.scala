@@ -102,6 +102,9 @@ class EqualsTest extends junit.framework.TestCase {
 
   import XmlEquals._
 
+  // provide this for all the tests, we aren't doing qname tests in this one, see NormalImports for qname tests
+  implicit val defaultQNameTokenComparison : Option[(ComparisonContext, String, String) => Boolean] = None
+
   def testItems : Unit = {
 
     import ItemEquals._

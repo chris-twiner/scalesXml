@@ -235,7 +235,7 @@ class EqualsNormalImportsTest extends junit.framework.TestCase {
 
   def testXmlEqualsAttrsPrefixRelevant : Unit = {
     val prefixQNameEqual = equal { (a: QName, b: QName) => a ==== b }
-    implicit val defaultAttributeComparison : XmlComparison[Attribute] = new AttributeComparison()(prefixQNameEqual)
+    implicit val defaultAttributeComparison : XmlComparison[Attribute] = new AttributeComparison()(prefixQNameEqual, defaultQNameTokenComparison)
 
     val pod = no.prefixed("po2")
 
@@ -533,62 +533,11 @@ class EqualsNormalImportsTest extends junit.framework.TestCase {
     assertFalse("x1 === x2 - before qname handling", x1 === x2)
   }
 
-  def qnamesEqual(context : ComparisonContext, str : String, str2 : String) = {
-    // split both, if one has and the other not, then its false anyway
-    val sp1 = str.split(":")
-    val sp2 = str2.split(":")
-    if (sp1.size == 2 && sp2.size == 2) {
-      sp1(1) == sp2(1) && { // values match
-	// look up prefixes
-	(for{ lnc <- context.leftNamespaceContext
-	     rnc <- context.rightNamespaceContext
-	     lns <- lnc.mappings.get(sp1(0))
-	     rns <- rnc.mappings.get(sp2(0))
-	   } yield lns == rns
-       ).
-	getOrElse(false)
-      }
-    } else 
-      str == str2
-
-  }
-
   // can be in a text or attribute node
   def testEmbeddedQNames : Unit = {
     import SomeDifference._
-
-    implicit object defaultXmlItemComparison extends XmlComparison[XmlItem] {
-      def compare( calculate : Boolean , context : ComparisonContext, left : XmlItem, right : XmlItem) : Option[(XmlDifference[_], ComparisonContext)] = {
-	def check( str : String, str2 : String, doQNames : Boolean = false) = {
-	  val res = 
-	    if (doQNames)
-	      qnamesEqual(context, str, str2)
-	    else
-	      str == str2
-
-	  if (res) None
-	  else {
-	    if (calculate) 
-	      Some((ItemDifference(left, right), context))
-	    else
-	      noCalculation
-	  }
-	}
-
-	(left, right) match { // we have to do it on types as well
-	  case (Text(valu), Text(value)) => check(valu, value, true)
-	  case (Comment(com), Comment(comm)) => check(com, comm)
-	  case (CData(cd), CData(cda)) => check(cd, cda, true)
-	  case (PI(ta, valu), PI(tar, value)) => 
-	    check(ta, tar) orElse check(valu,  value)
-	  case _ => 
-	    if (calculate)
-	      Some((DifferentTypes(left, right), context))
-	    else
-	      noCalculation
-	}
-      }
-    }
+    
+    implicit val defaultQNameTokenComparison : Option[(ComparisonContext, String, String) => Boolean] = Some{(c, s ,s2) => true}
 
     val noNS = po("root") /( po("child") ~> "pof:value" )
     
@@ -622,43 +571,15 @@ class EqualsNormalImportsTest extends junit.framework.TestCase {
     assertFalse("m1 === m2_np ", m1 === m2_np)
   }
 
-
-/**
- * Comparison between attributes, requires an Equal type class for QNames
- */ 
-class AttributeComparisonQName(implicit eqn : Equal[QName]) extends XmlComparison[Attribute] {
-import SomeDifference._
-
-  import EqualsHelpers.toQName
-
-  def compare( calculate : Boolean, context : ComparisonContext, left: Attribute, right : Attribute) : Option[(XmlDifference[_], ComparisonContext)] = {
-    if (!eqn.equal(toQName(left.name), toQName(right.name)))
-      if (calculate)
-	Some((AttributeNameDifference( left, right), context))
-      else
-	noCalculation
-    else 
-      if (!qnamesEqual(context, left.value, right.value))
-	if (calculate)
-	  Some((AttributeValueDifference( left, right), context))
-	else
-	  noCalculation
-      else
-	None // a ok
-  }
-}
-  val ax1 = po("root") /( po("child") /@("loc" -> "po:value") )
-  val ax2 = npo("root") /( npo("child") /@("loc" -> "npo:value") )
+  val ax1 = po("root") /( po("child") /@("loc" -> "po:value", "a" -> "a") )
+  val ax2 = npo("root") /( npo("child") /@("loc" -> "npo:value", "a" -> "a") )
 
   def testNormalAttrQNames : Unit = {
     assertFalse("ax1 === ax2", ax1 === ax2)
   }
 
   def testEmbeddedAttrQNames : Unit = {
-    /**
-     * any qname values are looked up
-     */ 
-    implicit def defaultAttributeComparison(implicit qe : Equal[QName]) : XmlComparison[Attribute] = new AttributeComparisonQName()(qe)
+    implicit val defaultQNameTokenComparison : Option[(ComparisonContext, String, String) => Boolean] = Some{(c, s ,s2) => true}
 
     assertTrue("ax1 === ax2", ax1 === ax2)
   }
