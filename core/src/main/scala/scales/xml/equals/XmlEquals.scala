@@ -192,10 +192,7 @@ trait XmlEquals {
   def compareTokens( context : ComparisonContext, qnameTokenComparison : Option[(ComparisonContext, String, String) => Boolean], str : String, str2 : String) =
     qnameTokenComparison.
       map( f =>
-	if (f(context, str, str2))
-	  qnamesEqual(context, str, str2)
-	else
-	  str == str2
+	f(context, str, str2)
 	).
       getOrElse(str == str2)
 

@@ -537,7 +537,7 @@ class EqualsNormalImportsTest extends junit.framework.TestCase {
   def testEmbeddedQNames : Unit = {
     import SomeDifference._
     
-    implicit val defaultQNameTokenComparison : Option[(ComparisonContext, String, String) => Boolean] = Some{(c, s ,s2) => true}
+    implicit val defaultQNameTokenComparison : Option[(ComparisonContext, String, String) => Boolean] = Some{(c, s ,s2) => qnamesEqual(c,s,s2)}
 
     val noNS = po("root") /( po("child") ~> "pof:value" )
     
@@ -579,7 +579,7 @@ class EqualsNormalImportsTest extends junit.framework.TestCase {
   }
 
   def testEmbeddedAttrQNames : Unit = {
-    implicit val defaultQNameTokenComparison : Option[(ComparisonContext, String, String) => Boolean] = Some{(c, s ,s2) => true}
+    implicit val defaultQNameTokenComparison : Option[(ComparisonContext, String, String) => Boolean] = Some{(c, s ,s2) => qnamesEqual(c,s,s2)}
 
     assertTrue("ax1 === ax2", ax1 === ax2)
   }

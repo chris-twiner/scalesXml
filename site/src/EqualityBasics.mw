@@ -52,7 +52,7 @@ Within the comparison framework the comparison for all the types are combined, t
 
 This lookup is performed implicitly, allowing for individual parts to be swapped out, if the developer wants prefixes to be tested.  Either use name based overriding in the relevant scope or mix the traits differently to provide custom behaviour (and not import ScalesXml._)
 
-_Note_ The three different kinds of QNames each have a different type, and as such you must inform the compiler if you want to use compare with QNames, e.g.:
+_Note_ The three different kinds of QNames each have a different type, and as such you must inform the compiler if you want to use `compare` with QNames, e.g.:
 
 ${cscala}
   val ns = Namespace("uri:prefixed")
@@ -71,7 +71,7 @@ ${cend}
 
 == Why Join Adjacent Text and CData? ==
 
-Scales Xml equality makes two default design decisions, prefixes aren't relevant (only the namespace is) and to join adjacent CData and Text.
+Scales Xml equality makes two default design decisions, prefixes aren't relevant (only the namespace is - unless you tell it to use [XmlComparison.html#QName_Token_Handling QName Token comparison]) and to join adjacent CData and Text.
 
 The reason for joining adjacent CData and Text nodes is to simplify the comparison of text.  CData can always be written as Text nodes, and a parser is free to "split" a single logical Text node into multiple smaller text nodes.  Scales neither forces joining of the text nodes at parse time nor when adding child nodes, as such to usefully compare they must be joined.
 
@@ -126,13 +126,13 @@ ${cend}
 
 == Why Not Use Canonical Xml? ==
 
-Testing Xml Equality is not always straightforward, the simplest standard approach of Canonalisation and string comaprison is also less than useful for identifying where a problem is.  Additionally Canonical Xml treats QName prefix values as relevant, if an xml processor changes a prefix, that document is no longer comparable under Canonical Xml (No Namespace Prefix Rewriting).  
+Testing Xml Equality is not always straightforward, a standard approach however exists : Canonical Xml - a defined approach to serialization.  Canonical Xml treats QName prefixes themselves as relevant, if an xml processor changes a prefix, that document is no longer comparable under Canonical Xml (No Namespace Prefix Rewriting).
 
-Whilst the justifications for the prefix rewriting rule in Canonical Xml is understandable in the context of embedded XPaths or xml QNames (their prefixes only make sense within that document), Scales takes the position that this is a far rare occasion than simple Xml as a data transport usage.  However as with the rest of Scales this default too is customisable.
+Whilst the justifications for the prefix rewriting rule in Canonical Xml is, within the context of embedded XPaths or xml QNames (their prefixes only make sense within that document), understandable Scales takes the position that this is far rare an occasion than simple Xml as a data transport usage.  However as with the rest of Scales this default too is customisable.
 
-The problem, and it stops the Canonical Xml reasoning as well, is that a producing application can re-write the prefixes for embedded QNames or XPaths before sending.  WSDM applications often meet this (see Apache Muse for examples of this).  Scales is, of course, not aware of these usages, and would require a customised XmlItem comparison to make use of the BasicPath object and the namespace map provided.
+The problem, and it stops the Canonical Xml reasoning as well, is that a producing application can re-write the prefixes for embedded QNames or XPaths before sending.  WSDM applications often meet this (see Apache Muse for examples of this).  Scales is of course, by default, not aware of such usage - see [XmlComparison.html#QName_Token_Handling here] for how to configure Scales to be aware.
 
-Canonical Xml also forces namespace declarations to be removed (Superfluous Namespace Declarations), Scales only uses these for writing a document out, and are treated by Scales as nothing more than a hint.  This approach allows Scales to very closely approach a 1:1 mapping between parsed documents and re-written documents.
+Canonical Xml also forces redundant namespace declarations to be removed (Superfluous Namespace Declarations).  Scales typically only uses namespace declarations for predictable document processing - i.e. loading and saving should be 1:1 in usage - however it also necessarily leverages declarations for [XmlComparison.html#QName_Token_Handling QName Token handling] in both Attribute values and Text/CData nodes.
 
 Similarly the following approaches to Canonical Xml actually may break data assumptions of equality:
 
@@ -141,3 +141,5 @@ Similarly the following approaches to Canonical Xml actually may break data assu
 * Default attributes are added to each element
 
 The latter may cause issues with certain receiving processors and depends on a validation / schema enrichement working.  Scales concerns itself with the documents actualy being compared.
+
+In short - Scales offers a typed and more flexible approach to equality than Canonical Xml handling.
