@@ -28,7 +28,7 @@ ${cscala}
     compare(Nil, t1, t2).isEmpty ) // XmlComparison type class
 ${cend}
 
-Wherever an XmlComparison exists an Equal instance can be created.
+Wherever an XmlComparison exists an Equal instance can be created.  The results of a compare include both a path to the difference and a fully pattern matchable xml difference ADT.
 
 == Types Covered ==
 
@@ -44,6 +44,8 @@ The full set of the Scales Xml Model is covered by the equality framework:
 * XmlPath
 * Anything that can be seen as <nowiki>Iterator[PullType]</nowiki>
 
+* Doc, (DocLike, Iterator[PullType])
+
 QNames in each model type (unlike Canonical Xml, where string comparisons including prefixes are expected) do not compare with the prefix, only the namespace (as per =:=).  This implies that documents created by different systems using different prefixes are still comparable, a different implicit default Equal[QName] instance can change that behaviour.
 
 XmlTrees/XmlPath's etc are converted to Iterator[PullType] in order to compare.  No attempt to match DTDs, encoding or prolog etc are made, only the core element.  If prolog should be matched it should be compared seperately.
@@ -52,21 +54,19 @@ Within the comparison framework the comparison for all the types are combined, t
 
 This lookup is performed implicitly, allowing for individual parts to be swapped out, if the developer wants prefixes to be tested.  Either use name based overriding in the relevant scope or mix the traits differently to provide custom behaviour (and not import ScalesXml._)
 
-_Note_ The three different kinds of QNames each have a different type, and as such you must inform the compiler if you want to use `compare` with QNames, e.g.:
+_Note_ The three different kinds of QNames each have a different type and, as such, using === to compare different types will not work.  Using compare, however, will:
 
 ${cscala}
   val ns = Namespace("uri:prefixed")
 
-  val po = ns.prefixed("p")
-  val pod = ns.prefixed("po2")
+  val p = ns.prefixed("p")
 
-  // Both qn and qnd are PrefixedQNames
-  val qn = po("a1")
-  val qnd = pod("a1")
+  val nonPrefixedQName = ns("a1") 
+  // prefixed
+  val prefixedQName = p("a1")
 
-  assertTrue("qn === qnd", qn === qnd)
-  assertFalse("qn ==== qnd", qn ==== qnd)
-  assertTrue("compare(Nil, qn, qnd).isEmpty", compare[QName](Nil, qn, qnd).isEmpty)
+  // both of the above are semantically the same
+  assertTrue("compare(nonPrefixedQName, prefixedQName).isEmpty", compare(nonPrefixedQName, prefixedQName).isEmpty)
 ${cend}
 
 == Why Join Adjacent Text and CData? ==
@@ -130,9 +130,13 @@ Testing Xml Equality is not always straightforward, a standard approach however 
 
 Whilst the justifications for the prefix rewriting rule in Canonical Xml is, within the context of embedded XPaths or xml QNames (their prefixes only make sense within that document), understandable Scales takes the position that this is far rare an occasion than simple Xml as a data transport usage.  However as with the rest of Scales this default too is customisable.
 
-The problem, and it stops the Canonical Xml reasoning as well, is that a producing application can re-write the prefixes for embedded QNames or XPaths before sending.  WSDM applications often meet this (see Apache Muse for examples of this).  Scales is of course, by default, not aware of such usage - see [XmlComparison.html#QName_Token_Handling here] for how to configure Scales to be aware.
+The problem, and it stops the Canonical Xml reasoning as well, is that a producing application can re-write the prefixes for embedded QNames or XPaths before sending.  WSDM applications often meet this (see Apache Muse for examples of this).  Scales is of course, by default, not aware of such usage - see [XmlComparison.html#QName_Token_Handling here] for details on how to configure Scales to be qname token aware.  In short, it can be as simple as declaring this in the correct scope:
 
-Canonical Xml also forces redundant namespace declarations to be removed (Superfluous Namespace Declarations).  Scales typically only uses namespace declarations for predictable document processing - i.e. loading and saving should be 1:1 in usage - however it also necessarily leverages declarations for [XmlComparison.html#QName_Token_Handling QName Token handling] in both Attribute values and Text/CData nodes.
+${cscala}
+  implicit val defaultQNameTokenComparison = Option(qnamesEqual _)
+${cend}
+
+Canonical Xml also forces redundant namespace declarations to be removed (Superfluous Namespace Declarations).  Scales typically only uses namespace declarations for predictable document processing - i.e. loading and saving should be 1:1 in usage - however it also can if necessary leverage declarations for [XmlComparison.html#QName_Token_Handling QName Token handling] in both Attribute values and Text/CData nodes.
 
 Similarly the following approaches to Canonical Xml actually may break data assumptions of equality:
 

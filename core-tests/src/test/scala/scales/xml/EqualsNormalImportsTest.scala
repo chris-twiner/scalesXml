@@ -233,6 +233,11 @@ class EqualsNormalImportsTest extends junit.framework.TestCase {
     assertFalse("elem1 === elem2", elem1 === elem2)       
   }
 
+  def testQNameMix : Unit = {
+    val nonp = no("elem") // namespaced but no prefix, differente types but same semantical meaning
+    assertTrue("compare(qn, nonp).isEmpty", compare(qn, nonp).isEmpty)
+  }
+
   def testXmlEqualsAttrsPrefixRelevant : Unit = {
     val prefixQNameEqual = equal { (a: QName, b: QName) => a ==== b }
     implicit val defaultAttributeComparison : XmlComparison[Attribute] = new AttributeComparison()(prefixQNameEqual, defaultQNameTokenComparison)
@@ -244,7 +249,7 @@ class EqualsNormalImportsTest extends junit.framework.TestCase {
 
     assertTrue("qn === qnd", qn === qnd)
     assertFalse("qn ==== qnd", qn ==== qnd)
-    assertTrue("compare(Nil, qn, qnd).isEmpty", compare[QName](qn, qnd).isEmpty)
+    assertTrue("compare(Nil, qn, qnd).isEmpty", compare(qn, qnd).isEmpty)
 
     val attr1 : Attribute = qn -> "v1"
     val attr2 : Attribute = qnd -> "v1"
@@ -536,8 +541,8 @@ class EqualsNormalImportsTest extends junit.framework.TestCase {
   // can be in a text or attribute node
   def testEmbeddedQNames : Unit = {
     import SomeDifference._
-    
-    implicit val defaultQNameTokenComparison : Option[(ComparisonContext, String, String) => Boolean] = Some{(c, s ,s2) => qnamesEqual(c,s,s2)}
+
+    implicit val defaultQNameTokenComparison = Option(qnamesEqual _)
 
     val noNS = po("root") /( po("child") ~> "pof:value" )
     

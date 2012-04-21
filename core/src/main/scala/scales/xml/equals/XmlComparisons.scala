@@ -1,6 +1,6 @@
 package scales.xml.equals
 
-import scales.xml.{QName, Elem, Attribs, Attributes, Attribute, XmlItem, Text, PI, CData, Comment, PullType, EqualsHelpers, EndElem}
+import scales.xml.{QName, Elem, Attribs, Attributes, Attribute, XmlItem, Text, PI, CData, Comment, PullType, EqualsHelpers, EndElem, Misc, Miscs, DocLike}
 
 import XmlEquals._
 
@@ -330,5 +330,47 @@ object DefaultStreamEquals extends DefaultStreamEquals {
   import AttributesEquals._
 
   def defaultStreamComparison(implicit qnameTokenComparison : Option[(ComparisonContext, String, String) => Boolean]) : XmlComparison[StreamComparable[_]] = new StreamComparison(joinTextAndCData _)( ItemEquals.defaultXmlItemComparison, ElemEquals.defaultElemComparison, EqualsHelpers.qnameEqual)
-
 }
+
+/**
+ * Compares neither of the version, DTD nor encoding of a document, but prolog and end misc.
+ */ 
+class DocLikeComparison(implicit ic : XmlComparison[XmlItem]) extends XmlComparison[DocLike] {
+
+  def compare( calculate : Boolean, context : ComparisonContext , left : DocLike, right : DocLike ) : Option[(XmlDifference[_], ComparisonContext)] = {
+// should we split out XmlComparison[Misc]?, its only used by DocLike right now..
+    def compareMiscs( lmiscs : Miscs, rmiscs : Miscs , prolog : Boolean) = 
+      if (lmiscs.size != rmiscs.size)
+	if (calculate) 
+	  Some((DifferentNumberOfMiscs(lmiscs, rmiscs, prolog), context))
+	else
+	  noCalculation
+      else 
+	scales.utils.collectFirst(lmiscs.zip(rmiscs)){
+	  case (a, b) => 
+	    val l : XmlItem = a.fold( x => x, y => y)
+	    val r : XmlItem = b.fold( x => x, y => y)
+	    val res = ic.compare(calculate, context, l, r)
+	    if (calculate && res.isDefined)
+	      // give back either the diff or wrap the difference
+	      res.map{ 
+		case (ItemDifference(x, y), cont) => 
+		  (MiscDifference(a, b, prolog), cont)
+		case t => t
+	      } 
+	    else 
+	      res	 
+	}
+      
+    compareMiscs(left.prolog.misc, right.prolog.misc, true).
+      orElse(compareMiscs(left.end.misc, right.end.misc, false))    
+  }
+}
+
+trait DefaultDocLikeEquals {
+  /**
+   * Provides the comparison for prolog and end miscs, but not the stream/doc itself.
+   */ 
+  implicit def defaultDocLikeComparison( implicit ic : XmlComparison[XmlItem] ) : XmlComparison[DocLike] = new DocLikeComparison()(ic)
+}
+

@@ -1,6 +1,6 @@
 package scales.xml.equals
 
-import scales.xml.{PullType, QName, Elem, Attribs, Attributes, Attribute, XmlItem, XmlPath, EndElem, XCC, NamespaceContext}
+import scales.xml.{PullType, QName, Elem, Attribs, Attributes, Attribute, XmlItem, XmlPath, EndElem, XCC, NamespaceContext, Misc, Miscs}
 
 import scala.collection.immutable.{ Stack, Map }
 
@@ -275,6 +275,11 @@ case class ElemNamespacesDifference( left : Elem, right : Elem ) extends ElemDif
 
 case class EndElemNameDifference( left : EndElem, right : EndElem ) extends XmlDifference[EndElem]
 
+case class MiscDifference( left : Misc, right : Misc, isProlog : Boolean ) extends XmlDifference[Misc]
+
+case class DifferentNumberOfMiscs( left : Miscs, right : Miscs, isProlog : Boolean ) extends XmlDifference[Miscs]
+
+
 /**
  * All default exact Xml Equal and XmlComparison trait instances.
  *
@@ -305,7 +310,8 @@ trait DefaultXmlEquals
   with DefaultElemEquals
   with DefaultStreamEquals
   with QNameEquals
-  with DefaultQNameToken {
+  with DefaultQNameToken
+  with DefaultDocLikeEquals {
 }
 
 object DefaultXmlEquals extends DefaultXmlEquals {}
