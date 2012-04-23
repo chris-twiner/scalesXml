@@ -43,7 +43,7 @@ trait TraxConversionImplicits {
     streamOr( tree, ScalesSource(convertToStream(tree)))(sf)
 
   implicit def docToSource( doc : Doc )(implicit sf : SerializeableXml[Doc]) : Source = 
-    streamOr( doc, ScalesSource(convertToStream(doc.rootElem), doc))
+    streamOr( doc, ScalesSource(convertToStream(doc.rootElem), doc))(sf)
 }
 
 
