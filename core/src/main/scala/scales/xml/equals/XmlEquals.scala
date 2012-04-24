@@ -334,6 +334,8 @@ class PathAsPullTypeIterable( val initialPath : XmlPath ) extends scales.utils.A
  */
 trait StreamComparableImplicits {
 
+  import scales.xml.{CloseablePull, XmlPull, DocLike, Doc, XmlTree}
+
   /**
    * Converts directly to a StreamComparable, its not generally a good idea to automagically  mix XmlPath as an Iterable with XmlPath as an Iterator, make it explicit if thats really desired. 
    */ 
@@ -344,5 +346,30 @@ trait StreamComparableImplicits {
    */ 
   implicit def fromStreamToStreamComparable[T <% Iterator[PullType]](t : T) : StreamComparable[T] = 
     new StreamComparable(t)
-    
+
+  /**
+   * One off for (Iterator, DocLike)
+   */ 
+  implicit def itrDocLikeToStreamComparable[T <% Iterator[PullType]](t : (T, DocLike)) : StreamComparable[T] = new StreamComparable( t._1 )
+
+  /**
+   * Wrapper for Docs
+   */
+  implicit val docWrapper : DocLikeWrapper[Doc, XmlTree] = new DocLikeWrapper( identity, d => d.rootElem )
+
+  /**
+   * Wrapper for XmlPull
+   */ 
+  implicit val xmlPullWrapper : DocLikeWrapper[XmlPull, Iterator[PullType]] = new DocLikeWrapper( identity, identity )
+
+  /**
+   * Wrapper for CloseablePull
+   */
+  implicit val closeablePullWrapper : DocLikeWrapper[CloseablePull, Iterator[PullType]] = new DocLikeWrapper( identity, identity )
+
+  /**
+   * Wrapper for (Iterator, DocLike)
+   */ 
+  implicit val itrDocLikeWrapper : DocLikeWrapper[(Iterator[PullType], DocLike), Iterator[PullType]] = new DocLikeWrapper( _._2, _._1 )
+
 }
