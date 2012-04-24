@@ -355,8 +355,12 @@ trait StreamComparableImplicits {
   /**
    * Wrapper for Docs
    */
-  implicit val docWrapper : DocLikeWrapper[Doc, XmlTree] = new DocLikeWrapper( identity, d => d.rootElem )
+  implicit def docWrapper(implicit bodyComp : XmlComparison[XmlTree]) : DocLikeWrapper[Doc] = new DocLikeWrapper[Doc]( identity ) {
+    def compare( calculate : Boolean, context : ComparisonContext, leftBody : Doc, rightBody : Doc ) : Option[(XmlDifference[_], ComparisonContext)] =
+      bodyComp.compare(calculate, context, leftBody.rootElem, rightBody.rootElem)
+  }
 
+/*
   /**
    * Wrapper for XmlPull
    */ 
@@ -371,5 +375,5 @@ trait StreamComparableImplicits {
    * Wrapper for (Iterator, DocLike)
    */ 
   implicit val itrDocLikeWrapper : DocLikeWrapper[(Iterator[PullType], DocLike), Iterator[PullType]] = new DocLikeWrapper( _._2, _._1 )
-
+*/
 }

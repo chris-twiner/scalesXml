@@ -588,4 +588,48 @@ class EqualsNormalImportsTest extends junit.framework.TestCase {
 
     assertTrue("ax1 === ax2", ax1 === ax2)
   }
+
+  val misc1 = List[Either[Comment, PI]](Left(Comment("A comment")), Left(Comment("another")), Right(PI("what","where")))
+  val misc2 = List[Either[Comment, PI]](Left(Comment("A comment")), Left(Comment("another")), Right(PI("what","where")))
+  val miscN = List[Either[Comment, PI]](Left(Comment("A comment")), Right(PI("what","where")))
+  val miscD = List[Either[Comment, PI]](Left(Comment("A comment")), Right(PI("what","where")), Left(Comment("another")))
+
+  def testDocHandling : Unit = {
+    val d1 = Doc(x1)
+    val d2 = Doc(x2)
+    val d1_2 = Doc(x1_2)
+
+    assertFalse("d1 shouldn't === d2", d1 === d2)
+
+    assertTrue("d1 should === d1_2", d1 === d1_2)
+
+    // same doc and same miscs
+    val m1 = d1.copy(prolog = d1.prolog.copy(misc = misc1), end = EndMisc(misc2))
+    val m2 = d1_2.copy(prolog = d1_2.prolog.copy(misc = misc2), end = EndMisc(misc1))
+
+    assertTrue("m1 should === m2", m1 === m2)
+    
+    // swap the first out
+    val c1 = m2.copy(prolog = m2.prolog.copy(misc = miscN))
+
+    assertFalse("m2 should not === c1", m2 === c1)
+
+    val countRes = compare(m2, c1)
+    assertTrue("countRes should be defined", countRes.isDefined)
+
+    val Some((DifferentNumberOfMiscs(cl,cr,true), ccontext)) = countRes
+    assertTrue("cl eq misc2", cl eq misc2)
+    assertTrue("cr eq miscN", cr eq miscN)
+
+    // swap the end out
+    val c2 = m2.copy(end = EndMisc(miscN))
+    
+    val ncountRes = compare(m2, c2)
+    assertTrue("ncountRes should be defined", ncountRes.isDefined)
+
+    val Some((DifferentNumberOfMiscs(ncl,ncr,false), nccontext)) = ncountRes
+    assertTrue("ncl eq misc2", ncl eq misc1) // ends are different on purpose
+    assertTrue("ncr eq miscN", ncr eq miscN)
+
+  }
 }

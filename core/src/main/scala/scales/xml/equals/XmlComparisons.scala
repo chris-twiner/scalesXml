@@ -335,16 +335,22 @@ object DefaultStreamEquals extends DefaultStreamEquals {
 /**
  * Wrap the creation of doclike things
  */ 
-class DocLikeWrapper[T, B]( val tToDoc : T => DocLike, val tToBody : T => B ) 
+abstract class DocLikeWrapper[T]( val tToDoc : T => DocLike ){
+  
+  /**
+   * Compare the bodies, this hiding of the comparison is a bit more verbose at the definition site, but helps implicit lookup immensely
+   */ 
+  def compare( calculate : Boolean, context : ComparisonContext, leftBody : T, rightBody : T ) : Option[(XmlDifference[_], ComparisonContext)]
+}
+
 
 /**
  * Compares neither of the version, DTD nor encoding of a document, but prolog and end misc.
  * Requires a @T that can be converted to a DocLike and a body @B.  B must have an XmlComparison available and there must exist conversions from T to DocLike and T to B.
  */ 
-class DocLikeComparison[T, B](implicit ic : XmlComparison[XmlItem], bodyComp : XmlComparison[B], docWrapper : DocLikeWrapper[T, B]) extends XmlComparison[T] {
+class DocLikeComparison[T, B](implicit ic : XmlComparison[XmlItem], docWrapper : DocLikeWrapper[T]) extends XmlComparison[T] {
 
   implicit val tToDoc = docWrapper.tToDoc
-  implicit val tToBody = docWrapper.tToBody
 
   def compare( calculate : Boolean, context : ComparisonContext , left : T, right : T ) : Option[(XmlDifference[_], ComparisonContext)] = {
 // should we split out XmlComparison[Misc]?, its only used by DocLike right now..
@@ -372,7 +378,7 @@ class DocLikeComparison[T, B](implicit ic : XmlComparison[XmlItem], bodyComp : X
 	}
       
     compareMiscs(left.prolog.misc, right.prolog.misc, true).
-      orElse(bodyComp.compare(calculate, context, left, right)).
+      orElse(docWrapper.compare(calculate, context, left, right)).
       orElse(compareMiscs(left.end.misc, right.end.misc, false))
   }
 }
@@ -381,6 +387,6 @@ trait DefaultDocLikeEquals {
   /**
    * Provides the comparison for prolog, body and end miscs
    */ 
-  implicit def defaultDocLikeComparison[T, B](implicit ic : XmlComparison[XmlItem], bodyComp : XmlComparison[B], docWrapper : DocLikeWrapper[T,B]) : XmlComparison[T] = new DocLikeComparison()(ic, bodyComp, docWrapper)
+  implicit def defaultDocLikeComparison[T](implicit ic : XmlComparison[XmlItem], docWrapper : DocLikeWrapper[T]) : XmlComparison[T] = new DocLikeComparison()(ic, docWrapper)
 }
 
