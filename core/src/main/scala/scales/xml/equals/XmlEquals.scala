@@ -277,6 +277,8 @@ case class EndElemNameDifference( left : EndElem, right : EndElem ) extends XmlD
 
 case class MiscDifference( left : Misc, right : Misc, isProlog : Boolean ) extends XmlDifference[Misc]
 
+case class MiscDifferentTypes( left : Misc, right : Misc, isProlog : Boolean ) extends XmlDifference[Misc]
+
 case class DifferentNumberOfMiscs( left : Miscs, right : Miscs, isProlog : Boolean ) extends XmlDifference[Miscs]
 
 
@@ -355,25 +357,20 @@ trait StreamComparableImplicits {
   /**
    * Wrapper for Docs
    */
-  implicit def docWrapper(implicit bodyComp : XmlComparison[XmlTree]) : DocLikeWrapper[Doc] = new DocLikeWrapper[Doc]( identity ) {
-    def compare( calculate : Boolean, context : ComparisonContext, leftBody : Doc, rightBody : Doc ) : Option[(XmlDifference[_], ComparisonContext)] =
-      bodyComp.compare(calculate, context, leftBody.rootElem, rightBody.rootElem)
-  }
+  implicit def docWrapper(implicit bodyComp : XmlComparison[XmlTree]) : DocLikeWrapper[Doc] = new DocLikeWrapperBase[Doc, XmlTree]( identity, _.rootElem, bodyComp )
 
-/*
   /**
    * Wrapper for XmlPull
    */ 
-  implicit val xmlPullWrapper : DocLikeWrapper[XmlPull, Iterator[PullType]] = new DocLikeWrapper( identity, identity )
+  implicit def xmlPullWrapper(implicit bodyComp : XmlComparison[Iterator[PullType]]) : DocLikeWrapper[XmlPull] = new DocLikeWrapperBase[XmlPull, Iterator[PullType]]( identity, identity, bodyComp )
 
   /**
    * Wrapper for CloseablePull
    */
-  implicit val closeablePullWrapper : DocLikeWrapper[CloseablePull, Iterator[PullType]] = new DocLikeWrapper( identity, identity )
+  implicit def closeablePullWrapper(implicit bodyComp : XmlComparison[Iterator[PullType]]) : DocLikeWrapper[CloseablePull] = new DocLikeWrapperBase[CloseablePull, Iterator[PullType]]( identity, identity, bodyComp )
 
   /**
    * Wrapper for (Iterator, DocLike)
    */ 
-  implicit val itrDocLikeWrapper : DocLikeWrapper[(Iterator[PullType], DocLike), Iterator[PullType]] = new DocLikeWrapper( _._2, _._1 )
-*/
+  implicit def itrDocLikeWrapper(implicit bodyComp : XmlComparison[Iterator[PullType]]) : DocLikeWrapper[(Iterator[PullType], DocLike)] = new DocLikeWrapperBase[(Iterator[PullType], DocLike), Iterator[PullType]]( _._2, _._1, bodyComp )
 }

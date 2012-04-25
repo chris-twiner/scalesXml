@@ -589,26 +589,34 @@ class EqualsNormalImportsTest extends junit.framework.TestCase {
     assertTrue("ax1 === ax2", ax1 === ax2)
   }
 
-  val misc1 = List[Either[Comment, PI]](Left(Comment("A comment")), Left(Comment("another")), Right(PI("what","where")))
-  val misc2 = List[Either[Comment, PI]](Left(Comment("A comment")), Left(Comment("another")), Right(PI("what","where")))
+  val miscDiffL1 = Left(Comment("another"))
+  val miscDiffL2 = Left(Comment("another"))
+  val miscDiffR = Right(PI("what","where"))
+  val miscDiffContentR = Left(Comment("yet another"))
+
+  val misc1 = List[Either[Comment, PI]](Left(Comment("A comment")), miscDiffL1, Right(PI("what","where")))
+  val misc2 = List[Either[Comment, PI]](Left(Comment("A comment")), miscDiffL2, Right(PI("what","where")))
   val miscN = List[Either[Comment, PI]](Left(Comment("A comment")), Right(PI("what","where")))
-  val miscD = List[Either[Comment, PI]](Left(Comment("A comment")), Right(PI("what","where")), Left(Comment("another")))
+  val miscD = List[Either[Comment, PI]](Left(Comment("A comment")), miscDiffR, Left(Comment("another")))
+  val miscDContent = List[Either[Comment, PI]](Left(Comment("A comment")), miscDiffContentR, Right(PI("what","where")))
+
+  val d1 = Doc(x1)
+  val d2 = Doc(x2)
+  val d1_2 = Doc(x1_2)
+
+  // same doc and same miscs
+  val m1 = d1.copy(prolog = d1.prolog.copy(misc = misc1), end = EndMisc(misc2))
+  val m2 = d1_2.copy(prolog = d1_2.prolog.copy(misc = misc2), end = EndMisc(misc1))
 
   def testDocHandling : Unit = {
-    val d1 = Doc(x1)
-    val d2 = Doc(x2)
-    val d1_2 = Doc(x1_2)
-
     assertFalse("d1 shouldn't === d2", d1 === d2)
 
     assertTrue("d1 should === d1_2", d1 === d1_2)
 
-    // same doc and same miscs
-    val m1 = d1.copy(prolog = d1.prolog.copy(misc = misc1), end = EndMisc(misc2))
-    val m2 = d1_2.copy(prolog = d1_2.prolog.copy(misc = misc2), end = EndMisc(misc1))
-
     assertTrue("m1 should === m2", m1 === m2)
-    
+  }
+
+  def testDifferentNumberOfMiscs : Unit = {
     // swap the first out
     val c1 = m2.copy(prolog = m2.prolog.copy(misc = miscN))
 
@@ -628,8 +636,56 @@ class EqualsNormalImportsTest extends junit.framework.TestCase {
     assertTrue("ncountRes should be defined", ncountRes.isDefined)
 
     val Some((DifferentNumberOfMiscs(ncl,ncr,false), nccontext)) = ncountRes
-    assertTrue("ncl eq misc2", ncl eq misc1) // ends are different on purpose
+    assertTrue("ncl eq misc1", ncl eq misc1) // ends are different on purpose
     assertTrue("ncr eq miscN", ncr eq miscN)
+  }
 
+
+  def testMiscDifferentTypes : Unit = {
+    // swap the first out
+    val c1 = m2.copy(prolog = m2.prolog.copy(misc = miscD))
+
+    assertFalse("m2 should not === c1", m2 === c1)
+
+    val miscRes = compare(m2, c1)
+    assertTrue("miscRes should be defined", miscRes.isDefined)
+
+    val Some((MiscDifferentTypes(ml,mr,true), mcontext)) = miscRes
+    assertTrue("ml eq miscDiffL1", ml eq miscDiffL2)
+    assertTrue("mr eq miscDiffR", mr eq miscDiffR)
+
+    // swap the end out
+    val c2 = m2.copy(end = EndMisc(miscD))
+    
+    val nmiscRes = compare(m2, c2)
+    assertTrue("ncountRes should be defined", nmiscRes.isDefined)
+
+    val Some((MiscDifferentTypes(nml, nmr,false), nmcontext)) = nmiscRes
+    assertTrue("nml eq miscDiffL1", nml eq miscDiffL1) // ends are different on purpose
+    assertTrue("nmr eq miscDiffR", nmr eq miscDiffR)
+  }
+
+  def testMiscDifference : Unit = {
+    // swap the first out
+    val c1 = m2.copy(prolog = m2.prolog.copy(misc = miscDContent))
+
+    assertFalse("m2 should not === c1", m2 === c1)
+
+    val miscRes = compare(m2, c1)
+    assertTrue("miscRes should be defined", miscRes.isDefined)
+
+    val Some((MiscDifference(ml,mr,true), mcontext)) = miscRes
+    assertTrue("ml eq miscDiffL1", ml eq miscDiffL2)
+    assertTrue("mr eq miscDiffR", mr eq miscDiffContentR)
+
+    // swap the end out
+    val c2 = m2.copy(end = EndMisc(miscDContent))
+    
+    val nmiscRes = compare(m2, c2)
+    assertTrue("ncountRes should be defined", nmiscRes.isDefined)
+
+    val Some((MiscDifference(nml, nmr,false), nmcontext)) = nmiscRes
+    assertTrue("nml eq miscDiffL1", nml eq miscDiffL1) // ends are different on purpose
+    assertTrue("nmr eq miscDiffR", nmr eq miscDiffContentR)
   }
 }

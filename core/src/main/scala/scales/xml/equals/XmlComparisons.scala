@@ -343,6 +343,13 @@ abstract class DocLikeWrapper[T]( val tToDoc : T => DocLike ){
   def compare( calculate : Boolean, context : ComparisonContext, leftBody : T, rightBody : T ) : Option[(XmlDifference[_], ComparisonContext)]
 }
 
+/**
+ * Base wrapper for most usecases, extra type is here to keep lookup working
+ */ 
+class DocLikeWrapperBase[T, B]( tToDoc : T => DocLike, tToBody : T => B, bodyComp : XmlComparison[B]) extends DocLikeWrapper[T](tToDoc) {
+  def compare( calculate : Boolean, context : ComparisonContext, leftBody : T, rightBody : T ) : Option[(XmlDifference[_], ComparisonContext)] =
+    bodyComp.compare(calculate, context, tToBody(leftBody), tToBody(rightBody))
+}
 
 /**
  * Compares neither of the version, DTD nor encoding of a document, but prolog and end misc.
@@ -371,6 +378,8 @@ class DocLikeComparison[T, B](implicit ic : XmlComparison[XmlItem], docWrapper :
 	      res.map{ 
 		case (ItemDifference(x, y), cont) => 
 		  (MiscDifference(a, b, prolog), cont)
+		case (DifferentTypes(x, y), cont) =>
+		  (MiscDifferentTypes(a, b, prolog), cont)
 		case t => t
 	      } 
 	    else
