@@ -4,14 +4,19 @@ import scales.utils._
 import scala.collection.generic.CanBuildFrom
 import scales.utils.one
 
-trait XmlPathImplicits {
-  implicit val samePath : (XmlPath, XmlPath) => Boolean = comparePathsDirect _
+object PositionalEquals {
 
   /**
+   * This equality is only suitable for in document path comparison
+   * 
    * Don't force a re-evaluation each time
    */
-  implicit val xpathEqual =
-    ScalesUtils.toEqual[XmlItem, Elem, XCC]
+  implicit val xpathPositionalEqual =
+    toPositionalEqual[XmlItem, Elem, XCC]
+}
+
+trait XmlPathImplicits {
+  implicit val samePath : (XmlPath, XmlPath) => Boolean = comparePathsDirect _
 
   /** Unpack the attribute from the tuple */
   implicit def fromAttrPathToAttribute(attrPath : AttributePath) : Attribute = attrPath.attribute
@@ -27,7 +32,7 @@ trait XmlPathImplicits {
     val nodes = xpath.path.nodes.flatten
     if (nodes.size < 2) nodes // sorting on one or 0 still costs
     else
-      DuplicateFilter(sort[XmlItem, Elem, XCC](paths = nodes)(ScalesXml.xpathSortingClassManifest))
+      DuplicateFilter(sort[XmlItem, Elem, XCC](paths = nodes)(ScalesXml.xpathSortingClassManifest))(PositionalEquals.xpathPositionalEqual)
   }
 
   /**

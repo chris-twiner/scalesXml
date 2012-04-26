@@ -379,6 +379,13 @@ class EqualsNormalImportsTest extends junit.framework.TestCase {
     
   }
 
+  def testXPaths : Unit = {
+    val nons = top(xml) \* 2
+    val nons2 = top(xml2) \* 2
+    
+    assertTrue( "nons === nons2", nons.head === nons2.head)
+  }
+
   def doStreamTest( streamEquals : StreamEquals ) = {
     import streamEquals._
     //xml xml2

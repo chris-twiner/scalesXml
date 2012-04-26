@@ -51,8 +51,4 @@ trait PathImplicits {
    */
   implicit def fToFoldRToCombine[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]](f: PathFoldR[Item, Section, CC]) = new PathFoldCombiner[Item, Section, CC](f)
 
-  implicit def toEqual[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]] : Equal[Path[Item, Section, CC]] =
-    equal {
-      comparePathsDirect(_,_)
-    }
 }

@@ -318,7 +318,12 @@ trait DefaultXmlEquals
 
 object DefaultXmlEquals extends DefaultXmlEquals {}
 
-class PathAsPullTypeIterable( val initialPath : XmlPath ) extends scales.utils.AbstractPathIterator[XmlItem, Elem, XCC, PullType] {
+/**
+ * Makes the given path the top path
+ */ 
+class PathAsPullTypeIterable( originalPath : XmlPath ) extends scales.utils.AbstractPathIterator[XmlItem, Elem, XCC, PullType] {
+
+  def initialPath : XmlPath = originalPath.copy( top = scales.utils.Top() )
 
   def event : PullType = path.node.focus.fold(x=>x,y=>y.section)
 
@@ -330,13 +335,23 @@ class PathAsPullTypeIterable( val initialPath : XmlPath ) extends scales.utils.A
 }
 
 /**
+ * For Iterator[PullType]s that actually are, lets help the inference and implicit lookup out
+ */ 
+trait TheyReallyAreIterators {
+  import scales.xml.{CloseablePull, XmlPull}
+  implicit val closeablePullIsAn = (x : CloseablePull) => x : Iterator[PullType]
+  implicit val xmlPullIsAn = (x : XmlPull) => x : Iterator[PullType]
+}
+
+/**
  * Collection of all implicit conversions to StreamComparables.
  *
  * NOTE: The results are only usable with compare / ===, and should not be used to serialize
  */
-trait StreamComparableImplicits {
-
+trait StreamComparableImplicits extends TheyReallyAreIterators {
   import scales.xml.{CloseablePull, XmlPull, DocLike, Doc, XmlTree}
+
+  implicit val itrPlusDocAsAnIterator = (x : (Iterator[PullType], DocLike)) => x._1 : Iterator[PullType]
 
   /**
    * Converts directly to a StreamComparable, its not generally a good idea to automagically  mix XmlPath as an Iterable with XmlPath as an Iterator, make it explicit if thats really desired. 

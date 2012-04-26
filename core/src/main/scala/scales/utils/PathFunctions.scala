@@ -173,6 +173,18 @@ trait Paths {
     }
   }
 
+
+  import scalaz.Equal
+  import scalaz.Scalaz.equal
+
+  /**
+   * Provides an instance of the Equal type class for positional Equality
+   */ 
+  def toPositionalEqual[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]] : Equal[Path[Item, Section, CC]] =
+    equal {
+      comparePathsDirect(_,_)
+    }
+
   def top[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]](tree: Tree[Item, Section, CC])
     (implicit cbf : TreeCBF[Item, Section, CC]) : Path[Item, Section, CC] =
     Path(Top(), Node(0, tree))
