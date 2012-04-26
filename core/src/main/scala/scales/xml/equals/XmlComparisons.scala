@@ -65,7 +65,9 @@ class XmlItemComparison()(implicit qnameTokenComparison : Option[(ComparisonCont
       }
     }
 
-    (left, right) match { // we have to do it on types as well
+    if (left eq right)
+      None // worth checking
+    else (left, right) match { // we have to do it on types as well
       case (Text(valu), Text(value)) => check(valu, value, true)
       case (Comment(com), Comment(comm)) => check(com, comm)
       case (CData(cd), CData(cda)) => check(cd, cda, true)
@@ -98,7 +100,9 @@ class AttributeComparison(implicit eqn : Equal[QName], qnameTokenComparison : Op
   import EqualsHelpers.toQName
 
   def compare( calculate : Boolean, context : ComparisonContext, left: Attribute, right : Attribute) : Option[(XmlDifference[_], ComparisonContext)] = {
-    if (!eqn.equal(toQName(left.name), toQName(right.name)))
+    if (left eq right)
+      None
+    else if (!eqn.equal(toQName(left.name), toQName(right.name)))
       if (calculate)
 	Some((AttributeNameDifference( left, right), context))
       else
@@ -146,6 +150,9 @@ class AttributesComparison( implicit ac : XmlComparison[Attribute]) extends XmlC
     import EqualsHelpers._
     import scales.utils.collectFirst
 
+    if (left eq right)
+      None
+    else
     if (left.size != right.size)
       if (calculate)
 	Some((DifferentNumberOfAttributes(left,right), context))
@@ -197,7 +204,9 @@ object ElemEqualHelpers {
  */ 
 class ElemComparison(namespaces : Equal[Map[String, String]] = ElemEqualHelpers.allwaysTrueNamespacesEqual)( implicit ac : XmlComparison[Attributes], eqn : Equal[QName]) extends XmlComparison[Elem] {
   def compare( calculate : Boolean, context : ComparisonContext, left : Elem, right : Elem) : Option[(XmlDifference[_], ComparisonContext)] = {
-
+    if (left eq right)
+      None
+    else
     if (!(left.name === right.name))
       if (calculate)
 	Some((ElemNameDifference(left,right), context))
