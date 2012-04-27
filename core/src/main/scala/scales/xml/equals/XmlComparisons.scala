@@ -253,7 +253,7 @@ class StreamComparable[T <% Iterator[PullType]]( val t : T ) {
 /**
  * Compares based on streams.  Requires comparisons for XmlItem, Elem and a QName Equal instance for testing EndElems.
  */ 
-class StreamComparison( filter : Iterator[PullType] => Iterator[PullType] = identity)( implicit ic : XmlComparison[XmlItem], ec : XmlComparison[Elem], endElemQNameEqual : Equal[QName]) extends XmlComparison[StreamComparable[_]] {
+class StreamComparison( filter : Iterator[PullType] => Iterator[PullType] = identity)( implicit ic : XmlComparison[XmlItem], ec : XmlComparison[Elem], endElemQNameEqual : Equal[QName], qnameTokenComparison : Option[(ComparisonContext, String, String) => Boolean]) extends XmlComparison[StreamComparable[_]] {
   def compare( calculate : Boolean, ocontext : ComparisonContext , lefti : StreamComparable[_], righti : StreamComparable[_] ) : Option[(XmlDifference[_], ComparisonContext)] = {
 
     var res : Option[(XmlDifference[_], ComparisonContext)] = None
@@ -263,7 +263,9 @@ class StreamComparison( filter : Iterator[PullType] => Iterator[PullType] = iden
     while( res.isEmpty && joined.hasNext) {
       joined.next match {
 	case (Left(x : Elem), Left(y : Elem)) =>
-	  context = context.startElems(x, y)
+	  if (calculate || qnameTokenComparison.isDefined) { // also needed for qname handling
+	    context = context.startElems(x, y)
+	  }
 	  res = ec.compare(calculate, context, x, y)
 	case (Left(x : XmlItem), Left(y : XmlItem)) =>
 	  res = ic.compare(calculate, context, x, y)
@@ -275,10 +277,12 @@ class StreamComparison( filter : Iterator[PullType] => Iterator[PullType] = iden
 	      else 
 		noCalculation
 	    } else None
-	  context = context.endElem
+	  if (calculate) { // also needed for qname handling
+	    context = context.endElem
+	  }
 	case (left, right) => 
 	  res = 
-	    if (calculate)
+	    if (calculate || qnameTokenComparison.isDefined)
 	      Some((DifferentTypes(left, right), context)) 
 	    else
 	      noCalculation
@@ -302,14 +306,14 @@ trait StreamEquals {
   /**
    * Conversions
    */
-  implicit def toDefaultStreamComparison[T](implicit tv : T => StreamComparable[T], ic : XmlComparison[XmlItem], ec : XmlComparison[Elem], qe : Equal[QName]) : XmlComparison[T]
+  implicit def toDefaultStreamComparison[T](implicit tv : T => StreamComparable[T], ic : XmlComparison[XmlItem], ec : XmlComparison[Elem], qe : Equal[QName], qnameTokenComparison : Option[(ComparisonContext, String, String) => Boolean]) : XmlComparison[T]
 }
 
 trait ExactStreamEquals extends StreamEquals {
   /**
    * Conversions
    */
-  implicit def toDefaultStreamComparison[T](implicit tv : T => StreamComparable[T], ic : XmlComparison[XmlItem], ec : XmlComparison[Elem], qe : Equal[QName]) : XmlComparison[T] = new StreamComparisonWrapper(new StreamComparison()( ic, ec, qe))
+  implicit def toDefaultStreamComparison[T](implicit tv : T => StreamComparable[T], ic : XmlComparison[XmlItem], ec : XmlComparison[Elem], qe : Equal[QName], qnameTokenComparison : Option[(ComparisonContext, String, String) => Boolean]) : XmlComparison[T] = new StreamComparisonWrapper(new StreamComparison()( ic, ec, qe, qnameTokenComparison))
 
 }
 
@@ -318,7 +322,7 @@ object ExactStreamEquals extends ExactStreamEquals {
   import AttributeEquals._
   import AttributesEquals._
 
-  def defaultStreamComparison(implicit qnameTokenComparison : Option[(ComparisonContext, String, String) => Boolean]) : XmlComparison[StreamComparable[_]] = new StreamComparison()( ItemEquals.defaultXmlItemComparison, ElemEquals.defaultElemComparison, EqualsHelpers.qnameEqual)
+  def defaultStreamComparison(implicit qnameTokenComparison : Option[(ComparisonContext, String, String) => Boolean]) : XmlComparison[StreamComparable[_]] = new StreamComparison()( ItemEquals.defaultXmlItemComparison, ElemEquals.defaultElemComparison, EqualsHelpers.qnameEqual, qnameTokenComparison)
 
 }
 
@@ -328,7 +332,7 @@ object ExactStreamEquals extends ExactStreamEquals {
 trait DefaultStreamEquals extends StreamEquals {
   import LogicalFilters.joinTextAndCData
 
-  implicit def toDefaultStreamComparison[T](implicit tv : T => StreamComparable[T], ic : XmlComparison[XmlItem], ec : XmlComparison[Elem], qe : Equal[QName]) : XmlComparison[T] = new StreamComparisonWrapper( new StreamComparison(joinTextAndCData _)( ic, ec, qe) )
+  implicit def toDefaultStreamComparison[T](implicit tv : T => StreamComparable[T], ic : XmlComparison[XmlItem], ec : XmlComparison[Elem], qe : Equal[QName], qnameTokenComparison : Option[(ComparisonContext, String, String) => Boolean]) : XmlComparison[T] = new StreamComparisonWrapper( new StreamComparison(joinTextAndCData _)( ic, ec, qe, qnameTokenComparison) )
 
 }
 
@@ -338,7 +342,7 @@ object DefaultStreamEquals extends DefaultStreamEquals {
   import AttributeEquals._
   import AttributesEquals._
 
-  def defaultStreamComparison(implicit qnameTokenComparison : Option[(ComparisonContext, String, String) => Boolean]) : XmlComparison[StreamComparable[_]] = new StreamComparison(joinTextAndCData _)( ItemEquals.defaultXmlItemComparison, ElemEquals.defaultElemComparison, EqualsHelpers.qnameEqual)
+  def defaultStreamComparison(implicit qnameTokenComparison : Option[(ComparisonContext, String, String) => Boolean]) : XmlComparison[StreamComparable[_]] = new StreamComparison(joinTextAndCData _)( ItemEquals.defaultXmlItemComparison, ElemEquals.defaultElemComparison, EqualsHelpers.qnameEqual, qnameTokenComparison)
 }
 
 /**

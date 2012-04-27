@@ -44,7 +44,7 @@ The full set of the Scales Xml Model is covered by the equality framework:
 * XmlPath
 * Anything that can be seen as <nowiki>Iterator[PullType]</nowiki>
 
-* Doc, (DocLike, Iterator[PullType])
+* Doc and various DocLike implementations
 
 QNames in each model type (unlike Canonical Xml, where string comparisons including prefixes are expected) do not compare with the prefix, only the namespace (as per =:=).  This implies that documents created by different systems using different prefixes are still comparable, a different implicit default Equal[QName] instance can change that behaviour.
 

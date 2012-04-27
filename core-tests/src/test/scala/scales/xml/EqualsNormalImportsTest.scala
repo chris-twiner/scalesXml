@@ -489,7 +489,7 @@ class EqualsNormalImportsTest extends junit.framework.TestCase {
 
     import LogicalFilters._
 
-    implicit def toDefaultStreamComparison[T](implicit tv : T => StreamComparable[T], ic : XmlComparison[XmlItem], ec : XmlComparison[Elem], qe : Equal[QName]) : XmlComparison[T] = new StreamComparisonWrapper( new StreamComparison( x => removePIAndComments(joinText(x)))( ic, ec, qe) )
+    implicit def toDefaultStreamComparison[T](implicit tv : T => StreamComparable[T], ic : XmlComparison[XmlItem], ec : XmlComparison[Elem], qe : Equal[QName], qnameTokenComparison : Option[(ComparisonContext, String, String) => Boolean]) : XmlComparison[T] = new StreamComparisonWrapper( new StreamComparison( x => removePIAndComments(joinText(x)))( ic, ec, qe, qnameTokenComparison) )
 
     val x1 = <(root) /( "0","1",CData("2"), Comment("c2"),"3","4", 
 		      PI("i","s"),
