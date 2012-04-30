@@ -1,0 +1,55 @@
+= XmlComparison - What, Where & How Was It Different =
+
+The XmlComparison typeclass is fairly simple with one function:
+
+${cscala}
+  def compare( calculate : Boolean , context : ComparisonContext, left : T, right : T) : Option[(XmlDifference[_], ComparisonContext)]
+${cend}
+
+All instances are created via defs and implicit lookup.  As such, where runtime performance of comparison is a concern you should cache an appropriately scoped instance via `implicitly`.
+
+The reason for using defs is that the behaviour of any one XmlComparison instance is configurable.  Substituting the `defaultQNameTokenComparison` in a given scope will affect both XmlItem and Attribute value comparison.
+
+To retrieve the full information about what changed use the compare function (mixed into the scales.xml package):
+
+${cscala}
+  def compare[T : XmlComparison]( left : T, right : T) : Option[(XmlDifference[_], ComparisonContext)] =
+    implicitly[XmlComparison[T]].compare(true, ComparisonContext(), left, right)
+${cend}
+
+As can be seen, this simply provides a starting context and informs the framework to calculate both the path to a difference and a detailed ADT for what was different (XmlDifference).
+
+== The compare Function ==
+
+Any implementing instance of XmlComparison must provide a compare implementation, for example a user provided XmlItem comparison, it is recommended to respect the following conventions:
+
+# When calculate is false, its a signal that no detailed result is expected and is likely called from ===
+# Use the comparison context to handle namespace lookups
+# Respect defaultQNameTokenComparison, if code has defined it in scope you must assume the developer wants at least the context to be generated (irrespective of calculate being false or not).
+
+=== The calculate Parameter ===
+
+The calculate parameter when false indicates that any difference returned as scales.xml.equals.SomeDifference.noCalculation, i.e. a dummy Some value.  The purpose of the false parameter is for a simple comparison via === and the derived Equal type class.
+
+A value of false will also disable, unless a defaultQNameTokenComparison is defined in scope, the generation of relevant ComparisonContexts, further reducing allocation for simple equality checks.
+
+However when set true it instructs both the use of ComparisonContexts and that the return value is as detailed as possible.
+
+=== ComparisonContext ===
+
+ComparisonContext is a stack of potential namespace contexts (for both the left and right side), the parent context and the BasicPath from the start of the compare.  BasicPath is defined as:
+
+${cscala}
+  // {ns}Local -> count
+  type BasicPathA = (QName, Map[String, Int])
+  type BasicPath = List[BasicPathA] 
+${cend}
+
+and maintains a count against each QName as it navigates down a given tree.  ComparisonContext provides a simplified string path via the pathString function, for example the following output:
+
+/{}root[1]/{uri:prefixed}elem[2]/{uri:prefixed}elem[1]
+
+In addition to identifying where something is different it could be used to decide if the difference is relevant within a custom XmlComparison instance.
+
+NamespaceContext is used by both XmlComparison and by the serialisation mechanisms and acts a stack of prefix -> namespace mappings that have been defined in the given trees.  The namespace prefixes used by PrefixedQName attributes and element are combined with any defined prefixes from the elements namespace map.
+

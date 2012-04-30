@@ -1,4 +1,4 @@
-= Xml Equality Basics =
+= XML Equality Basics =
 
 The Scales Xml equality framework aims to help with both testing applications (similar to XmlUnit) that use Scales and also for runtime comparison activities, e.g. if an element has this attribute with this value do X.
 
@@ -28,7 +28,7 @@ ${cscala}
     compare(Nil, t1, t2).isEmpty ) // XmlComparison type class
 ${cend}
 
-Wherever an XmlComparison exists an Equal instance can be created.  The results of a compare include both a path to the difference and a fully pattern matchable xml difference ADT.
+Wherever an XmlComparison exists an Equal instance can be created.  The results of a compare include both a path to the difference and a fully pattern matchable XML difference ADT.
 
 == Types Covered ==
 
@@ -125,13 +125,13 @@ ${cscala}
   assertTrue( " x1 === x2 ", x1 === x2)
 ${cend}
 
-== Why Not Use Canonical Xml? ==
+== Why Not Use Canonical XML? ==
 
-Testing Xml Equality is not always straightforward, a standard approach however exists : Canonical Xml - a defined w3c srtanard approach to serialization.  Canonical Xml treats QName prefixes themselves as relevant, if an xml processor changes a prefix, that document is no longer comparable under Canonical Xml (No Namespace Prefix Rewriting).
+Testing Xml Equality is not always straightforward, a standard approach however exists : Canonical Xml - a defined w3c standard approach to serialization.  Canonical Xml treats QName prefixes themselves as relevant, if an XML processor changes a prefix, that document is no longer comparable under Canonical Xml (No Namespace Prefix Rewriting).
 
-Whilst the justifications for the prefix rewriting rule in Canonical Xml is, within the context of embedded XPaths or xml QNames (their prefixes only make sense within that document), understandable Scales takes the position that this is far rarer an occasion than simple Xml as a data transport usage.  However, as with the rest of Scales, this default too is customisable.
+Whilst the justifications for the prefix rewriting rule in Canonical Xml is, within the context of embedded XPaths or XML QNames (their prefixes only make sense within that document), understandable Scales takes the position that this is far rarer an occasion than simple Xml as a data transport usage.  However, as with the rest of Scales, this default too is customisable.
 
-The problem, and it stops the Canonical Xml reasoning as well, is that a producing application can re-write the prefixes for embedded QNames or XPaths before sending.  WSDM applications often meet this (see Apache Muse for examples of this).  Scales is of course, by default, not aware of such usage - see [XmlComparison.html#QName_Token_Handling here] for details on how to configure Scales to be qname token aware.  In short, it can be as simple as declaring this in the correct scope:
+The problem, and it stops the Canonical Xml reasoning as well, is that a producing application can re-write the prefixes for embedded QNames or XPaths before sending.  WSDM applications often meet this (see Apache Muse for examples of this).  Scales is of course, by default, not aware of such usage - see [XmlComparison.html#QName_Token_Handling here] for details on how to configure Scales to be QName token aware.  In short, it can be as simple as declaring this in the correct scope:
 
 ${cscala}
   implicit val defaultQNameTokenComparison = Option(qnamesEqual _)
@@ -145,6 +145,6 @@ Similarly the following approaches to Canonical Xml actually may break data assu
 * normalize attribute values
 * Default attributes are added to each element
 
-The latter may cause issues with certain receiving processors and depends on a validation / schema enrichement working.  Scales concerns itself with the documents actualy being compared.
+The latter may cause issues with certain receiving processors and depends on a validation / schema enrichment working.  Scales concerns itself with the documents actually being compared.
 
 In short - Scales offers a typed and more flexible approach to equality than Canonical Xml handling.
