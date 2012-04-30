@@ -44,7 +44,7 @@ trait XmlEquals {
 	     lns <- lnc.mappings.get(sp1(0))
 	     rns <- rnc.mappings.get(sp2(0))
 	   } yield lns == rns
-       ).
+        ).
 	getOrElse(false)
       }
     } else 
