@@ -4,7 +4,7 @@ The Scales Xml equality framework aims to help with both testing applications (s
 
 The Scales equality framework does not throw, but returns information allowing decisions to be made.  In the case of `===` a simple boolean is returned, in the case of `compare` a full ADT and path can be returned diagnosing the first difference found.
 
-The `compare` function is used by the Equal instances and is documented [XmlComparison.html#The_calculate_Parameter here].
+The `compare` function is used by the Equal instances and is documented [XmlComparison.html#The_compare_Function here].
 
 == How To Use ==
 

@@ -28,6 +28,10 @@ div#scales-site-menubar {
     border-radius: 9px;
 }
 
+#scales-site-menubar h1 {
+    font-size: 18px;
+}
+
 #scales-site-menubar h2 {
     font-size: 16px;
 }
