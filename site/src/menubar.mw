@@ -97,6 +97,21 @@
 ;* [XSLT.html TrAX & XSLT Support]
 ;** [XSLT.html#Simple_Usage_Example Simple Usage Example]
 
+; '''Xml Equality'''
+;* [EqualityBasics.html Xml Equality Basics]
+;** [EqualityBasics.html#How_To_Use How To Use]
+;** [EqualityBasics.html#Types_Covered Types Covered]
+;** [EqualityBasics.html#Why_Join_Adjacent_Text_and_CData.3F Why Join Adjacent Text and CData?]
+;** [EqualityBasics.html#Removing_Comments_And_PIs Removing Comments and PIs]
+;** [EqualityBasics.html#Why_Not_Use_Canonical_Xml.3F Why Not Use Canonical Xml?]
+;* [XmlComparison.html XmlComparison - Where Is It Different?]
+;** [XmlComparison.html#The_compare_Function The compare Function]
+;*** [XmlComparison.html#The_calculate_Parameter The calculate Parameter]
+;*** [XmlComparison.html#ComparisonContext ComparisonContext]
+;*** [XmlComparison.html#Return_Value Return Value]
+;** [XmlComparison.html#XmlDifference XmlDifference]
+;** [XmlComparison.html#QName_Token_Handling QName Token Handling]
+
 ; '''Technical Details'''
 ;* [MemoryOptimisation.html Memory Optimisation]
 ;** [MemoryOptimisation.html#Disclaimer Disclaimer]

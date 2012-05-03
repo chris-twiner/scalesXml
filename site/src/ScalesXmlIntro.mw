@@ -20,6 +20,7 @@ Scales Xml, in addition to immutability, aims to focus on these separate concern
 ;* Syntax closely resembles normal XPath leveraging, for example, Paths ability to navigate parents
 ;* Syntax should separate the navigation of elements from available predicates as far as possible (niceties such as \*QName remain) 
 ;* Syntax should not rely on string interpretation but on types (QName objects used directly)
+;** String based XPath 1.0 querying based on Jaxen is however available
 ;* XPaths are used as a basis for Tree transformation
 ;* The full XPath axe are available (with the exception of the namespace axis)
 

@@ -45,20 +45,20 @@ class QNameTest extends junit.framework.TestCase {
     assertEquals(name, "test:uri"::"local" : QName)
 
     assertTrue("=:= should match on ns and local only", name =:= name1)
-    assertFalse("=== should not have matched", name === name1)
+    assertFalse("=== should not have matched", name ==== name1)
   }
 
   def testExactMatch =  {
     val name = ns.prefixed("pre", "local")
     val name1 = ns("local")
 
-    assertFalse("Should not be exactly equal, one is prefixed", name === name1)
+    assertFalse("Should not be exactly equal, one is prefixed", name ==== name1)
 
-    assertFalse("Should not be exactly equal, one is prefixed", name === ("test:uri"::"local" : QName))
+    assertFalse("Should not be exactly equal, one is prefixed", name ==== ("test:uri"::"local" : QName))
 
     val name3 = ns.prefixed("pre","local")
 
-    assertTrue("Should match exactly", name === name3)
+    assertTrue("Should match exactly", name ==== name3)
 
     assertTrue("=:= should also of course  match", name =:= name3)
   }

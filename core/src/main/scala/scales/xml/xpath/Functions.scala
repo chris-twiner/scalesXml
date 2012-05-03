@@ -12,8 +12,13 @@ trait Names[T] {
   /**
    * Returns the QName
    */ 
-  def name(implicit t : T) : QName
+  def name(implicit t : T) : Option[QName]
 
+  /**
+   * simplify the usage in Names
+   */ 
+  protected[xml] def flatName(implicit t : T) : QName =
+    name(t).getOrElse(EmptyQName.empty)
 }
 
 // Note - 2.8.x doesn't allow multiple implicit lists so we must combine them and duplicate the interface
@@ -58,7 +63,7 @@ object Functions extends NameFunctions with TextFunctions {
 trait NameFunctions {
 
   private implicit def toQName[T]( t : T )(implicit name : Names[T]) =
-    name.name(t)
+    name.flatName(t)
   
   /**
    * Returns the localName
@@ -82,7 +87,7 @@ trait NameFunctions {
    * Does the qname match exactly (prefix included if present)
    */ 
   def isExactly[T](qname : QName)(implicit name : Names[T] ) :  T => Boolean =
-    (t : T) => t === qname
+    (t : T) => t ==== qname
     
   /**
    * Matches on prefix and namespace only
@@ -141,7 +146,7 @@ trait NameFunctions {
    * If hasQName is false then calling name will throw
    */ 
   def hasQName[T](implicit t : T, name : Names[T], d : DIF) : Boolean = 
-    name.name(t) ne EmptyQName.empty
+    name.name(t).isDefined
 
   /**
    * Will be true for all values of T except when the resulting QName is "empty".
@@ -235,50 +240,48 @@ trait NamesImplicits {
 }
 
 object AttributeNames extends Names[Attribute] {
-  def name(implicit t : Attribute) : QName = EqualsHelpers.toQName(t.name)
+  def name(implicit t : Attribute) : Option[QName] = Some(EqualsHelpers.toQName(t.name))
 }
 
 object AttributePathsNames extends Names[AttributePaths[_]] {
   def name(implicit a : AttributePaths[_]) = {
     val r = a.attributes
-    if (r.size == 0) EmptyQName.empty
-    else EqualsHelpers.toQName(r.head.attribute.name)
+    r.headOption.map( x => EqualsHelpers.toQName( x.attribute.name ))
   }
 }
 
 object AttributePathNames extends Names[AttributePath] {
-  def name(implicit t : AttributePath) : QName = EqualsHelpers.toQName(t.attribute.name)
+  def name(implicit t : AttributePath) : Option[QName] = Some(EqualsHelpers.toQName(t.attribute.name))
 }
 
 object ElemNames extends Names[Elem] {
-  def name(implicit t : Elem) : QName = t.name
+  def name(implicit t : Elem) : Option[QName] = Some(t.name)
 }
 
 object XmlTreeNames extends Names[XmlTree] {
-  def name(implicit t : XmlTree) : QName = t.section.name
+  def name(implicit t : XmlTree) : Option[QName] = Some(t.section.name)
 }
 
 object DslNames extends Names[DslBuilder] {
-  def name(implicit t : DslBuilder) : QName = t.toTree.section.name
+  def name(implicit t : DslBuilder) : Option[QName] = Some(t.toTree.section.name)
 }
 
 object XmlPathNames extends Names[XmlPath] {
-  def name(implicit t : XmlPath) : QName = t.tree.section.name
+  def name(implicit t : XmlPath) : Option[QName] = Some(t.tree.section.name)
 }
 
 object QNameNames extends Names[QName] {
-  def name(implicit t : QName) : QName = t 
+  def name(implicit t : QName) : Option[QName] = Some(t) 
 }
 
 object AQNameNames extends Names[AttributeQName] {
-  def name(implicit t : AttributeQName) : QName = EqualsHelpers.toQName(t) 
+  def name(implicit t : AttributeQName) : Option[QName] = Some(EqualsHelpers.toQName(t))
 }
 
 object XPathNames extends Names[XPath[_]] {
   def name(implicit a : XPath[_]) = {
     val r = ScalesXml.fromXPathToIterable(a) 
-    if (r.size == 0) EmptyQName.empty
-    else r.head.focus(_ => EmptyQName.empty, XmlTreeNames.name(_))
+    r.headOption.flatMap(_.focus(_ => None, t => XmlTreeNames.name(t)))
   }
 }
 

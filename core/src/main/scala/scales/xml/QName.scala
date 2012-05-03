@@ -57,7 +57,7 @@ sealed trait QName {
   /** 
     * Will match namespace and local with other AND prefix if available
     */
-  def ===( other : QName) = 
+  def ====( other : QName) = 
     if (this eq other) true
     else
     if (this =:= other) {

@@ -9,7 +9,7 @@ import scala.collection.IndexedSeqLike
  */ 
 trait AbstractPathIterator[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]], T] extends Iterator[T] {
 
-  val initialPath : Path[Item, Section, CC]
+  def initialPath : Path[Item, Section, CC]
 
   var path = initialPath
 

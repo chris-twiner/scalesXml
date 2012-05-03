@@ -38,19 +38,18 @@ case class ScalesSource(stream : Iterator[PullType], documentLike : DocLike = Em
 )
 
 trait TraxConversionImplicits {
-  implicit def toStream( tree : XmlTree ) = convertToStream(tree)
 
   implicit def treeToSource( tree : XmlTree )(implicit sf : SerializeableXml[XmlTree]) : Source = 
     streamOr( tree, ScalesSource(convertToStream(tree)))(sf)
 
   implicit def docToSource( doc : Doc )(implicit sf : SerializeableXml[Doc]) : Source = 
-    streamOr( doc, ScalesSource(convertToStream(doc.rootElem), doc))
+    streamOr( doc, ScalesSource(convertToStream(doc.rootElem), doc))(sf)
 }
 
 
 trait TraxSourceConversions {
 
-  def convertToStream(tree : XmlTree) = new trax.TreeIterable(tree)
+  def convertToStream(tree : XmlTree) : Iterator[PullType] = new trax.TreeIterable(tree)
 
   /**
    * When the user really wants a stream source or there is yet another place that jaxp Source support is not complete.

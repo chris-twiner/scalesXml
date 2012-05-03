@@ -155,6 +155,12 @@ object SiteKeys {
   val menuBarJS = SettingKey[ String ]("site-menu-bar-js")
 
   /**
+   * Override to change the title displayed above the menu bar, if using wiki
+   * markup then it must use the same markup as the menubar itself.
+   */ 
+  val menuBarTitle = SettingKey[ String ]("site-menu-bar-title")
+
+  /**
    * Override to provide a different css File for the menubar
    */ 
   val menuBarCSS = SettingKey[ File ]("site-menu-bar-css")
@@ -271,6 +277,7 @@ object SiteSettings {
     menuBar <<= siteResourceDir apply { _ / "menubar.mw" },
     menuBarCSS <<= siteResourceDir apply { _ / "menubar.css" },
     menuBarJS := menuBarJSDefault,
+    menuBarTitle := "${projectName} ${projectVersion}",
     //siteTokens <<= (version in siteInfoProject, moduleName in siteInfoProject, organization in siteInfoProject) apply getSiteTokens,
     siteTokens <<= (projectID in infoProject) apply getSiteTokens,
     siteMarkupDelete := true,
@@ -295,7 +302,7 @@ GlobFilter("*.*~")) }, // all emacs backups
     siteParams <<= (siteParams, siteTokens, siteHeaders, siteMarkupDocHeaders, siteMarkupDocs) apply { (a, b, c, d, e) => a.copy(siteTokens = b, siteHeaders = c, siteMarkupDocHeaders = d, siteMarkupDocs = e) },
     siteDocParams <<= (siteJQuery, resourcesOutDir, siteDocsIgnore, siteMarkupDelete, siteMediaWikiTemplates) apply SiteDocParams,
     siteIndex <<= (siteParams, streams) map getSiteIndex,
-    menuBarHtml <<= (siteParams, menuBar, siteIndex, streams) map getMenuBar,
+    menuBarHtml <<= (siteParams, menuBar, siteIndex, streams, menuBarTitle) map getMenuBar,
     siteDocs <<= (siteDocParams, siteParams, siteBodyEnd, menuBarHtml, unpackResourcesTask, streams) map makeSite,
     site <<= (siteParams, streams, siteDocs, siteBodyEnd, menuBarHtml, unpackResourcesTask, siteIndex) map siteTask
   )
@@ -393,33 +400,55 @@ $("pre[class^='language-']").each(function(i,elem) {
   }
 */
 
-  def getMenuBar( siteParams: SiteParams, menuBarFile : File, siteIndex : SiteIndex, stream : std.TaskStreams[_]) : Either[String, String] = {
+  /**
+   * Empty result when it can be found
+   */ 
+  def ripOutBody( full : String, log : Logger ) : String = {
+    val p = full.indexOf("<body>") // NB not sure if this changes per type
+    val ep = full.lastIndexOf("</body>")
+    if ((p < 0) || (ep < 0)) {
+      val r = "Could not find a body in the html ("+p+","+ep+")"
+      log.error(r)
+      ""
+    } else {
+      full.substring(p+ 6, ep)
+    }
+  }
+
+  def getMenuBar( siteParams: SiteParams, menuBarFile : File, siteIndex : SiteIndex, stream : std.TaskStreams[_], menuBarTitle : String) : Either[String, String] = {
     import siteParams._
     import stream.log
 
     if (menuBarFile.exists) {
       // generate the menu bar 
       val th = java.io.File.createTempFile("scales_sit_mb_","_mb")
+      val tmf = java.io.File.createTempFile("scales_sit_mbf_","."+menuBarFile.ext)
+      val tmt = java.io.File.createTempFile("scales_sit_mbt_","."+menuBarFile.ext)
       try{
+	// title for the menubar - we should always know what release we are looking at
+	IO.append(tmf, menuBarTitle+"\n", utf8)
+	convert(tmf, tmt, siteHeaders, "", siteTokens, log, 
+		false // not copying
+		)
+	val title = ripOutBody(IO.read(tmt, utf8), log)
 	val r = convert(menuBarFile, th, siteHeaders, "", siteTokens, log, 
 		false // not copying
 		)
 	r.map{ x => log.error("Menubar file could not be generated "+x); Right(x) }.getOrElse{
 	  // transformation worked, grab the body...
 	  val full = IO.read(th, utf8)
-	  val p = full.indexOf("<body>") // NB not sure if this changes per type
-	  val ep = full.lastIndexOf("</body>")
-	  if ((p < 0) || (ep < 0)) {
-	    val r = "Could not find a body in the menu bar ("+p+","+ep+")"
-	    log.error(r)
+	  val innerM = ripOutBody( full, log )
+	  if (innerM.length == 0) {
+	    val r = "Could not find a body in the menu bar"
 	    Right(r)
 	  } else {
-	    val innerM = full.substring(p+ 6, ep)
-	    Left("<div id=\"scales-site-menubar\">"+siteIndex.menuBar+innerM+"</div>")
+	    Left("<div id=\"scales-site-menubar\">"+title+siteIndex.menuBar+innerM+"</div>")
 	  }
 	}
       } finally {
 	th.delete
+	tmf.delete
+	tmt.delete
       }
     } else {
       Left("") // doesn't exist so don't add any extra to the output

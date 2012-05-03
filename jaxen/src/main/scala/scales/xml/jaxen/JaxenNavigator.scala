@@ -19,6 +19,8 @@ object Implicits {
   import scalaz._
   import Scalaz._
 
+  import PositionalEquals.{xpathPositionalEqual => xpathEqual}
+
   /**
    * Equal type class for either A or X
    */ 

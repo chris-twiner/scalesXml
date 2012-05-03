@@ -42,7 +42,7 @@ class TraxSupportTest extends junit.framework.TestCase {
   val mixed = <(elem) /(Text("in front")) /(child) /( Text("In Back"))
 
   def doStreamTest(in : XmlTree, against : List[PullType]) {
-    compare(convertToStream(in).toIterable, against)(x=>x)
+    assertCompare(convertToStream(in).toIterable, against)(x=>x)
   }
 
   def testTextsStream = {

@@ -9,7 +9,8 @@ import Defaults._
 import scales.sbtplugins._
 import SiteKeys.{siteCSS, siteResourceDir, 
 		 siteMarkupDocs,
-		 siteMarkupDocHeaders}
+		 siteMarkupDocHeaders, 
+		 menuBarTitle}
 
 object ScalesXmlRoot extends Build {
   lazy val root = Project("scales-xml-root", file("."), settings = standardSettings ++ dontPublishSettings) aggregate(core, coreTests, jaxen, saxonTests, jaxenTests)
@@ -38,7 +39,8 @@ object ScalesXmlRoot extends Build {
       SiteSettings.settings(core) ++ Seq(
 	siteCSS <<= siteResourceDir apply { _ / "scales_xml.css" },
 	siteMarkupDocs := List("ScalesXmlIntro.mw","MemoryOptimisation.mw"),
-	siteMarkupDocHeaders := Map( "ScalesXmlIntro.mw" -> MarkupHeader("An Overview of Scales Xml")("Overview"), "MemoryOptimisation.mw" -> MarkupHeader("An Overview of Memory Optimisation and Performance")("Memory and Performance") )
+	siteMarkupDocHeaders := Map( "ScalesXmlIntro.mw" -> MarkupHeader("An Overview of Scales Xml")("Overview"), "MemoryOptimisation.mw" -> MarkupHeader("An Overview of Memory Optimisation and Performance")("Memory and Performance") ),
+	menuBarTitle := "= Scales Xml ${projectVersion} ="
       )
   )
 
@@ -64,11 +66,11 @@ object ScalesXmlRoot extends Build {
  "sbt (%s)$$$-".format(Project.extract(state).currentProject.id)
 },
 */
-    organization := "scales",
+    organization := "org.scalesxml",
     offline := true,
-    version := "0.3-RC5",
+    version := "0.3-RC6",
     scalaVersion := "2.9.1",
-    crossScalaVersions := Seq("2.8.1", "2.9.1"),
+    crossScalaVersions := Seq("2.8.1", "2.8.2", "2.9.1", "2.9.2"),
     publishSetting,
 //    parallelExecution in Test := false,
     scalacOptions ++= Seq("-optimise"),

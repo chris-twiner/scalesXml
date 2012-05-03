@@ -51,8 +51,15 @@ trait XmlPulls {
    */ 
   def pullXmlCompletely[RToken <: OptimisationToken]( source : org.xml.sax.InputSource, strategy : PathOptimisationStrategy[RToken] = defaultPathOptimisation, parserFactoryPool : Pool[XMLInputFactory] = DefaultStaxInputFactoryPool, closeAfterUse : Boolean = true) : Doc = {
     val pull = pullXml[RToken](source, strategy, parserFactoryPool, closeAfterUse)
-    val token = pull.token.asInstanceOf[RToken] // really is an RToken but we lose the type
+    
+    Doc(toTree(pull, strategy), pull.prolog, pull.end)
+  }
 
+  /**
+   * Attempts to convert a stream to a tree
+   */ 
+  def toTree[RToken <: OptimisationToken]( pull : Iterator[PullType], strategy : PathOptimisationStrategy[RToken] = defaultPathOptimisation ) = {
+    val token = strategy.createToken(Xml10, IsFromParser)
     // start with nothing
     val buf = new TreeProxies()
 
@@ -66,7 +73,7 @@ trait XmlPulls {
 	  strategy.elementEnd(buf, token)
       }
     }
-    Doc(buf.tree, pull.prolog, pull.end)
+    buf.tree
   }
 
   /**

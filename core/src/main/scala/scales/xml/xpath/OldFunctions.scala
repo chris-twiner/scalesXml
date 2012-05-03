@@ -22,7 +22,7 @@ object Attributes {
       def localName(localName: String)(implicit attribute: AttributePath): Boolean = attribute.attribute.name.local == localName
 
       /** curried to allow direct drop in for predicates */
-      def exact(qname: QName)(implicit attribute: AttributePath): Boolean = attribute.attribute.name === qname
+      def exact(qname: QName)(implicit attribute: AttributePath): Boolean = attribute.attribute.name ==== qname
 
       /** returns the qname of an AttributePath, using implicit scope */
       def qname(implicit attribute: AttributePath): String = attribute.attribute.name.qName
@@ -86,7 +86,7 @@ object Attributes {
       def localName(localName: String)(implicit path: XmlPath): Boolean = path.tree.section.name.local == localName
 
       /** curried to allow direct drop in for predicates, if it is an item then it will return false */
-      def exact(qname: QName)(implicit path: XmlPath): Boolean = path.tree.section.name === qname
+      def exact(qname: QName)(implicit path: XmlPath): Boolean = path.tree.section.name ==== qname
 
       /** returns the localname of an XmlPath, using implicit scope */
       def localName(implicit path: XmlPath): String = path.tree.section.name.local

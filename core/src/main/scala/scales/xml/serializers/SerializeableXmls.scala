@@ -4,6 +4,59 @@ import scales.xml._
 import scales.utils._
 
 /**
+ * Provides a base class for steam handling
+ */ 
+class StreamSerializer[T](toP : T => Iterator[PullType]) extends SerializeableXml[T] {
+
+  import ScalesXml._
+
+  val dummy: Iterable[PullType] = List(Left(Elem("dummy"l)))
+
+  /**
+   * Override to provide an actual doc
+   */ 
+  def doc(it: T) : DocLike = EmptyDoc()
+  def apply(itT: T)(out: XmlOutput, serializer: Serializer): (XmlOutput, Option[Throwable]) = {
+    val it = toP(itT)
+    // left of the sequence is our actual, 
+    val r = it.++(dummy.iterator).sliding(2).foldLeft((out, None: Option[Throwable], false)) { (cur, two) =>
+      val (output, y, isEmpty) = cur
+      if (y.isDefined) cur
+      else {
+	val List(ev, next) = two.toList
+	ev match {
+	  case Left(i: XmlItem) =>
+	    (output, serializer.item(i, output.path), false)
+	  case Left(x: Elem) =>
+	    // if next is an end elem then its an empty
+	    if (next.isRight) {
+
+	      // x.namespaces can't be used any further
+	      val nc = doElement(x, output.currentMappings.top)
+	      (output, serializer.emptyElement(x.name, x.attributes, nc.declMap, nc.addDefault, x.name :: output.path), true) // let us know to ignore the next end
+	    } else {
+	      val npath = x.name :: output.path
+
+	      val nc = doElement(x, output.currentMappings.top)
+	      (output.copy(currentMappings = output.currentMappings.push(nc.mappings), path = npath),
+		serializer.startElement(x.name, x.attributes, nc.declMap, nc.addDefault, npath), false)
+	    }
+	  case Right(endElem) =>
+	    if (isEmpty)
+	      (output, None, false)
+	    else
+	      // pop the last ones
+	      (output.copy(currentMappings = output.currentMappings.pop,
+		path = output.path.tail), serializer.endElement(endElem.name, output.path), false)
+
+	}
+      }
+    }
+    (r._1, r._2)
+  }
+}
+
+/**
  * SerializeableXml instances for the core types
  */ 
 trait SerializerImplicits {
@@ -27,18 +80,17 @@ trait SerializerImplicits {
               if (!walk.hasChildren) {
 
                 // x.namespaces can't be used any further
-                val (mappings, (attribs, declMap, addDef)) = doElement(x, output)
-                (output, serializer.emptyElement(x.name, attribs, declMap, addDef, x.name :: output.path))
+                val nc = doElement(x, output.currentMappings.top)
+                (output, serializer.emptyElement(x.name, x.attributes, nc.declMap, nc.addDefault, x.name :: output.path))
               } else {
                 if (walk.isStart) {
 
                   val npath = x.name :: output.path
 
-                  val (mappings, (attribs, declMap, addDef)) = doElement(x, output)
-
-                  (output.copy(currentMappings = output.currentMappings.push(mappings),
+                  val nc = doElement(x, output.currentMappings.top)
+                  (output.copy(currentMappings = output.currentMappings.push(nc.mappings),
                     path = npath),
-                    serializer.startElement(x.name, attribs, declMap, addDef, npath))
+                    serializer.startElement(x.name, x.attributes, nc.declMap, nc.addDefault, npath))
                 } else {
                   // pop the last ones
                   (output.copy(currentMappings = output.currentMappings.pop,
@@ -52,7 +104,7 @@ trait SerializerImplicits {
   /**
    * Serializes a DslBuilder
    */
-  implicit val builderSerializeable = new SerializeableXml[DslBuilder] {
+  implicit val builderSerializeable : SerializeableXml[DslBuilder] = new SerializeableXml[DslBuilder] {
     def doc(it: DslBuilder) = Doc(it.toTree)
     def apply(it: DslBuilder)(out: XmlOutput, serializer: Serializer): (XmlOutput, Option[Throwable]) = treeSerializeable(it.toTree)(out, serializer)
   }
@@ -60,7 +112,7 @@ trait SerializerImplicits {
   /**
    * Serializes a Doc (Wrapped XmlTree)
    */
-  implicit val docSerializeable = new SerializeableXml[Doc] {
+  implicit val docSerializeable : SerializeableXml[Doc]= new SerializeableXml[Doc] {
     def doc(it: Doc) = it
     def apply(it: Doc)(out: XmlOutput, serializer: Serializer): (XmlOutput, Option[Throwable]) = treeSerializeable(it.rootElem)(out, serializer)
   }
@@ -68,83 +120,38 @@ trait SerializerImplicits {
   /**
    * Simple Elem serializer
    */
-  implicit val elemSerializable = new SerializeableXml[Elem] {
+  implicit val elemSerializable : SerializeableXml[Elem] = new SerializeableXml[Elem] {
     def doc(it: Elem) = Doc(DslBuilder.elem2tree(it))
     def apply(it: Elem)(out: XmlOutput, serializer: Serializer): (XmlOutput, Option[Throwable]) = treeSerializeable(DslBuilder.elem2tree(it))(out, serializer)
   } 
 
+
+
+
   /**
    * Serializes an Xml Stream
    */
-  implicit val streamSerializeable: SerializeableXml[Iterator[PullType]] = new SerializeableXml[Iterator[PullType]] {
-
-    import ScalesXml._
-
-    val dummy: Iterable[PullType] = List(Left(Elem("dummy"l)))
-
-    def doc(it: Iterator[PullType]) = EmptyDoc()
-    def apply(it: Iterator[PullType])(out: XmlOutput, serializer: Serializer): (XmlOutput, Option[Throwable]) = {
-      // left of the sequence is our actual, 
-      val r = it.++(dummy.iterator).sliding(2).foldLeft((out, None: Option[Throwable], false)) { (cur, two) =>
-        val (output, y, isEmpty) = cur
-        if (y.isDefined) cur
-        else {
-          val List(ev, next) = two.toList
-          ev match {
-            case Left(i: XmlItem) =>
-              (output, serializer.item(i, output.path), false)
-            case Left(x: Elem) =>
-              // if next is an end elem then its an empty
-              if (next.isRight) {
-
-                // x.namespaces can't be used any further
-                val (mappings, (attribs, declMap, addDef)) = doElement(x, output)
-                (output, serializer.emptyElement(x.name, attribs, declMap, addDef, x.name :: output.path), true) // let us know to ignore the next end
-              } else {
-                val npath = x.name :: output.path
-
-                val (mappings, (attribs, declMap, addDef)) = doElement(x, output)
-
-                (output.copy(currentMappings = output.currentMappings.push(mappings), path = npath),
-                  serializer.startElement(x.name, attribs, declMap, addDef, npath), false)
-              }
-            case Right(endElem) =>
-              if (isEmpty)
-                (output, None, false)
-              else
-                // pop the last ones
-                (output.copy(currentMappings = output.currentMappings.pop,
-                  path = output.path.tail), serializer.endElement(endElem.name, output.path), false)
-
-          }
-        }
-      }
-      (r._1, r._2)
-    }
-  }
+  implicit val streamSerializeable: SerializeableXml[Iterator[PullType]] = new StreamSerializer(identity)
 
   /**
    * Serializes an XmlPull
    */
-  implicit val pullCloseableOnlySerializeable: SerializeableXml[CloseablePull] = new SerializeableXml[CloseablePull] {
-    def doc(it: CloseablePull) = it
-    def apply(it: CloseablePull)(out: XmlOutput, serializer: Serializer): (XmlOutput, Option[Throwable]) = streamSerializeable(it)(out, serializer)
+  implicit val pullCloseableOnlySerializeable: SerializeableXml[CloseablePull] = new StreamSerializer[CloseablePull](identity){
+    override def doc(it: CloseablePull) = it
   }
 
   /**
    * Serializes an XmlPull Resource
    */
-  implicit val pullOnlySerializeable: SerializeableXml[XmlPull] = new SerializeableXml[XmlPull] {
-    def doc(it: XmlPull) = it
-    def apply(it: XmlPull)(out: XmlOutput, serializer: Serializer): (XmlOutput, Option[Throwable]) = streamSerializeable(it)(out, serializer)
+  implicit val pullOnlySerializeable: SerializeableXml[XmlPull] = new StreamSerializer[XmlPull](identity) {
+    override def doc(it: XmlPull) = it
   }
 
   /**
    * Serializes an Iterator and DocLike
    */
-  implicit val pullAndDocSerializeable: SerializeableXml[(Iterator[PullType], DocLike)] = new SerializeableXml[(Iterator[PullType], DocLike)] {
-    def doc(it: (Iterator[PullType], DocLike)) = it._2
-    def apply(it: (Iterator[PullType], DocLike))(out: XmlOutput, serializer: Serializer): (XmlOutput, Option[Throwable]) = streamSerializeable(it._1)(out, serializer)
+  implicit val pullAndDocSerializeable: SerializeableXml[(Iterator[PullType], DocLike)] = new StreamSerializer[(Iterator[PullType], DocLike)](_._1) {
+    override def doc(it: (Iterator[PullType], DocLike)) = it._2
   }
 
 

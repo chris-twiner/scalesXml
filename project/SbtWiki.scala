@@ -11,6 +11,8 @@ import scales.sbtplugins.Utils._
 
 import java.io.File
 
+import com.tristanhunt.knockoff.DefaultDiscounter._
+
 /**
  * Allows providing an additional header set per individual markup.
  * Title gets special treatment as it is likely the most common case, given the siteHeaders.
@@ -28,14 +30,14 @@ object SbtWiki {
   lazy val wikiTextServiceLocator = ServiceLocator.getInstance(this.getClass.getClassLoader)
 
   sealed trait MarkupType
-//  case object Markdown extends MarkupType
+  case object Markdown extends MarkupType
   case object Textile extends MarkupType
   case object MediaWiki extends MarkupType
   case object Confluence extends MarkupType
   case object TracWiki extends MarkupType
   case object TWiki extends MarkupType
 
-  val markupExtensions = Map("mw" -> MediaWiki, "textile" -> Textile, "mwiki" -> MediaWiki, "trac" -> TracWiki)
+  val markupExtensions = Map("mw" -> MediaWiki, "textile" -> Textile, "mwiki" -> MediaWiki, "trac" -> TracWiki, "md" -> Markdown, "markdown" -> Markdown)
 
   /**
    * provide a list of templates to a mediawiki langauge.
@@ -87,6 +89,17 @@ object SbtWiki {
       import java.io.StringWriter
 
       markupExtensions.get(markup.ext).cata( ml => {
+	if (ml eq Markdown) {
+	  val ms = IO.read(markup, utf8)
+	  val msr = toXML(knockoff(replaceTokens(ms,tokens)))
+	  val x = "<html><head>"+
+	    replaceTokens(extraHeaders,tokens)+
+	    "</head><body>"+msr+
+	    replaceTokens(bodyEnd,tokens) +
+	    "</body></html>"
+	  ioCatching{write(html, x, utf8); None}(log)	  
+	} else {
+	  // mediawiki
         val lang = wikiTextServiceLocator.getMarkupLanguage(ml.toString)
 
 	if (lang.isInstanceOf[MediaWikiLanguage]) {
@@ -127,6 +140,7 @@ object SbtWiki {
 	  }, utf8); None}(log)
         })
 	res
+	}
       }, Some("Could not find markup language for extension "+markup.ext) )
     } catch {
       case e : Exception => e.printStackTrace;Some("Could not convert markup: " + e.getMessage)
