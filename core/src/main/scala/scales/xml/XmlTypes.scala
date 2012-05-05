@@ -53,7 +53,7 @@ sealed trait Elem extends XmlEvent {
 
   override def equals( other : Any ) = other match {
     case o : Elem => 
-      if ((name === o.name) // exact match needed?? 
+      if ((name ==== o.name) // exact match needed?? 
 	  && (attributes == o.attributes)
 	  && (namespaces == o.namespaces) )
 	true
@@ -157,7 +157,7 @@ class ElemKey {
   override def equals( other : Any ) = other match {
     case oq : ElemKey =>
       if ((lastHash == oq.lastHash) &&
-	((name eq oq.name) || (name === oq.name)) && 
+	((name eq oq.name) || (name ==== oq.name)) && 
 	  ((attributes eq oq.attributes) || (attributes == oq.attributes)) &&
 	  ((namespaces eq oq.namespaces) || (namespaces == oq.namespaces)) // only checks after running equals == instanceof checks ++
 	)
