@@ -147,7 +147,7 @@ case class Recon(val parts : Map[Int, Int] = Map[Int, Int](),
  */ 
 class ParsingPerformanceRecon extends SimpleScalaBenchmark {
 
-  @Param(Array("10000"))//"10", "100", "1000", "10000", "40000"))//
+  @Param(Array("40000"))//"10", "100", "1000", "10000", "40000"))//
   val size: Int = 0
   
   var s : String = _
@@ -165,14 +165,12 @@ class ParsingPerformanceRecon extends SimpleScalaBenchmark {
   def timeNoOptimisation(reps: Int) = repeat(reps) {
     loadXmlS(s, NoOptimisation)
   }
-
-  def timeScala(reps: Int) = repeat(reps) {
+*/
+  def timeScalaXML(reps: Int) = repeat(reps) {
     scala.xml.XML.loadString(s)
   }  
 
-*/
-
-  def timeQNameOnly(reps: Int) = repeat(reps) {
+  def timeScalesXml(reps: Int) = repeat(reps) {
     loadXmlS(s, QNameMemoryOptimisation)
   }
 
@@ -324,9 +322,11 @@ class ParsingPerformanceRecon extends SimpleScalaBenchmark {
   }
 
 
+
   def timeQNameAndSpeedPull(reps: Int) = repeat(reps) {
     loadXmlP(s, QNameAndSpeedierStrategy)
   }
+  */
 
   def timeJAXPParseDeferred(reps: Int) = repeat(reps) {
     DefaultDOMFactoryPool.loan{ x => 
@@ -341,8 +341,6 @@ class ParsingPerformanceRecon extends SimpleScalaBenchmark {
                     false);
       x.newDocumentBuilder.parse(new StringReader(s)) }
   }
-
-  */
 
 
   

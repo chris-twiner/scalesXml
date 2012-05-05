@@ -41,7 +41,7 @@ QNames often repeat during individual XML documents and, of course, across them 
 
 However the time taken to cache QNames is significant for smaller documents (e.g. 150-200 elements) where typically any garbage effects are less likely to impact performance.
 
-As can be seen in the below recon parsing performance diagrams the pure performance behaviour of caching QNames (QNameAndSpeed) is less than simply optimising the children building (MutableVectorLike) for most small documents.  When the size of the document increases to a level that provokes garbage collection the default caching behaviour starts to provide a direct parsing speed improvement as well.
+The below diagrams illustrate the relative parsing performance of Scales Xml against Scala XML (2.9.1) and the two common Xerces implementations.  For all sizes of documents Scales is notably faster than Scala XML, and for larger documents it is considerable faster.
 
 : [[Image:img/parsing_perf_small_recon.png|Parsing Performance Of Smaller XML]]
 
@@ -92,10 +92,10 @@ ${cscala}
 
 
     import Recon._
-    import Elements.Functions.text
+    import Functions._
 
     val xml = pullXml(new java.io.StringReader(s)).it
-    foldOnDone( xml )( Recon(Map[Int, Int](), Map[Int, Int](),Map[Int, Int]()), 
+    foldOnDone( xml )( Recon(), 
 		      onDone( List(onQNames(Part), 
 				   onQNames(Bom), 
 				   onQNames(Rec)) )) {
@@ -108,7 +108,7 @@ ${cscala}
 	  val qnames = matched._1  // to get an onDone it must be defined
 	  val x = matched._2.get
 	  // only one child
-	  val pair = (text(x.\*(id).head).toInt, text(x.\*(version).head).toInt)
+	  val pair = (text(x.\*(id)).toInt, text(x.\*(version)).toInt)
 
 	  qnames match {
 	    case Part => recon.copy( parts = recon.parts + pair )
