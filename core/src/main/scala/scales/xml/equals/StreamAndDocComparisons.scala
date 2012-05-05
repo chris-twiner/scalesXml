@@ -90,7 +90,7 @@ object ExactStreamEquals extends ExactStreamEquals {
   import AttributeEquals._
   import AttributesEquals._
 
-  def defaultStreamComparison(implicit qnameTokenComparison : Option[(ComparisonContext, String, String) => Boolean]) : XmlComparison[StreamComparable[_]] = new StreamComparison()( ItemEquals.defaultXmlItemComparison, ElemEquals.defaultElemComparison, EqualsHelpers.qnameEqual, qnameTokenComparison)
+  def defaultStreamComparison(implicit qnameTokenComparison : Option[(ComparisonContext, String, String) => Boolean]) : XmlComparison[StreamComparable[_]] = new StreamComparison()( ItemEquals.defaultXmlItemComparison, ElemEquals.defaultElemComparison(AttributesEquals.defaultAttributesComparison(AttributeEquals.defaultAttributeComparison(EqualsHelpers.qnameEqual, qnameTokenComparison)), EqualsHelpers.qnameEqual), EqualsHelpers.qnameEqual, qnameTokenComparison)
 
 }
 
@@ -110,7 +110,7 @@ object DefaultStreamEquals extends DefaultStreamEquals {
   import AttributeEquals._
   import AttributesEquals._
 
-  def defaultStreamComparison(implicit qnameTokenComparison : Option[(ComparisonContext, String, String) => Boolean]) : XmlComparison[StreamComparable[_]] = new StreamComparison(joinTextAndCData _)( ItemEquals.defaultXmlItemComparison, ElemEquals.defaultElemComparison, EqualsHelpers.qnameEqual, qnameTokenComparison)
+  def defaultStreamComparison(implicit qnameTokenComparison : Option[(ComparisonContext, String, String) => Boolean]) : XmlComparison[StreamComparable[_]] = new StreamComparison(joinTextAndCData _)( ItemEquals.defaultXmlItemComparison, ElemEquals.defaultElemComparison(AttributesEquals.defaultAttributesComparison(AttributeEquals.defaultAttributeComparison(EqualsHelpers.qnameEqual, qnameTokenComparison)), EqualsHelpers.qnameEqual), EqualsHelpers.qnameEqual, qnameTokenComparison)
 }
 
 /**

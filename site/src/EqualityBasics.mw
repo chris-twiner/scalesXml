@@ -6,6 +6,8 @@ The Scales equality framework does not throw, but returns information allowing d
 
 The `compare` function is used by the Equal instances and is documented [XmlComparison.html#The_compare_Function here].
 
+*NB* Scala 2.8.x support for the Equality framework is experimental.  Importing FromEqualsImplicit._ enables the use of === from Scalaz.  Unfortunately due to 2.8.x compiler issues the implicit resolution does not correctly function and may cause compiler crashes. 
+
 == How To Use ==
 
 Scales Xml Equality leverages two type classes, XmlComparison and the Scalaz Equal typeclass to provide comparison via a simple === .  As such Scalaz must be imported (best after Scales imports to avoid Tree import issues):

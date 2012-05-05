@@ -18,6 +18,7 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
   val testXml = loadXml(xmlFile)
   val path = top(testXml)
 
+
   def testElemConstruction : Unit = {
     val q = pre("local")
     val mu = Elem(q, pre, jh, defo, jh, pre)

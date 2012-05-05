@@ -99,6 +99,8 @@ object ComparisonContext {
   def apply() : ComparisonContext =
     new ComparisonContext(null, null, Nil, null)
 
+  val empty = apply()
+
   def unapply( c : ComparisonContext ) : Option[(Option[NamespaceContext], Option[NamespaceContext], BasicPath, Option[ComparisonContext])] = 
     Some(c.leftNamespaceContext, c.rightNamespaceContext, c.path,
 	 c.parentContext)

@@ -54,7 +54,8 @@ class EqualsTest extends junit.framework.TestCase {
     with DslImplicits
     with XmlPathImplicits
     with XmlParserImplicits
-    with PullTypeConversionImplicits {
+    with PullTypeConversionImplicits
+    with FromEqualsImplicit {
 
     implicit def fromIPtoIPComparable( t : Iterator[KeepEmSeperate.PullType] ) =
       new StreamComparable(t)

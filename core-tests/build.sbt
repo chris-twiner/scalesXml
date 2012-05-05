@@ -12,6 +12,12 @@ libraryDependencies ++= Seq(
   "com.google.code.caliper" % "caliper" % "1.0-SNAPSHOT" % "test"
 )
 
+excludeFilter in unmanagedSources <<= scalaVersion{ v => 
+  if (v.startsWith("2.8")) 
+     "*_2.9.scala"
+   else 
+     "*_2.8.scala"}
+
 caliperRunTask(reconPerf, Test, "scales.xml.ParsingPerformanceRecon", "-JmaxMem=-Xmx256M")
 
 fork in reconPerf := true

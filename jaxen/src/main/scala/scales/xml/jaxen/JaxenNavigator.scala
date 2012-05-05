@@ -113,7 +113,7 @@ class ScalesXPath(val xpath : String, val nsMap : Map[String,String] = Map()) ex
 	case x @ DocsUp(a : AttributePath, p) => (Left(a), a.parent)
 	case x @ DocsUp(xp : XmlPath, p) => (Right(xp), xp)
 	case DocumentRoot(r) => (Right(r), r)
-	}).map{x => x._1})
+	}).map{x => x._1})(eitherAOrXEqual)
   }
 
   /**

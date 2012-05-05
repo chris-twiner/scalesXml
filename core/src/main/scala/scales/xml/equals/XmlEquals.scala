@@ -21,15 +21,6 @@ import BasicPaths._
 trait XmlEquals {
 
   /**
-   * An implicit but its only purpose is to convert, and needs the given comparison to function, which is provided (or not) by ScalesXml
-   */ 
-  implicit def fromCompToEq[T](implicit comp : XmlComparison[T]) : Equal[T] = 
-    equal {
-      ( a : T, b : T) =>
-	comp.compare(false, ComparisonContext(), a, b).isEmpty
-    }
-
-  /**
    * Allows comparison of Text nodes or Attribute values that contain QNames, i.e. prefix:value.  In order to perform this comparison both the left and right sides must have a NamespaceContext.
    */ 
   def qnamesEqual(context : ComparisonContext, str : String, str2 : String) = {

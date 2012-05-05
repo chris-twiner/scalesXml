@@ -15,7 +15,8 @@ trait ScalesXmlImplicits extends XmlTypesImplicits
   with PullTypeConversionImplicits 
   with equals.DefaultXmlEquals
   with equals.StreamComparableImplicits 
-  with equals.ComparisonContextImplicits {
+  with equals.ComparisonContextImplicits
+  with equals.FromEqualsImplicit {
 
 }
 
