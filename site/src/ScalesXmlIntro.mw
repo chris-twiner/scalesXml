@@ -55,6 +55,13 @@ ${cend}
 ;* javax.xml.validation support
 ;* Aims to hide all JAXP implementation inconsistencies
 
+; '''Xml Equality'''
+;* Compare xml items against each other
+;* Full control over QName handling
+;* Full control over QName values (attributes or text)
+;* Provides information about what is different and where
+;* Provides a simple conversion to scalaz.Equal
+
 ; '''Performance'''
 ;* Up to 20% faster than scala.xml
 ;* Lower memory usage than both scala.xml and JAXP/DOM

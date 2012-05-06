@@ -1,37 +1,30 @@
 = Setup =
 
-The M2 style repos are:
+Maven users should use scales-xml_2.9.2 as the dependency (org.scalesxml as the group).
 
-* Release: https://scala-scales.googlecode.com/svn/repo
-* Snapshots: https://scala-scales.googlecode.com/svn/repo-snapshots
+The current RC 0.3 documentation site is [http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.3-RC6/index.html here] and a zip of the site documentation is available at [http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.3-RC6/org.scalesxml-scales-xml-0.3-RC6-site.zip scales-xml.zip].
 
-Maven users should use scales-xml_2.9.1 as the dependency.
-
-[http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.1/0.3/index.html The documentation site is here] and zip of the site documentation is available at [http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.1/0.3/scales-xml_2.9.1-0.3-site.zip scales-xml.zip].
-
-Scales is cross compiled for 2.8.1 and 2.9.1.  Version 0.4 only adds Scalaz 6.0.4 as a dependency and is 100% source compatible with 0.3.
+Scales is cross compiled for 2.8.1, 2.8.2, 2.9.1 and 2.9.2.
 
 == Sbt 0.11.x ==
 
 ${cscala}
-resolvers += "Scales Repo" at "https://scala-scales.googlecode.com/svn/repo"
 
 libraryDependencies ++= Seq(
   // just for the core library
-  "scales" %% "scales-xml" % "0.3" // or 0.4 for a Scalaz 6.0.4 dependency
+  "org.scalesxml" %% "scales-xml" % "0.3-RC6" // or 0.4 for a Scalaz 6.0.4 dependency
   // or, use this instead for String based XPaths (Jaxen, also includes the core)
-  "scales" %% "scales-jaxen" % "0.3" // or 0.4 for a Scalaz 6.0.4 dependency
+  "org.scalesxml" %% "scales-jaxen" % "0.3-RC6" // or 0.4 for a Scalaz 6.0.4 dependency
 )
 ${cend}
  
 == Sbt 0.7 ==
 
 ${cscala}
-val scalesRepo = "Scales Repo" at "http://scala-scales.googlecode.com/svn/repo"
 // the core
-val scalesXml = "scales" %% "scales-xml" % "0.3"
+val scalesXml = "org.scalesxml" %% "scales-xml" % "0.3-RC6"
 // use this instead for String based XPaths (Jaxen, also includes the core)
-val scalesJaxenAndCore = "scales" %% "scales-jaxen" % "0.3"
+val scalesJaxenAndCore = "org.scalesxml" %% "scales-jaxen" % "0.3-RC6"
 ${cend}
 
 

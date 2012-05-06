@@ -13,6 +13,16 @@ import SiteKeys.{siteCSS, siteResourceDir,
 		 menuBarTitle}
 
 object ScalesXmlRoot extends Build {
+
+  object sonatype extends org.improving.PublishToSonatype(ScalesXmlRoot) {
+    def projectUrl    = "https://www.github.com/chris-twiner/scalesXml"
+    def developerId   = "chris.twiner"
+    def developerName = "Chris Twiner" // TODO - take from the userprops
+    override def licenseUrl    = "http://www.opensource.org/licenses/Apache-2.0"
+    override def licenseName   = "Apache-2.0"
+    // Override more to taste
+  }
+
   lazy val root = Project("scales-xml-root", file("."), settings = standardSettings ++ dontPublishSettings) aggregate(core, coreTests, jaxen, saxonTests, jaxenTests)
 
   lazy val core = Project("scales-xml", file("core"), settings = standardSettings)
@@ -52,14 +62,14 @@ object ScalesXmlRoot extends Build {
     publishArtifact in (Compile, packageDoc) := false
    )
 
-  lazy val publishSetting = publishTo <<= (version) {
+  /*lazy val publishSetting = publishTo <<= (version) {
     version: String =>
       val path = "./../repo" +
 	(if (version.trim.endsWith("SNAPSHOT"))
 	  "-snapshots"
 	else "")
       Some(Resolver.file("svn",  new File( path )) )
-  }
+  }*/
 
   lazy val standardSettings = Defaults.defaultSettings ++ Seq(
 /*    shellPrompt := { state =>
@@ -69,9 +79,9 @@ object ScalesXmlRoot extends Build {
     organization := "org.scalesxml",
     offline := true,
     version := "0.3-RC6",
-    scalaVersion := "2.9.1",
+    scalaVersion := "2.9.2",
     crossScalaVersions := Seq("2.8.1", "2.8.2", "2.9.1", "2.9.2"),
-    publishSetting,
+    //publishSetting,
 //    parallelExecution in Test := false,
     scalacOptions ++= Seq("-optimise"),
 //    scalacOptions ++= Seq("-encoding", "UTF-8", "-deprecation", "-unchecked"),
@@ -91,7 +101,8 @@ object ScalesXmlRoot extends Build {
       )
     )
     , parallelExecution in runSecurely := false
-  )// ++ crazyness
+  ) ++ sonatype.settings
+// ++ crazyness
 
   val reconPerf = TaskKey[Unit]("recon-perf")
 
