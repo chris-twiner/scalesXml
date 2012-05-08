@@ -1,5 +1,5 @@
 
-Scales Xml 0.3 is a feature release, adding a the full set of useful XPath Axe, string based XPath evaluation - via a popular open source XPath library, useful equality testing, a lot of new documentation and many smaller improvements in syntax and usability.
+This is a feature release, adding a the full set of useful XPath Axe, string based XPath evaluation - via a popular open source XPath library, useful equality testing, a lot of new documentation and many smaller improvements in syntax and usability.
 
 This version has been built with xsbt 0.11.x and migrated to [github](https://github.com/chris-twiner/scalesXml).  This releases documentation can be found [here](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.3-RC6/index.html) and provides many examples on how to use Scales Xml.
 
