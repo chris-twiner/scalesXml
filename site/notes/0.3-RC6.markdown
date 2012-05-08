@@ -1,7 +1,7 @@
 
-0.3 is a feature release, adding a the full set of useful XPath Axe, string based XPath evaluation - via a popular open source XPath library, useful equality testing, a lot of new documentation, many smaller improvements in syntax and usability.
+Scales Xml 0.3 is a feature release, adding a the full set of useful XPath Axe, string based XPath evaluation - via a popular open source XPath library, useful equality testing, a lot of new documentation and many smaller improvements in syntax and usability.
 
-This version has been built with xsbt 0.11.x and migrated to [github](https://github.com/chris-twiner/scalesXml).  The next major version will target Scalaz 7's new Iteratee framework.
+This version has been built with xsbt 0.11.x and migrated to [github](https://github.com/chris-twiner/scalesXml).  This releases documentation can be found [here](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.3-RC6/index.html) and provides many examples on how to use Scales Xml.
 
 ### All the Axe you'll ever need
 
@@ -16,10 +16,7 @@ Scales 0.3 adds the following axe:
 * ancestor-or-self (ancestor\_or\_self\_::)
 * descendant-or-self (descendant\_or\_self\_::)
 
-This provides all of the XPath 1 and 2 axe (namespace axis excluded), for example:
-
-<iframe src="http://urlspoiler.co/gists?id=1553843&file=Axe.scala" width="100%">
-</iframe>
+This provides all of the XPath 1 and 2 axe (namespace axis excluded).
 
 ### Enhanced internal XPath queries
 
@@ -33,14 +30,11 @@ This provides all of the XPath 1 and 2 axe (namespace axis excluded), for exampl
 
 ### String base XPath evaluation
 
-* Evaluate normal XPath 1.0 strings but get back XmlPaths
+* Evaluate normal XPath 1.0 strings to XmlPaths
 * Evaluates to an Iterable[Either[AttributePath, XmlPath]] or,
 + get[T] a value directly from XPath 1.0 (e.g. get[String]\("normalize(//\*)")) 
 + Allows querying for the few predicates and XPaths that Scales cannot process (and dynamic queries of course)
 + Optional dependency
-
-<iframe src="http://urlspoiler.co/gists?id=1553843&file=JaxenXPaths.scala" width="100%" height="400px">
-</iframe>
 
 ### New xpath.Functions
 
@@ -49,13 +43,13 @@ This provides all of the XPath 1 and 2 axe (namespace axis excluded), for exampl
 * Implementations for all relevant Scales Xml types
     + string( attribute ) makes sense whilst string( QName ) does not
 
-### New XmlComparison framework
+### New XmlComparison framework (2.9.x only)
 
 * Compare Xml structures and types
 * Customisable comparison rules
 * Default Scalaz === Equal type classes
 * XmlComparison type classes provide full details of differences:
-    + A string based path to the difference
+    + A QName based path to the difference
     + The objects which are different
 
 ### Extra Fun
@@ -67,7 +61,15 @@ This provides all of the XPath 1 and 2 axe (namespace axis excluded), for exampl
 * Simplify the Builder usage why /(<(Elem(... ) when you can just /(Elem)?
 * Java 1.7 JAXP implementation checks - Schema validation is optimised (no serialization)
 
-### Bug fixes
+### How To Use
 
-* Fixed stream handling in pull parsers
-* iterate returns an Iterator as expected
+Scales 0.3 moves to Sonatype under the organisation org.scalesxml, with support for 2.8.1, 2.8.2, 2.9.1 and 2.9.2.  As such add:
+
+    libraryDependencies ++= Seq(
+      // just for the core library
+      "org.scalesxml" %% "scales-xml" % "0.3-RC6"
+      // or, use this instead for String based XPaths (Jaxen, also includes the core)
+      "org.scalesxml" %% "scales-jaxen" % "0.3-RC6"
+    )
+
+to your xsbt builds or use scales-xml_2.9.2 as the id when using Maven.

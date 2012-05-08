@@ -14,7 +14,7 @@ Currently the stable 0.2.1 release [site](http://scala-scales.googlecode.com/svn
 
 The upcoming release 0.3, has an RC6 version and provides ScalesXPath - a string based XPath 1.0 evaluator, a full compliment of useful axe in the internal XPath syntax, an equality framework (2.9.x only) and general improvements in usability.  
 
-With the move to xsbt and the recent focus, the artifacts are now on Maven Central under the group org.scales.xml.
+The artifacts are now on Maven Central under the group org.scales.xml.
 
 # How To Use
 
