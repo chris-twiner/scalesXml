@@ -2,8 +2,6 @@ import sbt._
 import Keys._
 import sbt.Package._
 import java.util.jar.Attributes.Name._
-import org.ensime.sbt.Plugin.Settings.ensimeConfig
-import org.ensime.sbt.util.SExp._
 import Defaults._
 
 import scales.sbtplugins._
@@ -93,14 +91,8 @@ object ScalesXmlRoot extends Build {
       )
     ),
     autoCompilerPlugins := false,
-    fork in run := true,
-    ensimeConfig := sexp(
-      key(":compiler-args"), sexp("-Ywarn-dead-code", "-Ywarn-shadowing"),
-      key(":formatting-prefs"), sexp(
-        key(":spaceBeforeColon"), true
-      )
-    )
-    , parallelExecution in runSecurely := false
+    fork in run := true, 
+    parallelExecution in runSecurely := false
   ) ++ sonatype.settings
 // ++ crazyness
 
