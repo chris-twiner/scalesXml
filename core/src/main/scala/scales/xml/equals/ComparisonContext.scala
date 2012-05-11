@@ -8,10 +8,20 @@ import BasicPaths._
 
 /**
  * ComparisonContext represents both the path to a given comparison and the namespace declarations which are relevant for it.
- */ 
+ *
+ * @streamPosition is incremented for each processed item in the stream, allowing a simple take to get the difference in terms of the stream, the developer can then use this with toDifferenceAsStream to capture the difference. It is only provided when a difference is found within a stream and not during the difference analysis.
+ */
 class ComparisonContext private (private val lnc : NamespaceContext = null, 
 				 private val rnc : NamespaceContext = null, 
-	 val path : BasicPath, private val parent : ComparisonContext = null) {
+	 val path : BasicPath, private val parent : ComparisonContext = null, val streamPosition : Int = 0) {
+
+  def withPosition( newStreamPosition : Int ) = 
+    new ComparisonContext(lnc, rnc, path, parent, newStreamPosition)
+
+  /**
+   * Provides a stream for the given T up to the difference represented by this context.  Callers are responsible for handling any IO handles or capturing an original stream.
+   */
+  def toDifferenceAsStream[T](t : T, filter : Iterator[PullType] => Iterator[PullType] = LogicalFilters.joinTextAndCData(_))(implicit tv : T => StreamComparable[T]) : Stream[PullType] = filter( tv(t).underlyingIterator ).take(streamPosition).toStream
 
   import ComparisonContext.emptyWithDefault
 

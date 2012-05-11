@@ -27,8 +27,11 @@ class StreamComparison( filter : Iterator[PullType] => Iterator[PullType] = iden
     var res : Option[(XmlDifference[_], ComparisonContext)] = None
     val joined = filter(lefti.underlyingIterator).zip(filter(righti.underlyingIterator))
     var context = ocontext
+    var streamPosition = 0
 
     while( res.isEmpty && joined.hasNext) {
+      streamPosition += 1
+
       joined.next match {
 	case (Left(x : Elem), Left(y : Elem)) =>
 	  if (calculate || qnameTokenComparison.isDefined) { // also needed for qname handling
@@ -55,6 +58,12 @@ class StreamComparison( filter : Iterator[PullType] => Iterator[PullType] = iden
 	    else
 	      noCalculation
       }
+    }
+    if (calculate && res.isDefined) {
+      // unpack, repack
+      val Some((diff, rcontext)) = res
+      context = rcontext.withPosition(streamPosition)
+      res = Some((diff, context))
     }
 
     res

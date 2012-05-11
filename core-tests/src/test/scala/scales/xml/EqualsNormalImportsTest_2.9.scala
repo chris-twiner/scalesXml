@@ -695,4 +695,22 @@ class EqualsNormalImportsTest extends junit.framework.TestCase {
     assertTrue("nml eq miscDiffL1", nml eq miscDiffL1) // ends are different on purpose
     assertTrue("nmr eq miscDiffR", nmr eq miscDiffContentR)
   }
+
+  /**
+   * Utility function, but very useful
+   */ 
+  def testDifferenceAsStream : Unit = {
+    val x = loadXml(scales.utils.resource(this, "/data/Nested.xml")).rootElem
+
+    val y = x.fold_!( _.\*.\*("urn:default"::"ShouldRedeclare") )(_ => Remove())
+
+    val Some((diff, context)) = compare[XmlTree](x, y)
+
+    val upTo = context.toDifferenceAsStream(x)
+
+    val upToStr = asString(upTo.iterator)
+
+    assertEquals(232, upToStr.size)
+  }
+
 }

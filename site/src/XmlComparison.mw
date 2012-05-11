@@ -53,6 +53,25 @@ In addition to identifying where something is different it could be used to deci
 
 NamespaceContext is used by both XmlComparison and by the serialisation mechanisms and acts a stack of prefix -> namespace mappings that have been defined in the given trees.  The namespace prefixes used by PrefixedQName attributes and element are combined with any defined prefixes from the elements namespace map.
 
+When comparing a stream the position within that iterator is also set upon returning from comparison - streamPosition.  Calling a ComparisonContexts toDifferenceAsStream with one of the compared xml objects will provide a <nowiki>Stream[PullType]</nowiki> with the xml from the start of the document to the diffence.  Callers are responsible for ensuring the input is restartable (i.e. if it was over an http stream that a bufferred stream was used) and that the conversion function matches (by default it follows the same convention of joinTextAndCData that the stream comparison uses).  For example:
+
+${cscala}
+    val x = loadXml(scales.utils.resource(this, "/data/Nested.xml")).rootElem
+
+    // create a difference
+    val y = x.fold_!( _.\*.\*("urn:default"::"ShouldRedeclare") )(_ => Remove())
+
+    val Some((diff, context)) = compare[XmlTree](x, y)
+
+    // the stream from the start of the document to the difference
+    val upTo = context.toDifferenceAsStream(x)
+
+    // as a string
+    val upToStr = asString(upTo.iterator)
+
+    assertEquals(232, upToStr.size)
+${cend}
+
 === Return Value ===
 
 The return value indicates:
