@@ -290,6 +290,16 @@ class XmlMarshallingTest extends junit.framework.TestCase {
     }
   }
 
+  def testEmptyStream : Unit = {
+    try {
+      asString(List.empty[PullType].iterator)
+      fail("Should have thrown")
+    } catch {
+      case t : NoDataInStream => ()
+      case t : Throwable => throw t
+    }
+  }
+
 /*
  XML 1.1 does not work with pull parsers :<
   def test11_prefix_pull : Unit = {

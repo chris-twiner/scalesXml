@@ -3,15 +3,20 @@ package scales.xml.serializers
 import scales.xml._
 import scales.utils._
 
+object StreamSerializer {
+  import ScalesXml._
+
+  val dummy = Left(Elem("dummy"l))
+  val dummyIterable : Iterable[PullType] = List(dummy)
+
+}
+
 /**
  * Provides a base class for steam handling
  */ 
 class StreamSerializer[T](toP : T => Iterator[PullType]) extends SerializeableXml[T] {
-
-  import ScalesXml._
-
-  val dummy: Iterable[PullType] = List(Left(Elem("dummy"l)))
-
+  import StreamSerializer._ 
+  
   /**
    * Override to provide an actual doc
    */ 
@@ -19,37 +24,42 @@ class StreamSerializer[T](toP : T => Iterator[PullType]) extends SerializeableXm
   def apply(itT: T)(out: XmlOutput, serializer: Serializer): (XmlOutput, Option[Throwable]) = {
     val it = toP(itT)
     // left of the sequence is our actual, 
-    val r = it.++(dummy.iterator).sliding(2).foldLeft((out, None: Option[Throwable], false)) { (cur, two) =>
+    val r = it.++(dummyIterable.iterator).sliding(2).foldLeft((out, None: Option[Throwable], false)) { (cur, two) =>
       val (output, y, isEmpty) = cur
       if (y.isDefined) cur
       else {
-	val List(ev, next) = two.toList
-	ev match {
-	  case Left(i: XmlItem) =>
-	    (output, serializer.item(i, output.path), false)
-	  case Left(x: Elem) =>
-	    // if next is an end elem then its an empty
-	    if (next.isRight) {
+	val asList = two.toList
+	if (!((asList.size == 1) && (asList.head eq dummy))) { // only == 1 with an empty input Iterator
+	  
+	  val List(ev, next) = asList
+	  ev match {
+	    case Left(i: XmlItem) =>
+	      (output, serializer.item(i, output.path), false)
+	    case Left(x: Elem) =>
+	      // if next is an end elem then its an empty
+	      if (next.isRight) {
 
-	      // x.namespaces can't be used any further
-	      val nc = doElement(x, output.currentMappings.top)
-	      (output, serializer.emptyElement(x.name, x.attributes, nc.declMap, nc.addDefault, x.name :: output.path), true) // let us know to ignore the next end
-	    } else {
-	      val npath = x.name :: output.path
+		// x.namespaces can't be used any further
+		val nc = doElement(x, output.currentMappings.top)
+		(output, serializer.emptyElement(x.name, x.attributes, nc.declMap, nc.addDefault, x.name :: output.path), true) // let us know to ignore the next end
+	      } else {
+		val npath = x.name :: output.path
 
-	      val nc = doElement(x, output.currentMappings.top)
-	      (output.copy(currentMappings = output.currentMappings.push(nc.mappings), path = npath),
-		serializer.startElement(x.name, x.attributes, nc.declMap, nc.addDefault, npath), false)
-	    }
-	  case Right(endElem) =>
-	    if (isEmpty)
-	      (output, None, false)
-	    else
-	      // pop the last ones
-	      (output.copy(currentMappings = output.currentMappings.pop,
-		path = output.path.tail), serializer.endElement(endElem.name, output.path), false)
+		val nc = doElement(x, output.currentMappings.top)
+		(output.copy(currentMappings = output.currentMappings.push(nc.mappings), path = npath),
+		 serializer.startElement(x.name, x.attributes, nc.declMap, nc.addDefault, npath), false)
+	      }
+	    case Right(endElem) =>
+	      if (isEmpty)
+		(output, None, false)
+	      else
+		// pop the last ones
+		(output.copy(currentMappings = output.currentMappings.pop,
+		    path = output.path.tail), 
+		   serializer.endElement(endElem.name, output.path), false)
 
-	}
+	  }
+	} else (output, Some(NoDataInStream()), true)
       }
     }
     (r._1, r._2)

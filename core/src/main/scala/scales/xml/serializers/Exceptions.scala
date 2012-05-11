@@ -40,3 +40,8 @@ case class CannotSerialize(override val what: String) extends SerializationExcep
  * Result of trying to serialize a 1.1 ncname into a 1.0 document
  */
 case class IncompatibleQNameVersions(override val what: String) extends SerializationException(what)
+
+/**
+ * The stream of PullTypes was empty.
+ */ 
+case class NoDataInStream() extends SerializationException("No Data In Stream")
