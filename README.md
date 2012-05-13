@@ -31,7 +31,9 @@ xsbt 0.10+ its:
       //"org.scalesxml" %% "scales-jaxen" % "0.3-RC6" // optional for string based xpaths
       )
 
-Maven repos should therefore use org.scalesxml scales-xml_2.9.2 as the dependency.
+Maven repos should therefore use org.scalesxml scales-xml_2.9.2 as the dependency.   Also note that Jaxen 1.1.4 (tested against 0.3-RC6) isn't yet present via Maven, so if you use String XPath evaluation and you'd like to use the latest version you must add the folowing to the build:
+
+    resolvers += "Scales Repo" at "http://scala-scales.googlecode.com/svn/repo"
 
 [The last stable 0.2.1 documentation site is here](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.1/0.2.1/index.html) and zip of the site documentation is available at [scales-xml.zip](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.1/0.2.1/scales-xml_2.9.1-0.2.1-site.zip).  
 
