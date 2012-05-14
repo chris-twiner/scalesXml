@@ -15,8 +15,8 @@ sealed trait QName {
   /**
    * There is always a namespace, but it may be the noNamespace namespace
    */ 
-  val namespace : UnderlyingNamespace
-  val prefix : Option[String]
+  def namespace : UnderlyingNamespace
+  def prefix : Option[String]
   
   /**
    * When the version is 1.1 it cannot be serialized to a 1.0 doc.
@@ -109,8 +109,8 @@ trait CanHavePrefix extends QName {
  * Has neither a prefix nor a namespace (e.g. <fred xmlns=""/>)
  */
 trait NoNamespaceQName extends QName with RightLike[PrefixedQName, NoNamespaceQName] {
-  final val prefix = None
-  final val namespace = Default.noNamespace
+  final def prefix = None
+  final def namespace = Default.noNamespace
 }
 
 object NoNamespaceQName {
@@ -151,7 +151,7 @@ object PrefixedQName {
  * Has no prefix but a namespace (e.g. <fred xmlns="uri"/>)
  */ 
 trait UnprefixedQName extends QName with CanHavePrefix {
-  val prefix = None
+  def prefix = None
 }
 
 object UnprefixedQName {
