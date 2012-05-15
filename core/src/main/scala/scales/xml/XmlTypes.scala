@@ -46,7 +46,7 @@ import xml._
 
 sealed trait Elem extends XmlEvent {
   val name : QName
-  val attributes : Attributes
+  def attributes : Attributes
   def namespaces : Map[String, String] = emptyNamespaces
 
   def copy(name: QName = name, attributes: Attributes = attributes, namespaces: Map[String, String] = namespaces)(implicit fromParser : FromParser) : Elem
@@ -95,10 +95,10 @@ object Elem {
     apply(name, emptyAttributes, (namespace +: namespaces).map( p => p.prefix -> p.ns.uri ).toMap)(fromParser)
 
   def apply(name : QName, attributes : Attributes, namespace : PrefixedNamespace, namespaces : PrefixedNamespace * )(implicit fromParser : FromParser) : Elem = 
-    apply(name, emptyAttributes, (namespace +: namespaces).map( p => p.prefix -> p.ns.uri ).toMap)(fromParser)
+    apply(name, attributes, (namespace +: namespaces).map( p => p.prefix -> p.ns.uri ).toMap)(fromParser)
 
   def apply(namei: QName, attributesi: Attributes = emptyAttributes, namespacesi: Map[String, String] = emptyNamespaces)(implicit fromParser : FromParser) : Elem =
-    if (namespacesi.size == 0) 
+    if ((namespacesi.size == 0) && (attributesi.size != 0)) 
       new Elem { // most elements won't need to redefine, if its present we'll keep it.  Perhaps another option or optimiser should take care of this (i.e. already defined in the document we won't need to keep it around).
 	if (fromParser eq NotFromParser) {
 	  require(!(namei.prefix.map { p =>
@@ -115,22 +115,39 @@ object Elem {
 
       } 
     else 
-      new Elem {
-	if (fromParser eq NotFromParser) {
-	  require(!(namei.prefix.map { p =>
-	    (p eq PrefixedNamespace.xmlPRE) ||
-				      (p eq PrefixedNamespace.xmlnsPRE)
-				    }.getOrElse(false)), "Prefixes (xmlns, xml) are not allowed for elements")
+      if ((namespacesi.size == 0) && (attributesi.size == 0))
+	new Elem {
+	  if (fromParser eq NotFromParser) {
+	    require(!(namei.prefix.map { p =>
+	      (p eq PrefixedNamespace.xmlPRE) ||
+					(p eq PrefixedNamespace.xmlnsPRE)
+				      }.getOrElse(false)), "Prefixes (xmlns, xml) are not allowed for elements")
+	  }
+
+	  val name = namei
+	  def attributes = emptyAttributes
+	  
+	  def copy(name: QName = name, attributes: Attributes = attributes, namespaces: Map[String, String] = namespaces)(implicit fromParseri : FromParser) : Elem =
+	    apply(name, attributes, namespaces)(fromParseri)
+
 	}
+      else
+	new Elem {
+	  if (fromParser eq NotFromParser) {
+	    require(!(namei.prefix.map { p =>
+	      (p eq PrefixedNamespace.xmlPRE) ||
+					(p eq PrefixedNamespace.xmlnsPRE)
+				      }.getOrElse(false)), "Prefixes (xmlns, xml) are not allowed for elements")
+	  }
 
-	val name = namei
-	val attributes = attributesi
-	override val namespaces = namespacesi
+	  val name = namei
+	  val attributes = attributesi
+	  override val namespaces = namespacesi
 
-	def copy(name: QName = name, attributes: Attributes = attributes, namespaces: Map[String, String] = namespaces)(implicit fromParseri : FromParser) : Elem =
-	  apply(name, attributes, namespaces)(fromParseri)
+	  def copy(name: QName = name, attributes: Attributes = attributes, namespaces: Map[String, String] = namespaces)(implicit fromParseri : FromParser) : Elem =
+	    apply(name, attributes, namespaces)(fromParseri)
 
-      }
+	}
 
   def unapply( el : Elem) = Some((el.name, el.attributes, el.namespaces))
 }
