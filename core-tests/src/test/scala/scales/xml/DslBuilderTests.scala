@@ -605,5 +605,19 @@ class DslBuildersTest extends junit.framework.TestCase {
     }
   }
 
+  def testBuilderWithCustomTree : Unit = {
+    import strategies._
+
+    val x = <("Alocal"l) /( NameValue("another"l, "value") )
+
+    assertEquals("""<?xml version="1.0" encoding="UTF-8"?><Alocal><another>value</another></Alocal>""", asString(x))
+
+    val x2 = <("Alocal"l) /( NameValue("anotherdd"l, "value").
+			    copy( section = Elem("another"l)) )
+    
+    assertEquals("""<?xml version="1.0" encoding="UTF-8"?><Alocal><another>value</another></Alocal>""", asString(x2))
+    assertTrue("Should have remained a NameValue", (top(x2).\*(1)).head.tree.isInstanceOf[NameValue])
+  }
+
 }
   

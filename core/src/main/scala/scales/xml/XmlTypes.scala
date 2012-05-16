@@ -97,57 +97,56 @@ object Elem {
   def apply(name : QName, attributes : Attributes, namespace : PrefixedNamespace, namespaces : PrefixedNamespace * )(implicit fromParser : FromParser) : Elem = 
     apply(name, attributes, (namespace +: namespaces).map( p => p.prefix -> p.ns.uri ).toMap)(fromParser)
 
-  def apply(namei: QName, attributesi: Attributes = emptyAttributes, namespacesi: Map[String, String] = emptyNamespaces)(implicit fromParser : FromParser) : Elem =
-    if ((namespacesi.size == 0) && (attributesi.size != 0)) 
-      new Elem { // most elements won't need to redefine, if its present we'll keep it.  Perhaps another option or optimiser should take care of this (i.e. already defined in the document we won't need to keep it around).
-	if (fromParser eq NotFromParser) {
-	  require(!(namei.prefix.map { p =>
-	    (p eq PrefixedNamespace.xmlPRE) ||
-				      (p eq PrefixedNamespace.xmlnsPRE)
-				    }.getOrElse(false)), "Prefixes (xmlns, xml) are not allowed for elements")
-	}
+  private[Elem] final class NoNamespacesElem( namei : QName, attributesi : Attributes ) extends Elem {
+    // most elements won't need to redefine, if its present we'll keep it.  Perhaps another option or optimiser should take care of this (i.e. already defined in the document we won't need to keep it around).
 
-	val name = namei
-	val attributes = attributesi
-	
-	def copy(name: QName = name, attributes: Attributes = attributes, namespaces: Map[String, String] = namespaces)(implicit fromParseri : FromParser) : Elem =
-	  apply(name, attributes, namespaces)(fromParseri)
+    val name = namei
+    val attributes = attributesi
+    
+    def copy(name: QName = name, attributes: Attributes = attributes, namespaces: Map[String, String] = namespaces)(implicit fromParseri : FromParser) : Elem =
+      apply(name, attributes, namespaces)(fromParseri)
 
-      } 
+  }
+
+  private[Elem] final class QNameOnlyElem( namei : QName ) extends Elem {
+    val name = namei
+    def attributes = emptyAttributes
+    
+    def copy(name: QName = name, attributes: Attributes = attributes, namespaces: Map[String, String] = namespaces)(implicit fromParseri : FromParser) : Elem =
+      apply(name, attributes, namespaces)(fromParseri)
+  }
+
+  private[Elem] final class FullElem(namei: QName, attributesi: Attributes = emptyAttributes, namespacesi: Map[String, String] = emptyNamespaces) extends Elem {
+
+    val name = namei
+    val attributes = attributesi
+    override val namespaces = namespacesi
+
+    def copy(name: QName = name, attributes: Attributes = attributes, namespaces: Map[String, String] = namespaces)(implicit fromParseri : FromParser) : Elem =
+      apply(name, attributes, namespaces)(fromParseri)
+
+  }
+
+  private[Elem] def checkElemName( namei : QName )(implicit fromParser : FromParser) {
+    if (fromParser eq NotFromParser) {
+      require(!(namei.prefix.map { p =>
+	(p eq PrefixedNamespace.xmlPRE) ||
+				  (p eq PrefixedNamespace.xmlnsPRE)
+				}.getOrElse(false)), "Prefixes (xmlns, xml) are not allowed for elements")
+    }
+  }
+
+  def apply(namei: QName, attributesi: Attributes = emptyAttributes, namespacesi: Map[String, String] = emptyNamespaces)(implicit fromParser : FromParser) : Elem = {
+    checkElemName(namei)(fromParser)
+
+    if ((namespacesi.isEmpty) && (!attributesi.isEmpty)) 
+      new NoNamespacesElem( namei, attributesi )
     else 
-      if ((namespacesi.size == 0) && (attributesi.size == 0))
-	new Elem {
-	  if (fromParser eq NotFromParser) {
-	    require(!(namei.prefix.map { p =>
-	      (p eq PrefixedNamespace.xmlPRE) ||
-					(p eq PrefixedNamespace.xmlnsPRE)
-				      }.getOrElse(false)), "Prefixes (xmlns, xml) are not allowed for elements")
-	  }
-
-	  val name = namei
-	  def attributes = emptyAttributes
-	  
-	  def copy(name: QName = name, attributes: Attributes = attributes, namespaces: Map[String, String] = namespaces)(implicit fromParseri : FromParser) : Elem =
-	    apply(name, attributes, namespaces)(fromParseri)
-
-	}
+      if ((namespacesi.isEmpty) && (attributesi.isEmpty))
+	new QNameOnlyElem( namei )
       else
-	new Elem {
-	  if (fromParser eq NotFromParser) {
-	    require(!(namei.prefix.map { p =>
-	      (p eq PrefixedNamespace.xmlPRE) ||
-					(p eq PrefixedNamespace.xmlnsPRE)
-				      }.getOrElse(false)), "Prefixes (xmlns, xml) are not allowed for elements")
-	  }
-
-	  val name = namei
-	  val attributes = attributesi
-	  override val namespaces = namespacesi
-
-	  def copy(name: QName = name, attributes: Attributes = attributes, namespaces: Map[String, String] = namespaces)(implicit fromParseri : FromParser) : Elem =
-	    apply(name, attributes, namespaces)(fromParseri)
-
-	}
+	new FullElem( namei, attributesi, namespacesi )
+  }
 
   def unapply( el : Elem) = Some((el.name, el.attributes, el.namespaces))
 }
