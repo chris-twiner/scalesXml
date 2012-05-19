@@ -19,7 +19,7 @@ class BaseToken(implicit val ver : XmlVersion, val fromParser : FromParser) exte
 /**
  * Memory usage in DOMs is often dominated by repeated elements.  Xerces and co use string tables to optimise memory usage, with DTM a key example.
  *
- * Performing lookups is expensive so the strategys have selective levels of lookup.  Developers may therefore choose appropriate levels that best fit their trade-off between space and time.
+ * Performing lookups is expensive so the strategies can have selective levels of lookup.  Developers may therefore choose appropriate levels that best fit their trade-off between space and time.
  *
  * There will, of course, be temporary garbage created for such a scheme but it should pay off for larger messages.
  *
@@ -28,19 +28,14 @@ trait MemoryOptimisationStrategy[Token <: OptimisationToken] {
 
   def createToken(implicit ver : XmlVersion, fromParser : FromParser) : Token
 
-//  def createToken(implicit ver : XmlVersion, fromParser : FromParser) : Token = new BaseToken()
-
   /**
    * It is expected that certain attributes have fixed values, ie. booleans or based on schema enums etc, this function allows such optimisations.
    *
-   * The qname will have been obtained via qName, so any optimisations provided by it can be leveraged.
+   * The qname will have been obtained via a call to either noNamespaceQName, unprefixedQName or prefixedQName, so any optimisations provided by them can be leveraged.
    *
    */ 
   def attribute( qname : AttributeQName, value : String, token : Token) : Attribute = Attribute(qname,value)
 
-  /**
-   * The creation costs can also be reduced
-   */ 
   def noNamespaceQName( local : String, token : Token) : NoNamespaceQName = {
     import token._
     NoNamespaceQName(local)
@@ -74,27 +69,26 @@ trait BaseTokenF {
 }
 
 /**
- * Default optimisation strategy, performing no optimisation at all
+ * Performs no optimisation at all
  */ 
 object NoOptimisation extends PathOptimisationStrategy[BaseToken] with BaseTokenF
 
 /**
  * Certain paths may be repeated (based on QNames of parents etc) and known to be by the developer, its also possible that the developer simply is not interested in this path.
  *
- * Developers may also customise the creation of paths (for example adding starting children or replacing the XmlChildren implementation.
+ * Developers may also customise the creation of paths, for example adding starting children, replacing the XmlChildren implementation or replacing entire subtrees.
  */
 trait PathOptimisationStrategy[Token <: OptimisationToken] extends MemoryOptimisationStrategy[Token] {
   
   /**
-   * Any elementEnd implementation must perform either an xml.zipUp
-   * or removeAndUp.  The default performs a zipUp
+   * By default calls TreeProxies.elementEnd.  Replacing entire subtrees can be performed here.
    */ 
   def elementEnd( xml : TreeProxies, token : Token) {
     xml.elementEnd
   }
 
   /**
-   * Start a new tree, defaults to addAndFocus.
+   * Start a new "tree", pushing the elem to TreeProxies
    */ 
   def beginSubTree( stack : TreeProxies, elem : Elem, token : Token) {
     stack.beginSub(elem)
@@ -163,7 +157,7 @@ import strategies._
 /**
  * The default as it will equal or better Scala Xml memory consumption at a performance gain.
  *
- * For the lowest memory consumption possible, for example where memory is more important than raw performance, see MemoryAndSpeedierStrategy
+ * For the lowest memory consumption possible, for example where memory is more important than raw performance, see LowMemoryOptimsation
  *
  */
 object QNameMemoryOptimisation extends PathOptimisationStrategy[QNameToken] with QNameOptimisationT[QNameToken] with QNameTokenF

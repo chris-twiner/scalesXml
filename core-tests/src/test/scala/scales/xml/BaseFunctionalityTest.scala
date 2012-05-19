@@ -2,41 +2,11 @@ package scales.xml
 
 import strategies._
 
-object QNameNameValue extends PathOptimisationStrategy[ElemToken] with ElemQNameOptimisationT[ElemToken] with ElemTokenF {
-
-  /**
-   * Start a new tree, defaults to addAndFocus.
-  def beginSubTree( stack : TreeProxies, elem : Elem, token : ElemToken) {
-    stack.beginSub(elem)
-  }
-   */ 
+object QNameNameValue extends PathOptimisationStrategy[ElemToken] with ElemQNameOptimisationT[ElemToken] with TreeOptimisation[ElemToken] with ElemTokenF {
   
-  /**
-   * Any elementEnd implementation must perform either an xml.zipUp
-   * or removeAndUp.  The default performs a zipUp
-   */ 
-  override def elementEnd( xml : TreeProxies, token : ElemToken) {
-//    xml.elementEnd
-//  def elementEnd() {
+  def newTree( elem : Elem, children : XmlChildren, token : ElemToken ) : XmlTree =
+    LazyOptimisedTree( elem, children)(IsFromParser)
 
-    import scales.utils.Tree
-
-    val l = xml.current
-    //println("proxies elementend "+depth)
-    if (xml.depth > 0) {
-      xml.depth -= 1
-      xml.current = xml.proxies( xml.depth )
-      xml.current.children = (xml.current.children :+ 
-        NameValue( l.elem, l.children)(IsFromParser).getOrElse( Tree(l.elem, l.children) )
-      )
-    } else {
-      xml.depth -= 1
-    }
-//  }
-
-  }
-
-  
 }
 
 

@@ -608,11 +608,11 @@ class DslBuildersTest extends junit.framework.TestCase {
   def testBuilderWithCustomTree : Unit = {
     import strategies._
 
-    val x = <("Alocal"l) /( NameValue("another"l, "value") )
+    val x = <("Alocal"l) /( LazyOptimisedTree(Elem("another"l), IAOne("value")) )
 
     assertEquals("""<?xml version="1.0" encoding="UTF-8"?><Alocal><another>value</another></Alocal>""", asString(x))
 
-    val x2 = <("Alocal"l) /( NameValue("anotherdd"l, "value").
+    val x2 = <("Alocal"l) /( LazyOptimisedTree(Elem("anotherdd"l), IAOne("value")).
 			    copy( section = Elem("another"l)) )
     
     assertEquals("""<?xml version="1.0" encoding="UTF-8"?><Alocal><another>value</another></Alocal>""", asString(x2))
