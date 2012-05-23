@@ -45,7 +45,6 @@ abstract class NameValue(val name : QName, val text : String) extends Tree[XmlIt
   def copy( section : Elem = csection, children : XmlChildren = cchildren) : Tree[XmlItem, Elem, XCC] = {
     // if we are copying we are no longer in a parse
     import ScalesXml.fromParserDefault
-    // TODO go through a list of known optimisations
     LazyOptimisedTree(section, children)
   }
 }
@@ -64,7 +63,6 @@ class ElemValue(val section : Elem, val text : String) extends Tree[XmlItem, Ele
   def copy( section : Elem = csection, children : XmlChildren = cchildren) : Tree[XmlItem, Elem, XCC] = {
     // if we are copying we are no longer in a parse
     import ScalesXml.fromParserDefault
-    // TODO go through a list of known optimisations
     LazyOptimisedTree(section, children)
   }
 }
