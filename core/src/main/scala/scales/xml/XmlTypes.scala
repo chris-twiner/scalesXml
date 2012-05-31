@@ -116,7 +116,7 @@ object Elem {
       apply(name, attributes, namespaces)(fromParseri)
   }
 
-  private[Elem] final class FullElem(namei: QName, attributesi: Attributes = emptyAttributes, namespacesi: Map[String, String] = emptyNamespaces) extends Elem {
+  private[Elem] final class FullElem(namei: QName, attributesi: Attributes, namespacesi: Map[String, String]) extends Elem {
 
     val name = namei
     val attributes = attributesi
@@ -127,7 +127,18 @@ object Elem {
 
   }
 
-  private[Elem] def checkElemName( namei : QName )(implicit fromParser : FromParser) {
+  private[Elem] final class NoAttribsElem(namei: QName, namespacesi: Map[String, String]) extends Elem {
+
+    val name = namei
+    def attributes = emptyAttributes
+    override val namespaces = namespacesi
+
+    def copy(name: QName = name, attributes: Attributes = attributes, namespaces: Map[String, String] = namespaces)(implicit fromParseri : FromParser) : Elem =
+      apply(name, attributes, namespaces)(fromParseri)
+
+  }
+
+  @inline final private[Elem] def checkElemName( namei : QName )(implicit fromParser : FromParser) {
     if (fromParser eq NotFromParser) {
       require(!(namei.prefix.map { p =>
 	(p eq PrefixedNamespace.xmlPRE) ||
@@ -136,16 +147,41 @@ object Elem {
     }
   }
 
-  def apply(namei: QName, attributesi: Attributes = emptyAttributes, namespacesi: Map[String, String] = emptyNamespaces)(implicit fromParser : FromParser) : Elem = {
+  @inline def apply(namei: QName, attributesi: Attributes = emptyAttributes, namespacesi: Map[String, String] = emptyNamespaces)(implicit fromParser : FromParser) : Elem = {
     checkElemName(namei)(fromParser)
 
-    if ((namespacesi.isEmpty) && (!attributesi.isEmpty)) 
-      new NoNamespacesElem( namei, attributesi )
-    else 
-      if ((namespacesi.isEmpty) && (attributesi.isEmpty))
+    // we have to evaluate anyway, only 4 states = switch (doesn't actually improve speed at all
+    var res = 0
+    // the integer 1231 if this object represents true; returns the integer 1237 if this object represents false.
+    res = namespacesi.isEmpty.hashCode
+    
+    res += (attributesi.isEmpty.hashCode * 2)
+
+    res = (res - 3693) / 6
+
+    import scala.annotation.switch
+
+    (res : @switch) match {
+      // = (1231 + (1231 * 2) - 3693 ) / 6
+      case 0 => new QNameOnlyElem( namei )
+      // = (1237 + (1231 * 2)  - 3693 ) / 6
+      case 1 => new NoAttribsElem( namei, namespacesi )
+      // = (1231 + (1237 * 2) - 3693 ) / 6
+      case 2 => new NoNamespacesElem( namei, attributesi )
+      // = (1237 + (1237 * 2) - 3693 ) / 6
+      case 3 => new FullElem( namei, attributesi, namespacesi )
+    }
+/*
+    if (namespacesi.isEmpty)
+      if (!attributesi.isEmpty)
+	new NoNamespacesElem( namei, attributesi )
+      else 
 	new QNameOnlyElem( namei )
-      else
+    else
+      if (!attributesi.isEmpty)
 	new FullElem( namei, attributesi, namespacesi )
+      else
+	new NoAttribsElem( namei, namespacesi ) */
   }
 
   def unapply( el : Elem) = Some((el.name, el.attributes, el.namespaces))

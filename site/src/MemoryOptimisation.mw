@@ -51,21 +51,23 @@ The most important point is that the developer has a choice, when needed, in how
 
 == Resulting Sizes ==
 
-The Recon test (See ParsingPerformance - PerfData.reconDoc) favours the default Scales Xml memory optimisation as it does not contain attributes, however it is taken from a real world scenario.  The 40,000 Recon size is chosen to demonstrate the resulting memory sizes (NB obtained by the excellent Yourkit profiler):
+The Recon test (See ParsingPerformance - PerfData.reconDoc) approximates a few real world problems tackled by Scales has very few attributes and a flat structure.  The 40,000 Recon size is chosen to demonstrate the resulting memory sizes (obtained by the excellent Yourkit profiler):
 
 : [[Image:img/memory_usage_recon40.png|Memory Usage]]
 
-As can be seen the size of the Non Optimised version is very large at 65.3MB, whereas the default optimisation (which is also 15-20% faster on larger documents) is roughly halve the size. NB The resulting QName and Elem caches are 2.24KB and 2.18KB respectively, showing more than a clear space saving.
+The default optimisation (which is also 10-20% faster on larger documents than Scala) strikes a very good balance between speed and memory usage.  The Scales parsing optimisations also result in QName and Elem cache sizes of 2.24KB and 2.18KB respectively (the Elem caches are used by HighMemory and QNameElemTree Optimisations), showing more than a clear space saving.
 
-In fact, in addition to being 10MB less than Scala XML for the same document, it comes in at slightly less memory cost as the Xerces deferred DOM impl.
+The slightly slower to parse (but still faster than Scala XML) Tree based optimisations reduce immediate memory usage by over 15Mb less than Scala XML for the same document, in fact the two Tree optimisations also consume 5Mb less than the Xerces deferred DOM impl.
 
-This benefit in memory reduction can also be extended to full Elem caching but this reduces the overall performance by up to 15%, putting it around (and sometimes below) the parsing performance of Scala XML.  The potential memory savings are also limited by how often the attribute or namespace values are identical, and it is often better to simply cache attribute values if there is a restricted range available.
+Full Elem caching alone (not including Elem + Tree) reduces the overall performance by up to 15%, putting it around (and sometimes below) the parsing performance of Scala XML.  The potential memory savings are also limited by how often the attribute or namespace values are identical, and it is often better to simply cache attribute values if there is a restricted range available.
+
+Elem creation itself, as with QNames only contain instance variables when defined. I.e. if there are no attributes or namespaces present there will only be one object reference to the QName in memory.
 
 == Overall Parsing Performance ==
 
 The overall parsing performance of Scales Xml, with default Optimisation, is around 10-20% faster than Scala XML and a similar amount slower than JAXP.
 
-The larger the amount of data and the level of repeated structure the faster Scales Xml can parse.
+The larger the amount of data and the level of repeated structure the greater the difference in Scales Xml parsing performance.
 
 == Special Case - Pull Parsing via onQNames ==
 

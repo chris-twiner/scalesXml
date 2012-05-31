@@ -106,3 +106,23 @@ object LazyOptimisedTree {
       }
 
 }
+
+/**
+ * Optimises QNames and Trees according to LazyOptimisedTree
+ */ 
+object QNameTreeOptimisation extends TreeOptimisation[QNameToken] with QNameOptimisationT[QNameToken] with QNameTokenF {
+
+  def newTree( elem : Elem, children : XmlChildren, token : QNameToken ) : XmlTree =
+    LazyOptimisedTree( elem, children )(IsFromParser)
+
+}
+
+/**
+ * Optimised QNames, Elems and Tree, heavily reduced memory consumption with LazyOptimisedTree.
+ */
+object QNameElemTreeOptimisation extends PathOptimisationStrategy[ElemToken] with ElemQNameOptimisationT[ElemToken] with TreeOptimisation[ElemToken] with ElemTokenF {
+  
+  def newTree( elem : Elem, children : XmlChildren, token : ElemToken ) : XmlTree =
+    LazyOptimisedTree( elem, children )(IsFromParser)
+
+}

@@ -15,14 +15,6 @@ import stream._
 
 import strategies._
 
-object QNameTreeOptimisation extends TreeOptimisation[QNameToken] with QNameOptimisationT[QNameToken] with QNameTokenF {
-
-  def newTree( elem : Elem, children : XmlChildren, token : QNameToken ) : XmlTree =
-    LazyOptimisedTree( elem, children )(IsFromParser)//.getOrElse( Tree(elem, children) )
-
-}
-
-
 object QNameAndAttr extends PathOptimisationStrategy[ElemToken] with ElemQNameOptimisationT[ElemToken] with ElemTokenF {
 
   // register the qname for eq style
@@ -155,7 +147,7 @@ case class Recon(val parts : Map[Int, Int] = Map[Int, Int](),
  */ 
 class ParsingPerformanceRecon extends SimpleScalaBenchmark {
 
-  @Param(Array("1000"))//"10", "100", "1000", "10000", "40000"))//
+  @Param(Array("40000"))//"10", "100", "1000", "10000", "40000"))//
   val size: Int = 0
   
   var s : String = _
@@ -169,24 +161,24 @@ class ParsingPerformanceRecon extends SimpleScalaBenchmark {
 
   def loadXmlP[T <: OptimisationToken]( s : String, ostrategy : PathOptimisationStrategy[T]) = 
     pullXmlCompletely[T](new java.io.StringReader(s), strategy = ostrategy)
-/*  */
+/*  
   def timeNoOptimisation(reps: Int) = repeat(reps) {
     loadXmlS(s, NoOptimisation)
-  }
+  } */
 
 /*
- * */
+ * 
 
   def timeScalaXML(reps: Int) = repeat(reps) {
     scala.xml.XML.loadString(s)
   }
 
-  def timeScalesXml(reps: Int) = repeat(reps) {
-    loadXmlS(s, QNameMemoryOptimisation)
-  }
-
   def timeScalesXmlTreeOp(reps: Int) = repeat(reps) {
     loadXmlS(s, QNameTreeOptimisation)
+  }
+*/
+  def timeScalesXml(reps: Int) = repeat(reps) {
+    loadXmlS(s, QNameMemoryOptimisation)
   }
 
   /**
@@ -422,7 +414,7 @@ object RunHighPerf extends ReconTest {
   var doc : DocLike = _
 
   def doTest {
-    doc = p.timeScalesXmlTreeOp(5)
+    //doc = p.timeScalesXmlTreeOp(5)
   }
 }
 /*

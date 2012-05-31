@@ -2,15 +2,6 @@ package scales.xml
 
 import strategies._
 
-object QNameNameValue extends PathOptimisationStrategy[ElemToken] with ElemQNameOptimisationT[ElemToken] with TreeOptimisation[ElemToken] with ElemTokenF {
-  
-  def newTree( elem : Elem, children : XmlChildren, token : ElemToken ) : XmlTree =
-    LazyOptimisedTree( elem, children)(IsFromParser)
-
-}
-
-
-
 class BaseFunctionalityTest extends junit.framework.TestCase {
   import junit.framework.Assert._
   import java.io._
