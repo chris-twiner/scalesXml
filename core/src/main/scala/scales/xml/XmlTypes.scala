@@ -147,15 +147,33 @@ object Elem {
     }
   }
 
-  @inline def apply(namei: QName, attributesi: Attributes = emptyAttributes, namespacesi: Map[String, String] = emptyNamespaces)(implicit fromParser : FromParser) : Elem = {
+  /**
+   * java.lang.Boolean.hashcode 1231 for true and 1237 for false
+   */ 
+  final def hashed( b : Boolean ) = 
+    if (b == true) 1231 else 1237
+
+//  @inline doesn't anything measurable here
+  /**
+   * Dependent on the inputs creates the smallest footprint implementation of Elem.
+   */
+  def apply(namei: QName, attributesi: Attributes = emptyAttributes, namespacesi: Map[String, String] = emptyNamespaces)(implicit fromParser : FromParser) : Elem = {
     checkElemName(namei)(fromParser)
 
-    // we have to evaluate anyway, only 4 states = switch (doesn't actually improve speed at all
+    /*
+     * we have to evaluate anyway, only 4 states but bizarrely its twice as fast
+     * (on the 40000 recon 15ms vs 30ms) to make a tableswitch.
+     * The bytecode is much larger - cleartext version is below.
+     *
+     * PS. Honest gov I was having fun and not micro-optimizing for the sake of it.
+     * The introduction of the memory saving 4 Elem impls added an overhead and this
+     * got rid of it.  Still kinda fun
+     */ 
     var res = 0
     // the integer 1231 if this object represents true; returns the integer 1237 if this object represents false.
-    res = namespacesi.isEmpty.hashCode
+    res = hashed(namespacesi.isEmpty)
     
-    res += (attributesi.isEmpty.hashCode * 2)
+    res += (hashed(attributesi.isEmpty) * 2)
 
     res = (res - 3693) / 6
 
@@ -171,7 +189,8 @@ object Elem {
       // = (1237 + (1237 * 2) - 3693 ) / 6
       case 3 => new FullElem( namei, attributesi, namespacesi )
     }
-/*
+/*  Below is cleartext implementation
+ 
     if (namespacesi.isEmpty)
       if (!attributesi.isEmpty)
 	new NoNamespacesElem( namei, attributesi )
