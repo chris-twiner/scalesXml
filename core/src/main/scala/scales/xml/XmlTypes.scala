@@ -138,14 +138,8 @@ object Elem {
 
   }
 
-  @inline final private[Elem] def checkElemName( namei : QName )(implicit fromParser : FromParser) {
-    if (fromParser eq NotFromParser) {
-      require(!(namei.prefix.map { p =>
-	(p eq PrefixedNamespace.xmlPRE) ||
-				  (p eq PrefixedNamespace.xmlnsPRE)
-				}.getOrElse(false)), "Prefixes (xmlns, xml) are not allowed for elements")
-    }
-  }
+//  @inline final private[Elem] def checkElemName( namei : QName )(implicit fromParser : FromParser) {
+//  }
 
   /**
    * java.lang.Boolean.hashcode 1231 for true and 1237 for false
@@ -153,12 +147,23 @@ object Elem {
   final def hashed( b : Boolean ) = 
     if (b == true) 1231 else 1237
 
+  /**
+   * returns 1 if b is true, 0 if false
+   */ 
+  final def oneOr( b : Boolean ) = if (b) 1 else 0
+
 //  @inline doesn't anything measurable here
   /**
    * Dependent on the inputs creates the smallest footprint implementation of Elem.
    */
   def apply(namei: QName, attributesi: Attributes = emptyAttributes, namespacesi: Map[String, String] = emptyNamespaces)(implicit fromParser : FromParser) : Elem = {
-    checkElemName(namei)(fromParser)
+//    checkElemName(namei)(fromParser)
+    if (fromParser eq NotFromParser) {
+      require(!(namei.prefix.map { p =>
+	(p eq PrefixedNamespace.xmlPRE) ||
+				  (p eq PrefixedNamespace.xmlnsPRE)
+				}.getOrElse(false)), "Prefixes (xmlns, xml) are not allowed for elements")
+    }
 
     /*
      * we have to evaluate anyway, only 4 states but bizarrely its twice as fast
@@ -168,7 +173,19 @@ object Elem {
      * PS. Honest gov I was having fun and not micro-optimizing for the sake of it.
      * The introduction of the memory saving 4 Elem impls added an overhead and this
      * got rid of it.  Still kinda fun
-     */ 
+     *
+
+    var res = oneOr( namespacesi.isEmpty ) << 1 | oneOr( attributesi.isEmpty )
+
+    import scala.annotation.switch
+
+    (res : @switch) match {
+      case 0 => new FullElem( namei, attributesi, namespacesi )
+      case 1 => new NoAttribsElem( namei, namespacesi )
+      case 2 => new NoNamespacesElem( namei, attributesi )
+      case 3 => new QNameOnlyElem( namei )
+    }
+*/
     var res = 0
     // the integer 1231 if this object represents true; returns the integer 1237 if this object represents false.
     res = hashed(namespacesi.isEmpty)
@@ -190,7 +207,7 @@ object Elem {
       case 3 => new FullElem( namei, attributesi, namespacesi )
     }
 /*  Below is cleartext implementation
- 
+*
     if (namespacesi.isEmpty)
       if (!attributesi.isEmpty)
 	new NoNamespacesElem( namei, attributesi )
