@@ -16,14 +16,16 @@ trait TreeOptimisation[TOKEN <: scales.xml.OptimisationToken] extends PathOptimi
     import ScalesXml.xmlCBF
 
     val l = xml.current
-    if (xml.depth > 0) {
-      xml.depth -= 1
-      xml.current = xml.proxies( xml.depth )
-      xml.current.children = (xml.current.children :+ 
-	newTree(l.elem, l.children, token)        
-      )
+    val nt = newTree(l.elem, l.builder.result, token)
+    val d = xml.depth
+    val nd = d - 1
+    if (d > 0) {
+      xml.depth = nd
+      xml.current = xml.proxy( nd )
+      xml.current.builder += nt
     } else {
-      xml.depth -= 1
+      xml.rootTree = nt 
+      xml.depth = nd
     }
 
   }

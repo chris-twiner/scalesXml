@@ -186,7 +186,7 @@ object Elem {
       case 3 => new QNameOnlyElem( namei )
     }
 */
-    var res = 0
+/*    var res = 0
     // the integer 1231 if this object represents true; returns the integer 1237 if this object represents false.
     res = hashed(namespacesi.isEmpty)
     
@@ -205,9 +205,9 @@ object Elem {
       case 2 => new NoNamespacesElem( namei, attributesi )
       // = (1237 + (1237 * 2) - 3693 ) / 6
       case 3 => new FullElem( namei, attributesi, namespacesi )
-    }
+    }*/
 /*  Below is cleartext implementation
-*
+*/
     if (namespacesi.isEmpty)
       if (!attributesi.isEmpty)
 	new NoNamespacesElem( namei, attributesi )
@@ -217,7 +217,7 @@ object Elem {
       if (!attributesi.isEmpty)
 	new FullElem( namei, attributesi, namespacesi )
       else
-	new NoAttribsElem( namei, namespacesi ) */
+	new NoAttribsElem( namei, namespacesi ) /**/
   }
 
   def unapply( el : Elem) = Some((el.name, el.attributes, el.namespaces))

@@ -91,7 +91,7 @@ trait PathOptimisationStrategy[Token <: OptimisationToken] extends MemoryOptimis
    * Start a new "tree", pushing the elem to TreeProxies
    */ 
   def beginSubTree( stack : TreeProxies, elem : Elem, token : Token) {
-    stack.beginSub(elem)
+    stack.beginSub(elem, XmlBuilder())
   }
 }
 

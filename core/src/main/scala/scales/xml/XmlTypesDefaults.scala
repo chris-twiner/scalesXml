@@ -159,11 +159,14 @@ trait XmlTypes {
   private[xml] case object NotFromParserO extends FromParser
   private[xml] val NotFromParser = NotFromParserO 
 
-  import scales.utils.{ Tree, ItemOrTree, subtree, item, top, noPath => fno, Path, TreeCBF, ImmutableArrayProxy }
+  import scales.utils.{ Tree, ItemOrTree, subtree, item, top, noPath => fno, Path, TreeCBF, ImmutableArrayProxy, ImmutableArrayProxyBuilder }
 
   type XmlCBF = TreeCBF[XmlItem, Elem, XCC]
 
   type AttributeQName = EitherLike[PrefixedQName, NoNamespaceQName]
+
+  type XmlBuilder = collection.mutable.Builder[ ItemOrElem, XmlChildren ]
+  def XmlBuilder() : XmlBuilder = ImmutableArrayProxyBuilder[ItemOrElem]()
 
   type XmlTree = Tree[XmlItem, Elem, XCC]
   type ItemOrElem = ItemOrTree[XmlItem, Elem, XCC]

@@ -147,7 +147,7 @@ case class Recon(val parts : Map[Int, Int] = Map[Int, Int](),
  */ 
 class ParsingPerformanceRecon extends SimpleScalaBenchmark {
 
-  @Param(Array("10", "100", "1000"))//, "10000", "40000"))//
+  @Param(Array("10000", "40000"))//"10", "100", "1000"))//, "10000", "40000"))//
   val size: Int = 0
   
   var s : String = _
@@ -172,12 +172,12 @@ class ParsingPerformanceRecon extends SimpleScalaBenchmark {
   def timeScalaXML(reps: Int) = repeat(reps) {
     scala.xml.XML.loadString(s)
   }
-
-*/
-
   def timeScalesXmlTreeOp(reps: Int) = repeat(reps) {
     loadXmlS(s, QNameTreeOptimisation)
   }
+
+*/
+
 
   def timeScalesXml(reps: Int) = repeat(reps) {
     loadXmlS(s, QNameMemoryOptimisation)
@@ -411,12 +411,14 @@ trait ReconTest extends RunTest {
 
 object RunHighPerf extends ReconTest {
 
-  override val size = 43000
+//  override val size = 43000
+  override val size = 5000
 
   var doc : DocLike = _
 
   def doTest {
-    doc = p.timeScalesXml(100)
+    doc = p.timeScalesXml(5)
+//    doc = p.timeScalesXml(100)
     //doc = p.timeScalesXmlTreeOp(5)
   }
 }
