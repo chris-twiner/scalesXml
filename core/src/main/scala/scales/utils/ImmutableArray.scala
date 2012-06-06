@@ -35,7 +35,7 @@ case class ImmutableArrayBuilder[ A ]() extends Builder[A, ImmutableArray[A]]{
   protected def ensureSize( size : Int ) {
     if ((_buf eq null) || (size > _buf.length))
       _buf = resize( _buf, size, _len )
-    else if (size > (buf.length * gp).toInt) {
+    else if (size > (_buf.length * gp).toInt) {
       _buf = resize( _buf, _buf.length + (_buf.length.toDouble * gf).toInt, _len )
     }
   }
