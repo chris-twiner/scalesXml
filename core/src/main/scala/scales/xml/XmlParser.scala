@@ -91,7 +91,7 @@ trait XmlParser {
       }
     }
 
-  class Handler[Token <: OptimisationToken](val strategy : PathOptimisationStrategy[Token])(implicit val defaultVersion : XmlVersion) extends org.xml.sax.ext.DefaultHandler2 {
+  class Handler[Token <: OptimisationToken](strategy : PathOptimisationStrategy[Token])(implicit val defaultVersion : XmlVersion) extends org.xml.sax.ext.DefaultHandler2 {
 
     import scales.utils.{noPath, Path, top, ScalesUtils }
     import org.xml.sax._
@@ -258,9 +258,10 @@ class TreeProxies( ){
   
   private[this] var _depth : Int = -1
 
-  private[this] var _proxies : ArrayBuffer[TreeProxy] = ArrayBuffer[TreeProxy]()
+  private[this] var _proxies : Array[TreeProxy] = Array.ofDim[TreeProxy](50)
 
-  private[this] var _size = 0//proxies.length
+  // current max size in the proxies (_proxies.length could be far larger)
+  private[this] var _size = 0
 
   private[this] var _current : TreeProxy = _
 
@@ -300,9 +301,16 @@ class TreeProxies( ){
   def beginSub( elem : Elem, builder : => XmlBuilder) {
     _depth += 1
     
+    if (_depth == _proxies.length) {
+      // double the size
+      val ar = Array.ofDim[TreeProxy]( _proxies.length * 2 )
+      Array.copy(_proxies, 0, ar, 0, _proxies.length)
+      _proxies = ar
+    }
+
     if (_depth == _size) {
       _current = new TreeProxy(elem, builder)
-      _proxies += (_current)
+      _proxies(_depth) = _current
       _size +=1
     } else {
       _current = _proxies(_depth)
