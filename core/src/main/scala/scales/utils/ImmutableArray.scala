@@ -15,8 +15,8 @@ object ImmutableArray {
  */
 case class ImmutableArrayBuilder[ A ]() extends Builder[A, ImmutableArray[A]]{
 
-  final private[this] val gf = 0.10
-  final private[this] val gp = 0.95
+  final private[this] val gf : Float = 2.0f
+  final private[this] val gp : Float  = 0.95f
 
   def resize( orig : Array[AnyRef], newCapacity : Int, len : Int ) = { 
     val ar = Array.ofDim[AnyRef](newCapacity)
@@ -26,23 +26,27 @@ case class ImmutableArrayBuilder[ A ]() extends Builder[A, ImmutableArray[A]]{
     ar
   }
 
-  private[this] var _buf : Array[AnyRef] = _
+  private[this] var _buf : Array[AnyRef] = Array.ofDim[AnyRef](8)
   def buf = _buf
 
   private[this] var _len = 0
   def len = _len
 
   protected def ensureSize( size : Int ) {
+    import java.lang.Math.round
+    
     if ((_buf eq null) || (size > _buf.length))
       _buf = resize( _buf, size, _len )
-    else if (size > (_buf.length * gp).toInt) {
-      _buf = resize( _buf, _buf.length + (_buf.length.toDouble * gf).toInt, _len )
+    else if (size > round(_buf.length * gp)) {
+      _buf = resize( _buf, 
+	 round(_buf.length.toFloat * gf), _len )
     }
   }
 
   override def sizeHint( size : Int ) {
-    if ((_buf eq null) || size > _buf.length) // don't grow unless necessary
-      _buf = resize( _buf, size, _len )
+    ensureSize(size)
+//    if ((_buf eq null) || size > _buf.length) // don't grow unless necessary
+//      _buf = resize( _buf, size, _len )
   }
 
   def result : ImmutableArray[A] = 

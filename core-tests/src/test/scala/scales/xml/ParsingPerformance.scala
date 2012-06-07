@@ -417,7 +417,7 @@ object RunHighPerf extends ReconTest {
   var doc : DocLike = _
 
   def doTest {
-    doc = p.timeScalesXml(5)
+    doc = p.timeScalesXml(5)//5
 //    doc = p.timeScalesXml(100)
     //doc = p.timeScalesXmlTreeOp(5)
   }
