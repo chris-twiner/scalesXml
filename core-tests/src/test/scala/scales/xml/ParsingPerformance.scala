@@ -147,7 +147,7 @@ case class Recon(val parts : Map[Int, Int] = Map[Int, Int](),
  */ 
 class ParsingPerformanceRecon extends SimpleScalaBenchmark {
 
-  @Param(Array("10000", "40000"))//"10", "100", "1000"))//, "10000", "40000"))//
+  @Param(Array("10", "100", "1000"))//, "10000", "40000"))//
   val size: Int = 0
   
   var s : String = _
@@ -162,9 +162,7 @@ class ParsingPerformanceRecon extends SimpleScalaBenchmark {
   def loadXmlP[T <: OptimisationToken]( s : String, ostrategy : PathOptimisationStrategy[T]) = 
     pullXmlCompletely[T](new java.io.StringReader(s), strategy = ostrategy)
 /*  
-  def timeNoOptimisation(reps: Int) = repeat(reps) {
-    loadXmlS(s, NoOptimisation)
-  } */
+ */
 
 /*
  * 
@@ -172,17 +170,22 @@ class ParsingPerformanceRecon extends SimpleScalaBenchmark {
   def timeScalaXML(reps: Int) = repeat(reps) {
     scala.xml.XML.loadString(s)
   }
-  def timeScalesXmlTreeOp(reps: Int) = repeat(reps) {
-    loadXmlS(s, QNameTreeOptimisation)
+
+  def timeNoOptimisation(reps: Int) = repeat(reps) {
+    loadXmlS(s, NoOptimisation)
   }
 
 */
-
-
   def timeScalesXml(reps: Int) = repeat(reps) {
     loadXmlS(s, QNameMemoryOptimisation)
   }
 
+
+  def timeScalesXmlTreeOp(reps: Int) = repeat(reps) {
+    loadXmlS(s, QNameTreeOptimisation)
+  }
+/*
+*/
   /**
    * How long for pull based, low memory onqnames action
    * 

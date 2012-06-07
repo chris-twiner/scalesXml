@@ -235,7 +235,7 @@ trait XmlParser {
 }
 
 // XmlBuilder, XmlChildren
-class TreeProxy( private[this] var _elem : Elem, _builder : XmlBuilder){
+class TreeProxy( private[this] var _elem : Elem, private[this] val _builder : XmlBuilder){
   def elem = _elem
   def setElem( elem : Elem ) {
     _elem = elem
@@ -265,11 +265,19 @@ class TreeProxies( ){
 
   private[this] var _current : TreeProxy = _
 
+  /**
+   * Don't need to keep asking for it
+   */ 
+  private[this] var _currentBuilder : XmlBuilder = _
+
 /*
  * interface for TreeOptimisations below, don't penalise normal parsing
  */ 
   def current = _current
-  def current_=( tp : TreeProxy ) { _current = tp }
+  def current_=( tp : TreeProxy ) {
+    _current = tp 
+    _currentBuilder = tp.builder // TreeOptimisation etc
+  }
   def depth = _depth
   def depth_= ( newDepth : Int ) { _depth = newDepth }
   def proxy( depth : Int ) = _proxies( depth )
@@ -277,20 +285,21 @@ class TreeProxies( ){
   def addChild( i : XmlItem ) {
     //println("proxies addChild "+depth)
     //current.children = (current.children :+ i)
-    _current.builder.+=(i)
+    _currentBuilder.+=(i)
   }
 
   def elementEnd() {
     val l = _current
 
-    val newTree = Tree(l.elem, l.builder.result)
+    val newTree = Tree(l.elem, _currentBuilder.result)
     
     //println("proxies elementend "+depth)
     if (_depth > 0) {
       _depth -= 1
-      _current = _proxies( depth )
+      _current = _proxies( _depth )
       //current.children = (current.children :+ Tree(l.elem, l.children))
-      _current.builder.+=(newTree)
+      _currentBuilder = _current.builder
+      _currentBuilder.+=(newTree)
     } else {
       // end of doc
       rootTree = newTree
@@ -310,12 +319,14 @@ class TreeProxies( ){
 
     if (_depth == _size) {
       _current = new TreeProxy(elem, builder)
+      _currentBuilder = _current.builder
       _proxies(_depth) = _current
       _size +=1
     } else {
       _current = _proxies(_depth)
+      _currentBuilder = _current.builder
       _current.setElem(elem)
-      _current.builder.clear() // don't create a new one
+      _currentBuilder.clear() // don't create a new one
     }
   }
 

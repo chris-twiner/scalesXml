@@ -21,8 +21,9 @@ trait TreeOptimisation[TOKEN <: scales.xml.OptimisationToken] extends PathOptimi
     val nd = d - 1
     if (d > 0) {
       xml.depth = nd
-      xml.current = xml.proxy( nd )
-      xml.current.builder += nt
+      val c = xml.proxy( nd )
+      xml.current = c
+      c.builder += nt
     } else {
       xml.rootTree = nt 
       xml.depth = nd
