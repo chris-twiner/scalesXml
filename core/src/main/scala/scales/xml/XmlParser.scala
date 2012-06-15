@@ -235,12 +235,14 @@ trait XmlParser {
 }
 
 // XmlBuilder, XmlChildren
-class TreeProxy( private[this] var _elem : Elem, private[this] val _builder : XmlBuilder){
-  def elem = _elem
-  def setElem( elem : Elem ) {
+final class TreeProxy( private[this] var _elem : Elem, private[this] val _builder : XmlBuilder){
+  @inline def elem = _elem
+
+  @inline def setElem( elem : Elem ) {
     _elem = elem
   }
-  def builder = _builder
+
+  @inline def builder = _builder
 }
 
 import scala.collection.mutable.ArrayBuffer

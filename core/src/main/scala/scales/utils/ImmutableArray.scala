@@ -13,7 +13,7 @@ object ImmutableArray {
 /**
  * Behaves like an ArrayList/ArrayBuffer, growing an internal array as necessary
  */
-case class ImmutableArrayBuilder[ A ]() extends Builder[A, ImmutableArray[A]]{
+final class ImmutableArrayBuilder[ A ](private[this] var _buf : Array[AnyRef] = Array.ofDim[AnyRef](8)) extends Builder[A, ImmutableArray[A]]{
 
   final private[this] val gf : Float = 2.0f
   final private[this] val gp : Float  = 0.95f
@@ -26,11 +26,11 @@ case class ImmutableArrayBuilder[ A ]() extends Builder[A, ImmutableArray[A]]{
     ar
   }
 
-  private[this] var _buf : Array[AnyRef] = Array.ofDim[AnyRef](8)
-  def buf = _buf
+  
+  @inline def buf = _buf
 
   private[this] var _len = 0
-  def len = _len
+  @inline def len = _len
 
   protected def ensureSize( size : Int ) {
     import java.lang.Math.round
@@ -344,8 +344,8 @@ case class ImmutableArrayProxyBuilder[ A ]() extends Builder[A, ImmutableArrayPr
   def result : ImmutableArrayProxy[A] =
     if (inVector) VectorImpl(vectorBuilder.result)
     else { // do it here as this is the correct type
-      val ab = arrayBuilder
-      import ab.buf//, len}
+      val buf = arrayBuilder.buf
+//      import ab.buf //, len}
       import scala.annotation.switch	
 
       (length : @switch) match {
