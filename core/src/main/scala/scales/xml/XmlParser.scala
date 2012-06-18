@@ -1,6 +1,6 @@
 package scales.xml
 
-import org.xml.sax.InputSource
+import org.xml.sax.{InputSource, XMLReader}
 import javax.xml.parsers.SAXParser
 import scales.utils._
 import java.io._
@@ -24,33 +24,44 @@ trait XmlParser {
   /**
    * Use a custom parserPool to control the sax factory features 
    */ 
-  def loadXml[Token <: OptimisationToken](source: InputSource, strategy : PathOptimisationStrategy[Token] = defaultPathOptimisation, parsers : Loaner[SAXParser] = DefaultSAXParserFactoryPool.parsers)(implicit xmlVer : XmlVersion): Doc = {
-    
+  def loadXml[Token <: OptimisationToken](source: InputSource, strategy : PathOptimisationStrategy[Token] = defaultPathOptimisation, parsers : Loaner[SAXParser] = DefaultSAXParserFactoryPool.parsers)(implicit xmlVer : XmlVersion): Doc =
     parsers.loan {
       parser =>
-      var handler = new Handler(strategy)
-      
-      parser.setProperty("http://xml.org/sax/properties/lexical-handler", handler)
-      parser.parse(source, handler)
-
-      val docVersion = {
-	val f = parser.getProperty("http://xml.org/sax/properties/document-xml-version")
-	if (f eq null) Xml10
-	else {
-	  val v = f.toString
-	  if (v == "1.1") 
-	    Xml11
-	  else
-	    Xml10	  
-	}
-      }
-
-      Doc(handler.getBuf.tree, handler.getProlog.copy( 
-	decl = handler.getProlog.decl.copy(version = docVersion)),
-	  handler.getEnd)
+	readXml(source, strategy, parser.getXMLReader())
     }
-  }
+
+  def readXml[Token <: OptimisationToken](source: InputSource, strategy : PathOptimisationStrategy[Token], reader : XMLReader)(implicit xmlVer : XmlVersion): Doc = {
+    var handler = new Handler(strategy)
+    reader.setProperty("http://xml.org/sax/properties/lexical-handler", handler)
+    
+    reader.setContentHandler(handler)
+    reader.parse(source)
+
+    val docVersion = {
+      val f = reader.getProperty("http://xml.org/sax/properties/document-xml-version")
+      if (f eq null) Xml10
+      else {
+	val v = f.toString
+	if (v == "1.1") 
+	  Xml11
+	else
+	  Xml10	  
+      }
+    }
+
+    Doc(handler.getBuf.tree, handler.getProlog.copy( 
+      decl = handler.getProlog.decl.copy(version = docVersion)),
+	handler.getEnd)
+  }   
   
+  /**
+   * Use a custom parserPool to control the sax factory features 
+   */ 
+  def loadXmlReader[Token <: OptimisationToken](source: InputSource, strategy : PathOptimisationStrategy[Token] = defaultPathOptimisation, parsers : Loaner[XMLReader] = DefaultXMLReaderFactoryPool)(implicit xmlVer : XmlVersion): Doc =
+    parsers.loan {
+      parser =>
+	readXml(source, strategy, parser)
+    }
 
   /** Elems can have any QName, attribs only prefixed or default */
   def eqn[Token <: OptimisationToken](uri: String,

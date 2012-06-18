@@ -5,6 +5,9 @@ import javax.xml.stream._
 import javax.xml.validation._
 import javax.xml.transform._
 
+import org.xml.sax.XMLReader
+import org.xml.sax.helpers.XMLReaderFactory
+
 /**
  * Most of the JAXP, STAX and DOM apis don't mention much about
  * thread safety but the dominant xerces is completely unsafe with regards
@@ -41,6 +44,15 @@ trait XmlFactories {
     }
   }
 
+  /**
+   * Default XMLReader Factory
+   */ 
+  object DefaultXMLReaderFactoryPool extends scales.utils.SimpleUnboundedPool[XMLReader] { pool =>
+    
+    def create = 
+      XMLReaderFactory.createXMLReader()
+    
+  }    
 
   /**
    * Default DOMFactory impl
