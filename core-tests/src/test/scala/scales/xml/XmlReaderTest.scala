@@ -9,7 +9,7 @@ class XmlReaderTest extends junit.framework.TestCase {
   import ScalesXml._
   import org.xml.sax.XMLReader
 
-  object NuValidatorFactoryPool extends scales.utils.SimpleUnboundedPool[XMLReader] { pool =>
+  object NuValidatorFactoryPool extends scales.utils.SimpleUnboundedPool[XMLReader] {
     
     def create = {
       import nu.validator.htmlparser.{sax,common}

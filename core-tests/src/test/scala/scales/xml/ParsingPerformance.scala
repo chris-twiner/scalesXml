@@ -242,7 +242,7 @@ case class Recon(val parts : Map[Int, Int] = Map[Int, Int](),
  */ 
 class ParsingPerformanceRecon extends SimpleScalaBenchmark {
 
-  @Param(Array("10", "100", "1000"))//, "10000", "40000"))//
+  @Param(Array("10000", "40000"))//"10", "100", "1000"))//, "10000", "40000"))//
   val size: Int = 0
   
   var s : String = _
@@ -276,7 +276,12 @@ class ParsingPerformanceRecon extends SimpleScalaBenchmark {
   def timeScalesXml(reps: Int) = repeat(reps) {
     loadXmlS(s, QNameMemoryOptimisation)
   }
+
 /*
+  def timeScalesXmlKnownTrees(reps: Int) = repeat(reps) {
+    loadXmlS(s, KnownTrees)
+  }
+
   def timeScalesXmlTreeOp(reps: Int) = repeat(reps) {
     loadXmlS(s, QNameTreeOptimisation)
   }

@@ -17,3 +17,30 @@ As the names suggests PathOptimisationStrategies could also choose to optimise w
 
 Loaner is a simple interface to obtain SAXParser instances, other non default instances can be provided, such as JTagSoup or simply to allow customisations of SAX properties.  The default SAX parser pool also takes care of common threading issues.
 
+== Direct SAX XMLReader Usage ==
+
+As of Scales 0.3 there is direct support for SAX parsers via the loadXmlReader function.  This follows the same Loaner approach as the normal JAXP factories, for example:
+
+${cscala}
+  import org.xml.sax.XMLReader
+
+  object NuValidatorFactoryPool extends scales.utils.SimpleUnboundedPool[XMLReader] {
+    
+    def create = {
+      import nu.validator.htmlparser.{sax,common}
+      import sax.HtmlParser
+      import common.XmlViolationPolicy
+
+      val reader = new HtmlParser
+      reader.setXmlPolicy(XmlViolationPolicy.ALLOW)
+      reader.setXmlnsPolicy(XmlViolationPolicy.ALLOW)
+      reader
+    }      
+    
+  }    
+
+  val xmlFile = resource(this, "/data/html.xml")
+  val nuxml = loadXmlReader(xmlFile, parsers = NuValidatorFactoryPool)
+${cend}
+
+Developers can also call readXml directly with a given XMLReader instance instead of using the pooled version.

@@ -71,6 +71,7 @@
 
 ; '''Parsing XML'''
 ;* [FullParsing.html Full XML Doc Parsing]
+;** [FullParsing.html#Direct_SAX_XMLReader_Usage Direct SAX XMLReader Usage]
 ;* [PullParsing.html Pull Parsing]
 ;** [PullParsing.html#Pull_Model Pull Model]
 ;** [PullParsing.html#Resource_Management Resource Management]
@@ -118,8 +119,15 @@
 ;** [MemoryOptimisation.html#Introduction Introduction]
 ;** [MemoryOptimisation.html#Options_for_memory_optimisation Options for memory optimisation]
 ;** [MemoryOptimisation.html#Resulting_Sizes Resulting Sizes]
+;** [MemoryOptimisation.html#Memory_Consumption_During_Parsing Memory Consumption During Parsing]
 ;** [MemoryOptimisation.html#Overall_Parsing_Performance Overall Parsing Performance]
 ;** [MemoryOptimisation.html#Special_Case_-_Pull_Parsing_via_onQNames Special Case - Pull Parsing via onQNames]
+;* [OptimisationDetails.html General Memory Optimisation Details]
+;** [OptimisationDetails.html#ImmutableArrayProxy ImmutableArrayProxy]
+;** [OptimisationDetails.html#EitherLike EitherLike]
+;** [OptimisationDetails.html#TreeOptimisation TreeOptimisation]
+;** [OptimisationDetails.html#QName_and_Elem_Memory_Usage QName and Elem Memory Usage]
+;** [OptimisationDetails.html#TreeProxies_and_Builders TreeProxies and Builders]
 ;* [Serialization.html Serializing Details]
 ;** [Serialization.html#Encoding Encoding]
 ;*** [Serialization.html#XML_Names XML Names]

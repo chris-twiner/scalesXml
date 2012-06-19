@@ -78,7 +78,7 @@ object ScalesXmlRoot extends Build {
     offline := true,
     version := "0.3-RC7",
     scalaVersion := "2.9.2",
-    crossScalaVersions := Seq("2.8.1", "2.8.2", "2.9.1", "2.9.2"),
+    crossScalaVersions := Seq("2.8.1", "2.8.2", "2.9.1", "2.9.2"),// "2.10.0-M4"),
     //publishSetting,
 //    parallelExecution in Test := false,
     scalacOptions ++= Seq("-optimise"),
@@ -119,6 +119,10 @@ object ScalesXmlRoot extends Build {
   val runPullCollectLimited = TaskKey[Unit]("run-pull-collect-limited")
 
   val runHighMemoryFile = InputKey[Unit]("run-high-memory-file")
+
+  val runParseMemory = InputKey[Unit]("run-parse-memory")
+
+  val runMemoryUsage = SettingKey[String]("run-memory-usage")
 
   /**
    * Due to #1's SecurityException this runs the given task through a security manager,
