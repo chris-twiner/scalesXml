@@ -37,6 +37,101 @@ object QNameAndAttr extends PathOptimisationStrategy[ElemToken] with ElemQNameOp
   
 }
 
+/**
+ * Single text value but a known elem or qname
+ *
+ */
+abstract class KnownTextValue(val text : String) extends scales.utils.Tree[XmlItem, Elem, XCC] {
+
+  def children : XmlChildren = IAOne(Text(text))
+
+  private[this] def csection = section
+  private[this] def cchildren = children
+
+  def copy( section : Elem = csection, children : XmlChildren = cchildren) : scales.utils.Tree[XmlItem, Elem, XCC] = {
+    // if we are copying we are no longer in a parse
+    import ScalesXml.fromParserDefault
+    LazyOptimisedTree(section, children)
+  }
+}
+
+/**
+ * Full children but a known elem or qname
+ *
+ */
+abstract class KnownName(val children : XmlChildren) extends scales.utils.Tree[XmlItem, Elem, XCC] {
+
+  private[this] def csection = section
+  private[this] def cchildren = children
+
+  def copy( section : Elem = csection, children : XmlChildren = cchildren) : scales.utils.Tree[XmlItem, Elem, XCC] = {
+    // if we are copying we are no longer in a parse
+    import ScalesXml.fromParserDefault
+    LazyOptimisedTree(section, children)
+  }
+}
+
+
+/**
+ * Optimises QNames and Trees according to LazyOptimisedTree
+ */ 
+object KnownTrees extends TreeOptimisation[QNameToken] with QNameOptimisationT[QNameToken] with QNameTokenF {
+  import PerfData.ns
+  val (id, version, part, bom, record) = {
+    val t = createToken
+    
+    (unprefixedQName("id", ns.uri, t),
+     unprefixedQName("version", ns.uri, t),
+     unprefixedQName("Part", ns.uri, t),
+     unprefixedQName("BOM", ns.uri, t),
+     unprefixedQName("Record", ns.uri, t)
+   )
+  }
+
+  def newTree( elem : Elem, children : XmlChildren, token : QNameToken ) : XmlTree = // not sure how this should be generated
+    if (elem.name eq id)
+      new KnownTextValue(children.head.getLeft.value) {
+	def section = Elem(id)
+      }
+    else if (elem.name eq version)
+      new KnownTextValue(children.head.getLeft.value) {
+	def section = Elem(version)
+      }//KnownName
+    else if (elem.name eq part)
+      new KnownName(children) {
+	def section = Elem(part)
+      }
+    else if (elem.name eq bom)
+      new KnownName(children) {
+	def section = Elem(bom)
+      }
+    else if (elem.name eq record)
+      new KnownName(children) {
+	def section = Elem(record)
+      }
+    else
+      LazyOptimisedTree( elem, children )(IsFromParser)
+
+}
+
+
+object Parsers {
+  def jaxpDeferred(in : java.io.Reader) = {
+    DefaultDOMFactoryPool.loan{ x => 
+      x.setFeature("http://apache.org/xml/features/dom/defer-node-expansion",
+                    true);
+      x.newDocumentBuilder.parse(in) }
+  }
+
+  def jaxpFull(in : java.io.Reader) = {
+    DefaultDOMFactoryPool.loan{ x => 
+      x.setFeature("http://apache.org/xml/features/dom/defer-node-expansion",
+                    false);
+      x.newDocumentBuilder.parse(in) }
+  }
+
+}
+
 object PerfData {
   val ns = Namespace("uri:reconstyle")
 
@@ -147,7 +242,7 @@ case class Recon(val parts : Map[Int, Int] = Map[Int, Int](),
  */ 
 class ParsingPerformanceRecon extends SimpleScalaBenchmark {
 
-  @Param(Array("40000"))//"10", "100", "1000", "10000", "40000"))//
+  @Param(Array("10000", "40000"))//"10", "100", "1000"))//, "10000", "40000"))//
   val size: Int = 0
   
   var s : String = _
@@ -162,18 +257,37 @@ class ParsingPerformanceRecon extends SimpleScalaBenchmark {
   def loadXmlP[T <: OptimisationToken]( s : String, ostrategy : PathOptimisationStrategy[T]) = 
     pullXmlCompletely[T](new java.io.StringReader(s), strategy = ostrategy)
 /*  
-  def timeNoOptimisation(reps: Int) = repeat(reps) {
-    loadXmlS(s, NoOptimisation)
-  }
-*/
+ */
+
+/*
+
   def timeScalaXML(reps: Int) = repeat(reps) {
     scala.xml.XML.loadString(s)
-  }  
+  }
 
+  def timeNoOptimisation(reps: Int) = repeat(reps) {
+    loadXmlS(s, NoOptimisation)
+  } 
+ 
+  def timeScalesXmlElemTreeOp(reps: Int) = repeat(reps) {
+    loadXmlS(s, QNameElemTreeOptimisation)
+  }
+*/
   def timeScalesXml(reps: Int) = repeat(reps) {
     loadXmlS(s, QNameMemoryOptimisation)
   }
 
+/*
+  def timeScalesXmlKnownTrees(reps: Int) = repeat(reps) {
+    loadXmlS(s, KnownTrees)
+  }
+
+  def timeScalesXmlTreeOp(reps: Int) = repeat(reps) {
+    loadXmlS(s, QNameTreeOptimisation)
+  }
+*/
+/*
+*/
   /**
    * How long for pull based, low memory onqnames action
    * 
@@ -326,21 +440,27 @@ class ParsingPerformanceRecon extends SimpleScalaBenchmark {
   def timeQNameAndSpeedPull(reps: Int) = repeat(reps) {
     loadXmlP(s, QNameAndSpeedierStrategy)
   }
-  */
+*/
+/*
+  import Parsers._
 
   def timeJAXPParseDeferred(reps: Int) = repeat(reps) {
+    jaxpDeferred(new StringReader(s))
+    /*
     DefaultDOMFactoryPool.loan{ x => 
       x.setFeature("http://apache.org/xml/features/dom/defer-node-expansion",
                     true);
-      x.newDocumentBuilder.parse(new StringReader(s)) }
+      x.newDocumentBuilder.parse(new StringReader(s)) }*/
   }
 
   def timeJAXPParseFully(reps: Int) = repeat(reps) {
-    DefaultDOMFactoryPool.loan{ x => 
+    jaxpFull(new StringReader(s))
+    /*DefaultDOMFactoryPool.loan{ x => 
       x.setFeature("http://apache.org/xml/features/dom/defer-node-expansion",
                     false);
-      x.newDocumentBuilder.parse(new StringReader(s)) }
+      x.newDocumentBuilder.parse(new StringReader(s)) }*/
   }
+  */
 
 
   
@@ -389,6 +509,50 @@ trait SpecificFileTest extends RunTest {
   }
 }
 
+/**
+ * Note all controlled from outside
+ */
+object RunParseMemory {
+  //val p = new ParsingPerformanceRecon()
+
+  def main(args: Array[String]) {
+    //val size = 40000//args(0).toInt
+    
+    //val memory = args(1).toInt
+    //p.s = asString(PerfData.reconDoc(size).iterator)
+
+    val test = args(0)
+    val filename = args(1)
+
+    println("Starting run for "+java.lang.Runtime.getRuntime().maxMemory()+ " " + test +" - " + filename)
+
+    val r = new java.io.FileReader(filename)
+    
+    import Parsers._
+    var doc : AnyRef = test match {
+      case "scala" => scala.xml.XML.load(r)
+      case "scales" => loadXml(r)
+      case "noop" => loadXml(r, strategy = NoOptimisation)
+      case "jaxpdef" => jaxpDeferred(r)
+      case "jaxpful" => jaxpFull(r)
+      case "nametree" => loadXml(r, strategy = QNameTreeOptimisation)
+      case "elemtree" => loadXml(r, strategy = QNameElemTreeOptimisation)
+      case "knowntree" => loadXml(r, strategy = KnownTrees)
+      
+    }
+
+    //var doc = p.timeScalaXML(1)
+    //var doc = p.timeScalesXml(1)
+    //var doc = p.timeNoOptimisation(1)
+    //var doc = p.timeJAXPParseDeferred(1)
+    //var doc = p.timeJAXPParseFully(1)
+    //var doc = p.timeScalesXmlTreeOp(1)
+    
+    println("Run over")
+  }
+}
+
+
 trait ReconTest extends RunTest {
   
   val p = new ParsingPerformanceRecon()
@@ -402,12 +566,15 @@ trait ReconTest extends RunTest {
 
 object RunHighPerf extends ReconTest {
 
-  override val size = 53000
+//  override val size = 43000
+  override val size = 5000
 
   var doc : DocLike = _
 
   def doTest {
-//    doc = p.timeQNameAndSpeed(5)
+    doc = p.timeScalesXml(5)//5
+//    doc = p.timeScalesXml(100)
+    //doc = p.timeScalesXmlTreeOp(5)
   }
 }
 /*

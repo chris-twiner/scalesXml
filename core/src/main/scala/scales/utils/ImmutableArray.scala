@@ -13,10 +13,10 @@ object ImmutableArray {
 /**
  * Behaves like an ArrayList/ArrayBuffer, growing an internal array as necessary
  */
-case class ImmutableArrayBuilder[ A ]() extends Builder[A, ImmutableArray[A]]{
+final class ImmutableArrayBuilder[ A ](private[this] var _buf : Array[AnyRef] = Array.ofDim[AnyRef](8)) extends Builder[A, ImmutableArray[A]]{
 
-  final val gf = 0.10
-  final val gp = 0.95
+  final private[this] val gf : Float = 2.0f
+  final private[this] val gp : Float  = 0.95f
 
   def resize( orig : Array[AnyRef], newCapacity : Int, len : Int ) = { 
     val ar = Array.ofDim[AnyRef](newCapacity)
@@ -26,49 +26,55 @@ case class ImmutableArrayBuilder[ A ]() extends Builder[A, ImmutableArray[A]]{
     ar
   }
 
-  var buf : Array[AnyRef] = _
   
-  var len = 0
+  @inline def buf = _buf
+
+  private[this] var _len = 0
+  @inline def len = _len
 
   protected def ensureSize( size : Int ) {
-    if ((buf eq null) || (size > buf.length))
-      buf = resize( buf, size, len )
-    else if (size > (buf.length * gp).toInt) {
-      buf = resize( buf, buf.length + (buf.length.toDouble * gf).toInt, len )
+    import java.lang.Math.round
+    
+    if ((_buf eq null) || (size > _buf.length))
+      _buf = resize( _buf, size, _len )
+    else if (size > round(_buf.length * gp)) {
+      _buf = resize( _buf, 
+	 round(_buf.length.toFloat * gf), _len )
     }
   }
 
   override def sizeHint( size : Int ) {
-    if ((buf eq null) || size > buf.length) // don't grow unless necessary
-      buf = resize( buf, size, len )
+    ensureSize(size)
+//    if ((_buf eq null) || size > _buf.length) // don't grow unless necessary
+//      _buf = resize( _buf, size, _len )
   }
 
   def result : ImmutableArray[A] = 
-    if (len == 0)
+    if (_len == 0)
       ImmutableArray.emptyImmutableArray.asInstanceOf[ImmutableArray[A]]
     else
-      ImmutableArray(buf, 0, len)
+      ImmutableArray(_buf, 0, _len)
 
   override def ++=(xs: TraversableOnce[A]): this.type = xs match {
     case ImmutableArray( base, offset, slen) =>
-      ensureSize(len + slen)
-      Array.copy(base, offset, buf, len, slen)
-      len += slen
+      ensureSize(_len + slen)
+      Array.copy(base, offset, _buf, _len, slen)
+      _len += slen
       this
     case _ =>
       super.++=(xs)
   }
 
   def +=( elem : A) : this.type = {
-    ensureSize(len + 1)
+    ensureSize(_len + 1)
     // we know its big enough
-    buf(len) = elem.asInstanceOf[AnyRef]
-    len += 1
+    _buf(_len) = elem.asInstanceOf[AnyRef]
+    _len += 1
     this
   }
 
   def clear() {
-    len = 0
+    _len = 0
   }
 }
 
@@ -283,16 +289,27 @@ object ImmutableArrayProxyBuilder {
 case class ImmutableArrayProxyBuilder[ A ]() extends Builder[A, ImmutableArrayProxy[A]]{
   import ImmutableArrayProxyBuilder._
 
-  lazy val arrayBuilder = new ImmutableArrayBuilder[A]()
-  lazy val vectorBuilder = Vector.newBuilder[A]
+  private[this] var arrayBuilder = new ImmutableArrayBuilder[A]()
+  private[this] var vectorBuilder : Builder[A,scala.collection.immutable.Vector[A]] = _
   
-  var inVector = false
-  var haveChosen = false
+  private[this] var inVector = false
+  private[this] var haveChosen = false
+
+  /**
+   * Can the arrayBuilder be re-used?
+   */ 
+  private[this] var canReuse = true
+
+  // keep it locally
+  private[this] var length = 0
 
   override def sizeHint( size : Int ) {
     if (size > vectorAfter) {
       inVector = true
       haveChosen = true
+      if (vectorBuilder eq null) {
+	vectorBuilder = Vector.newBuilder[A]
+      }
     }
 
     if (inVector) {
@@ -303,9 +320,9 @@ case class ImmutableArrayProxyBuilder[ A ]() extends Builder[A, ImmutableArrayPr
   }
 
   // for the case when we were under 32 but are now over
-  protected def checkVB() {
+  @inline final protected def checkVB() {
     if (!inVector) {
-      if (arrayBuilder.len > vectorAfter) {
+      if (length > vectorAfter) {
 	moveToVector
       }
     }
@@ -314,6 +331,9 @@ case class ImmutableArrayProxyBuilder[ A ]() extends Builder[A, ImmutableArrayPr
   protected def moveToVector() {
     // copy over
     val r = arrayBuilder.result
+    if (vectorBuilder eq null) {
+      vectorBuilder = Vector.newBuilder[A]
+    }
     vectorBuilder.sizeHint(r.len)
     vectorBuilder.++=(r)
     arrayBuilder.clear
@@ -324,10 +344,11 @@ case class ImmutableArrayProxyBuilder[ A ]() extends Builder[A, ImmutableArrayPr
   def result : ImmutableArrayProxy[A] =
     if (inVector) VectorImpl(vectorBuilder.result)
     else { // do it here as this is the correct type
-      import arrayBuilder.{buf, len}
+      val buf = arrayBuilder.buf
+//      import ab.buf //, len}
       import scala.annotation.switch	
 
-      (len : @switch) match {
+      (length : @switch) match {
 	case 0 =>
 	  ImmutableArrayProxy.emptyImmutableArray.asInstanceOf[ImmutableArrayProxy[A]]
 	case 1 => //TODO this is way too much like optimisation strategy..
@@ -336,11 +357,13 @@ case class ImmutableArrayProxyBuilder[ A ]() extends Builder[A, ImmutableArrayPr
 	  IATwo(buf(0).asInstanceOf[A], buf(1).asInstanceOf[A])
 	case 3 =>
 	  IAThree(buf(0).asInstanceOf[A], buf(1).asInstanceOf[A], buf(2).asInstanceOf[A])
-	case _ => 
-	  if (len != 0 && len == buf.length)
+	case _ => {
+	  canReuse = false
+	  if (length != 0 && length == buf.length)
 	    ImmutableArrayAll[A](buf)
 	  else
 	    arrayBuilder.result
+	}
       }
     }
 
@@ -349,6 +372,9 @@ case class ImmutableArrayProxyBuilder[ A ]() extends Builder[A, ImmutableArrayPr
     if (!haveChosen && xs.isInstanceOf[VectorImpl[A]]) {
       inVector = true
       haveChosen = true
+      if (vectorBuilder eq null) {
+	vectorBuilder = Vector.newBuilder[A]
+      }
     }
     
     xs match {
@@ -362,13 +388,16 @@ case class ImmutableArrayProxyBuilder[ A ]() extends Builder[A, ImmutableArrayPr
 	  vectorBuilder.++=(xs)
 	else
 	  arrayBuilder.++=(xs)
-    }      
+    }
+
+    length += xs.size
 
     checkVB
     this
   }
 
-  def +=( elem : A) : this.type =
+  def +=( elem : A) : this.type = {
+    length += 1
     if (inVector) {
       vectorBuilder.+=(elem)
       this
@@ -377,12 +406,22 @@ case class ImmutableArrayProxyBuilder[ A ]() extends Builder[A, ImmutableArrayPr
       checkVB
       this
     }
+  }
 
   def clear() {
-    vectorBuilder.clear
-    arrayBuilder.clear
+    if (inVector) { // a bit more expensive then resetting the len
+      vectorBuilder.clear
+    }
+    if (!canReuse) {
+      // array was used but not a vector or IAXxxs
+      arrayBuilder = new ImmutableArrayBuilder[A]()
+    } else {
+      arrayBuilder.clear
+    }
     inVector = false
     haveChosen = false
+    canReuse = true
+    length = 0
   }
 }
 

@@ -1,6 +1,6 @@
 package scales.xml
 
-import org.xml.sax.InputSource
+import org.xml.sax.{InputSource, XMLReader}
 import javax.xml.parsers.SAXParser
 import scales.utils._
 import java.io._
@@ -24,33 +24,44 @@ trait XmlParser {
   /**
    * Use a custom parserPool to control the sax factory features 
    */ 
-  def loadXml[Token <: OptimisationToken](source: InputSource, strategy : PathOptimisationStrategy[Token] = defaultPathOptimisation, parsers : Loaner[SAXParser] = DefaultSAXParserFactoryPool.parsers)(implicit xmlVer : XmlVersion): Doc = {
-    
+  def loadXml[Token <: OptimisationToken](source: InputSource, strategy : PathOptimisationStrategy[Token] = defaultPathOptimisation, parsers : Loaner[SAXParser] = DefaultSAXParserFactoryPool.parsers)(implicit xmlVer : XmlVersion): Doc =
     parsers.loan {
       parser =>
-      var handler = new Handler(strategy)
-      
-      parser.setProperty("http://xml.org/sax/properties/lexical-handler", handler)
-      parser.parse(source, handler)
-
-      val docVersion = {
-	val f = parser.getProperty("http://xml.org/sax/properties/document-xml-version")
-	if (f eq null) Xml10
-	else {
-	  val v = f.toString
-	  if (v == "1.1") 
-	    Xml11
-	  else
-	    Xml10	  
-	}
-      }
-
-      Doc(handler.buf.tree, handler.prolog.copy( 
-	decl = handler.prolog.decl.copy(version = docVersion)),
-	  handler.end)
+	readXml(source, strategy, parser.getXMLReader())
     }
-  }
+
+  def readXml[Token <: OptimisationToken](source: InputSource, strategy : PathOptimisationStrategy[Token], reader : XMLReader)(implicit xmlVer : XmlVersion): Doc = {
+    var handler = new Handler(strategy)
+    reader.setProperty("http://xml.org/sax/properties/lexical-handler", handler)
+    
+    reader.setContentHandler(handler)
+    reader.parse(source)
+
+    val docVersion = {
+      val f = reader.getProperty("http://xml.org/sax/properties/document-xml-version")
+      if (f eq null) Xml10
+      else {
+	val v = f.toString
+	if (v == "1.1") 
+	  Xml11
+	else
+	  Xml10	  
+      }
+    }
+
+    Doc(handler.getBuf.tree, handler.getProlog.copy( 
+      decl = handler.getProlog.decl.copy(version = docVersion)),
+	handler.getEnd)
+  }   
   
+  /**
+   * Use a custom parserPool to control the sax factory features 
+   */ 
+  def loadXmlReader[Token <: OptimisationToken](source: InputSource, strategy : PathOptimisationStrategy[Token] = defaultPathOptimisation, parsers : Loaner[XMLReader] = DefaultXMLReaderFactoryPool)(implicit xmlVer : XmlVersion): Doc =
+    parsers.loan {
+      parser =>
+	readXml(source, strategy, parser)
+    }
 
   /** Elems can have any QName, attribs only prefixed or default */
   def eqn[Token <: OptimisationToken](uri: String,
@@ -91,7 +102,7 @@ trait XmlParser {
       }
     }
 
-  class Handler[Token <: OptimisationToken](val strategy : PathOptimisationStrategy[Token])(implicit val defaultVersion : XmlVersion) extends org.xml.sax.ext.DefaultHandler2 {
+  class Handler[Token <: OptimisationToken](strategy : PathOptimisationStrategy[Token])(implicit val defaultVersion : XmlVersion) extends org.xml.sax.ext.DefaultHandler2 {
 
     import scales.utils.{noPath, Path, top, ScalesUtils }
     import org.xml.sax._
@@ -99,28 +110,32 @@ trait XmlParser {
     import ScalesUtils._
 //    import ScalesXml.toQName // Note we aren't validating the names here anyway so we don't need to use the correct xml version, future version may double check perhaps?
 
-    implicit val weAreInAParser : FromParser = IsFromParser
+    private[this] implicit val weAreInAParser : FromParser = IsFromParser
 
-    val token : Token = strategy.createToken
+    private[this] val token : Token = strategy.createToken
 
     // start with nothing
 //    var path: XmlPath = noXmlPath
 
     // only trees have kids, and we only need to keep the parent
-    val buf = new TreeProxies()
+    private[this] val buf = new TreeProxies()
+    def getBuf = buf
 
-    var isCData = false
+    private[this] var isCData = false
 
     // declarations on this element
-    var nsDeclarations = emptyNamespaces
+    private[this] var nsDeclarations = emptyNamespaces
 
-    var prolog = Prolog()
-    var end = EndMisc()
+    private[this] var prolog = Prolog()
+    private[this] var end = EndMisc()
 
-    var locator : Locator = _
+    def getProlog = prolog
+    def getEnd = end
+
+    private[this] var locator : Locator = _
     
     // used for judging PI or Comments
-    var inprolog = true
+    private[this] var inprolog = true
 
     def checkit(what: String) {
     }
@@ -230,58 +245,102 @@ trait XmlParser {
 
 }
 
-class TreeProxy( var elem : Elem, var children : XmlChildren)
+// XmlBuilder, XmlChildren
+final class TreeProxy( private[this] var _elem : Elem, private[this] val _builder : XmlBuilder){
+  @inline def elem = _elem
+
+  @inline def setElem( elem : Elem ) {
+    _elem = elem
+  }
+
+  @inline def builder = _builder
+}
 
 import scala.collection.mutable.ArrayBuffer
 
 /**
  * Mutable list that keeps the item creation to a minimum, no extra garbage here until the parse is done...
+ *
+ * NOTE this is effectively an internal structure, but is provided for user land performance tweaks
  */ 
-class TreeProxies( var depth : Int = -1, var proxies : ArrayBuffer[TreeProxy] = ArrayBuffer[TreeProxy]() ){
+class TreeProxies( ){
   import ScalesXml.xmlCBF
 
-  var size = proxies.length
+  // special case root tree
+  var rootTree : XmlTree = _
+  
+  private[this] var _depth : Int = -1
 
-  var current : TreeProxy = _
+  private[this] var _proxies : Array[TreeProxy] = Array.ofDim[TreeProxy](50)
+
+  // current max size in the proxies (_proxies.length could be far larger)
+  private[this] var _size = 0
+
+  private[this] var _current : TreeProxy = _
+
+/*
+ * interface for TreeOptimisations below, don't penalise normal parsing
+ */ 
+  def current = _current
+  def current_=( tp : TreeProxy ) {
+    _current = tp 
+  }
+  def depth = _depth
+  def depth_= ( newDepth : Int ) { _depth = newDepth }
+  def proxy( depth : Int ) = _proxies( depth )
 
   def addChild( i : XmlItem ) {
     //println("proxies addChild "+depth)
-    current.children = (current.children :+ i)
+    //current.children = (current.children :+ i)
+    _current.builder.+=(i)
   }
 
   def elementEnd() {
-    val l = current
+    val l = _current
+
+    val newTree = Tree(l.elem, l.builder.result)
+    
     //println("proxies elementend "+depth)
-    if (depth > 0) {
-      depth -= 1
-      current = proxies( depth )
-      current.children = (current.children :+ Tree(l.elem, l.children))
+    if (_depth > 0) {
+      _depth -= 1
+      _current = _proxies( _depth )
+      //current.children = (current.children :+ Tree(l.elem, l.children))
+      _current.builder.+=(newTree)
     } else {
-      depth -= 1
+      // end of doc
+      rootTree = newTree
+      _depth -= 1
     }
   }
 
-  def beginSub( elem : Elem, children : XmlChildren = emptyChildren ) {
-    //println("proxies beginSub "+depth)
-    depth += 1
+  def beginSub( elem : Elem, builder : => XmlBuilder) {
+    _depth += 1
     
-    if (depth == size) {
-      current = new TreeProxy(elem, children)
-      proxies += (current)
-      size +=1
+    if (_depth == _proxies.length) {
+      // double the size
+      val ar = Array.ofDim[TreeProxy]( _proxies.length * 2 )
+      Array.copy(_proxies, 0, ar, 0, _proxies.length)
+      _proxies = ar
+    }
+
+    if (_depth == _size) {
+      _current = new TreeProxy(elem, builder)
+      _proxies(_depth) = _current
+      _size +=1
     } else {
-      current = proxies(depth)
-      current.elem = elem 
-      current.children = children
+      _current = _proxies(_depth)
+      _current.setElem(elem)
+      _current.builder.clear() // don't create a new one
     }
   }
 
   /**
    * Only call when its the end of the parse
    */ 
-  def tree = {
-    val tp = proxies(0)
+  def tree = 
+    rootTree
+/*    val tp = proxies(0)
 
-    Tree(tp.elem, tp.children)
-  }
+    Tree(tp.elem, tp.builder.result)
+  }*/
 }

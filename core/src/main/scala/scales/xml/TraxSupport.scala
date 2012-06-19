@@ -16,10 +16,10 @@ import ScalesXml._
 case class ScalesResult[Token <: OptimisationToken](strategy : PathOptimisationStrategy[Token] = defaultPathOptimisation) extends SAXResult(new scales.xml.Handler[Token](strategy)) {
   def doc = {
     val handler = getHandler.asInstanceOf[scales.xml.Handler[Token]]
-    val tp = handler.buf.proxies(0)
+    //val tp = handler.buf.proxies(0)
 
-    Doc(Tree(tp.elem, tp.children)//path.tree()
-	, handler.prolog, handler.end)
+    Doc(handler.getBuf.tree//Tree(tp.elem, tp.children.result)//path.tree()
+	, handler.getProlog, handler.getEnd)
   }
 }
 

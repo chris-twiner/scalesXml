@@ -1,5 +1,7 @@
 package scales.xml
 
+import strategies._
+
 class BaseFunctionalityTest extends junit.framework.TestCase {
   import junit.framework.Assert._
   import java.io._

@@ -1,4 +1,4 @@
-= Scales Xml Memory Optimisation =
+= Scales Xml Optimisation =
 
 == Disclaimer ==
 
@@ -6,21 +6,11 @@ Measuring and comparing XML models is fraught with difficulty and will often var
 
 == Introduction ==
 
-A basic premise of Scales Xml is to separate the structure of XML from its contents, allowing optimisation on both axes.  Due to the Elem also being the child node container scala.xml can only leverage identical subtrees, not individual elements.  scala.xml can also optimise via string inlining and namespace map caching, which is much more likely than optimising the subtrees during a parse.
+A basic premise of Scales Xml is to separate the structure of XML from its contents, allowing optimisation on both axes.  Due to the Elem also being the child node container scala.xml can only leverage identical subtrees, not individual elements.
 
 The speed of parsing is also directly related to how much garbage is produced during the parse.  For example pre 0.1 versions of Scales used Path directly to build the resulting tree, creating many intermediate Path objects - 99.9% of which were immediately ready for garbage collection.  Swapping this into a mutable stack of mutable trees improved parsing performance 20-30%.
 
 Scales takes a flexible approach to memory management allowing the user to tune how much work is performed to reduce allocations during the parse and total resulting memory usage.
-
-It should also be noted that the memory usage for a non deferred Xerces DOM is high enough that parsing a 6MB message (on disk, 12MB in memory, Recon 40,000) is only possible with -Xm135M, whereas Scales can process this with -Xmx102M.  Indeed for -Xm135M Scales can parse a Recon of 53,000 yielding a Doc of 46Mb (from 16MB xml).
-
-Although Scales allows customisable memory optimisation strategies the base children IndexedSeq is already optimised for memory usage.  Vector is appropriate for large structures (> 30 records) but inappropriate for smaller collections, taking many Mb of unnecessary memory usage.
-
-The same is true of a simple immutable array, the costs are too high for items less than 4 in size.
-
-As such Scales provides an abstraction around array like IndexedSeq - ImmutableArrayProxy, which provides a One, Two and Three Seq, an ImmutableArray for less than 32 and a Vector wrapper for greater than 32.  There is also ImmutableArrayAll, which reduces offset information to further reduce memory usage.
-
-A last concession to memory performance (and CPU performance) was the replacement of Either as a container and the creating of EitherLike.  EitherLike has the similar properties but is a trait applied to classes, fold and projections are still present but the memory usage from the level of indirection is removed.  Tests showed that 10-15% of the memory usage was held purely by the Either ADT, and performance was around 4-5% impact across the board.
 
 == Options for memory optimisation ==
 
@@ -51,21 +41,33 @@ The most important point is that the developer has a choice, when needed, in how
 
 == Resulting Sizes ==
 
-The Recon test (See ParsingPerformance - PerfData.reconDoc) favours the default Scales Xml memory optimisation as it does not contain attributes, however it is taken from a real world scenario.  The 40,000 Recon size is chosen to demonstrate the resulting memory sizes (NB obtained by the excellent Yourkit profiler):
+The Recon test (See ParsingPerformance - PerfData.reconDoc) approximates a few real world problems tackled by Scales has very few attributes and a flat structure.  The 40,000 Recon size is chosen to demonstrate the resulting memory sizes (obtained by the excellent Yourkit profiler):
 
 : [[Image:img/memory_usage_recon40.png|Memory Usage]]
 
-As can be seen the size of the Non Optimised version is very large at 65.3MB, whereas the default optimisation (which is also 15-20% faster on larger documents) is roughly halve the size. NB The resulting QName and Elem caches are 2.24KB and 2.18KB respectively, showing more than a clear space saving.
+The default optimisation (which is also 10-20% faster on larger documents than Scala) strikes a very good balance between speed and memory usage.  The Scales parsing optimisations also result in QName and Elem cache sizes of 2.24KB and 2.18KB respectively (the Elem caches are used by HighMemory and QNameElemTree Optimisations), showing more than a clear space saving.
 
-In fact, in addition to being 10MB less than Scala XML for the same document, it comes in at slightly less memory cost as the Xerces deferred DOM impl.
+The slightly slower to parse (but still faster than Scala XML) Tree based optimisations reduce immediate memory usage by over 15Mb less than Scala XML for the same document, in fact the two Tree optimisations also consume 5Mb less than the Xerces deferred DOM impl.
 
-This benefit in memory reduction can also be extended to full Elem caching but this reduces the overall performance by up to 15%, putting it around (and sometimes below) the parsing performance of Scala XML.  The potential memory savings are also limited by how often the attribute or namespace values are identical, and it is often better to simply cache attribute values if there is a restricted range available.
+Full Elem caching alone (not including Elem + Tree) reduces the overall performance by up to 15%, putting it around (and sometimes below) the parsing performance of Scala XML.  The potential memory savings are also limited by how often the attribute or namespace values are identical, and it is often better to simply cache attribute values if there is a restricted range available.
+
+See [OptimisationDetails.html#QName_and_Elem_Memory_Usage QName and Elem Memory Usage] for more details on default memory saving.
+
+== Memory Consumption During Parsing ==
+
+The memory consumed by Scales in its default configuration is close to or better than Xerces / JAXP default without the nasty expansion upon using it.
+
+: [[Image:img/memory_usage_during_parsing.png|Memory Usage During Parsing]]
+
+However as can be seen above the memory usage can be substantially reduced, in a similar fashion to Xerces Deferred processing (albeit immutably so).
 
 == Overall Parsing Performance ==
 
-The overall parsing performance of Scales Xml, with default Optimisation, is around 10-20% faster than Scala XML and a similar amount slower than JAXP.
+The overall parsing performance of Scales Xml, with default Optimisation, is around 20-25% faster than Scala XML for small to mid size documents to 40-45% faster for larger documents.
 
-The larger the amount of data and the level of repeated structure the faster Scales Xml can parse.
+The larger the amount of data and the level of repeated structure the greater the difference in Scales Xml parsing performance.
+
+Scales is less than 10% slower than JAXP Deferred for smaller documents and for larger documents up to 30% slower.  For fully parsed documents however its less than 5% slower for smaller documents and up to 30% faster for larger docs.
 
 == Special Case - Pull Parsing via onQNames ==
 
