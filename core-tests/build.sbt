@@ -9,7 +9,8 @@ libraryDependencies ++= Seq(
     "java-allocation-instrumenter" % "2.0" % "test",
   // needs to be overriden  
   "com.google.code.gson" % "gson" % "1.7.2" % "test",
-  "com.google.code.caliper" % "caliper" % "1.0-SNAPSHOT" % "test"
+  "com.google.code.caliper" % "caliper" % "1.0-SNAPSHOT" % "test",
+  "nu.validator.htmlparser" % "htmlparser" % "1.4" 
 )
 
 excludeFilter in unmanagedSources <<= scalaVersion{ v => 
@@ -18,7 +19,7 @@ excludeFilter in unmanagedSources <<= scalaVersion{ v =>
    else 
      "*_2.8.scala"}
 
-caliperRunTask(reconPerf, Test, "scales.xml.ParsingPerformanceRecon", "-JmaxMem=-Xmx256M")
+caliperRunTask(reconPerf, Test, "scales.xml.ParsingPerformanceRecon", "-JmaxMem=-Xmx256M") // 256
 
 fork in reconPerf := true
 
@@ -58,3 +59,11 @@ fullRunInputTask(runHighMemoryFile, Test, "scales.xml.RunMemoryOptimisedFile")
 
 
   
+fullRunInputTask(runParseMemory, Test, "scales.xml.RunParseMemory")
+
+fork in runParseMemory := true
+
+runMemoryUsage := "-Xmx120M"
+
+// change in console via set runMemoryUsage in coreTests := "-Xmx40M"
+javaOptions in runParseMemory <+= runMemoryUsage// map "-Xmx45M"
