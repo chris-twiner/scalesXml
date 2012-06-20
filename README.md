@@ -12,7 +12,7 @@ A very flexible XML stream handling approach is based upon StAX and Iteratees (c
 
 Currently the stable 0.2.1 release [site](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.1/0.2.1/index.html) has focused on performance tuning, including fast parsing and low memory usage (which, of course, are coupled), and is present on the scales repository.
 
-The upcoming release 0.3, has an RC6 version and provides ScalesXPath - a string based XPath 1.0 evaluator, a full compliment of useful axe in the internal XPath syntax, an equality framework (2.9.x only) and general improvements in usability.  
+The upcoming release 0.3, has an RC7 version and provides ScalesXPath - a string based XPath 1.0 evaluator, a full compliment of useful axe in the internal XPath syntax, an equality framework (2.9.x only) and general improvements in usability.  
 
 The artifacts are now on Maven Central under the group org.scales.xml.
 
@@ -22,22 +22,22 @@ Currently 2.8.1, 2.8.2, 2.9.1 and 2.9.2 are built against.
 
 So for sbt its:
 
-    val scalesXml = "org.scalesxml" %% "scales-xml" % "0.3-RC6"
+    val scalesXml = "org.scalesxml" %% "scales-xml" % "0.3-RC7"
 
 xsbt 0.10+ its:
 
     libraryDependencies ++= Seq(
-      "org.scalesxml" %% "scales-xml" % "0.3-RC6",
-      //"org.scalesxml" %% "scales-jaxen" % "0.3-RC6" // optional for string based xpaths
+      "org.scalesxml" %% "scales-xml" % "0.3-RC7",
+      //"org.scalesxml" %% "scales-jaxen" % "0.3-RC7" // optional for string based xpaths
       )
 
-Maven repos should therefore use org.scalesxml scales-xml_2.9.2 as the dependency.   Also note that Jaxen 1.1.4 (tested against 0.3-RC6) isn't yet present via Maven, so if you use String XPath evaluation and you'd like to use the latest version you must add the folowing to the build:
+Maven repos should therefore use org.scalesxml scales-xml_2.9.2 as the dependency.   Also note that Jaxen 1.1.4 (tested against 0.3-RC7) isn't yet present via Maven, so if you use String XPath evaluation and you'd like to use the latest version you must add the folowing to the build:
 
     resolvers += "Scales Repo" at "http://scala-scales.googlecode.com/svn/repo"
 
 [The last stable 0.2.1 documentation site is here](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.1/0.2.1/index.html) and zip of the site documentation is available at [scales-xml.zip](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.1/0.2.1/scales-xml_2.9.1-0.2.1-site.zip).  
 
-[The current RC 0.3 documentation site is here](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.3-RC6/index.html) and zip of the site documentation is available at [scales-xml.zip](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.3-RC6/org.scalesxml-scales-xml-0.3-RC6-site.zip).
+[The current RC 0.3 documentation site is here](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.3-RC7/index.html) and zip of the site documentation is available at [scales-xml.zip](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.3-RC7/org.scalesxml-scales-xml-0.3-RC7-site.zip).
 
 _Warning_ local file based sites do not fully work in Chrome, use Firefox or IE in preference.
 
