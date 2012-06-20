@@ -7,7 +7,7 @@ This version has been built with xsbt 0.11.x and migrated to [github](https://gi
 
 Significant performance and memory improvements, for small to medium size documents up to 30% faster than Scala XML and within 10% of Xerces/JAXP.
 
-Memory usage can be significantly reduced (10% reduction over previous Scales releases) and through TreeOptimisations with only a 5% peformance hit but a further 30% reduction in memory usage - suitable for high volumn servers.
+Memory usage can be significantly reduced (10% reduction over previous Scales releases) and through TreeOptimisations with only a 5% performance hit but a further 30% reduction in memory usage - suitable for high volume servers.
 
 ### All the Axe you'll ever need
 
