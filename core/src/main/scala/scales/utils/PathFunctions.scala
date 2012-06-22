@@ -14,6 +14,8 @@ object PathFold {
    * folder retrieves the current path
    *
    * Each iteration folds the resulting tree back into the path. As this function must maintain the Path it does not expose the new path root until the result.
+   *
+   * The progress through the document is in reverse document order.  This ensures that transformations can always be safely composed, e.g. a delete of a path won't stop changes below it.  This, however, implies the developer must also handle any accumalation in "reverse". 
    */
   def foldPositions[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]], ACC](locations: Iterable[Path[Item, Section, CC]], accumulator: ACC)(folder: (ACC, Path[Item, Section, CC]) => (ACC, FoldOperation[Item, Section, CC])) (implicit cbf : TreeCBF[Item, Section, CC], cm : ClassManifest[(scales.utils.Position[Item,Section,CC], Path[Item, Section, CC])])  : Either[(ACC, Path[Item, Section, CC]), FoldError] = {
     if (locations.isEmpty) return Right(NoPaths)
@@ -94,6 +96,11 @@ trait Paths {
 
   type PathFoldR[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]] = (Path[Item, Section, CC]) => FoldR[Item, Section, CC]
 
+  /**
+   * As per the non accumalating version, folds over positions within a given tree but allows for an additional accumalation.
+   * 
+   * The progress through the document is in reverse document order.  This ensures that transformations can always be safely composed, e.g. a delete of a path won't stop changes below it.  This, however, implies the developer must also handle any accumalation in "reverse". 
+   */ 
   def foldPositions[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]], ACC](locations: Iterable[Path[Item, Section, CC]], accumulator: ACC)(folder: (ACC, Path[Item, Section, CC]) => (ACC, FoldOperation[Item, Section, CC])) (implicit cbf : TreeCBF[Item, Section, CC], cm : ClassManifest[(scales.utils.Position[Item,Section,CC], Path[Item, Section, CC])])  : Either[(ACC, Path[Item, Section, CC]), FoldError] = PathFold.foldPositions(locations, accumulator)(folder)(cbf, cm)
 
   /**
