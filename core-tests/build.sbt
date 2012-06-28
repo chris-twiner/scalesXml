@@ -4,13 +4,14 @@ resolvers += "Sonatype OSS Repo" at "http://oss.sonatype.org/content/repositorie
 
 libraryDependencies ++= Seq(
   "org.slf4j" % "slf4j-log4j12" % "1.6.1" % "test",	
-  "com.novocode" % "junit-interface" % "0.7" % "test",
+  "com.novocode" % "junit-interface" % "0.8" % "test",
   "com.google.code.java-allocation-instrumenter" %
     "java-allocation-instrumenter" % "2.0" % "test",
   // needs to be overriden  
   "com.google.code.gson" % "gson" % "1.7.2" % "test",
   "com.google.code.caliper" % "caliper" % "1.0-SNAPSHOT" % "test",
-  "nu.validator.htmlparser" % "htmlparser" % "1.4" 
+  "nu.validator.htmlparser" % "htmlparser" % "1.4",
+  "org.ccil.cowan.tagsoup" % "tagsoup" % "1.2.1"
 )
 
 excludeFilter in unmanagedSources <<= scalaVersion{ v => 

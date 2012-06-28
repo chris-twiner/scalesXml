@@ -38,7 +38,7 @@ trait XmlFactories {
       parserFactory
     }
 
-    val parsers = new scales.utils.Loaner[SAXParser] {
+    val parsers = new scales.utils.Loaner[SAXParser] with DefaultSaxSupport {
       def loan[X]( tThunk : SAXParser => X ) : X =
 	pool.loan{ x => tThunk(x.newSAXParser) }
     }
@@ -47,12 +47,12 @@ trait XmlFactories {
   /**
    * Default XMLReader Factory
    */ 
-  object DefaultXMLReaderFactoryPool extends scales.utils.SimpleUnboundedPool[XMLReader] { pool =>
+  object DefaultXMLReaderFactoryPool extends scales.utils.SimpleUnboundedPool[XMLReader] with DefaultSaxSupport { pool =>
     
     def create = 
       XMLReaderFactory.createXMLReader()
     
-  }    
+  }
 
   /**
    * Default DOMFactory impl
