@@ -148,6 +148,8 @@ trait ElementStep extends Axis {
   def \\* : XPath[T] = \\.*
   
   def \\*(qname : QName) = \\.*(qname)
+
+  def \\*:*(local : String) = \\.*:*(local)
   
   def \\*(pred : XmlPath => Boolean ) = \\.*(pred)
   
