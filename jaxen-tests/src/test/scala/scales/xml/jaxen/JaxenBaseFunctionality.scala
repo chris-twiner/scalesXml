@@ -65,6 +65,19 @@ class JaxenBaseFunctionalityTest extends BaseFunctionalityTest {
     doAttrTest(res)
   }
 
+  val jprefixedPathNoNS = "/Default/NoNamespace/prefixed"
+
+  def testNoNSLocalNamePredicateJaxen = {
+    val res = jaxen(jprefixedPathNoNS).withNameConversion(ScalesXPath.localOnly).xmlPaths(path)
+    assertTrue(res.size == 1)
+    assertEquals(prefixedPQN, pqName(res.head))
+  }
+
+  def testNoNSNSAttributesJaxen = {
+    val res = jaxen(jprefixedPathNoNS + "/@attr").withNameConversion(ScalesXPath.localOnly).attributePaths(path)
+    doAttrTest(res)
+  }
+
   def testLocalOnlyFailsJaxen = {
     val res = fromPathA(jprefixedPath + "/@attr")
     assertTrue("Should not find an attribute, as this should only match for no namespace matches", res.size == 0)

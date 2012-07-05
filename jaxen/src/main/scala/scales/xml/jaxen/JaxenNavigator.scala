@@ -52,8 +52,18 @@ object Implicits {
  */ 
 object ScalesXPath {
 
+  /**
+   * Identity, no conversion takes place
+   */ 
+  val defaultNoConversion : QName => QName = identity
+
+  /**
+   * Strips a qname of all prefixes and namespaces
+   */ 
+  val localOnly : QName => QName = q => NoNamespaceQName(q.local)
+
   def apply(xpath : String, nsMap : Map[String, String] = Map()) =
-    new ScalesXPath( xpath, nsMap )
+    new ScalesXPath( xpath, nsMap)
 
   /**
    * Use PrefixedNamespaces to create the namespace map
@@ -65,7 +75,7 @@ object ScalesXPath {
    * Use PrefixedNamespaces to create the namespace map, with a variable parameter list 
    */ 
   def apply(xpath : String, pre : PrefixedNamespace, pres : PrefixedNamespace * ) =
-    new ScalesXPath(xpath, (pre +: pres).map( p => p.prefix -> p.ns.uri ).toMap)
+    new ScalesXPath(xpath, (pre +: pres).map( p => p.prefix -> p.ns.uri ).toMap, defaultNoConversion)
 
 }
 
@@ -76,7 +86,7 @@ object ScalesXPath {
  * 
  * @nsMap a prefix -> namespace map.  Use the companion object to pass in PrefixedNamespaces
  */ 
-class ScalesXPath(val xpath : String, val nsMap : Map[String,String] = Map()) extends ScalesBaseJaxenXPath(xpath, ScalesXPathFactory, ScalesNavigator) {
+class ScalesXPath(val xpath : String, val nsMap : Map[String,String] = Map(), val nameConversion : QName => QName = ScalesXPath.defaultNoConversion) extends ScalesBaseJaxenXPath(xpath, ScalesXPathFactory, new ScalesNavigator(nameConversion)) {
   import Implicits._
 
   {
@@ -86,6 +96,12 @@ class ScalesXPath(val xpath : String, val nsMap : Map[String,String] = Map()) ex
 		}
     setNamespaceContext(ns)
   }
+
+  /**
+   * Provides a conversion function for QNames, this allows a caller to remove namespaces, for example via ScalesXPath.localOnly
+   */
+  def withNameConversion( conversion : QName => QName ) =
+    new ScalesXPath( xpath, nsMap, conversion)
 
   /**
    * Jaxen can't sort non identity/reference equality based object models.  So we do the work for it and cut out the existing sorting.
@@ -142,7 +158,8 @@ class ScalesXPath(val xpath : String, val nsMap : Map[String,String] = Map()) ex
  */ 
 object ScalesComparator extends java.util.Comparator[AnyRef] {
   
-  import ScalesNavigator._
+  val nav = new ScalesNavigator(ScalesXPath.defaultNoConversion) 
+  import nav._
 
   def compare( o1 : AnyRef, o2 : AnyRef) = {
     if (isNonChild(o1) && isNonChild(o2)) {
@@ -198,8 +215,9 @@ object ScalesXPathFactory extends DefaultXPathFactory {
 
 /**
  * Maps Scales Xml into Jaxen
- */ 
-object ScalesNavigator extends DefaultNavigator {
+ * @param nameConversion allows conversion of a qname in the document before evaluation
+ */
+class ScalesNavigator(val nameConversion : QName => QName) extends DefaultNavigator {
 
   /**
    * I dislike typing this over and over again
@@ -269,15 +287,27 @@ object ScalesNavigator extends DefaultNavigator {
     } else false
   
   def getAttributeQName( ctx : AnyRef ) =  ctx match {
-    case DocsUp(AttributePath(a, x),d) => a.name.qName
+    case DocsUp(AttributePath(a, x),d) => 
+      if (nameConversion eq ScalesXPath.defaultNoConversion)
+	a.name.qName
+      else
+	nameConversion(a.name).qName
     case _ => error("not an attribute")
   }
   def getAttributeName( ctx : AnyRef ) = ctx match {
-    case DocsUp(AttributePath(a, x),d) => a.name.local
+    case DocsUp(AttributePath(a, x),d) => 
+      if (nameConversion eq ScalesXPath.defaultNoConversion)
+	a.name.local
+      else
+	nameConversion(a.name).local
     case _ => error("not an attribute")
   }
   def getAttributeNamespaceUri( ctx : AnyRef ) = ctx match {
-    case DocsUp(AttributePath(a, x),d) => a.name.namespace.uri
+    case DocsUp(AttributePath(a, x),d) => 
+      if (nameConversion eq ScalesXPath.defaultNoConversion)
+	a.name.namespace.uri
+      else
+	nameConversion(a.name).namespace.uri
     case _ => error("not an attribute")
   }
 
@@ -313,10 +343,25 @@ object ScalesNavigator extends DefaultNavigator {
       Elements.Functions.text(ctx)
     else null
 
-  def getElementQName( ctx : AnyRef ) = ctx.tree.section.name.qName
-  def getElementName( ctx : AnyRef ) = ctx.tree.section.name.local
-  def getElementNamespaceUri( ctx : AnyRef ) = ctx.tree.section.name.namespace.uri
+// ScalesXPath.defaultNoConversion
+  def getElementQName( ctx : AnyRef ) = 
+    if (nameConversion eq ScalesXPath.defaultNoConversion)
+      ctx.tree.section.name.qName
+    else
+      nameConversion(ctx.tree.section.name).qName
+    
+  def getElementName( ctx : AnyRef ) = 
+    if (nameConversion eq ScalesXPath.defaultNoConversion)
+      ctx.tree.section.name.local
+    else
+      nameConversion(ctx.tree.section.name).local
 
+  def getElementNamespaceUri( ctx : AnyRef ) = 
+    if (nameConversion eq ScalesXPath.defaultNoConversion)
+      ctx.tree.section.name.namespace.uri
+    else
+      nameConversion(ctx.tree.section.name).namespace.uri
+    
   override def getDocument( uri : String ) = error("don't do doc lookups at all man")
 
   override def getDocumentNode( ctx : AnyRef ) =

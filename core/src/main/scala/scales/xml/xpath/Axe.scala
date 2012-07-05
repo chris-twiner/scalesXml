@@ -73,6 +73,12 @@ trait AttributeAxis extends Axis {
 
   def \@ = \.*@
 
+  /** Only matches local name */
+  def *:@(local : String) : AttributePaths[T] =
+    *@({ attributePath : AttributePath => toQName(attributePath.attribute.name).local == local })
+
+  def \*:@(local : String) = \.*:@(local)
+
   def \@(pred : AttributePath => Boolean) : AttributePaths[T] =
     \.*@(pred)
 
@@ -111,6 +117,12 @@ trait ElementStep extends Axis {
   def \*(qname : QName) : XPath[T] =
     \*-.*(qname)
 
+  /** Search for all immediate child elements with a matching local name only */
+  def *:*(local : String) : XPath[T] = filter(x => x.isItem == false && local == x.tree.section.name.local)
+
+  def \*:*(local : String) : XPath[T] =
+    \*-.*:*(local)
+
   /** Search for all immediate child elements matching the predicate*/
   def *(pred : XmlPath => Boolean) : XPath[T] = filter(x => x.isItem == false && pred(x))
 
@@ -136,6 +148,8 @@ trait ElementStep extends Axis {
   def \\* : XPath[T] = \\.*
   
   def \\*(qname : QName) = \\.*(qname)
+
+  def \\*:*(local : String) = \\.*:*(local)
   
   def \\*(pred : XmlPath => Boolean ) = \\.*(pred)
   

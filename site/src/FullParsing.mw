@@ -24,7 +24,7 @@ As of Scales 0.3 there is direct support for SAX parsers via the loadXmlReader f
 ${cscala}
   import org.xml.sax.XMLReader
 
-  object NuValidatorFactoryPool extends scales.utils.SimpleUnboundedPool[XMLReader] {
+  object NuValidatorFactoryPool extends scales.utils.SimpleUnboundedPool[XMLReader] with DefaultSaxSupport {
     
     def create = {
       import nu.validator.htmlparser.{sax,common}
@@ -44,3 +44,23 @@ ${cscala}
 ${cend}
 
 Developers can also call readXml directly with a given XMLReader instance instead of using the pooled version.
+
+If a given XMLReader cannot work with the DefaultSaxSupport it can override the appropriate functions.  For example TagSoup doesn't support XmlVersion information, as such a TagSoupFactoryPool would look like:
+
+${cscala}
+object TagSoupFactoryPool extends scales.utils.SimpleUnboundedPool[XMLReader] with DefaultSaxSupport {
+  
+  // doesn't support xml version retrieval
+  override def getXmlVersion( reader : XMLReader ) : AnyRef =
+    null
+
+  def create = {
+    import org.ccil.cowan.tagsoup.Parser
+    val reader = new Parser
+    // disable namespaces
+    reader.setFeature(Parser.namespacesFeature, false)
+    reader
+  }      
+  
+}
+${cend}

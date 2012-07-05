@@ -38,7 +38,7 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
   }
 // path.\*("NoNamespace").\*(localName_==("prefixed"))
   val prefixed = path \* "NoNamespace" \* hasLocalNameX("prefixed")
-
+  
   def testLocalNamePredicate = {
     assertTrue(prefixed.size == 1)
     assertEquals(prefixedPQN, pqName(prefixed.head))
@@ -55,6 +55,20 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
     doAttrTest(prefixed \@ ("urn:prefix"::"attr"))
   }
    
+
+  val prefixedNoNS = path \*:* "NoNamespace" \*:* "prefixed"
+
+  def testLocalNamePredicateNoNS = {
+    assertTrue(prefixedNoNS.size == 1)
+    assertEquals(prefixedPQN, pqName(prefixedNoNS.head))
+  }
+
+    
+  def testNSAttributesDirectNoNS = {
+    doAttrTest(prefixedNoNS \*:@("attr"))
+  }
+   
+
   def testLocalNamePredicateAttributesDirect = {
     doAttrTest(prefixed \@ hasLocalNameA("attr"))
   }

@@ -10,6 +10,9 @@ import SiteKeys.{siteCSS, siteResourceDir,
 		 siteMarkupDocHeaders, 
 		 menuBarTitle}
 
+import de.johoop.jacoco4sbt._
+import JacocoPlugin._
+
 object ScalesXmlRoot extends Build {
 
   object sonatype extends org.improving.PublishToSonatype(ScalesXmlRoot) {
@@ -76,7 +79,7 @@ object ScalesXmlRoot extends Build {
 */
     organization := "org.scalesxml",
     offline := true,
-    version := "0.3-RC7",
+    version := "0.3",
     scalaVersion := "2.9.2",
     crossScalaVersions := Seq("2.8.1", "2.8.2", "2.9.1", "2.9.2"),// "2.10.0-M4"),
     //publishSetting,
@@ -92,8 +95,9 @@ object ScalesXmlRoot extends Build {
     ),
     autoCompilerPlugins := false,
     fork in run := true, 
-    parallelExecution in runSecurely := false
-  ) ++ sonatype.settings
+    parallelExecution in runSecurely := false,
+    parallelExecution in jacoco.Config := false
+  ) ++ sonatype.settings ++ jacoco.settings
 // ++ crazyness
 
   val reconPerf = TaskKey[Unit]("recon-perf")
