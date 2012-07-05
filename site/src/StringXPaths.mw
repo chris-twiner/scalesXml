@@ -55,6 +55,18 @@ ${cscala}
   attribs.attributePaths(path).map(qname(_)) // List(pre:attr3, attr2, pre:attr1)
 ${cend}
 
+As a shortcut to ignore namespaces (instead of using prefixes) use:
+
+${cscala}
+  ScalesXPath("/html/body/p[2]/table[2]/tr/td/table/tr/td[1]/a/font").withNameConversion(ScalesXPath.localOnly)
+${cend}
+
+The function passed to withNameConversion is of type: 
+
+${cscala}QName => QName${cend} 
+
+allowing further mappings as needed.
+
 == Other Jaxen Tricks ==
 
 Jaxen provides various extensions to straight forward querying, including adding java extension functions.  If possible, of course, use the embedded DSL, if not ScalesXPath is a Jaxen XPath implementation, allowing calls to setFunctionContext, variableContext etc.

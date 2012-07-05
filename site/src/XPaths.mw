@@ -112,6 +112,8 @@ ${cscala}
   qname(second) // Child2
 ${cend}
 
+The developer can chose to ignore namespaces (not recommended) by using the *:* and *:@ predicates instead (equivalent to string xpath /*[local-name() = "x"]).
+
 === Positional Predicates ===
 
 * position() (pos)
