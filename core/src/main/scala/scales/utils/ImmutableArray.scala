@@ -1,10 +1,8 @@
 package scales.utils
 
 import collection.{IndexedSeqOptimized, IndexedSeqLike, IndexedSeq}
-import collection.mutable.Builder //{ArrayBuilder, Builder}
+import collection.mutable.Builder
 import collection.generic.{CanBuildFrom, GenericTraversableTemplate, SeqFactory, GenericCompanion}
-
-//import scales.collection.immutable.Vector
 
 object ImmutableArray {
   val emptyImmutableArray = new ImmutableArray[Nothing](Array[AnyRef](),0,0)
@@ -45,8 +43,6 @@ final class ImmutableArrayBuilder[ A ](private[this] var _buf : Array[AnyRef] = 
 
   override def sizeHint( size : Int ) {
     ensureSize(size)
-//    if ((_buf eq null) || size > _buf.length) // don't grow unless necessary
-//      _buf = resize( _buf, size, _len )
   }
 
   def result : ImmutableArray[A] = 
@@ -345,13 +341,12 @@ case class ImmutableArrayProxyBuilder[ A ]() extends Builder[A, ImmutableArrayPr
     if (inVector) VectorImpl(vectorBuilder.result)
     else { // do it here as this is the correct type
       val buf = arrayBuilder.buf
-//      import ab.buf //, len}
       import scala.annotation.switch	
 
       (length : @switch) match {
 	case 0 =>
 	  ImmutableArrayProxy.emptyImmutableArray.asInstanceOf[ImmutableArrayProxy[A]]
-	case 1 => //TODO this is way too much like optimisation strategy..
+	case 1 =>
 	  IAOne(buf(0).asInstanceOf[A])
 	case 2 =>
 	  IATwo(buf(0).asInstanceOf[A], buf(1).asInstanceOf[A])

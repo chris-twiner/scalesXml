@@ -157,7 +157,7 @@ import strategies._
 /**
  * The default as it will equal or better Scala Xml memory consumption at a performance gain.
  *
- * For the lowest memory consumption possible, for example where memory is more important than raw performance, see LowMemoryOptimsation
+ * For the lowest memory consumption possible, for example where memory is more important than raw performance, see QNameElemTreeOptimisation
  *
  */
 object QNameMemoryOptimisation extends PathOptimisationStrategy[QNameToken] with QNameOptimisationT[QNameToken] with QNameTokenF

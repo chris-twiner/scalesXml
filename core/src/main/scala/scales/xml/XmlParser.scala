@@ -142,9 +142,6 @@ trait XmlParser {
 
     private[this] val token : Token = strategy.createToken
 
-    // start with nothing
-//    var path: XmlPath = noXmlPath
-
     // only trees have kids, and we only need to keep the parent
     private[this] val buf = new TreeProxies()
     def getBuf = buf
@@ -317,8 +314,6 @@ class TreeProxies( ){
   def proxy( depth : Int ) = _proxies( depth )
 
   def addChild( i : XmlItem ) {
-    //println("proxies addChild "+depth)
-    //current.children = (current.children :+ i)
     _current.builder.+=(i)
   }
 
@@ -327,11 +322,9 @@ class TreeProxies( ){
 
     val newTree = Tree(l.elem, l.builder.result)
     
-    //println("proxies elementend "+depth)
     if (_depth > 0) {
       _depth -= 1
       _current = _proxies( _depth )
-      //current.children = (current.children :+ Tree(l.elem, l.children))
       _current.builder.+=(newTree)
     } else {
       // end of doc
@@ -366,8 +359,5 @@ class TreeProxies( ){
    */ 
   def tree = 
     rootTree
-/*    val tp = proxies(0)
 
-    Tree(tp.elem, tp.builder.result)
-  }*/
 }
