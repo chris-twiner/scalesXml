@@ -7,7 +7,7 @@ import scala.collection.generic.CanBuildFrom
 import scalaz._
 import Scalaz._
 
-import scales.utils.{ListSet, MapSet, Key, ImmutableArray, EitherLike, LeftLike, Tree}
+import scales.utils.{ListSet, ImmutableArray, EitherLike, LeftLike, Tree}
 
 import java.nio.charset.Charset
 

@@ -7,7 +7,7 @@ import scala.collection.generic.CanBuildFrom
 import scalaz._
 import Scalaz._
 
-import scales.utils.{ListSet, MapSet, Key, ImmutableArray, EitherLike, LeftLike, Tree}
+import scales.utils.{ListSet, ImmutableArray, EitherLike, LeftLike, Tree}
 
 import java.nio.charset.Charset
 
@@ -94,48 +94,10 @@ trait XmlTypesImplicits {
    */
   implicit def toAttrS(local: String)(implicit ver: XmlVersion): Attribute = Attribute(toAttrQNameN(NoNamespaceQName(local)), "")
 
-  /* we don't know if its a CanHavePrefix and we don't care as the prefix we add will be ignored
-  implicit val toAttrQ = (nons: QName) => 
-    Attribute(PrefixedQName(nons.local, nons.namespace.prefixed("f")(Xml10,IsFromParser))(Xml10,IsFromParser), "")
-*/
-  implicit def toAttrKS(local: String)(implicit ver: XmlVersion): Key[Attribute] = new AttributeKey(local, Default.noNamespace.uri)
-
-  implicit def toAttrKQ(q : QName) : Key[Attribute] =
-    new AttributeKey(q.local, q.namespace.uri)
-
-  implicit val toAttrK = (a : Attribute) => {
-    val q = a.name : QName
-    new AttributeKey(q.local, q.namespace.uri)
-  }
-
-}
-
-// localName to avoid implicits
-class AttributeKey(val localName : String, val ns : String) extends Key[Attribute] {
-  override def equals( other : Any ) = other match {
-    case o : AttributeKey => 
-      if (o eq this) true
-      else
-      (localName == o.localName) && (ns == o.ns)
-    case _ => false
-  }
-
-  override def hashCode() : Int = {
-    var hs = 1
-    hs = (hs * 31) + localName.hashCode
-    hs = (hs * 31) + ns.hashCode
-    hs
-  }
 }
 
 object ExtraTypesImplicits {
   implicit val toAttrN = (nons: AttributeQName) => Attribute(nons, "")
-
-  implicit def toAttrKAQ(aq : AttributeQName) : Key[Attribute] = {
-    val q = aq.asInstanceOf[QName]
-    new AttributeKey(q.local, q.namespace.uri)
-  }
-
 }
 
 /**
