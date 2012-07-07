@@ -159,5 +159,6 @@ import strategies._
  *
  * For the lowest memory consumption possible, for example where memory is more important than raw performance, see QNameElemTreeOptimisation
  *
+ * @see scales.xml.strategies.QNameElemTreeOptimisation
  */
 object QNameMemoryOptimisation extends PathOptimisationStrategy[QNameToken] with QNameOptimisationT[QNameToken] with QNameTokenF

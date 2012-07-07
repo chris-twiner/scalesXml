@@ -84,7 +84,7 @@ object ScalesXPath {
  *
  * NB: This class is only available with the scales-jaxen dependencies.
  * 
- * @nsMap a prefix -> namespace map.  Use the companion object to pass in PrefixedNamespaces
+ * @param nsMap a prefix -> namespace map.  Use the companion object to pass in PrefixedNamespaces
  */ 
 class ScalesXPath(val xpath : String, val nsMap : Map[String,String] = Map(), val nameConversion : QName => QName = ScalesXPath.defaultNoConversion) extends ScalesBaseJaxenXPath(xpath, ScalesXPathFactory, new ScalesNavigator(nameConversion)) {
   import Implicits._

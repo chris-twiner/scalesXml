@@ -9,7 +9,7 @@ import BasicPaths._
 /**
  * ComparisonContext represents both the path to a given comparison and the namespace declarations which are relevant for it.
  *
- * @streamPosition is incremented for each processed item in the stream, allowing a simple take to get the difference in terms of the stream, the developer can then use this with toDifferenceAsStream to capture the difference. It is only provided when a difference is found within a stream and not during the difference analysis.
+ * @param streamPosition is incremented for each processed item in the stream, allowing a simple take to get the difference in terms of the stream, the developer can then use this with toDifferenceAsStream to capture the difference. It is only provided when a difference is found within a stream and not during the difference analysis.
  */
 class ComparisonContext private (private val lnc : NamespaceContext = null, 
 				 private val rnc : NamespaceContext = null, 

@@ -37,9 +37,9 @@ case class WriteTo[T : SerializeableXml](it: T, version: Option[XmlVersion] = No
 /**
  * A NamespaceContext represents the prefix->namespace mappings for a given elements children.  It is only valid for the time of serialization (or comparison).
  *
- * @mappings prefix -> namespace
- * @declMap prefix -> namespace (these should be declared for a given element)
- * @addDefault should a new xmlns="" default be added, if so Some(String)
+ * @param mappings prefix -> namespace
+ * @param declMap prefix -> namespace (these should be declared for a given element)
+ * @param addDefault should a new xmlns="" default be added, if so Some(String)
  */ 
 case class NamespaceContext( mappings : Map[String, String], declMap : Map[String, String], addDefault : Option[String] )
 
