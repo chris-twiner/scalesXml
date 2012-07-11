@@ -280,7 +280,7 @@ object ImmutableArrayProxyBuilder {
 }
 
 /**
- * An attempt to be a little more efficient with ImmutableArray, should make up for update not working?
+ * Build array first then vector as needed
  */
 case class ImmutableArrayProxyBuilder[ A ]() extends Builder[A, ImmutableArrayProxy[A]]{
   import ImmutableArrayProxyBuilder._
