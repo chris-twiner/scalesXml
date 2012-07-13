@@ -619,5 +619,45 @@ class DslBuildersTest extends junit.framework.TestCase {
     assertTrue("Should have remained a NameValue", (top(x2).\*(1)).head.tree.isInstanceOf[NameValue])
   }
 
+  def testWriteBackWithStrategies : Unit = {
+    import strategies._
+
+    val x = <("Alocal"l) /( <("another"l) ~> "value" )
+
+    val xml = """<?xml version="1.0" encoding="UTF-8"?><Alocal><another>value</another></Alocal>"""
+    assertEquals(xml, asString(x))
+
+    val p = loadXml(new java.io.StringReader(asString(x)), strategy = QNameTreeOptimisation)
+
+    val t = (top(p).\*(1)).head.tree
+    assertTrue("Should have parsed as a NameValue", t.isInstanceOf[NameValue])
+    assertEquals("another", t.section.name.local)
+
+    val x2 = <("Alocal"l) /( (<("another"l) /@( "attr" -> "attrvalue" )) ~> "value" )
+
+    val xml2 = """<?xml version="1.0" encoding="UTF-8"?><Alocal><another attr="attrvalue">value</another></Alocal>"""
+
+    assertEquals(xml2, asString(x2))
+    
+    val p2 = loadXml(new java.io.StringReader(asString(x2)), strategy = QNameElemTreeOptimisation)
+
+    val pa = top(p2).\*(1)
+    val t2 = pa.head.tree
+    assertTrue("Should have parsed as an ElemValue", t2.isInstanceOf[ElemValue])
+    assertEquals("another", t2.section.name.local)
+    assertEquals("attrvalue", value(pa.\@("attr"l)))
+
+    val x3 = <("Alocal"l) /( <("another"l) /( Comment("a comment") ) )
+
+    val xml3 = """<?xml version="1.0" encoding="UTF-8"?><Alocal><another><!--a comment--></another></Alocal>"""
+    assertEquals(xml3, asString(x3))
+
+    val p3 = loadXml(new java.io.StringReader(asString(x3)), strategy = QNameTreeOptimisation)
+
+    val t3 = (top(p3).\*(1)).head.tree
+    assertTrue("Should have parsed as a Tree", !(
+      t3.isInstanceOf[NameValue] || t3.isInstanceOf[ElemValue] ))
+    
+  }
 }
   

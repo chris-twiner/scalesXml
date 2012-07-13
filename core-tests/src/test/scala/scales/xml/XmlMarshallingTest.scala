@@ -29,12 +29,31 @@ class XmlMarshallingTest extends junit.framework.TestCase {
     loadXml(new StringReader(asString(tree))).rootElem
 		  }
 
+  val readBack_R = { tree : XmlTree => 
+    toTree( pullXmlReader( 
+      new trax.ScalesStreamReader() {
+	val itr = convertToStream(tree)
+	val docLike = Doc(tree)
+      }
+       ).it )
+    		  }
+
   val readBackDoc_LS = { doc : Doc => 
     loadXml(new StringReader(asString(doc)))
 		  }
 
   val readBackDoc_LSP = { doc : Doc => 
     pullXmlCompletely(new StringReader(asString(doc)))
+		  }
+
+  val readBackDoc_R = { doc : Doc =>
+    val pull = pullXmlReader( 
+      new trax.ScalesStreamReader() {
+	val itr = convertToStream(doc.rootElem)
+	val docLike = doc
+      }
+       )
+    Doc(toTree( pull.it ), pull.prolog, pull.end)
 		  }
 
   def catchAll[T]( it : => T ) : T = {
@@ -85,6 +104,17 @@ class XmlMarshallingTest extends junit.framework.TestCase {
   def testValue_S = doValueTest(readBack_S)
 
   def testValue_LS = doValueTest(readBack_LS)
+
+
+  def testElemsDefaultNS_R = 
+    doTestElemsDefaultNS(readBack_R)
+
+  def testAttributesNoPrefixNamespace_R = 
+    doTestAttributesNoPrefixTest(readBack_R)
+
+  def testValue_R = doValueTest(readBack_R)
+
+
 
   def testInvalidElementEncoding = {
     val builder = ns("Rööt") /( (("Child"l) /@("attr" -> "\"in\"") ) /(ns("Grand")~>"A Value")  ) 
@@ -190,6 +220,14 @@ class XmlMarshallingTest extends junit.framework.TestCase {
     MarshallingTest.doMiscTest(testXml)
 //    printTree(testXml)
     val r = readBackDoc_LSP(testXml)
+    MarshallingTest.doMiscTest(r)
+  }
+
+  def testMiscRoundTrippingPullR = {
+    val testXml = pullXmlCompletely(miscml)
+    MarshallingTest.doMiscTest(testXml)
+//    printTree(testXml)
+    val r = readBackDoc_R(testXml)
     MarshallingTest.doMiscTest(r)
   }
 

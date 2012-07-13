@@ -17,7 +17,9 @@ object BaseTestConstants {
   type XmlPaths = Iterable[XmlPath]
 
   import ScalesXml._
-  val pre = Namespace("urn:prefix").prefixed("pre")
+
+  val preNS = Namespace("urn:prefix")
+  val pre = preNS.prefixed("pre")
   val jh = Namespace("urn:justHere").prefixed("jh")
   val defo = Namespace("urn:default").prefixed("def")
 

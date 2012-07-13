@@ -71,24 +71,6 @@ trait XmlTypesImplicits {
    */ 
   implicit val fromParserDefault : FromParser = NotFromParser
 
-  implicit object AttributeOrdering extends scala.math.Ordering[Attribute] {
-    def compare(at1 : Attribute, at2 : Attribute) : Int = {
-      // don't use toQName
-      val aq1 = at1.name : QName
-      val aq2 = at2.name : QName
-
-      if ((aq1 eq aq2) || (aq1 =:= aq2)) 
-	0
-      else {// do each field seperately no string concats.., don't look at prefix, namespaces are likely shared across docs, so check local first
-//	....
-	val l = aq1.local.compare( aq2.local )
-	if (l == 0) {
-	  aq1.namespace.uri.compare( aq2.namespace.uri )
-	} else l
-      }
-    }
-  }
-
   /**
    * Only used for lookups
    */

@@ -64,16 +64,14 @@ trait ScalesStreamReader extends XMLStreamReader {
   def getAttributeCount() : Int = attribs.size
   def getAttributeLocalName( index : Int ) : String = attribs(index).local
   def getAttributeName( index : Int) : JQName = {
-    val att = attribs(index)
-    new JQName(
-      if (att.namespace eq Default.noNamespace)
-	null : String
-      else
-	att.namespace.uri,
-      att.local,
-      att.prefix.getOrElse(null : String)
-    )
+    val att : QName = attribs(index)
+    att match {
+      case l : NoNamespaceQName => new JQName(l.local)
+      case u : UnprefixedQName => new JQName(u.namespace.uri, u.local)
+      case p : PrefixedQName => new JQName(p.namespace.uri, p.local, p.prefix.get)
+    }
   }
+
   def getAttributeNamespace( index : Int) : String = attribs(index).namespace.uri
   def getAttributePrefix( index : Int) : String = attribs(index).prefix.getOrElse(null : String)
   def getAttributeType( index : Int ) : String = null : String
@@ -126,14 +124,11 @@ trait ScalesStreamReader extends XMLStreamReader {
   def getLocalName() : String = elemName.local
   def getLocation() : Location = EmptyStreamLocation
   def getName() : JQName = 
-    new JQName(
-      if (elemName.namespace eq Default.noNamespace)
-	null : String
-      else
-	elemName.namespace.uri,
-      elemName.local,
-      getPrefix
-    )
+    elemName match {
+      case l : NoNamespaceQName => new JQName(l.local)
+      case u : UnprefixedQName => new JQName(u.namespace.uri, u.local)
+      case p : PrefixedQName => new JQName(p.namespace.uri, p.local, p.prefix.get)
+    }
   
   def getNamespaceContext() : NamespaceContext = nc
   def getNamespaceCount() : Int = nc.ns.size

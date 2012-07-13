@@ -75,7 +75,7 @@ trait NameFunctions {
    * Returns the localName
    */ 
   def localName[T](t : T)(implicit name : Names[T]) : String =
-    t.local
+    localName(t, name, DIF.dif)
 
   /**
    * curried to allow direct drop in for predicates, if it is an item then it will return false
@@ -105,19 +105,19 @@ trait NameFunctions {
    * Returns the XPath QName - prefix:local or local
    */ 
   def qname[T](t : T)(implicit name : Names[T]) : String = 
-    t.qName
+    qname(t, name, DIF.dif)
 
   /**
    * Returns the XPath QName - prefix:local or local
    */ 
   def qName[T](implicit t : T, name : Names[T], d : DIF) : String = 
-    t.qName
+    qname(t, name, DIF.dif)
 
   /**
    * Returns the XPath QName - prefix:local or local
    */ 
   def qName[T](t : T)(implicit name : Names[T]) : String = 
-    t.qName
+    qname(t, name, DIF.dif)
 
   /**
    * We cannot allow the QName to escape if its invalid.
@@ -137,8 +137,8 @@ trait NameFunctions {
   /**
    * Returns the QName, will throw if the QName is "empty"
    */ 
-  def name[T](t : T)(implicit name : Names[T]) : QName = 
-    testNonEmpty(t)
+  def name[T](t : T)(implicit iname : Names[T]) : QName = 
+    name(t, iname, DIF.dif)
 
   /**
    * Will be true for all values of T except when the resulting QName is "empty".
@@ -166,7 +166,7 @@ trait NameFunctions {
    * Returns the qualified name {namespace}local
    */ 
   def qualifiedName[T](t : T)(implicit name : Names[T]) : String =
-    t.qualifiedName
+    qualifiedName(t, name, DIF.dif)
 
   /**
    * Returns either qualifiedName or prefix:{namespace}local when a prefix is present
@@ -178,7 +178,7 @@ trait NameFunctions {
    * Returns either qualifiedName or prefix:{namespace}local when a prefix is present
    */ 
   def pqName[T](t : T)(implicit name : Names[T]) : String =
-    t.pqName
+    pqName(t, name, DIF.dif)
 
   /**
    * Returns the underlying namespace object
@@ -306,13 +306,13 @@ trait TextFunctions {
    * XPath name for text
    */ 
   def string[T](implicit t : T, value : TextValue[T], d : DIF ) : String =
-    value.text
+    text(t, value, DIF.dif)
 
   /**
    * More readable version for XmlItems and Attributes, same as text
    */ 
   def value[T](implicit t : T, value : TextValue[T], d : DIF ) : String =
-    value.text
+    text(t, value, DIF.dif)
  
   /**
    * XPath normalize-space function, replaces all consecutive whitespace with " " and trims.
@@ -324,19 +324,19 @@ trait TextFunctions {
    * The text value of a given object, .value for attributes & items, the accumalated text if its an elem
    */
   def text[T](t : T)(implicit value : TextValue[T]) : String =
-    value.text(t)
+    text(t, value, DIF.dif)
 
   /**
    * XPath name for text
    */ 
   def string[T](t : T)(implicit value : TextValue[T]) : String =
-    value.text(t)
+    text(t, value, DIF.dif)
 
   /**
    * More readable version for XmlItems and Attributes, same as text
    */ 
   def value[T](t : T)(implicit value : TextValue[T] ) : String =
-    value.text(t)
+    text(t, value, DIF.dif)
  
   /**
    * XPath normalize-space function, replaces all consecutive whitespace with " " and trims.

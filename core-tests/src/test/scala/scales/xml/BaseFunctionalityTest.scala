@@ -638,4 +638,14 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
     }
   }
 
+  def testNamespaceFunctions = {
+    implicit val qn : QName = pre("local")
+
+    val has = hasNamespace[QName](preNS)
+    assertTrue(has(qn))
+    val hass = hasNamespace[QName](preNS.uri)
+    assertTrue(hass(qn))
+    assertEquals(preNS.uri, namespaceUri[QName]) // really looks bad this.
+  }
+
 }
