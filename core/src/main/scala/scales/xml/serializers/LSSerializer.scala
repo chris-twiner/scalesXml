@@ -319,12 +319,13 @@ trait LSSerializer extends Serializer {
       ns.foldLeft(None: Option[Throwable]) { (r, x) =>
         r orElse {
           // check the prefix is valid
-          if (QNameCharUtils.validXmlPrefix(x._1)(version)) {
+          if (QNameCharUtils.validXmlPrefix(x._1)(version) &&
+	    QNameCharUtils.validXmlNamespace(x._2)(version)) {
             out.append(" xmlns:")
             encMap(x._1) orElse
               writeAttr(x._1 + "=\"", x._2, "\"")
           } else
-            Some(IncompatibleQNameVersions(x._1))
+            Some(IncompatibleQNameVersions("NS:"+x._1+"->"+x._2))
         }
       }
 
@@ -334,11 +335,12 @@ trait LSSerializer extends Serializer {
 
       attribs.foldLeft(None: Option[Throwable]) { (r, x) =>
         r orElse {
+	  val name = x.name
           // is the name valid
-          if (qName.qNameVersion == Xml11 && version == Xml10)
-            Some(IncompatibleQNameVersions(qName.qName))
+          if (name.qNameVersion == Xml11 && version == Xml10)
+            Some(IncompatibleQNameVersions("Attr:"+name.qName))
           else {
-            val n = x.name.qName
+            val n = name.qName
             encMap(n) orElse
               writeAttr(" " + n + "=\"", x.value, "\"")
           }

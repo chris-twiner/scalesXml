@@ -26,6 +26,9 @@ trait ScalesStreamReader extends XMLStreamReader {
   protected var ev : PullType = _
   protected var evType : Int = START_DOCUMENT
 
+  // have we fired the starting document?
+  protected var startedDoc = false
+
   /**
    * Take just the prolog and end misc
    */
@@ -179,6 +182,11 @@ trait ScalesStreamReader extends XMLStreamReader {
   }
 
   def next() : Int = {
+    if (!startedDoc) {
+      startedDoc = true
+      return START_DOCUMENT
+    }
+
     if (doEndDoc) {
       doEndDoc = false
 //      println("doc end") 

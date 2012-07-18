@@ -22,7 +22,9 @@ class XmlMarshallingTest extends junit.framework.TestCase {
   val nsp = nsa.prefixed("pre")
 
   val readBack_S = { tree : XmlTree => 
-    loadXml(new StringReader(asString(tree)(SimpleSerializerFactory, treeSerializeable))).rootElem 
+    val s = asString(tree)(SimpleSerializerFactory, treeSerializeable)
+//    println(s)
+    loadXml(new StringReader(s)).rootElem 
 		  }
 
   val readBack_LS = { tree : XmlTree => 
@@ -101,7 +103,16 @@ class XmlMarshallingTest extends junit.framework.TestCase {
   def testElemsDefaultNS_LS = 
     doTestElemsDefaultNS(readBack_LS)
 
-  def testValue_S = doValueTest(readBack_S)
+  def testValue_S : Unit = {
+    try {
+      doValueTest(readBack_S)
+      fail("Should Not get here - should have thrown")
+    } catch {
+      case e : org.xml.sax.SAXParseException => ()
+      case e : java.lang.Throwable => 
+	fail("should not have thrown anything other than sax parse " + e.getMessage)
+    }
+  }
 
   def testValue_LS = doValueTest(readBack_LS)
 
@@ -166,6 +177,18 @@ class XmlMarshallingTest extends junit.framework.TestCase {
     assertTrue("Should have been an CDataCannotBeEncoded",r.get.isInstanceOf[CDataCannotBeEncoded])
     assertEquals("ächte",r.get.getMessage())
   }
+
+  def testPIEncoding {
+    val builder = ns("Root") /( "Child"l ) /( PI("ächte","oop") ) 
+    val str = new java.io.StringWriter()
+
+    val r = foldPrint(XmlOutput(SerializerData(str, encoding = US_ASCII)))(builder)
+    //println(str.toString)
+
+    assertTrue("Did not throw an error",r.isDefined)
+    assertTrue("Should have been an PICannotBeEncoded",r.get.isInstanceOf[PICannotBeEncoded])
+    assertTrue(r.get.getMessage().indexOf("Target: ächte") == 0)
+  }
   
   def testIncompatibleQNameVersions = {
     val builder = ns("Root") /( "Child\u10000"l(Xml11,fromParserDefault) ) //tests the implmementation but I don't get the 10000 from the spec, both 1.0 and 1.1 include that
@@ -177,6 +200,105 @@ class XmlMarshallingTest extends junit.framework.TestCase {
     assertTrue("Did not throw an error",r.isDefined)
     assertTrue("Should have been an Incompatible",r.get.isInstanceOf[IncompatibleQNameVersions])
     assertEquals("Child\u10000",r.get.getMessage())
+  }
+
+  def testIncompatibleQNameVersionsAttribs = {
+    val builder = ns("Root") /( <("Child"l) /@ (("Attr\u10000"l(Xml11,fromParserDefault)) -> "value" ) ) //tests the implmementation but I don't get the 10000 from the spec, both 1.0 and 1.1 include that
+    val str = new java.io.StringWriter()
+
+    val r = foldPrint(XmlOutput(SerializerData(str)))(builder)
+    //println(str.toString)
+
+    assertTrue("Did not throw an error",r.isDefined)
+    assertTrue("Should have been an Incompatible",r.get.isInstanceOf[IncompatibleQNameVersions])
+    assertEquals("Attr:Attr\u10000",r.get.getMessage())
+  }
+
+  def doQNameNSTest( pre : String, NS : String, Version : XmlVersion, shouldThrow : Boolean ) {
+    val elem = Elem("Child"l, namespacesi = Map(pre -> NS))
+    val builder = ns("Root") /( elem ) //tests the implmementation but I don't get the 10000 from the spec, both 1.0 and 1.1 include that
+    val str = new java.io.StringWriter()
+
+    val r = foldPrint(XmlOutput(SerializerData(str, version = Version)))(builder)
+//    println(str.toString)
+
+    if (shouldThrow) {
+      assertTrue("Did not throw an error",r.isDefined)
+      assertTrue("Should have been an Incompatible",r.get.isInstanceOf[IncompatibleQNameVersions])
+      assertEquals("NS:"+pre+"->"+NS,r.get.getMessage())
+    } else {
+      assertFalse("Should not have thrown an error",r.isDefined)
+    }
+  }
+
+  def testQNameNSVersionPre = {
+    doQNameNSTest("pre\u10000", "fred", Xml10, true)
+  }
+  def testQNameNSVersionNS = {
+    doQNameNSTest("pre", "", Xml10, true)
+  }
+  def testQNameNSVersion11Pre = {
+    doQNameNSTest("pre\u10000", "fred", Xml11, false)
+  }
+  def testQNameNSVersion11NS = {
+    doQNameNSTest("pre", "", Xml11, false)
+  }
+
+  def testDirectText = {
+    val str = new java.io.StringWriter()
+
+    // the serializer helpers don't actually get used for straight text as it will always be run through the encoder directly
+    val r = SerializerHelpers.item(str, Text("fred"), List())
+    assertFalse("should not be defined", r.isDefined)
+    assertEquals("fred", str.toString)
+  }
+
+  def testXHTML = {
+    implicit val sf : SerializerFactory = serializers.LSSerializerFactoryXHTML 
+    val str = new java.io.StringWriter()
+
+    val builder = ("Root"l) /( "Child"l )
+    val r = writeTo(builder, str)(sf, implicitly[SerializeableXml[DslBuilder]])
+
+//    println(str.toString)
+    assertFalse("should not have an error", r.isDefined)
+    assertTrue("should have had gaps on Child", 
+	       str.toString.indexOf("<Child />") > -1)
+  }
+
+  def testXHTMLNS = {
+    implicit val defaultSerializerFactory : SerializerFactory = serializers.LSSerializerFactoryXHTML 
+    val str = new java.io.StringWriter()
+
+    val builder = ns("Root") /( "Child"l )
+    val r = writeTo(builder, str)
+
+//    println(str.toString)
+    assertFalse("should not have an error", r.isDefined)
+    assertTrue("should have had gaps on Child", 
+	       str.toString.indexOf("<Child xmlns=\"\" />") > -1)
+  }
+
+  def testLSSerializerNoCacheFactory  = {
+    implicit val sf : SerializerFactory = serializers.LSSerializerNoCacheFactory
+    val str = new java.io.StringWriter()
+
+    val builder = ns("Root") /( "Child"l )
+    val r = writeTo(builder, str)
+
+    assertFalse("should not have an error", r.isDefined)
+  }
+
+  def testLSSerializerNoCacheFactoryEnc  = {
+    implicit val sf : SerializerFactory = serializers.LSSerializerNoCacheFactory
+    val builder = ns("Rööt") /( (("Child"l) /@("attr" -> "\"in\"") ) /(ns("Grand")~>"A Value")  ) 
+    val str = new java.io.StringWriter()
+
+    val r = writeTo(builder, str, encoding = Some(US_ASCII))
+
+    assertTrue("Did not throw an error",r.isDefined)
+    assertTrue("Should have been a ",r.get.isInstanceOf[InvalidCharacterInMarkup])
+    assertEquals("Rööt",r.get.getMessage())
   }
 
   def testCommentEscaping = {//comments aren't escaped with character references
