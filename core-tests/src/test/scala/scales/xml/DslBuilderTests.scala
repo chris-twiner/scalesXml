@@ -659,5 +659,63 @@ class DslBuildersTest extends junit.framework.TestCase {
       t3.isInstanceOf[NameValue] || t3.isInstanceOf[ElemValue] ))
     
   }
+
+  def testIssue2_ReplaceWith_Nested : Unit = {
+    val ns = Namespace("test:uri")
+    val nsa = Namespace("test:uri:attribs")
+    val nsp = nsa.prefixed("pre")
+
+    val builder = 
+      ns("Elem") /@ (nsa("pre", "attr1") -> "val1",
+      	    	     "attr2" -> "val2",
+		     nsp("attr3") -> "val3") /(
+		       ns("Child"),
+		       "Mixed Content",
+		       ns("Child2") /( ns("Subchild") ~> "text" )
+		     )
+    
+    // for every child element add a text child that contains the qname of the elem
+    def addTextNodes( op : XmlPath ) =
+      foldPositions( op.\* ) { 
+	p => Replace( p.tree / qname(p) ) 
+      }
+
+    val allReplaced = addTextNodes( top(builder) )
+
+//    println(asString(allReplaced.left.get.tree))
+    val allReplacedExpected = 
+      ns("Elem") /@ (nsa("pre", "attr1") -> "val1",
+      	    	     "attr2" -> "val2",
+		     nsp("attr3") -> "val3") /(
+		       ns("Child") ~> "Child",
+		       "Mixed Content",
+		       ns("Child2") /( ns("Subchild") ~> "text", "Child2" )
+		     )
+    
+    import scales.xml.equals._
+    import scalaz._
+    import Scalaz._
+
+    assertTrue("allReplaced Was not equal", allReplaced.left.get.tree === allReplacedExpected)
+
+    val nodes = top(builder). \\*(ns("Child2"))
+
+    val res = foldPositions( nodes  ){
+      _ => ReplaceWith(x => addTextNodes(top(x.tree)))
+    }
+
+//    println(asString(res.left.get.tree))
+
+    val resExpected = 
+      ns("Elem") /@ (nsa("pre", "attr1") -> "val1",
+      	    	     "attr2" -> "val2",
+		     nsp("attr3") -> "val3") /(
+		       ns("Child"),
+		       "Mixed Content",
+		       ns("Child2") /( ns("Subchild") /("text","Subchild") )
+		     )
+    
+    assertTrue("res Was not equal", res.left.get.tree === resExpected)
+  }
 }
   

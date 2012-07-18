@@ -209,7 +209,7 @@ ${cxml}
 <?xml version="1.0" encoding="UTF-8"?>
 <Elem xmlns="test:uri" xmlns:pre="test:uri:attribs" pre:attr3="val3" attr2="val2" pre:attr1="val1">
   <start xmlns=""/>
-  <Child>child</Child>
+  <Child>Child</Child>
   Mixed Content
   <Child2>
     <Subchild>text</Subchild>
@@ -224,7 +224,7 @@ ${cstart}
   val nodes = top(builder). \\*(ns("Child2"))
 
   val res = foldPositions( nodes  ){
-    _ => ReplaceWith(addTextNodes _)
+    _ => ReplaceWith(x => addTextNodes(top(x.tree)))
   }
 
   asString(res.left.get.tree)
