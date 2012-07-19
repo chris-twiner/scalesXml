@@ -466,8 +466,8 @@ class DslBuildersTest extends junit.framework.TestCase {
     
   def testIdSetting = {
     /* <solution> */
-    def toId( id : String )( op : XmlPath ) = 
-      foldPositions( top(op.tree).\.\\.*@("id").\^ ){ p => Replace(elem(p) /@("id"-> id) toTree) }
+    def toId( id : String )( op : XmlPath ) = //top(op.tree)
+      foldPositions( op.\.\\.*@("id").\^ ){ p => Replace(elem(p) /@("id"-> id) toTree) }
       
     val foos = top(fooIdBuilder).\*
     val folded = foldPositions( foos )( p => 
@@ -510,14 +510,14 @@ class DslBuildersTest extends junit.framework.TestCase {
 
   // variation on id setting but with combination of the operations
   def testIdAndBlahAndFailOnNoPathsSetting = {
-    def toId( id : String )( op : XmlPath ) =
-      foldPositions( top(op.tree).\.\\.*@("id").\^ ){ p => Replace(elem(p) /@("id"-> id) toTree) }
+    def toId( id : String )( op : XmlPath ) = //top(op.tree)
+      foldPositions( op.\.\\.*@("id").\^ ){ p => Replace(elem(p) /@("id"-> id) toTree) }
 
     val toBlahs = ( op : XmlPath ) =>
-      foldPositions( top(op.tree).\.\\.*@("blah").\^ ){ p => Replace(elem(p) /@("blah"-> "blahs") toTree) }
+      foldPositions( op.\.\\.*@("blah").\^ ){ p => Replace(elem(p) /@("blah"-> "blahs") toTree) }
 
     val willFail = ( op : XmlPath ) =>
-      foldPositions( top(op.tree).\.\\.*@("orange_raspberries").\^ ){ p => AsIs() }
+      foldPositions( op.\.\\.*@("orange_raspberries").\^ ){ p => AsIs() }
 
     val clearFail = ( p : XmlPath ) => Right(NoPaths)
 
@@ -675,10 +675,12 @@ class DslBuildersTest extends junit.framework.TestCase {
 		     )
     
     // for every child element add a text child that contains the qname of the elem
-    def addTextNodes( op : XmlPath ) =
+    def addTextNodes( op : XmlPath ) = {
+      println( "its " + op )
       foldPositions( op.\* ) { 
 	p => Replace( p.tree / qname(p) ) 
       }
+    }
 
     val allReplaced = addTextNodes( top(builder) )
 
@@ -700,11 +702,14 @@ class DslBuildersTest extends junit.framework.TestCase {
 
     val nodes = top(builder). \\*(ns("Child2"))
 
+    println("Before the two - same ones")
+
     // this should be the same logically
     val direct = addTextNodes( nodes.head )
 
     val res = foldPositions( nodes  ){
-      _ => ReplaceWith(x => addTextNodes(top(x.tree)))
+//      _ => ReplaceWith(x => addTextNodes(top(x.tree)))
+      _ => ReplaceWith(addTextNodes _)
     }
 
 //    println(asString(res.left.get.tree))

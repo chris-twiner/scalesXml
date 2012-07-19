@@ -79,12 +79,25 @@ case class Replace[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[
 /**
  * Allows foldPositions to be nested, only replace makes sense here (afaict)
  */
-case class ReplaceWith[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]](f: PathFoldR[Item, Section, CC])(implicit cbf : TreeCBF[Item, Section, CC]) extends FoldOperation[Item, Section, CC] {
+case class ReplaceWith[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]](f: PathFoldR[Item, Section, CC], wholeTree : Boolean = false)(implicit cbf : TreeCBF[Item, Section, CC]) extends FoldOperation[Item, Section, CC] {
 
   def perform(path: Path[Item, Section, CC]): FoldR[Item, Section, CC] =
     // modify back in (allows changes), or pass on the error
-    f(path).fold(fres => Left(path.modify(_ => fres.tree)),
+    f(path).fold(fres => Left(path.modify(_ => 
+      // we have to take the original paths position and work over it
+      // if the path isn't there any more it has been removed, otherwise
+      // use it??, 
+      if (wholeTree)
+	fres.tree
+      else {
+	val pos = path.position
+	val np = moveTo(fres, pos)
+	np.tree
+      }
+					)),
       Right(_))
+//    f(path).fold(fres => Left(path.modify(_ => fres.tree)),
+  //    Right(_))
 
 }
 
