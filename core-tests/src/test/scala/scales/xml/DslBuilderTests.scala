@@ -700,6 +700,9 @@ class DslBuildersTest extends junit.framework.TestCase {
 
     val nodes = top(builder). \\*(ns("Child2"))
 
+    // this should be the same logically
+    val direct = addTextNodes( nodes.head )
+
     val res = foldPositions( nodes  ){
       _ => ReplaceWith(x => addTextNodes(top(x.tree)))
     }
@@ -715,6 +718,7 @@ class DslBuildersTest extends junit.framework.TestCase {
 		       ns("Child2") /( ns("Subchild") /("text","Subchild") )
 		     )
     
+    assertTrue("direct Was not equal", direct.left.get.tree === resExpected)
     assertTrue("res Was not equal", res.left.get.tree === resExpected)
   }
 }
