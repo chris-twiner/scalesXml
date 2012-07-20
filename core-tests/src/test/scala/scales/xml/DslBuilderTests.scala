@@ -659,6 +659,10 @@ class DslBuildersTest extends junit.framework.TestCase {
       t3.isInstanceOf[NameValue] || t3.isInstanceOf[ElemValue] ))
     
   }
+    
+  import scales.xml.equals._
+  import scalaz._
+  import Scalaz._
 
   def testIssue2_ReplaceWith_Nested : Unit = {
     val ns = Namespace("test:uri")
@@ -676,7 +680,6 @@ class DslBuildersTest extends junit.framework.TestCase {
     
     // for every child element add a text child that contains the qname of the elem
     def addTextNodes( op : XmlPath ) = {
-      println( "its " + op )
       foldPositions( op.\* ) { 
 	p => Replace( p.tree / qname(p) ) 
       }
@@ -684,7 +687,6 @@ class DslBuildersTest extends junit.framework.TestCase {
 
     val allReplaced = addTextNodes( top(builder) )
 
-//    println(asString(allReplaced.left.get.tree))
     val allReplacedExpected = 
       ns("Elem") /@ (nsa("pre", "attr1") -> "val1",
       	    	     "attr2" -> "val2",
@@ -693,22 +695,15 @@ class DslBuildersTest extends junit.framework.TestCase {
 		       "Mixed Content",
 		       ns("Child2") /( ns("Subchild") ~> "text", "Child2" )
 		     )
-    
-    import scales.xml.equals._
-    import scalaz._
-    import Scalaz._
 
     assertTrue("allReplaced Was not equal", allReplaced.left.get.tree === allReplacedExpected)
 
     val nodes = top(builder). \\*(ns("Child2"))
 
-    println("Before the two - same ones")
-
     // this should be the same logically
     val direct = addTextNodes( nodes.head )
 
     val res = foldPositions( nodes  ){
-//      _ => ReplaceWith(x => addTextNodes(top(x.tree)))
       _ => ReplaceWith(addTextNodes _)
     }
 
@@ -725,6 +720,63 @@ class DslBuildersTest extends junit.framework.TestCase {
     
     assertTrue("direct Was not equal", direct.left.get.tree === resExpected)
     assertTrue("res Was not equal", res.left.get.tree === resExpected)
+  }
+
+  def testReplaceWithRemoval : Unit = {
+
+    val ns = Namespace("test:uri")
+    val nsa = Namespace("test:uri:attribs")
+    val nsp = nsa.prefixed("pre")
+
+    val builder = 
+      ns("Elem") /@ (nsa("pre", "attr1") -> "val1",
+      	    	     "attr2" -> "val2",
+		     nsp("attr3") -> "val3") /(
+		       ns("Child"),
+		       "Mixed Content",
+		       ns("Child2") /( ns("Subchild") ~> "text",
+				    ns("EmptySub"))
+		     )
+
+    // for every child element add a text child that contains the qname of the elem
+    def removeEmptyNodes( op : XmlPath ) = {
+      foldPositions( op.* ) { // filter for elems only
+	case p if (!p.hasChildren) => 
+	  Remove()
+	case _ => AsIs()
+      }
+    }
+
+    val singleReplaced = removeEmptyNodes( top(builder).\*.head )
+
+    val singleReplacedExpected = 
+      ns("Elem") /@ (nsa("pre", "attr1") -> "val1",
+      	    	     "attr2" -> "val2",
+		     nsp("attr3") -> "val3") /(
+		       "Mixed Content",
+		       ns("Child2") /( ns("Subchild") ~> "text",
+				    ns("EmptySub"))
+		     )
+
+    assertTrue("allReplaced Was not equal", singleReplaced.left.get.tree === singleReplacedExpected)
+
+    val nodes = top(builder).\\*
+
+    val res = foldPositions( nodes  ){
+      p => ReplaceWith(removeEmptyNodes _)
+    }
+
+//    println(asString(res.left.get.tree))
+
+    val allReplacedExpected = 
+      ns("Elem") /@ (nsa("pre", "attr1") -> "val1",
+      	    	     "attr2" -> "val2",
+		     nsp("attr3") -> "val3") /(
+		       "Mixed Content",
+		       ns("Child2") /( ns("Subchild") ~> "text")
+		     )
+
+    assertTrue("allReplaced Was not equal", res.left.get.tree === allReplacedExpected)
   }
 }
   

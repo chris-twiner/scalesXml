@@ -77,27 +77,37 @@ case class Replace[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[
 }
 
 /**
- * Allows foldPositions to be nested, only replace makes sense here (afaict)
+ * Allows foldPositions to be nested, only replace and delete makes sense here (afaict).
+ *
+ * As such, when wholeTree is false, the path (which must be a tree) is transformed
+ * 
+ *     p => top(p.tree)
+ *
+ * and a special case for "deletes" is made - when RemovedRoot is returned from the transformation a delete will take place on the Path.  This enforces that only replace and removes are possible and function appropriately.
+ *
+ * Warning:
+ * 
+ * When wholeTree is true the function f is passed the Path (or item) in the original tree, any transformations are then conusmed across the whole tree, which is likely not desired. 
  */
 case class ReplaceWith[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]](f: PathFoldR[Item, Section, CC], wholeTree : Boolean = false)(implicit cbf : TreeCBF[Item, Section, CC]) extends FoldOperation[Item, Section, CC] {
 
   def perform(path: Path[Item, Section, CC]): FoldR[Item, Section, CC] =
     // modify back in (allows changes), or pass on the error
-    f(path).fold(fres => Left(path.modify(_ => 
-      // we have to take the original paths position and work over it
-      // if the path isn't there any more it has been removed, otherwise
-      // use it??, 
-      if (wholeTree)
-	fres.tree
-      else {
-	val pos = path.position
-	val np = moveTo(fres, pos)
-	np.tree
-      }
-					)),
-      Right(_))
-//    f(path).fold(fres => Left(path.modify(_ => fres.tree)),
-  //    Right(_))
+    f( if (wholeTree) 
+	 path 
+       else
+	 top(path.tree) ).
+      fold(fres => 
+	Left(path.modify(_ => 
+      	  fres.tree
+	  )),
+        x => {
+	  if ((x eq RemovedRoot) && 
+	      (!wholeTree))
+	    // delete the node - special case as per doc
+	    Remove().perform(path) // it might itself be the root but thats fine
+	  else
+	    Right(x)})
 
 }
 
