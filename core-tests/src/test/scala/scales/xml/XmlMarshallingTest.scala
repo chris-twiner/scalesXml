@@ -62,7 +62,10 @@ class XmlMarshallingTest extends junit.framework.TestCase {
     try{
       it
     } catch {
-      case t : Throwable => println("oops : " + t.getMessage);t.printStackTrace; throw t
+      case t : Throwable => 
+	println("oops : " + t.getMessage)
+        t.printStackTrace
+	throw t
     }
   }
 
@@ -104,13 +107,26 @@ class XmlMarshallingTest extends junit.framework.TestCase {
     doTestElemsDefaultNS(readBack_LS)
 
   def testValue_S : Unit = {
+    val old = System.err // we don't want handlers, but the exception
+      
     try {
+      // reset stderr
+      val newp = new java.io.PrintStream( new java.io.ByteArrayOutputStream())
+      System setErr newp // comment out to see the exception and commentary
+
       doValueTest(readBack_S)
+
+      System setErr old
+      newp.close()
+
       fail("Should Not get here - should have thrown")
     } catch {
-      case e : org.xml.sax.SAXParseException => ()
+      case e : org.xml.sax.SAXParseException => 
+	assertTrue("Should have had Child in the error message", e.getMessage.indexOf("Child") > -1 )
       case e : java.lang.Throwable => 
 	fail("should not have thrown anything other than sax parse " + e.getMessage)
+    } finally {
+      System setErr old
     }
   }
 
