@@ -36,21 +36,26 @@ object ScalesXmlRoot extends Build {
 
   lazy val jaxenTests = Project("jaxen-tests", file("jaxen-tests"), settings = standardSettings ++ dontPublishSettings ++ dontBuildIn28) dependsOn(jaxen % "compile->test", coreTests % "test->test") //  % "compile->compile;test->test"
 
-  // project that sucks in the others like fullDocsAndSxr for the purpose of coverage tests
-  lazy val coverage = {
+  /* project that sucks in the others like fullDocsAndSxr for the purpose of coverage tests
+  lazy val coverageProject = {
     val sProjs = Seq(core, jaxen)
     val tProjs = Seq(coreTests, jaxenTests)
-    val spaths = (sources in Compile) <<= (sProjs.map(sources in Compile in _).join).map(_.flatten)
-    val tpaths = (sources in Test) <<= (tProjs.map(sources in Test in _).join).map(_.flatten)
+//    val spaths = (sources in Compile) <<= (sProjs.map(sources in Compile in _).join).map(_.flatten)
+//    val tpaths = (sources in Test) <<= (tProjs.map(sources in Test in _).join).map(_.flatten)
 
-    val cp = (externalDependencyClasspath in Compile) <<= (sProjs.map(externalDependencyClasspath in Compile in _).join).map(_.flatten)
-    val tcp = (externalDependencyClasspath in Test) <<= (tProjs.map(externalDependencyClasspath in Test in _).join).map(_.flatten)
+//    val cp = (externalDependencyClasspath in Compile) <<= (sProjs.map(externalDependencyClasspath in Compile in _).join).map(_.flatten)
+//    val tcp = (externalDependencyClasspath in Test) <<= (tProjs.map(externalDependencyClasspath in Test in _).join).map(_.flatten)
 
-    val resources = unmanagedResourceDirectories in Test <<= unmanagedResourceDirectories in Test in coreTests
+    val lcp = (libraryDependencies) <<= (sProjs.map(libraryDependencies in _).join).apply(_.flatten)
+    val ltcp = (libraryDependencies) <<= (libraryDependencies,(tProjs.map(libraryDependencies in _).join)) { (a : Seq[ModuleID], b : Seq[Seq[ModuleID]]) => a ++ (b.flatten)}
+
+//    val resources = unmanagedResourceDirectories in Test <<= unmanagedResourceDirectories in Test in coreTests
 //    val resources = (unmanagedResources in Test) <<= (unmanagedResources in Test in coreTests)
 
-    Project("coverage", file("coverage"), settings = standardSettings ++ dontPublishSettings ++ Seq(spaths,tpaths, cp, tcp, resources) )
-  }
+    Project("coverage-proj", file("coverage"), settings = standardSettings ++ dontPublishSettings ++ Seq(									 lcp, ltcp))
+		//spaths,tpaths, // cp, tcp,												//	  , resources
+
+  } */
 
   lazy val fullDocsAndSxr = FullDocs.fullDocsNSources(
     projects = Seq(core, jaxen), projectId = "site",

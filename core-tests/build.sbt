@@ -9,7 +9,7 @@ libraryDependencies ++= Seq(
     "java-allocation-instrumenter" % "2.0" % "test",
   // needs to be overriden  
   "com.google.code.gson" % "gson" % "1.7.2" % "test",
-  "com.google.code.caliper" % "caliper" % "1.0-SNAPSHOT" % "test",
+  "com.google.caliper" % "caliper" % "0.5-rc1" % "test",
   "nu.validator.htmlparser" % "htmlparser" % "1.4",
   "org.ccil.cowan.tagsoup" % "tagsoup" % "1.2.1"
 )

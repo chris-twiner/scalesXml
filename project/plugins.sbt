@@ -14,4 +14,4 @@ resolvers += Resolver.url("sbt-plugin-releases", new URL("http://scalasbt.artifa
 
 addSbtPlugin("com.jsuereth" % "xsbt-gpg-plugin" % "0.6")
 
-addSbtPlugin("de.johoop" % "jacoco4sbt" % "1.2.1")
+//addSbtPlugin("de.johoop" % "jacoco4sbt" % "1.2.3")
