@@ -6,6 +6,8 @@ package scales.utils
  * General Java Iterable converters, allowing for comprehensions.
  * 
  * Based on suggestions from Jamie Webb (http://scala.sygneca.com/)
+ * will be removed in 0.5
+ * @deprecated
  */
 object IterableConversions {
 
