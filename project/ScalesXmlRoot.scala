@@ -10,8 +10,8 @@ import SiteKeys.{siteCSS, siteResourceDir,
 		 siteMarkupDocHeaders, 
 		 menuBarTitle}
 
-import de.johoop.jacoco4sbt._
-import JacocoPlugin._
+//import de.johoop.jacoco4sbt._
+//import JacocoPlugin._
 
 object ScalesXmlRoot extends Build {
 
@@ -116,9 +116,10 @@ object ScalesXmlRoot extends Build {
     ),
     autoCompilerPlugins := false,
     fork in run := true, 
-    parallelExecution in runSecurely := false,
-    parallelExecution in jacoco.Config := false
-  ) ++ sonatype.settings ++ jacoco.settings
+    parallelExecution in runSecurely := false
+//,
+//    parallelExecution in jacoco.Config := false
+  ) ++ sonatype.settings// ++ jacoco.settings
 // ++ crazyness
 
   val reconPerf = TaskKey[Unit]("recon-perf")
