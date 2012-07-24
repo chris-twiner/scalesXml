@@ -48,8 +48,7 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
     assertTrue("Did not find attr", res.size == 1)
     val attrib = res.head.attribute
 
-    val res = implicitly[AttributeQName => QName]
-    assertEquals("ns1:{urn:prefix}attr", attrib.name.pqName)
+    assertEquals("ns1:{urn:prefix}attr", toQName(attrib.name).pqName)
     assertEquals("namespaced", attrib.value)
   }
     

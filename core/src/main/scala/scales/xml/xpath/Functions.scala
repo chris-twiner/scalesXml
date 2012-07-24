@@ -62,7 +62,7 @@ object Functions extends NameFunctions with TextFunctions {
  */ 
 trait NameFunctions {
 
-  private implicit def toQName[T]( t : T )(implicit name : Names[T]) =
+  private[NameFunctions] implicit def toQName[T]( t : T )(implicit name : Names[T]) =
     name.flatName(t)
   
   /**
