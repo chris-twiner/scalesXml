@@ -47,6 +47,8 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
   def doAttrTest(res: Iterable[AttributePath]) {
     assertTrue("Did not find attr", res.size == 1)
     val attrib = res.head.attribute
+
+    val res = implicitly[AttributeQName => QName]
     assertEquals("ns1:{urn:prefix}attr", attrib.name.pqName)
     assertEquals("namespaced", attrib.value)
   }
@@ -646,6 +648,8 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
     val hass = hasNamespace[QName](preNS.uri)
     assertTrue(hass(qn))
     assertEquals(preNS.uri, namespaceUri[QName]) // really looks bad this.
+
+    
   }
 
 }

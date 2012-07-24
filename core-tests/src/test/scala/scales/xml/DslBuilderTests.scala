@@ -102,17 +102,17 @@ class DslBuildersTest extends junit.framework.TestCase {
 
     elem match {
       case NEGENS(e) => fail("Should not have matched Elem2")
-      case _ => 1//ok
+      case _ => ()//ok
     }
 
     attrib match {
       case LOCAL(a) => fail("Should not have matched local")
-      case _ => 1 // ok
+      case _ => () // ok
     }
 
     attribnn match {
       case ANS(la) => fail("Should not have matched prefixed ns")
-      case _ => 1//ok
+      case _ => ()//ok
     }
   }
 
@@ -285,7 +285,7 @@ class DslBuildersTest extends junit.framework.TestCase {
     withAttribs.section match {
       case Matcher(elem, Attr("val3") :: Nil) => 
 	assertFalse("Should not have matched", true)
-      case _ => true
+      case _ => ()
     }
 
   }
