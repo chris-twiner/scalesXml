@@ -104,10 +104,11 @@ class EqualsTest extends junit.framework.TestCase {
   import XmlEquals._
 
   // provide this for all the tests, we aren't doing qname tests in this one, see NormalImports for qname tests
-  implicit val defaultQNameTokenComparison : Option[(ComparisonContext, String, String) => Boolean] = None
+//  implicit val defaultQNameTokenComparison : Option[(ComparisonContext, String, String) => Boolean] = None
 
   def testItems : Unit = {
 
+    import DefaultQNameToken._
     import ItemEquals._
     
     val t1 = Text("fred")
@@ -172,6 +173,7 @@ class EqualsTest extends junit.framework.TestCase {
   }
 
   def testAttribute : Unit = {
+    import DefaultQNameToken._
     import AttributeEquals._
 
     val a1 = Attribute("local"l, "value")
@@ -225,6 +227,8 @@ class EqualsTest extends junit.framework.TestCase {
     val a1 = Attribute(p("local"), "value")
     val a2 = Attribute(po("local"), "value")
 
+    import DefaultQNameToken._
+    
     // sanity check
     {
       import AttributeEquals._
@@ -247,6 +251,7 @@ class EqualsTest extends junit.framework.TestCase {
   }
 
   def testAttributes : Unit = {
+    import DefaultQNameToken._
     import SomeDifference.noCalculation
 
     val a1 = Attribute(p("local"), "value")
@@ -319,6 +324,7 @@ class EqualsTest extends junit.framework.TestCase {
   }
 
   def testElems : Unit = {
+    import DefaultQNameToken._
     import SomeDifference.noCalculation
 
     val a1 = Attribute(p("local"), "value")
@@ -438,7 +444,8 @@ class EqualsTest extends junit.framework.TestCase {
     import AttributesEquals._
     import ItemEquals._
     import ElemEquals._
-
+    import DefaultQNameToken._
+    
     //xml xml2
     assertTrue("xml === xml", convertToStream(xml) === convertToStream(xml))
     assertTrue("xml === xml2", convertToStream(xml) === convertToStream(xml2))
@@ -489,9 +496,10 @@ class EqualsTest extends junit.framework.TestCase {
     val elem2 = Elem(pod("elem"), attrs2)
 
     // no prefixes
+
     assertTrue("attrs1 === attrs2", attrs1 === attrs2)
     // has prefixes
-    assertFalse("elem1 === elem2", elem1 === elem2)       
+    assertFalse("elem1 === elem2", elem1 === elem2)   
   }
 
   def testDefaultXmlEquals : Unit = {

@@ -22,6 +22,9 @@ class StreamSerializer[T](toP : T => Iterator[PullType]) extends SerializeableXm
    */ 
   def doc(it: T) : DocLike = EmptyDoc()
   def apply(itT: T)(out: XmlOutput, serializer: Serializer): (XmlOutput, Option[Throwable]) = {
+    // 2.10 forces implicits at copy use site NOT tt declaration site
+    import out.serializerF
+
     val it = toP(itT)
     // left of the sequence is our actual, 
     val r = it.++(dummyIterable.iterator).sliding(2).foldLeft((out, None: Option[Throwable], false)) { (cur, two) =>
@@ -76,7 +79,9 @@ trait SerializerImplicits {
    */
   implicit val treeSerializeable: SerializeableXml[XmlTree] = new SerializeableXml[XmlTree] {
     def doc(it: XmlTree) = Doc(it)
-    def apply(it: XmlTree)(out: XmlOutput, serializer: Serializer): (XmlOutput, Option[Throwable]) =
+    def apply(it: XmlTree)(out: XmlOutput, serializer: Serializer): (XmlOutput, Option[Throwable]) = {
+      // 2.10 forces implicits at copy use site NOT tt declaration site
+      import out.serializerF
 
       fold[XmlItem, Elem, XCC, (XmlOutput, Option[Throwable])]((out, None)) { (iorsw, pair) =>
         val (output, y) = pair
@@ -109,7 +114,7 @@ trait SerializerImplicits {
               }
           }
       }(it)
-  }
+  }}
 
   /**
    * Serializes a DslBuilder

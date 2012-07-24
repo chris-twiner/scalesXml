@@ -56,6 +56,9 @@ trait DefaultQNameToken {
 
 }
 
+object DefaultQNameToken extends DefaultQNameToken {
+}
+
 /**
  * Compares XmlItems, providing Some qnameTokenComparison will force that to be used to decide if qname comparison should be used or not
  */ 

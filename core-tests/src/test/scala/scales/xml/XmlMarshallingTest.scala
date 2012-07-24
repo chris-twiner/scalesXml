@@ -296,7 +296,7 @@ class XmlMarshallingTest extends junit.framework.TestCase {
   }
 
   def testLSSerializerNoCacheFactory  = {
-    implicit val sf : SerializerFactory = serializers.LSSerializerNoCacheFactory
+    implicit val defaultSerializerFactory : SerializerFactory = serializers.LSSerializerNoCacheFactory
     val str = new java.io.StringWriter()
 
     val builder = ns("Root") /( "Child"l )
@@ -306,7 +306,7 @@ class XmlMarshallingTest extends junit.framework.TestCase {
   }
 
   def testLSSerializerNoCacheFactoryEnc  = {
-    implicit val sf : SerializerFactory = serializers.LSSerializerNoCacheFactory
+    implicit val defaultSerializerFactory : SerializerFactory = serializers.LSSerializerNoCacheFactory
     val builder = ns("Rööt") /( (("Child"l) /@("attr" -> "\"in\"") ) /(ns("Grand")~>"A Value")  ) 
     val str = new java.io.StringWriter()
 
