@@ -927,7 +927,7 @@ at += 1
 
     var i = 0
 
-    val it = iterate(LogEntries, pull.it)
+    val it = scales.xml.iterate(LogEntries, pull.it)
     val bits = for{ entry : XmlPath <- it
 	revision <- entry.\.*@("revision"l).one
 	author <- entry.\*("author"l).one
