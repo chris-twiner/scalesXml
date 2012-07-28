@@ -76,7 +76,11 @@ object ScalesXmlRoot extends Build {
       )
   )
 
-  lazy val dontBuildIn28 = Seq(skip <<= scalaVersion map { v => v startsWith "2.8." })
+  lazy val dontBuildIn28 = 
+    Seq(
+      skip <<= scalaVersion map { v => v startsWith "2.8." }, 
+      skip in (Compile, update) <<= scalaVersion map { v => v startsWith "2.8." }, 
+      skip in (Test, update) <<= scalaVersion map { v => v startsWith "2.8." })
 
   lazy val dontPublishSettings = Seq(
     publishArtifact in (Compile, packageBin) := false,
@@ -100,9 +104,10 @@ object ScalesXmlRoot extends Build {
 */
     organization := "org.scalesxml",
     offline := true,
-    version := "0.3",
-    scalaVersion := "2.9.2",
-    crossScalaVersions := Seq("2.8.1", "2.8.2", "2.9.1", "2.9.2"),// "2.10.0-M4"),
+    version := "0.3.1",
+//    scalaVersion := "2.9.2",
+    scalaVersion := "2.10.0-M6",
+    crossScalaVersions := Seq("2.8.1", "2.8.2", "2.9.1", "2.9.2", "2.10.0-M6"),
     //publishSetting,
 //    parallelExecution in Test := false,
     scalacOptions ++= Seq("-optimise"),

@@ -67,4 +67,4 @@ fork in runParseMemory := true
 runMemoryUsage := "-Xmx120M"
 
 // change in console via set runMemoryUsage in coreTests := "-Xmx40M"
-javaOptions in runParseMemory <+= runMemoryUsage// map "-Xmx45M"
+//javaOptions in runParseMemory <+= runMemoryUsage// map "-Xmx45M"

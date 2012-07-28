@@ -17,7 +17,7 @@ case class XmlOutput(data: SerializerData,
   currentMappings: Stack[Map[String, String]] = Stack[Map[String, String]]().push(
     Map[String, String]() + ("" -> "") // default namespace 
     ), path: List[QName] = List())(implicit serializerFI: SerializerFactory) {
-  val serializerF = serializerFI
+  implicit val serializerF = serializerFI
 }
 
 /**

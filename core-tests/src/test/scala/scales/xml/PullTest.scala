@@ -104,7 +104,7 @@ class PullTest extends junit.framework.TestCase {
     val pull = pullXml(sresource(this, "/data/BaseXmlTest.xml"))
 
     def out(it : String) : Unit = 
-      it
+      ()//it
     
     for{event <- pull}{
       event match {
@@ -198,7 +198,7 @@ class PullTest extends junit.framework.TestCase {
 	      read.append(res)
 	  }
 	  } catch {
-	    case _ => println(read.toString)
+	    case _ : Throwable => println(read.toString)
 	  }
 	  
 	  reader.unread(read.append("</root>").toString.toCharArray());
@@ -927,7 +927,7 @@ at += 1
 
     var i = 0
 
-    val it = iterate(LogEntries, pull)
+    val it = scales.xml.iterate(LogEntries, pull.it)
     val bits = for{ entry : XmlPath <- it
 	revision <- entry.\.*@("revision"l).one
 	author <- entry.\*("author"l).one
