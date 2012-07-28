@@ -24,17 +24,11 @@ object ScalesXmlRoot extends Build {
     // Override more to taste
   }
 
-  lazy val root = Project("scales-xml-root", file("."), settings = standardSettings ++ dontPublishSettings) aggregate(core, coreTests, jaxen, saxonTests, jaxenTests)
+  lazy val root = Project("scales-xml-root", file("."), settings = standardSettings ++ dontPublishSettings) aggregate(core, coreTests)
 
   lazy val core = Project("scales-xml", file("core"), settings = standardSettings)
 
   lazy val coreTests = Project("scales-xml-tests", file("core-tests"), settings = standardSettings ++ dontPublishSettings) dependsOn(core)
-
-  lazy val saxonTests = Project("saxon-tests", file("saxon-tests"), settings = standardSettings ++ dontPublishSettings ++ dontBuildIn28) dependsOn(coreTests % "test->test")
-
-  lazy val jaxen = Project("scales-jaxen", file("jaxen"), settings = standardSettings) dependsOn(core)
-
-  lazy val jaxenTests = Project("jaxen-tests", file("jaxen-tests"), settings = standardSettings ++ dontPublishSettings ++ dontBuildIn28) dependsOn(jaxen % "compile->test", coreTests % "test->test") //  % "compile->compile;test->test"
 
   /* project that sucks in the others like fullDocsAndSxr for the purpose of coverage tests
   lazy val coverageProject = {
@@ -55,7 +49,7 @@ object ScalesXmlRoot extends Build {
     Project("coverage-proj", file("coverage"), settings = standardSettings ++ dontPublishSettings ++ Seq(									 lcp, ltcp))
 		//spaths,tpaths, // cp, tcp,												//	  , resources
 
-  } */
+  } 
 
   lazy val fullDocsAndSxr = FullDocs.fullDocsNSources(
     projects = Seq(core, jaxen), projectId = "site",
@@ -74,7 +68,7 @@ object ScalesXmlRoot extends Build {
 	siteMarkupDocHeaders := Map( "ScalesXmlIntro.mw" -> MarkupHeader("An Overview of Scales Xml")("Overview"), "MemoryOptimisation.mw" -> MarkupHeader("An Overview of Memory Optimisation and Performance")("Memory and Performance") ),
 	menuBarTitle := "= Scales Xml ${projectVersion} ="
       )
-  )
+  )*/
 
   lazy val dontBuildIn28 = 
     Seq(
