@@ -2,6 +2,9 @@ package scales.xml
 
 trait PullType
 
+class QName {
+}
+
 trait XmlPull {
   def it : Iterator[PullType]
 }
