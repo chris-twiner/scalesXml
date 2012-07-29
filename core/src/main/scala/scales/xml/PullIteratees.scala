@@ -2,6 +2,12 @@ package scales.xml
 
 import scales.utils._
 
+trait PullType
+
+trait XmlPull {
+  def it : Iterator[PullType]
+}
+
 /**
  * Iteratees related to pull parsing
  */ 
@@ -10,9 +16,9 @@ trait PullIteratees {
   /**
    * Wraps XmlPull
    */ 
-  def iterate(path: List[QName], xml: XmlPull): FlatMapIterator[String] = iterate(path, xml.it)
+  def iterate(path: List[QName], xml: XmlPull): FlatMapIterator[String] = new Iterate(path)
 
-  class Iterate(path: List[QName], xml: Iterator[PullType]) extends FlatMapIterator[String] { self =>
+  class Iterate(path: List[QName]) extends FlatMapIterator[String] { self =>
     var hasonce = false
     def hasNext = !hasonce
     def next = {
@@ -29,6 +35,6 @@ trait PullIteratees {
    * it unwraps the data providing an Iterator[XPath]
    */
   def iterate(path: List[QName], xml: Iterator[PullType]): FlatMapIterator[String] =
-    new Iterate(path, xml)
+    new Iterate(path)
 
 }

@@ -1,18 +1,20 @@
 package scales
 
-package object xml extends XmlTypes 
-  with XmlParser 
-  with XmlPaths
-  with XPathMatcher 
-  with XmlPrinter 
-  with Whitespace 
-  with XmlPulls 
+package object xml extends XmlPulls
+// extends XmlTypes 
+//  with XmlParser 
+//  with XmlPaths
+//  with XPathMatcher 
+//  with XmlPrinter 
+//  with Whitespace 
+//  with XmlPulls 
   with XmlFactories 
-  with TraxSourceConversions
-  with XmlUtils
+//  with TraxSourceConversions
+//  with XmlUtils
   with PullIteratees
-  with equals.XmlEquals {
-
+//  with equals.XmlEquals 
+{
+/*
   import strategies.ElemToken
 
   val defaultPathOptimisation : PathOptimisationStrategy[QNameToken] = QNameMemoryOptimisation
@@ -26,5 +28,5 @@ package object xml extends XmlTypes
   @deprecated(message="Please import Functions._ instead - since 0.3")
   val Elements = xpath.Elements
   @deprecated(message="Please import Functions._ instead - since 0.3")
-  val TextFunctions = xpath.OldTextFunctions
+  val TextFunctions = xpath.OldTextFunctions */
 }

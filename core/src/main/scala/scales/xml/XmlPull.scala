@@ -45,7 +45,7 @@ trait XmlPulls {
       CharacterSourceUser(ProxiedCloseOnNeedReader(cs))
   }
 
-
+/*
   /**
    * Load xml via pull parsing
    */ 
@@ -164,7 +164,7 @@ trait XmlPulls {
 
   implicit def toLeft(ev: XmlEvent) = Left(ev)
   implicit def toRight(ev: EndElem) = Right(ev)
-
+*/
 }
 
 /**
