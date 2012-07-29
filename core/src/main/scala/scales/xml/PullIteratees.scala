@@ -1,7 +1,5 @@
 package scales.xml
 
-import scales.utils._
-
 trait PullType
 
 trait XmlPull {

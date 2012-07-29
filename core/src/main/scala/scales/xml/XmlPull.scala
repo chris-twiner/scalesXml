@@ -1,10 +1,6 @@
 
 package scales.xml
 
-import javax.xml.stream._
-import scales.utils._
-
-import java.io._
 
 /**
  * Wraps the stax cursor inteface (iterator just adds weight here).
