@@ -7,6 +7,7 @@ object CCE_Test extends App {
 
   val pull = null.asInstanceOf[Iterator[PullType]]
   val LogEntries = null.asInstanceOf[List[QName]]
+  // fully qualify with scales.xml. and it won't trigger it
   iterate(LogEntries, 
 	  pull)
 }
