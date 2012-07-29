@@ -1,6 +1,5 @@
 package scales
 
-package object xml extends XmlPulls
-  with PullIteratees
+package object xml extends PullIteratees
 {
 }
