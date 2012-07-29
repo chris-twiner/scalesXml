@@ -15,10 +15,12 @@ trait XmlPull {
 trait PullIteratees {
 
   /**
-   * Wraps XmlPull
+   * Without the overload it doesn't trigger the CCE, even though its
+   * not used
    */ 
   def iterate(path: List[QName], xml: XmlPull): FlatMapIterator[String] = new Iterate(path)
-
+  
+  
   class Iterate(path: List[QName]) extends FlatMapIterator[String] { self =>
     var hasonce = false
     def hasNext = !hasonce
