@@ -5,9 +5,7 @@ trait PullType
 class QName {
 }
 
-trait XmlPull {
-  def it : Iterator[PullType]
-}
+trait RetUrn[T]
 
 /**
  * Iteratees related to pull parsing
@@ -18,26 +16,8 @@ trait PullIteratees {
    * Without the overload it doesn't trigger the CCE, even though its
    * not used
    */ 
-  def iterate(path: List[QName], xml: XmlPull): FlatMapIterator[String] = new Iterate(path)
-  
-  
-  class Iterate(path: List[QName]) extends FlatMapIterator[String] { self =>
-    var hasonce = false
-    def hasNext = !hasonce
-    def next = {
-      if (!hasonce) {
-	  hasonce = true
-      }
-      "fred"
-    }
-        
-  }
+  def iterate(path: List[QName], xml: String): RetUrn[String] = ???
 
-  /**
-   * A wrapping around withIter(onDone(List(onQNames(path))))(enumXml(xml, _))
-   * it unwraps the data providing an Iterator[XPath]
-   */
-  def iterate(path: List[QName], xml: Iterator[PullType]): FlatMapIterator[String] =
-    new Iterate(path)
+  def iterate(path: List[QName], xml: Iterator[PullType]): RetUrn[String] = ???
 
 }
