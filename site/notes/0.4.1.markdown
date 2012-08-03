@@ -1,0 +1,15 @@
+
+This release represents a move to Scalaz 6.0.4, which is binary incompatible with 6.0.3.  As such to ease adoption of 6.0.4 Scales Xml 0.4.1 has the same goodness found in 0.3.1 (see [here](http://posterous.implicit.ly/scalesxml-031) for the 0.3.1 release notes).
+
+### How To Use
+
+Scales 0.4.1 supports for 2.8.1, 2.8.2, 2.9.1, 2.9.2 and 2.10.0-M6.  As such add:
+
+    libraryDependencies ++= Seq(
+      // just for the core library
+      "org.scalesxml" %% "scales-xml" % "0.4.1"
+      // or, use this instead for String based XPaths (Jaxen, also includes the core)
+      "org.scalesxml" %% "scales-jaxen" % "0.4.1"
+    )
+
+to your xsbt builds or use scales-xml_2.9.2 as the id when using Maven.
