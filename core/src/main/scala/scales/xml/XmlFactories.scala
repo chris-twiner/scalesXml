@@ -55,6 +55,20 @@ trait XmlFactories {
   }
 
   /**
+   * Aalto and others don't support getting the xml version, if your parser doesn't you could use loadXmlReader with this pool directly.
+   */ 
+  object NoVersionXmlReaderFactoryPool extends scales.utils.SimpleUnboundedPool[XMLReader] with DefaultSaxSupport {
+    
+    // doesn't support xml version retrieval
+    override def getXmlVersion( reader : XMLReader ) : AnyRef =
+      null
+
+    def create = 
+      XMLReaderFactory.createXMLReader()
+    
+  }
+
+  /**
    * Default DOMFactory impl
    */ 
   object DefaultDOMFactoryPool extends scales.utils.SimpleUnboundedPool[DocumentBuilderFactory] { pool =>
