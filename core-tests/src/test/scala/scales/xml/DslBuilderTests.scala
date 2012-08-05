@@ -542,7 +542,7 @@ class DslBuildersTest extends junit.framework.TestCase {
 
   def testSimpleConvert = {
     val orig = <root><child/></root>
-    val converted = orig.asScales
+    val converted = orig.asScales()
     assertEquals("root", localName(converted.rootElem))
   }
 
@@ -619,6 +619,12 @@ class DslBuildersTest extends junit.framework.TestCase {
     assertTrue("Should have remained a NameValue", (top(x2).\*(1)).head.tree.isInstanceOf[NameValue])
   }
 
+  import org.xml.sax.{InputSource, XMLReader}
+
+  def doLoadXml[Token <: OptimisationToken](in : InputSource, strategy : PathOptimisationStrategy[Token] = defaultPathOptimisation) = {
+    loadXml(in, strategy = strategy)
+  }
+
   def testWriteBackWithStrategies : Unit = {
     import strategies._
 
@@ -627,7 +633,7 @@ class DslBuildersTest extends junit.framework.TestCase {
     val xml = """<?xml version="1.0" encoding="UTF-8"?><Alocal><another>value</another></Alocal>"""
     assertEquals(xml, asString(x))
 
-    val p = loadXml(new java.io.StringReader(asString(x)), strategy = QNameTreeOptimisation)
+    val p = doLoadXml(new java.io.StringReader(asString(x)), strategy = QNameTreeOptimisation)
 
     val t = (top(p).\*(1)).head.tree
     assertTrue("Should have parsed as a NameValue", t.isInstanceOf[NameValue])
@@ -639,7 +645,7 @@ class DslBuildersTest extends junit.framework.TestCase {
 
     assertEquals(xml2, asString(x2))
     
-    val p2 = loadXml(new java.io.StringReader(asString(x2)), strategy = QNameElemTreeOptimisation)
+    val p2 = doLoadXml(new java.io.StringReader(asString(x2)), strategy = QNameElemTreeOptimisation)
 
     val pa = top(p2).\*(1)
     val t2 = pa.head.tree
@@ -652,7 +658,7 @@ class DslBuildersTest extends junit.framework.TestCase {
     val xml3 = """<?xml version="1.0" encoding="UTF-8"?><Alocal><another><!--a comment--></another></Alocal>"""
     assertEquals(xml3, asString(x3))
 
-    val p3 = loadXml(new java.io.StringReader(asString(x3)), strategy = QNameTreeOptimisation)
+    val p3 = doLoadXml(new java.io.StringReader(asString(x3)), strategy = QNameTreeOptimisation)
 
     val t3 = (top(p3).\*(1)).head.tree
     assertTrue("Should have parsed as a Tree", !(
