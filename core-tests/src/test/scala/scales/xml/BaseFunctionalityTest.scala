@@ -17,9 +17,12 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
 
   val xmlFile = resource(this, "/data/BaseXmlTest.xml")
 
-  val testXml = loadXml(xmlFile)
+  lazy val testXml = doLoadXml(xmlFile)
   val path = top(testXml)
 
+  def doLoadXml[Token <: OptimisationToken](in : java.net.URL, strategy : PathOptimisationStrategy[Token] = defaultPathOptimisation) = {
+    loadXml(in, strategy = strategy)
+  }
 
   def testElemConstruction : Unit = {
     val q = pre("local")
@@ -232,7 +235,7 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
    * //a:ShouldRedeclare/../text()[4]     
    */ 
   def testParentTextNodesRepeats = { // /preceding-sibling::text()[1]
-    val testXml = loadXml(resource(this, "/data/BaseXmlTestRepeats.xml"))
+    val testXml = doLoadXml(resource(this, "/data/BaseXmlTestRepeats.xml"))
     val path = top(testXml)
     
     val expected = List("start mix mode","start mix mode")
@@ -307,7 +310,7 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
     // or indeed mixed in.
     //new MutableVectorLikeStrategy with ElemQNameOptimisationT with TextNodeJoiner {}
     // join up the text nodes
-    val testXml2 = loadXml(xmlFile, strategy = tnj)
+    val testXml2 = doLoadXml(xmlFile, strategy = tnj)
     val path = top(testXml2)
 
     // we have two nodes before so 3 whitespaces.  Of course we actually should be getting path as well I think...
@@ -323,7 +326,7 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
     // we have two nodes before so 3 whitespaces.  Of course we actually should be getting path as well I think...
 
     val tnj = new TextNodeJoiner[QNameToken] with QNameTokenF {} 
-    val testXml2 = loadXml(xmlFile, strategy = tnj)
+    val testXml2 = doLoadXml(xmlFile, strategy = tnj)
     val path = top(testXml2)
 
     val expected = List("", "", "", "", "", "start mix mode", "prefixed text", "end mix mode",
@@ -415,7 +418,7 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
   }
 
   val nestedXmlFile = resource(this, "/data/Nested.xml")
-  val nestedXml = loadXml(nestedXmlFile)
+  val nestedXml = doLoadXml(nestedXmlFile)
   val nested = top(nestedXml)
 
   def descendantTextNested : XmlPaths = {
