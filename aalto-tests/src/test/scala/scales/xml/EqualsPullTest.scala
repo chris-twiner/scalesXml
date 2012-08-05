@@ -19,6 +19,12 @@ class EqualsPullTest extends EqualsNormalImportsTest {
   import scales.utils._
   import ScalesUtils._
 
+  import org.xml.sax.{InputSource, XMLReader}
+
+  override def doLoadXml[Token <: OptimisationToken](in : InputSource, strategy : PathOptimisationStrategy[Token] = defaultPathOptimisation) = {
+    loadXmlReader(in, parsers = NoVersionXmlReaderFactoryPool, strategy = strategy)
+  }
+
   def pull( doc : Doc ) =
     pullXml(new StringReader(asString(doc)))
 
