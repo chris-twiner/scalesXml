@@ -1,5 +1,5 @@
 
-This release is a performance update/fix for pull parsing using onQNames / iterate which adds a healthy boost to most useage scenarios ([issue #3](https://github.com/chris-twiner/scalesXml/issues/3)).
+This release is a performance update/fix for pull parsing using onQNames / iterate which adds a healthy boost to most usage scenarios ([issue #3](https://github.com/chris-twiner/scalesXml/issues/3)).
 
 Please note that due to ([issue #4](https://github.com/chris-twiner/scalesXml/issues/4)) intransitive() must be added to the libraryDependencies for scales-jaxen and a direct entry for jaxen itself (also intransitive()) should be used - see below.
 
