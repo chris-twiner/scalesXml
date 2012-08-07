@@ -26,13 +26,13 @@ object ScalesXmlRoot extends Build {
 
   lazy val root = Project("scales-xml-root", file("."), settings = standardSettings ++ dontPublishSettings) aggregate(core, coreTests, jaxen, saxonTests, jaxenTests)
 
-  lazy val core = Project("scales-xml", file("core"), settings = standardSettings)
+  lazy val core = Project("scales-xml", file("core"), settings = standardSettings ++ deployOrg)
 
   lazy val coreTests = Project("scales-xml-tests", file("core-tests"), settings = standardSettings ++ dontPublishSettings) dependsOn(core)
 
   lazy val saxonTests = Project("saxon-tests", file("saxon-tests"), settings = standardSettings ++ dontPublishSettings ++ dontBuildIn28) dependsOn(coreTests % "test->test")
 
-  lazy val jaxen = Project("scales-jaxen", file("jaxen"), settings = standardSettings) dependsOn(core)
+  lazy val jaxen = Project("scales-jaxen", file("jaxen"), settings = standardSettings ++ deployOrg) dependsOn(core)
 
   lazy val jaxenTests = Project("jaxen-tests", file("jaxen-tests"), settings = standardSettings ++ dontPublishSettings ++ dontBuildIn28) dependsOn(jaxen % "compile->test", coreTests % "test->test") //  % "compile->compile;test->test"
 
@@ -83,10 +83,16 @@ object ScalesXmlRoot extends Build {
       skip in (Test, update) <<= scalaVersion map { v => v startsWith "2.8." })
 
   lazy val dontPublishSettings = Seq(
-    publishArtifact in (Compile, packageBin) := false,
-    publishArtifact in (Compile, packageSrc) := false,
-    publishArtifact in (Compile, packageDoc) := false
+    publishArtifact in Compile := false,
+    publishArtifact in Test := false,
+    organization := "org.scalesxml.delme"
    )
+
+  // org.scalesxml.delme makes it far easier to deploy by deleting the crap I don't want (https://github.com/harrah/xsbt/issues/484)
+
+  lazy val deployOrg = Seq(
+      organization := "org.scalesxml"
+    )
 
   /*lazy val publishSetting = publishTo <<= (version) {
     version: String =>
@@ -102,9 +108,9 @@ object ScalesXmlRoot extends Build {
  "sbt (%s)$$$-".format(Project.extract(state).currentProject.id)
 },
 */
-    organization := "org.scalesxml",
+//    organization := "org.scalesxml",
     offline := true,
-    version := "0.3.1",
+    version := "0.4.2",
 //    scalaVersion := "2.9.2",
     scalaVersion := "2.10.0-M6",
     crossScalaVersions := Seq("2.8.1", "2.8.2", "2.9.1", "2.9.2", "2.10.0-M6"),
