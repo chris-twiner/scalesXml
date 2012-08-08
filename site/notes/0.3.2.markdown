@@ -12,7 +12,7 @@ Scales 0.3.2 supports for 2.8.1, 2.8.2, 2.9.1, 2.9.2 and 2.10.0-M6.  As such add
     libraryDependencies ++= Seq(
       // just for the core library
       "org.scalesxml" %% "scales-xml" % "0.3.2"
-      // or, use this instead for String based XPaths (Jaxen, also includes the core)
+      // and additionally use these for String based XPaths
       "org.scalesxml" %% "scales-jaxen" % "0.3.2" intransitive(),
       "jaxen" % "jaxen" % "1.1.3" intransitive()
     )
