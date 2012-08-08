@@ -10,7 +10,9 @@ A number of the pain points of Scala XML are also simply removed, want to change
 
 A very flexible XML stream handling approach is based upon StAX and Iteratees (courtesy of Scalaz) which uses the same model as the tree based, no separate event hierarchy needed.
 
-Currently the stable 0.3.1 release [site](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.3/index.html) improves on 0.2.1's fast parsing and low memory usage (which, of course, are coupled) and adds ScalesXPath - a string based XPath 1.0 evaluator, a full compliment of useful axe in the internal XPath syntax, an equality framework (2.9.x only) and general improvements in usability.
+Currently the stable 0.4.2 (and 0.3.2) releases ([site](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.3/index.html)) improves on 0.2.1's fast parsing and low memory usage (which, of course, are coupled) and adds ScalesXPath - a string based XPath 1.0 evaluator, a full compliment of useful axe in the internal XPath syntax, an equality framework (2.9.x only) and general improvements in usability.
+
+0.4.2 is simply a rebuild of 0.3.2 against Scalaz 6.0.4.
 
 The artifacts are now on Maven Central under the group org.scales.xml.
 
@@ -20,14 +22,18 @@ Currently 2.8.1, 2.8.2, 2.9.1, 2.9.2 and 2.10.0-M6 are built against.
 
 So for sbt its:
 
-    val scalesXml = "org.scalesxml" %% "scales-xml" % "0.3.1"
+    val scalesXml = "org.scalesxml" %% "scales-xml" % "0.4.2" // or 0.3.2 for Scalaz 6.0.3 usage
 
 xsbt 0.10+ its:
 
     libraryDependencies ++= Seq(
-      "org.scalesxml" %% "scales-xml" % "0.3.1",
-      //"org.scalesxml" %% "scales-jaxen" % "0.3.1" // optional for string based xpaths
+      "org.scalesxml" %% "scales-xml" % "0.4.2", // or 0.3.2 for Scalaz 6.0.3 usage
+      // and additionally use these for String based XPaths
+      "org.scalesxml" %% "scales-jaxen" % "0.4.2" intransitive(), 
+      "jaxen" % "jaxen" % "1.1.3" intransitive()
       )
+
+intransitive() is required because the Jaxen pom cannot be fully used.
 
 Maven repos should therefore use org.scalesxml scales-xml_2.9.2 as the dependency.   Also note that Jaxen 1.1.4 (tested against 0.3.1) isn't yet present via Maven, so if you use String XPath evaluation and you'd like to use the latest version you must add the folowing to the build:
 
