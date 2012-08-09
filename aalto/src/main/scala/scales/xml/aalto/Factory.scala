@@ -1,6 +1,7 @@
 package scales.xml.aalto
 
 import com.fasterxml.aalto._
+import com.fasterxml.aalto.stax.InputFactoryImpl
 
 import scales.xml._
 
@@ -12,7 +13,7 @@ object AsyncXMLInputFactoryPool extends scales.utils.SimpleUnboundedPool[AsyncXM
   val cdata = "http://java.sun.com/xml/stream/properties/report-cdata-event"
 
   def create = {
-    val fac = AsyncXMLInputFactory.newInstance()
+    val fac = new InputFactoryImpl()
     if (fac.isPropertySupported(cdata)) {
       fac.setProperty(cdata, java.lang.Boolean.TRUE);
     }
