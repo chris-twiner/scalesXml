@@ -24,7 +24,7 @@ object ScalesXmlRoot extends Build {
     // Override more to taste
   }
 
-  lazy val root = Project("scales-xml-root", file("."), settings = standardSettings ++ dontPublishSettings) aggregate(core, coreTests, jaxen, saxonTests, jaxenTests, aaltoTests)
+  lazy val root = Project("scales-xml-root", file("."), settings = standardSettings ++ dontPublishSettings) aggregate(core, coreTests, jaxen, saxonTests, jaxenTests, aalto, aaltoTests)
 
   lazy val core = Project("scales-xml", file("core"), settings = standardSettings ++ deployOrg)
 
@@ -36,7 +36,9 @@ object ScalesXmlRoot extends Build {
 
   lazy val jaxenTests = Project("jaxen-tests", file("jaxen-tests"), settings = standardSettings ++ dontPublishSettings ++ dontBuildIn28) dependsOn(jaxen % "compile->test", coreTests % "test->test") //  % "compile->compile;test->test"
 
-  lazy val aaltoTests = Project("aalto-tests", file("aalto-tests"), settings = standardSettings ++ dontPublishSettings ++ dontBuildIn28) dependsOn(jaxen % "compile->test", coreTests % "test->test") //  % "compile->compile;test->test"
+  lazy val aalto = Project("scales-aalto", file("aalto"), settings = standardSettings ++ deployOrg) dependsOn(core)
+
+  lazy val aaltoTests = Project("aalto-tests", file("aalto-tests"), settings = standardSettings ++ dontPublishSettings ++ dontBuildIn28) dependsOn(aalto % "compile->test", coreTests % "test->test")
 
   /* project that sucks in the others like fullDocsAndSxr for the purpose of coverage tests
   lazy val coverageProject = {
@@ -113,8 +115,8 @@ object ScalesXmlRoot extends Build {
 //    organization := "org.scalesxml",
     offline := true,
     version := "0.5-SNAPSHOT",
-//    scalaVersion := "2.9.2",
-    scalaVersion := "2.10.0-M6",
+    scalaVersion := "2.9.2",
+    //scalaVersion := "2.10.0-M6",
     crossScalaVersions := Seq("2.8.1", "2.8.2", "2.9.1", "2.9.2", "2.10.0-M6"),
     //publishSetting,
 //    parallelExecution in Test := false,
