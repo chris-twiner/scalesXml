@@ -202,6 +202,7 @@ object PullUtils {
       case XMLStreamConstants.SPACE => Text(parser.getText) // jdk impl never calls but to be safe we should grab it
       case XMLStreamConstants.START_DOCUMENT => {
         // get the encoding etc
+	// NB the asynch variety can also call this, if no more events are available then it returns the waiting object.
         val ec = parser.getCharacterEncodingScheme()
 
         vprolog = vprolog.copy(decl = Declaration(
