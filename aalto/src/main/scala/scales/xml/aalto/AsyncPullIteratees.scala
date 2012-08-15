@@ -18,15 +18,40 @@ object PullTypeEvidence {
  * Represents an asnych parser.  T is a dummy for the enumerator, only PullType is supported.
  * Callers MUST ensure that close is called in the case of an exception as well as the end of processing, failing to do so will cause unnecessary ByteBuffer creation. 
  */ 
-class AsyncParser[T : PullTypeEvidence]( val parser : AsyncXMLStreamReader, val channel : ReadableByteChannel, val optimisationStrategy : MemoryOptimisationStrategy[_ <: OptimisationToken] = defaultOptimisation, private val bytePool : Pool[ByteBuffer] ) extends CloseOnNeed with DocLike {
+abstract class AsyncParser[-T]( val parser : AsyncXMLStreamReader, val channel : ReadableByteChannel, private val bytePool : Pool[ByteBuffer] )(implicit xmlVersion : XmlVersion, ev : PullTypeEvidence[T] ) extends CloseOnNeed with DocLike {
+
+  type Token <: OptimisationToken
+
+  val strategy : MemoryOptimisationStrategy[Token]
 
   val feeder = parser.getInputFeeder
   val buffer = bytePool.grab
 
-  val token = optimisationStrategy.createToken
+  val token : Token
 
   // to capture the miscs.
-  var docImpl = EmptyDoc()
+  private[this] var docImpl = EmptyDoc()
+
+  def copyProlog(p : Prolog) { 
+    docImpl = docImpl.copy( prolog = p )
+  }
+
+  def addPrologMisc(m : PullType) { 
+    copyProlog( 
+      prolog.copy(
+	misc = prolog.misc :+ PullUtils.getMisc(m, "prolog") 
+      )
+    )
+  }
+
+  def addEndMisc(m : PullType) { 
+    docImpl = docImpl.copy( 
+      end = end.copy( 
+	misc = end.misc :+ PullUtils.getMisc(m, "endMisc") 
+      )
+    )
+  }
+
   def prolog = docImpl.prolog
   def end = docImpl.end
 
@@ -36,6 +61,16 @@ class AsyncParser[T : PullTypeEvidence]( val parser : AsyncXMLStreamReader, val 
   protected def doClose = { 
     bytePool.giveBack(buffer)
     feeder.endOfInput
+  }
+}
+
+object AsyncParser {
+  def apply[T, TokenT <: OptimisationToken]( parser : AsyncXMLStreamReader, channel : ReadableByteChannel, optimisationStrategy : MemoryOptimisationStrategy[TokenT] = defaultOptimisation, bytePool : Pool[ByteBuffer] = defaultBufferPool )( implicit xmlVersion : XmlVersion, ev : PullTypeEvidence[T] ) : AsyncParser[T] = new AsyncParser[T](parser, channel, bytePool){
+    type Token = TokenT
+    val strategy = optimisationStrategy
+    
+    import PullUtils.weAreInAParser
+    val token = strategy.createToken
   }
 }
 
@@ -49,7 +84,7 @@ import scalaz.IterV._
 
 final class AsyncParserEnumerator extends Enumerator[AsyncParser] {
 
-  def bytes[E](parser : AsyncParser[E]) : (Array[Byte], Int) = {
+  def jbytes[E](parser : AsyncParser[E]) : (Array[Byte], Int) = {
     val read = parser.channel.read(parser.buffer)
     (parser.buffer.array, read)
   }
@@ -65,44 +100,57 @@ final class AsyncParserEnumerator extends Enumerator[AsyncParser] {
   val incompletePull : PullType = Left(Text("I am incomplete"))
 
   def apply[E,A](parser: AsyncParser[E], i: IterV[E,A]): IterV[E,A] = {
-    @annotation.tailrec
-    def intern[E,A](parser: AsyncParser[E], i: IterV[E,A], bytes : AsyncParser[E] => Boolean, depth : Int, started : Boolean): IterV[E,A] = {
+    //@annotation.tailrec
+    def intern[E,A](parser: AsyncParser[E], i: IterV[E,A], bytes : () => (Array[Byte], Int), depth : Int, started : Boolean): IterV[E,A] = {
+
+      /**
+       * when the data is empty in prolog or endmisc send back a continuation to process more, when in the root elem itself then the iteratee i should deal with it
+       */ 
+      def pumpInMisc : IterV[E, A] =
+	Cont(_ => intern(parser, i, bytes, depth, started))
+
       def pump(k : Input[E] => IterV[E,A]) : IterV[E,A] = {
 	// don't have to re-read, let it push what it has
-	if ((depth == -1) && !started) {
-	  val (event, num, odepth, oprolog) = PullUtils.pumpEvent(parser.parser, parser.strategy, paresr.token, parser.prolog, depth){ x =>
+	if (depth == -1) {
+	  // miscs
+
+	  val (event, num, odepth, oprolog) = PullUtils.pumpEvent(parser.parser, parser.strategy, parser.token, parser.prolog, depth){ x =>
 	    if (x == EVENT_INCOMPLETE)
 	      incompletePull
 	    else
               error("Got an unexpected event type " + x +" cannot proceed.") }
 
-	  if (num == EVENT_INCOMPLETE) {
-	    // let the iter attempt to deal
-	    intern(parser, k(Empty[E]), odepth)
-	  } else {
-	    var nprolog = oprolog
-
-	    if (event.isLeft && (event.left.get eq PullUtils.dtdDummy)) {
-              nprolog = oprolog.copy(dtd = Some(
-		DTD("", "", "") // DTD has funnyness TODO find out what it looks like
-              ))
-	    }
-
-	    if (odepth == -1) {
-	      nprolog = nprolog.copy(misc = nprolog.misc :+ PullUtils.getMisc(event, "prolog"))
-	    }
-
-	    parser.docImpl = parser.docImpl.copy( prolog = nprolog )
-
-	    if (odepth > -1) {
-	      // we have a real event
-	      intern(parser, k(El(event.asInstanceOf[E])), odepth)
-	    } else // empty
-	      intern(parser, k(Empty[E]), odepth)
+	  if (oprolog != parser.prolog) {
+	    // doc start
+	    parser.copyProlog( oprolog ) 
 	  }
+	  
+	  if (num == EVENT_INCOMPLETE) {
+	    // let the iter attempt to deal
+	    pumpInMisc
+	    //intern(parser, k(Empty[E]), odepth)
+	  } else if (odepth == -1) {
+	    // still misc
+	    
+	    if (event.isLeft && (event.left.get eq PullUtils.dtdDummy)) {
+	      parser.copyProlog( parser.prolog.copy(dtd = Some(
+		DTD("", "", "") // DTD has funnyness TODO find out what it looks like
+              )))
+	    } else {
+	      if (!started)
+		parser.addPrologMisc(event)
+	      else
+		parser.addEndMisc(event)	      
+	    }
 
+	    pumpInMisc
+	  } else {
+	    // pump actual first event - yay !!, next depth -1 is endmisc
+	    intern(parser, k(El(event.asInstanceOf[E])), bytes, odepth, true)
+	  }
 	} else {
-	  val (event, num, odepth, oprolog) = PullUtils.pumpEvent(parser.parser, parser.strategy, paresr.token, parser.prolog, depth){ x =>
+	  // 2nd > events
+	  val (event, num, odepth, oprolog) = PullUtils.pumpEvent(parser.parser, parser.strategy, parser.token, parser.prolog, depth){ x =>
 	    if (x == EVENT_INCOMPLETE)
 	      incompletePull
 	    else
@@ -110,11 +158,11 @@ final class AsyncParserEnumerator extends Enumerator[AsyncParser] {
 
 	  if (num == EVENT_INCOMPLETE) {
 	    // let the iter attempt to deal
-	    intern(parser, k(Empty[E]), odepth)
+	    intern(parser, k(IterV.Empty[E]), bytes, odepth, started)
 	  } else {
-
-	val next = pump / prolog / end
-	intern(parser, k(El(next.asInstanceOf[E])), depth)
+	    // actual data present, odepth -1 is looked at for the next iter
+	    intern(parser, k(El(event.asInstanceOf[E])), bytes, odepth, started)
+	  }
 	}
       }
 
@@ -124,13 +172,13 @@ final class AsyncParserEnumerator extends Enumerator[AsyncParser] {
 	case Cont(k) =>
           if (parser.feeder.needMoreInput) {
 	    // attempt to pump out
-	    val (ar, read) = bytes
+	    val (ar, read) = bytes()
 	    read match {
 	      case -1 => 
-		parser.close
-		intern(parser, k(EOF[E]), depth)
+		parser.closeResource
+		intern(parser, k(EOF[E]), bytes, depth, started)
 	      case 0 =>
-		intern(parser, k(Empty[E]), depth)
+		intern(parser, k(IterV.Empty[E]), bytes, depth, started)
 	      case _ =>
 		// feed data in
 		parser.feeder.feedInput(ar, 0, read)
@@ -149,14 +197,14 @@ final class AsyncParserEnumerator extends Enumerator[AsyncParser] {
 	  }
       }
     }
-    inter(parser, i, 
+    intern(parser, i, 
 	  if (parser.buffer.hasArray)
-	    bytes(parser) _
+	    () => jbytes(parser)
 	  else {
 	    // perfectly valid for a mem mapped to be huge, in which case, we would have grief ?
-	    val d = direct(Array[Byte].ofDim(parser.buffer.capacity))
-	    d(parser) _
-	  }, -1
+	    val d = direct(Array.ofDim[Byte](parser.buffer.capacity)) _
+	    () => d(parser)
+	  }, -1, false
 	)
   }
 }
