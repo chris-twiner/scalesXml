@@ -2,6 +2,7 @@ package scales.xml.aalto
 
 import com.fasterxml.aalto._
 import AsyncXMLStreamReader.EVENT_INCOMPLETE
+import javax.xml.stream.XMLStreamConstants.END_DOCUMENT
 import scales.xml._
 import scales.utils._
 
@@ -18,16 +19,18 @@ object PullTypeEvidence {
  * Represents an asnych parser.  T is a dummy for the enumerator, only PullType is supported.
  * Callers MUST ensure that close is called in the case of an exception as well as the end of processing, failing to do so will cause unnecessary ByteBuffer creation. 
  */ 
-abstract class AsyncParser[-T]( val parser : AsyncXMLStreamReader, val channel : ReadableByteChannel, private val bytePool : Pool[ByteBuffer] )(implicit xmlVersion : XmlVersion, ev : PullTypeEvidence[T] ) extends CloseOnNeed with DocLike {
+abstract class AsyncParser[-T]( val parsers : Pool[AsyncXMLStreamReader], val channel : ReadableByteChannel, private val bytePool : Pool[ByteBuffer] )(implicit xmlVersion : XmlVersion, ev : PullTypeEvidence[T] ) extends CloseOnNeed with DocLike {
 
   type Token <: OptimisationToken
 
   val strategy : MemoryOptimisationStrategy[Token]
 
-  val feeder = parser.getInputFeeder
+  val feeder : AsyncInputFeeder
   val buffer = bytePool.grab
 
   val token : Token
+
+  val parser : AsyncXMLStreamReader
 
   // to capture the miscs.
   private[this] var docImpl = EmptyDoc()
@@ -61,16 +64,22 @@ abstract class AsyncParser[-T]( val parser : AsyncXMLStreamReader, val channel :
   protected def doClose = { 
     bytePool.giveBack(buffer)
     feeder.endOfInput
+    parsers.giveBack(parser)
   }
 }
 
 object AsyncParser {
-  def apply[T, TokenT <: OptimisationToken]( parser : AsyncXMLStreamReader, channel : ReadableByteChannel, optimisationStrategy : MemoryOptimisationStrategy[TokenT] = defaultOptimisation, bytePool : Pool[ByteBuffer] = defaultBufferPool )( implicit xmlVersion : XmlVersion, ev : PullTypeEvidence[T] ) : AsyncParser[T] = new AsyncParser[T](parser, channel, bytePool){
+  /**
+   * Creates a parser based on the input channel provided
+   */
+  def apply[T, TokenT <: OptimisationToken]( channel : ReadableByteChannel, optimisationStrategy : MemoryOptimisationStrategy[TokenT] = defaultOptimisation, bytePool : Pool[ByteBuffer] = defaultBufferPool, parsers : Pool[AsyncXMLStreamReader] = AsyncStreamReaderPool )( implicit xmlVersion : XmlVersion, ev : PullTypeEvidence[T] ) : AsyncParser[T] = new AsyncParser[T](parsers, channel, bytePool){
     type Token = TokenT
     val strategy = optimisationStrategy
     
     import PullUtils.weAreInAParser
     val token = strategy.createToken
+    val parser = parsers.grab
+    val feeder = parser.getInputFeeder
   }
 }
 
@@ -97,7 +106,7 @@ final class AsyncParserEnumerator extends Enumerator[AsyncParser] {
     (to, read)
   }
 
-  val incompletePull : PullType = Left(Text("I am incomplete"))
+  val incompOrEnd : PullType = Left(Text("I am incomplete or doc end"))
 
   def apply[E,A](parser: AsyncParser[E], i: IterV[E,A]): IterV[E,A] = {
     //@annotation.tailrec
@@ -109,26 +118,30 @@ final class AsyncParserEnumerator extends Enumerator[AsyncParser] {
       def pumpInMisc : IterV[E, A] =
 	Cont(_ => intern(parser, i, bytes, depth, started))
 
+      val eventHandler = (x : Int) => {
+	if (x == EVENT_INCOMPLETE || x == END_DOCUMENT)
+	  incompOrEnd
+	else
+          error("Got an unexpected event type " + x +" cannot proceed.") 
+      }
+
       def pump(k : Input[E] => IterV[E,A]) : IterV[E,A] = {
 	// don't have to re-read, let it push what it has
 	if (depth == -1) {
 	  // miscs
 
-	  val (event, num, odepth, oprolog) = PullUtils.pumpEvent(parser.parser, parser.strategy, parser.token, parser.prolog, depth){ x =>
-	    if (x == EVENT_INCOMPLETE)
-	      incompletePull
-	    else
-              error("Got an unexpected event type " + x +" cannot proceed.") }
+	  val (event, num, odepth, oprolog) = PullUtils.pumpEvent(parser.parser, parser.strategy, parser.token, parser.prolog, depth)(eventHandler)
 
 	  if (oprolog != parser.prolog) {
 	    // doc start
 	    parser.copyProlog( oprolog ) 
 	  }
 	  
-	  if (num == EVENT_INCOMPLETE) {
-	    // let the iter attempt to deal
+	  if (num == END_DOCUMENT) {
+	    // EOF - let the iter deal 
+	    intern(parser, k(EOF[E]), bytes, odepth, started)
+	  } else if (num == EVENT_INCOMPLETE) {
 	    pumpInMisc
-	    //intern(parser, k(Empty[E]), odepth)
 	  } else if (odepth == -1) {
 	    // still misc
 	    
@@ -150,13 +163,12 @@ final class AsyncParserEnumerator extends Enumerator[AsyncParser] {
 	  }
 	} else {
 	  // 2nd > events
-	  val (event, num, odepth, oprolog) = PullUtils.pumpEvent(parser.parser, parser.strategy, parser.token, parser.prolog, depth){ x =>
-	    if (x == EVENT_INCOMPLETE)
-	      incompletePull
-	    else
-              error("Got an unexpected event type " + x +" cannot proceed.") }
+	  val (event, num, odepth, oprolog) = PullUtils.pumpEvent(parser.parser, parser.strategy, parser.token, parser.prolog, depth)(eventHandler)
 
-	  if (num == EVENT_INCOMPLETE) {
+	  if (num == END_DOCUMENT) {
+	    // EOF - let the iter deal -- should not occur here though, only when depth == -1
+	    intern(parser, k(EOF[E]), bytes, odepth, started)
+	  } else if (num == EVENT_INCOMPLETE) {
 	    // let the iter attempt to deal
 	    intern(parser, k(IterV.Empty[E]), bytes, odepth, started)
 	  } else {
@@ -167,7 +179,7 @@ final class AsyncParserEnumerator extends Enumerator[AsyncParser] {
       }
 
       i match {
-	//case _ if iter.isEmpty => i // can't model this without requesting it ?
+//	case _ if !parser.parser.hasNext => i // doesn't matter if its EOF or not
 	case Done(acc, input) => i
 	case Cont(k) =>
           if (parser.feeder.needMoreInput) {
