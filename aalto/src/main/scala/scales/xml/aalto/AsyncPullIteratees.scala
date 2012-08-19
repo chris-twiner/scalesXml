@@ -19,7 +19,7 @@ object PullTypeEvidence {
  * Represents an asnych parser.  T is a dummy for the enumerator, only PullType is supported.
  * Callers MUST ensure that close is called in the case of an exception as well as the end of processing, failing to do so will cause unnecessary ByteBuffer creation. 
  */ 
-abstract class AsyncParser[-T]( val parsers : Pool[AsyncXMLStreamReader], val channel : ReadableByteChannel, private val bytePool : Pool[ByteBuffer] )(implicit xmlVersion : XmlVersion, ev : PullTypeEvidence[T] ) extends CloseOnNeed with DocLike {
+abstract class AsyncParser[-T]( val parsers : Pool[AsyncXMLInputFactory], val channel : ReadableByteChannel, private val bytePool : Pool[ByteBuffer] )(implicit xmlVersion : XmlVersion, ev : PullTypeEvidence[T] ) extends CloseOnNeed with DocLike {
 
   type Token <: OptimisationToken
 
@@ -27,6 +27,8 @@ abstract class AsyncParser[-T]( val parsers : Pool[AsyncXMLStreamReader], val ch
 
   val feeder : AsyncInputFeeder
   val buffer = bytePool.grab
+
+  protected val pf : AsyncXMLInputFactory
 
   val token : Token
 
@@ -64,7 +66,8 @@ abstract class AsyncParser[-T]( val parsers : Pool[AsyncXMLStreamReader], val ch
   protected def doClose = { 
     bytePool.giveBack(buffer)
     feeder.endOfInput
-    parsers.giveBack(parser)
+    parser.close
+    parsers.giveBack(pf)
   }
 }
 
@@ -72,13 +75,16 @@ object AsyncParser {
   /**
    * Creates a parser based on the input channel provided
    */
-  def apply[T, TokenT <: OptimisationToken]( channel : ReadableByteChannel, optimisationStrategy : MemoryOptimisationStrategy[TokenT] = defaultOptimisation, bytePool : Pool[ByteBuffer] = defaultBufferPool, parsers : Pool[AsyncXMLStreamReader] = AsyncStreamReaderPool )( implicit xmlVersion : XmlVersion, ev : PullTypeEvidence[T] ) : AsyncParser[T] = new AsyncParser[T](parsers, channel, bytePool){
+  def apply[T, TokenT <: OptimisationToken]( channel : ReadableByteChannel, optimisationStrategy : MemoryOptimisationStrategy[TokenT] = defaultOptimisation, bytePool : Pool[ByteBuffer] = defaultBufferPool, parsers : Pool[AsyncXMLInputFactory] = AsyncXMLInputFactoryPool )( implicit xmlVersion : XmlVersion, ev : PullTypeEvidence[T] ) : AsyncParser[T] = new AsyncParser[T](parsers, channel, bytePool){
     type Token = TokenT
     val strategy = optimisationStrategy
     
     import PullUtils.weAreInAParser
     val token = strategy.createToken
-    val parser = parsers.grab
+
+    val pf = parsers.grab
+
+    val parser = pf.createAsyncXMLStreamReader()
     val feeder = parser.getInputFeeder
   }
 }
@@ -94,11 +100,13 @@ import scalaz.IterV._
 final class AsyncParserEnumerator extends Enumerator[AsyncParser] {
 
   def jbytes[E](parser : AsyncParser[E]) : (Array[Byte], Int) = {
+    parser.buffer.clear()
     val read = parser.channel.read(parser.buffer)
     (parser.buffer.array, read)
   }
 
   def direct[E](to : Array[Byte])(parser : AsyncParser[E]) : (Array[Byte], Int) = {
+    parser.buffer.clear()
     val read = parser.channel.read(parser.buffer)
     if (read != -1) {
       parser.buffer.get(to)
@@ -179,12 +187,18 @@ final class AsyncParserEnumerator extends Enumerator[AsyncParser] {
       }
 
       i match {
-//	case _ if !parser.parser.hasNext => i // doesn't matter if its EOF or not
+	case _ if parser.isClosed => 
+	  //println("closed and got " +i)
+	  i // either external or due to -1 from bytes
 	case Done(acc, input) => i
 	case Cont(k) =>
+	  //println("cont")
+
           if (parser.feeder.needMoreInput) {
+	    
 	    // attempt to pump out
 	    val (ar, read) = bytes()
+	    //println("more "+ar+", "+read)
 	    read match {
 	      case -1 => 
 		parser.closeResource
@@ -205,10 +219,14 @@ final class AsyncParserEnumerator extends Enumerator[AsyncParser] {
 	    }
 	    
 	  } else {
+	    //println("enough")
+
 	    pump(k)
 	  }
       }
     }
+    //println("starting ")
+
     intern(parser, i, 
 	  if (parser.buffer.hasArray)
 	    () => jbytes(parser)

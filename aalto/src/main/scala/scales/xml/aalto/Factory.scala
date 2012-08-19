@@ -10,21 +10,17 @@ import scales.xml._
 /**
  * Default AsyncXMLInputFactory impl
  */ 
-object AsyncStreamReaderPool extends scales.utils.SimpleUnboundedPool[AsyncXMLStreamReader] {
-
+object AsyncXMLInputFactoryPool extends scales.utils.SimpleUnboundedPool[AsyncXMLInputFactory] { pool =>
+  
   val cdata = "http://java.sun.com/xml/stream/properties/report-cdata-event"
 
-  val fac = {
-    val tf = new InputFactoryImpl()
-
-    if (tf.isPropertySupported(cdata)) {
-      tf.setProperty(cdata, java.lang.Boolean.TRUE);
+  def create = {
+    val fac = new InputFactoryImpl()
+    if (fac.isPropertySupported(cdata)) {
+      fac.setProperty(cdata, java.lang.Boolean.TRUE);
     }
-    tf
+    fac
   }
-
-  def create =
-    fac.createAsyncXMLStreamReader()
 										   }
 
 /**
