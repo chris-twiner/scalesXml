@@ -244,5 +244,77 @@ class DslBuildersTest29 extends junit.framework.TestCase {
 	       res.right.get eq AddedBeforeOrAfterRoot)
   }
 
+  def testOptionalAttrib : Unit = {
+    val ns = Namespace("test:uri")
+
+    val emptyRoot = <(ns("Elem"))
+    
+    val builder = 
+      ns("Elem") /@ None
+    
+    assertTrue( emptyRoot === builder )
+  }
+
+  def testIterableAttribs : Unit = {
+    val ns = Namespace("test:uri")
+
+    val emptyRoot = <(ns("Elem"))
+    
+    val builder = 
+      ns("Elem") /@( List() )
+    
+    assertTrue( emptyRoot === builder )  
+
+    val builder2 = 
+      ns("Elem") /@( "attr2" -> "val2" )
+    val builder3 = 
+      ns("Elem") /@( one[Attribute]("attr2" -> "val2") )
+    
+    assertTrue( builder2 === builder3 )
+  }
+
+  def testOptionalText : Unit = {
+    val ns = Namespace("test:uri")
+
+    val emptyRoot = <(ns("Elem"))
+    
+    val builder = 
+      ns("Elem") ~> None
+    val builder2 = 
+      ns("Elem").setValue( None )
+    
+    assertTrue( emptyRoot === builder )
+    assertTrue( emptyRoot === builder2 )
+  }
+
+  def testNoneDestructiveText : Unit = {
+    val ns = Namespace("test:uri")
+
+    val hasKids = 
+      ns("Elem") ~> "fred"
+
+    val noneKid = hasKids ~> None
+    
+    assertTrue( hasKids === noneKid )
+  }
+
+  def testOptionalChild : Unit = {
+    val ns = Namespace("test:uri")
+
+    val hasKids = 
+      ns("Elem") /( ns("elem"), ns("elem") )
+
+    val additional = hasKids /( Some[ItemOrElem](ns("additional")) )
+
+    val wholeFamily = 
+      ns("Elem") /( ns("elem"), ns("elem"), ns("additional") )
+
+    assertTrue( additional === wholeFamily )
+    
+    val nonDestructive = wholeFamily /( None )
+
+    assertTrue( additional === nonDestructive )
+  }
+
 }
   
