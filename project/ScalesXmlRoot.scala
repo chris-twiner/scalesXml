@@ -110,10 +110,10 @@ object ScalesXmlRoot extends Build {
 */
 //    organization := "org.scalesxml",
     offline := true,
-    version := "0.3.2",
+    version := "0.3.3",
 //    scalaVersion := "2.9.2",
-    scalaVersion := "2.10.0-M6",
-    crossScalaVersions := Seq("2.8.1", "2.8.2", "2.9.1", "2.9.2", "2.10.0-M6"),
+    scalaVersion := "2.10.0-M7",
+    crossScalaVersions := Seq("2.8.1", "2.8.2", "2.9.1", "2.9.2", "2.10.0-M6", "2.10.0-M7"),
     //publishSetting,
 //    parallelExecution in Test := false,
     scalacOptions ++= Seq("-optimise"),
