@@ -185,9 +185,11 @@ class DslBuilder private( tree : XmlTree ) {
   /**
    * sets the tree to a single Text node child, replacing all others
    */
-  def ~>( value : String ) = // note ~> is used not -> as it will then get in the way of the tupler
-    new DslBuilder( tree.copy(children = emptyChildren :+ item[XmlItem, Elem, XCC](Text(value))))
-
+  def ~>( value : String ) : DslBuilder = // note ~> is used not -> as it will then get in the way of the tupler
+    if (value ne null)
+      new DslBuilder( tree.copy(children = emptyChildren :+ item[XmlItem, Elem, XCC](Text(value))))
+    else this
+    
   /**
    * see ~>
    */ 
@@ -202,7 +204,7 @@ class DslBuilder private( tree : XmlTree ) {
    *
    * would leave an empty <root/>
    */
-  def ~>( value : Option[String] ) = 
+  def ~>( value : Option[String] ) : DslBuilder = 
     value.map{ v =>
       new DslBuilder( tree.copy(children = emptyChildren :+ item[XmlItem, Elem, XCC](Text(v))))
 	    }.getOrElse{this}

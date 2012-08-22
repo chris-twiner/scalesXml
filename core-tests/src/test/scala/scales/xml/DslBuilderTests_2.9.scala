@@ -282,9 +282,12 @@ class DslBuildersTest29 extends junit.framework.TestCase {
       ns("Elem") ~> None
     val builder2 = 
       ns("Elem").setValue( None )
+    val builder3 = 
+      ns("Elem").setValue( null : String )
     
     assertTrue( emptyRoot === builder )
     assertTrue( emptyRoot === builder2 )
+    assertTrue( emptyRoot === builder3 )
   }
 
   def testNoneDestructiveText : Unit = {
