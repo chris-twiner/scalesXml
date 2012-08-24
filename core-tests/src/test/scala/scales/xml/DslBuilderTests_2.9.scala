@@ -273,6 +273,9 @@ class DslBuildersTest29 extends junit.framework.TestCase {
     assertTrue( builder2 === builder3 )
   }
 
+  def template(optional : Option[String]) =
+    ns("Elem") ~> optional
+
   def testOptionalText : Unit = {
     val ns = Namespace("test:uri")
 
@@ -284,10 +287,35 @@ class DslBuildersTest29 extends junit.framework.TestCase {
       ns("Elem").setValue( None )
     val builder3 = 
       ns("Elem").setValue( null : String )
-    
+    val builder4 = template(None)
+
     assertTrue( emptyRoot === builder )
     assertTrue( emptyRoot === builder2 )
     assertTrue( emptyRoot === builder3 )
+    assertTrue( emptyRoot === builder4 )
+  }
+
+  def testSomeText : Unit = {
+    val ns = Namespace("test:uri")
+
+    val nemptyRoot = <(ns("Elem")) ~> "text"
+    
+    val builder = 
+      ns("Elem") ~> Some("text")
+    val builder2 = 
+      ns("Elem").setValue( Some("text") )
+    val builder3 = 
+      ns("Elem").setValue( "text" )
+    val builder4 = 
+      ns("Elem") ~> "text"
+    
+    val builder5 = template(Some("text"))
+
+    assertTrue( nemptyRoot === builder )
+    assertTrue( nemptyRoot === builder2 )
+    assertTrue( nemptyRoot === builder3 )
+    assertTrue( nemptyRoot === builder4 )
+    assertTrue( nemptyRoot === builder5 )
   }
 
   def testNoneDestructiveText : Unit = {
