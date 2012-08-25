@@ -10,19 +10,19 @@ A number of the pain points of Scala XML are also simply removed, want to change
 
 A very flexible XML stream handling approach is based upon StAX and Iteratees (courtesy of Scalaz) which uses the same model as the tree based, no separate event hierarchy needed.
 
-Currently the stable 0.4.2 (and 0.3.2) releases ([site](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.3/index.html)) improves on 0.2.1's fast parsing and low memory usage (which, of course, are coupled) and adds ScalesXPath - a string based XPath 1.0 evaluator, a full compliment of useful axe in the internal XPath syntax, an equality framework (2.9.x only) and general improvements in usability.
+Currently the stable 0.4.3 (and 0.3.3) releases ([site](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.4.3/index.html)) improves on 0.2.1's fast parsing and low memory usage (which, of course, are coupled) and adds ScalesXPath - a string based XPath 1.0 evaluator, a full compliment of useful axe in the internal XPath syntax, an equality framework (2.9.x only) and general improvements in usability.
 
-0.4.2 is simply a rebuild of 0.3.2 against Scalaz 6.0.4.
+0.4.3 is simply a rebuild of 0.3.3 against Scalaz 6.0.4.
 
 The artifacts are now on Maven Central under the group org.scales.xml.
 
 # How To Use
 
-Currently 2.8.1, 2.8.2, 2.9.1, 2.9.2 and 2.10.0-M6 are built against.
+Currently 2.8.1, 2.8.2, 2.9.1 and 2.9.2 (including various 2.10.0 milestones) are built against.
 
 So for sbt its:
 
-    val scalesXml = "org.scalesxml" %% "scales-xml" % "0.4.2" // or 0.3.2 for Scalaz 6.0.3 usage
+    val scalesXml = "org.scalesxml" %% "scales-xml" % "0.4.3" // or 0.3.3 for Scalaz 6.0.3 usage
 
 xsbt 0.10+ its:
 
@@ -39,9 +39,9 @@ Maven repos should therefore use org.scalesxml scales-xml_2.9.2 as the dependenc
 
     resolvers += "Scales Repo" at "http://scala-scales.googlecode.com/svn/repo"
 
-[The 0.3.1 documentation site is here](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.3/index.html) and zip of the site documentation is available at [scales-xml.zip](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.3/org.scalesxml-scales-xml-0.3-site.zip).
+[The 0.4.3 documentation site is here](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.4.3/index.html) and zip of the site documentation is available at [scales-xml.zip](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.4.3/org.scalesxml-scales-xml-0.4.3-site.zip).
 
-_Warning_ local file based sites do not fully work in Chrome, use Firefox or IE in preference.
+_Warning_ local file based offline sites may not fully work in Chrome, use Firefox or IE as needed.
 
 # Mailing List
 
