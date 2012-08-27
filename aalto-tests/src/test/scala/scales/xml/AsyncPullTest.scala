@@ -21,8 +21,10 @@ class AsyncPullTest extends junit.framework.TestCase {
   import scalaz.IterV._
 
   import scales.utils.{resource => sresource}
+  
+  val aenum = new AsyncParserEnumerator()
 
-  implicit val enum : Enumerator[AsyncParser] = new AsyncParserEnumerator()
+  implicit val enum : Enumerator[AsyncParser] = aenum
  
   /**
    * Drain through all, returning the last
@@ -46,6 +48,7 @@ class AsyncPullTest extends junit.framework.TestCase {
   val tinyBuffers = new JVMBufferPool( bufferSize = 10 )
 
   def testSimpleLoadTinyBuffer = {
+    aenum.reset
     val url = sresource(this, "/data/BaseXmlTest.xml")
 
     val channel = Channels.newChannel(url.openStream())
@@ -75,6 +78,7 @@ class AsyncPullTest extends junit.framework.TestCase {
 
 /* */
   def testSimpleLoad = {
+    aenum.reset
     val url = sresource(this, "/data/BaseXmlTest.xml")
 
     val channel = Channels.newChannel(url.openStream())
@@ -88,5 +92,7 @@ class AsyncPullTest extends junit.framework.TestCase {
     val e = iter(parser).run
     assertEquals("{urn:default}Default", e.right.get.name.qualifiedName)
   }
+
+  
 
 }

@@ -117,6 +117,7 @@ object ScalesXmlRoot extends Build {
     offline := true,
     version := "0.5-SNAPSHOT",
     scalaVersion := "2.9.2",
+//    scalaVersion := "2.10.0-M7",
     crossScalaVersions := Seq("2.8.1", "2.8.2", "2.9.1", "2.9.2","2.10.0-M7"),
     //publishSetting,
 //    parallelExecution in Test := false,
