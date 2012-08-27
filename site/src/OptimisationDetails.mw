@@ -18,7 +18,7 @@ EitherLike is currently not used for pull parsing due to Scalas / JVMs understan
 
 == TreeOptimisation ==
 
-The TreeOptimisation trait provides a simple way to mix in optimisations on Tree, see the [./doc/scales/xml/strategies/TreeOptimisation$.html docs] and [./api.sxr/scales/xml/strategies/TreeOptimisations.scala.html source] for example implementations (QNameTreeOptimisation and QNameElemTreeOptimisation).
+The TreeOptimisation trait provides a simple way to mix in optimisations on Tree, see the [./doc/scales/xml/strategies/TreeOptimisation.html docs] and [./api.sxr/scales/xml/strategies/TreeOptimisations.scala.html source] for example implementations (QNameTreeOptimisation and QNameElemTreeOptimisation).
 
 The base Tree type is itself (as of 0.3) just an interface, allowing reduced memory usage in common cases (eg. repeated name value style elements) and a simple xml object conversion approach, where children may be lazily mapped.
 

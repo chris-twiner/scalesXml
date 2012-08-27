@@ -48,6 +48,7 @@
 ;** [XmlDsl.html#Setting_Text Setting Text]
 ;** [XmlDsl.html#Removing_Children Removing Children]
 ;** [XmlDsl.html#Removing_Attributes Removing Attributes]
+;** [XmlDsl.html#Optional_XML Optional XML]
 ;** [XmlDsl.html#Folding_Within_The_DSL Folding Within The DSL]
 
 ; '''Accessing and Querying Data'''

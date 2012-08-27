@@ -24,7 +24,8 @@ object ScalesXmlRoot extends Build {
     // Override more to taste
   }
 
-  lazy val root = Project("scales-xml-root", file("."), settings = standardSettings ++ dontPublishSettings) aggregate(core, coreTests, jaxen, saxonTests, jaxenTests, aalto, aaltoTests)
+  lazy val root = Project("scales-xml-root", file("."), settings = standardSettings ++ dontPublishSettings) aggregate(core, coreTests, jaxen, saxonTests, jaxenTests
+, aalto, aaltoTests)
 
   lazy val core = Project("scales-xml", file("core"), settings = standardSettings ++ deployOrg)
 
@@ -116,8 +117,7 @@ object ScalesXmlRoot extends Build {
     offline := true,
     version := "0.5-SNAPSHOT",
     scalaVersion := "2.9.2",
-    //scalaVersion := "2.10.0-M6",
-    crossScalaVersions := Seq("2.8.1", "2.8.2", "2.9.1", "2.9.2", "2.10.0-M6"),
+    crossScalaVersions := Seq("2.8.1", "2.8.2", "2.9.1", "2.9.2","2.10.0-M7"),
     //publishSetting,
 //    parallelExecution in Test := false,
     scalacOptions ++= Seq("-optimise"),
@@ -129,6 +129,7 @@ object ScalesXmlRoot extends Build {
       //,(SEALED, "true")
       )
     ),
+//    (scaladocOptions in Compile in doc) += "-diagrams",
     autoCompilerPlugins := false,
     fork in run := true, 
     parallelExecution in runSecurely := false

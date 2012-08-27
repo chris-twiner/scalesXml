@@ -119,6 +119,22 @@ ext</fred><Child xmlns=""/></Elem>
   val dsl8 = dsl7 -/@ "attr"
 ${cend}
 
+== Optional XML ==
+
+When using the DSL to template XML its often necessary to express optional content.  This can be expressed via direct use of Option for an attribute, child or text directly:
+
+${cscala}
+  def template(optionalText : Option[String) =
+    ns("Elem") ~> optionalText
+
+  val hasTextChild = template(Some("text"))
+  val hasNoChildren = template(None)
+${cend}
+
+As hasNoChildren demonstrates, when using None, there will be no child added.  Using "" instead, would add an empty Child, whilst semantically identical upon serialization it changes the meaning of the in-memory DOM itself.
+
+The Attribute and child variants function in the same way.
+
 == Folding Within The DSL ==
 
 The XPath fold facility is also present directly from the DSL, letting you stay within the tree building and manipulate at the same time with the full power of the DSL.
