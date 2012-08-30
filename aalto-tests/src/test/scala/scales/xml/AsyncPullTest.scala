@@ -125,11 +125,81 @@ class AsyncPullTest extends junit.framework.TestCase {
     (closer, iter)
   }
 
-  def testSimpleLoadSerializing = {
-    aenum.reset
+  /**
+   * Hideously spams with various sizes of data, and more than a few 0 lengths.
+   *
+   * The aim is to test the proverbial out of the asynch code.  It should be able to handle being called with a single byte repeatedly.
+   */ 
+  def testRandomAmounts = {
     val url = sresource(this, "/data/BaseXmlTest.xml")
 
-    val str = asString(loadXmlReader(url, parsers = NoVersionXmlReaderFactoryPool).rootElem)
+    val doc = loadXmlReader(url, parsers = NoVersionXmlReaderFactoryPool)
+    val str = asString(doc)
+
+    val stream = url.openStream()
+
+    val ourbuf = Array.ofDim[Byte](10)
+
+    val rand = new scala.util.Random()
+
+    var zerod = 0
+
+    val randomChannel = new java.nio.channels.ReadableByteChannel {
+      var closed = false
+      def read( buf : java.nio.ByteBuffer ) : Int = {
+	val red = rand.nextInt(10)
+	if (red == 0) {
+	  zerod += 1
+	}
+	val did = stream.read(ourbuf, 0, red)
+	if (did > -1) {
+	  buf.put(ourbuf, 0, did)
+	}
+	did
+      }
+      def close = { closed = true; stream.close }
+      def isOpen = !closed
+    }
+
+    val parser = AsyncParser(randomChannel, bytePool = tinyBuffers)
+
+    val strout = new java.io.StringWriter()
+    val (closer, iter) = pushXml( strout , doc )
+
+    var c = iter(parser).eval
+    var count = 1
+    while(!isDone(c)) {
+      count += 1
+      c = c.fold[SerialIterT]( 
+	done = (a,b) => error("Was done"),
+	cont = k => k(EOF[PullType])
+	)
+    }
+    println("eval'd "+ count +" times ") 
+    println("got a zero len "+zerod+" times ")
+
+    assertTrue("should have been EOF", isEOF(c))
+
+    c.fold[Unit](
+      done = (a,i) => {
+	val (out, thrown) = a
+	assertFalse( "shouldn't have thrown", thrown.isDefined)
+	//println(" iter was " + strout.toString)
+	assertTrue("should have been auto closed", closer.isClosed)
+	assertEquals(str, strout.toString)
+      },
+      cont = f => error("Should have been done")
+    )
+
+  }  
+
+  // TODO end misc
+
+  def testSimpleLoadSerializing = {
+    val url = sresource(this, "/data/BaseXmlTest.xml")
+
+    val doc = loadXmlReader(url, parsers = NoVersionXmlReaderFactoryPool)
+    val str = asString(doc)
 
 //    println("asString is " + str)
     val channel = Channels.newChannel(url.openStream())
@@ -137,7 +207,7 @@ class AsyncPullTest extends junit.framework.TestCase {
     val parser = AsyncParser(channel)
 
     val strout = new java.io.StringWriter()
-    val (closer, iter) = pushXml( strout )
+    val (closer, iter) = pushXml( strout , doc )
 
     // we can swallow the lot
     val (out, thrown) = iter(parser).run
@@ -148,7 +218,6 @@ class AsyncPullTest extends junit.framework.TestCase {
   }
 
   def testSimpleLoadTinyBuffer = {
-    aenum.reset
     val url = sresource(this, "/data/BaseXmlTest.xml")
 
     val channel = Channels.newChannel(url.openStream())
@@ -178,7 +247,6 @@ class AsyncPullTest extends junit.framework.TestCase {
 
 /* */
   def testSimpleLoad = {
-    aenum.reset
     val url = sresource(this, "/data/BaseXmlTest.xml")
 
     val channel = Channels.newChannel(url.openStream())

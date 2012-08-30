@@ -99,13 +99,6 @@ import scalaz.IterV._
 
 final class AsyncParserEnumerator extends Enumerator[AsyncParser] {
 
-  def reset {stack = -1}
-  var stack = -1
-  def inc { stack += 1; 
-	   if (stack > 0)
-	   println("inced " + stack) }
-  def dec { stack -= 1 }
-
   def jbytes[E](parser : AsyncParser[E]) : (Array[Byte], Int) = {
     parser.buffer.clear()
     val read = parser.channel.read(parser.buffer)
