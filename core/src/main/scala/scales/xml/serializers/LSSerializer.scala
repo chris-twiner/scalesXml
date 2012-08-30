@@ -8,56 +8,74 @@ import scales.xml._
 
 import scales.utils._
 
+import javax.xml.parsers._
+
 /**
  * Base implementation for a correct serializer using LSSerializer to provide escape character references.
  *
  * Developers can override this directly implementing encF, or choose to override createSerializer to further change serialization behaviour
  */ 
 trait LSSerializerFactoryBase extends SerializerFactory {
-  import javax.xml.parsers._
   import org.w3c.dom._
   import ls._
+
+  type ExactSerializer = serializers.LSSerializer
 
   /**
    * Override to create the serialazer
    */ 
-  def createSerializer( sdata: SerializerData, ndoc : org.w3c.dom.Document) : serializers.LSSerializer = new serializers.LSSerializer {
-          val data = sdata
-          val encMap = encF(sdata.encoding)
-          lazy val doc = ndoc
-          lazy val impl = doc.getImplementation().asInstanceOf[DOMImplementationLS]
-          lazy val lsout = impl.createLSOutput()
-          lazy val lsaout = impl.createLSOutput()
-          lazy val lss = impl.createLSSerializer()
-        }
+  def createSerializer( sdata: SerializerData, dbf : DocumentBuilderFactory) : serializers.LSSerializer = {
+    val db = dbf.newDocumentBuilder
+    val ndoc = db.newDocument()
+    ndoc.setXmlVersion(sdata.version.version)
+
+    new serializers.LSSerializer {
+      val docBuilderF = dbf
+      val data = sdata
+      val encMap = encF(sdata.encoding)
+      lazy val doc = ndoc
+      lazy val impl = doc.getImplementation().asInstanceOf[DOMImplementationLS]
+      lazy val lsout = impl.createLSOutput()
+      lazy val lsaout = impl.createLSOutput()
+      lazy val lss = impl.createLSSerializer()
+    }
+  }
 
   /**
    * Can the content be encoded in a given charset
    */
   val encF: Charset => String => Option[Throwable]
 
+  def borrow( sdata : SerializerData ) : ExactSerializer = {
+    val dbf = DefaultDOMFactoryPool.grab
+
+    val s = createSerializer(sdata, dbf)
+    s.lsout.setEncoding(sdata.encoding.displayName)
+    s.lsout.setCharacterStream(sdata.out)
+    s.lsaout.setEncoding(sdata.encoding.displayName)
+
+    val dc = s.lss.getDomConfig // got to be the lss, as the xalan impl is unrelated 
+    //println("Configured with LSSerializer " + s.lss.getClass.getName)
+    //val xs = new org.apache.xml.serializer.dom3.LSSerializerImpl
+    // if the user wants to add a cdata then we shouldn't split it, but "throw"
+    // NOTE that no implementation does this for ä and only for ]]>
+    dc.setParameter("split-cdata-sections", false)
+    dc.setParameter("well-formed", true)
+    dc.setParameter("xml-declaration", false)
+
+    s    
+  }
+
+  def giveBack( serializer : ExactSerializer ) {
+    DefaultDOMFactoryPool.giveBack( serializer.docBuilderF )
+  }
+
   def apply[R](thunk: Serializer => R)(sdata: SerializerData): R = {
-    DefaultDOMFactoryPool.parsers.loan { db =>
-      val ndoc = db.newDocument()
-      ndoc.setXmlVersion(sdata.version.version)
-
-      thunk({
-        val s = createSerializer(sdata, ndoc)
-        s.lsout.setEncoding(sdata.encoding.displayName)
-        s.lsout.setCharacterStream(sdata.out)
-        s.lsaout.setEncoding(sdata.encoding.displayName)
-
-        val dc = s.lss.getDomConfig // got to be the lss, as the xalan impl is unrelated 
-        //println("Configured with LSSerializer " + s.lss.getClass.getName)
-        //val xs = new org.apache.xml.serializer.dom3.LSSerializerImpl
-        // if the user wants to add a cdata then we shouldn't split it, but "throw"
-        // NOTE that no implementation does this for ä and only for ]]>
-        dc.setParameter("split-cdata-sections", false)
-        dc.setParameter("well-formed", true)
-        dc.setParameter("xml-declaration", false)
-
-        s
-      })
+    val s = borrow(sdata)
+    try {
+      thunk(s)
+    } finally {
+      giveBack(s)
     }
   }
 
@@ -76,16 +94,22 @@ trait LSSerializerConcurrentCacheFactoryXHTML extends LSSerializerConcurrentCach
   /**
    * Override to create the serialazer
    */ 
-  override def createSerializer( sdata: SerializerData, ndoc : org.w3c.dom.Document) : serializers.LSSerializer = new serializers.XHTMLLSSerializer {
-          val data = sdata
-          val encMap = encF(sdata.encoding)
-          lazy val doc = ndoc
-          lazy val impl = doc.getImplementation().asInstanceOf[DOMImplementationLS]
-          lazy val lsout = impl.createLSOutput()
-          lazy val lsaout = impl.createLSOutput()
-          lazy val lss = impl.createLSSerializer()
-        }
+  override def createSerializer( sdata: SerializerData, dbf : DocumentBuilderFactory) : serializers.LSSerializer = {
+    val db = dbf.newDocumentBuilder
+    val ndoc = db.newDocument()
+    ndoc.setXmlVersion(sdata.version.version)
 
+    new serializers.XHTMLLSSerializer {
+      val docBuilderF = dbf
+      val data = sdata
+      val encMap = encF(sdata.encoding)
+      lazy val doc = ndoc
+      lazy val impl = doc.getImplementation().asInstanceOf[DOMImplementationLS]
+      lazy val lsout = impl.createLSOutput()
+      lazy val lsaout = impl.createLSOutput()
+      lazy val lss = impl.createLSSerializer()
+    }
+  }
 }
 
 
@@ -188,6 +212,7 @@ trait LSSerializer extends Serializer {
   val data: SerializerData
   import data._
 
+  val docBuilderF: DocumentBuilderFactory
   val doc: Document
   val impl: DOMImplementationLS
   val lsout: LSOutput

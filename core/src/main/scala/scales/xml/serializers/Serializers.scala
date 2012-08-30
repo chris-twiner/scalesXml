@@ -42,7 +42,11 @@ case class SerializerData(out: Writer, version: XmlVersion = ScalesXml.defaultVe
  *
  */
 trait SerializerFactory {
+  type ExactSerializer <: Serializer
+  
   def apply[R](thunk: Serializer => R)(data: SerializerData): R
+  def borrow(data : SerializerData) : ExactSerializer
+  def giveBack(serializer : ExactSerializer) : Unit
 }
 
 object SerializerHelpers {
