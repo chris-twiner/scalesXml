@@ -43,9 +43,11 @@ class AsyncPullTest extends junit.framework.TestCase {
 	)
     Cont(step(init) _)
   }
+
+  val smallBufSize = 10
   
   // Tiny jvm buffer, lots of reloading
-  val tinyBuffers = new JVMBufferPool( bufferSize = 10 )
+  val tinyBuffers = new JVMBufferPool( bufferSize = smallBufSize )
 
   import serializers._
 
@@ -59,9 +61,13 @@ class AsyncPullTest extends junit.framework.TestCase {
    * doc functions are only evaluated upon the first elem / last elem
    */
   def serializeIter( output : XmlOutput, serializer : Serializer, closer : () => Unit, doc : DocLike = EmptyDoc()) : SerialIterT = {
+
+    var empties = 0
+
     def done( status : StreamStatus ) : SerialIterT = {
       // give it back
       closer()
+      println("empties was "+empties)
       Done((status.output, status.thrown), EOF[PullType])
     }
 
@@ -74,7 +80,10 @@ class AsyncPullTest extends junit.framework.TestCase {
 	  else Cont(rest(r, e, serializer))
 	}
 	},
-        empty = Cont(rest(status, prev, serializer)),
+        empty = {
+	  empties += 1
+	  Cont(rest(status, prev, serializer))
+	},
         eof =  {
 	if (status.thrown.isDefined) done(status)
 	else {
@@ -95,7 +104,10 @@ class AsyncPullTest extends junit.framework.TestCase {
 	  
 	Cont(rest(nstatus, e, serializer))
 	},
-        empty = Cont(first(status, serializer)),
+        empty = {
+	  empties += 1
+	  Cont(first(status, serializer))
+	},
         eof = Done((status.output, Some(NoDataInStream())), EOF[PullType]))
 
     Cont(first(StreamStatus(output), serializer))
@@ -138,7 +150,7 @@ class AsyncPullTest extends junit.framework.TestCase {
 
     val stream = url.openStream()
 
-    val ourbuf = Array.ofDim[Byte](10)
+    val ourbuf = Array.ofDim[Byte](smallBufSize)
 
     val rand = new scala.util.Random()
 
@@ -147,9 +159,12 @@ class AsyncPullTest extends junit.framework.TestCase {
     val randomChannel = new java.nio.channels.ReadableByteChannel {
       var closed = false
       def read( buf : java.nio.ByteBuffer ) : Int = {
-	val red = rand.nextInt(10)
-	if (red == 0) {
-	  zerod += 1
+	val red = {
+	  val t = rand.nextInt(smallBufSize)
+	  if (t == 0) {
+	    zerod += 1
+	    1
+	  } else t
 	}
 	val did = stream.read(ourbuf, 0, red)
 	if (did > -1) {
@@ -195,7 +210,7 @@ class AsyncPullTest extends junit.framework.TestCase {
 
   // TODO end misc
 
-  def testSimpleLoadSerializing = {
+/*  def testSimpleLoadSerializing = {
     val url = sresource(this, "/data/BaseXmlTest.xml")
 
     val doc = loadXmlReader(url, parsers = NoVersionXmlReaderFactoryPool)
@@ -260,7 +275,7 @@ class AsyncPullTest extends junit.framework.TestCase {
     val e = iter(parser).run
     assertEquals("{urn:default}Default", e.right.get.name.qualifiedName)
   }
-
+*/
   
 
 }

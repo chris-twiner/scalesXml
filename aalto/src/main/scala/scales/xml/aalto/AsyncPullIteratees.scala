@@ -128,6 +128,8 @@ final class AsyncParserEnumerator extends Enumerator[AsyncParser] {
 
   def apply[E,A](parser: AsyncParser[E], i: IterV[E,A]): IterV[E,A] = {
 
+    var empties = 0
+
     def pump[E](parser: AsyncParser[E], depth : Int, started : Boolean) : Option[(Input[E], Int, Boolean)] = {
       // don't have to re-read, let it push what it has
       if (depth == -1) {
@@ -142,6 +144,8 @@ final class AsyncParserEnumerator extends Enumerator[AsyncParser] {
 	
 	if (num == END_DOCUMENT) {
 	  // EOF - let the iter deal 
+	  println("parser incompletes depth 1 "+ empties)
+	  parser.closeResource
 	  Some((EOF[E], odepth, started))
 	} else if (num == EVENT_INCOMPLETE) {
 	  None//pumpInMisc
@@ -170,9 +174,12 @@ final class AsyncParserEnumerator extends Enumerator[AsyncParser] {
 
 	if (num == END_DOCUMENT) {
 	  // EOF - let the iter deal -- should not occur here though, only when depth == -1
+	  println("parser incompletes in events "+ empties)
+	  parser.closeResource
 	  Some((EOF[E], odepth, started))
 	} else if (num == EVENT_INCOMPLETE) {
 	  // let the iter attempt to deal
+	  empties += 1
 	  Some((IterV.Empty[E], odepth, started))
 	} else {
 	  // actual data present, odepth -1 is looked at for the next iter
@@ -199,6 +206,7 @@ final class AsyncParserEnumerator extends Enumerator[AsyncParser] {
 	    read match {
 	      case -1 => 
 		parser.closeResource
+		println("parser incompletes in read  "+ empties)
 		intern(parser, k(EOF[E]), bytes, depth, started)
 	      case 0 =>
 		intern(parser, k(IterV.Empty[E]), bytes, depth, started)
