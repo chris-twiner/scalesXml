@@ -189,7 +189,7 @@ final class AsyncParserEnumerator extends Enumerator[AsyncParser] {
     }
 
     @annotation.tailrec
-    def intern[E,A](parser: AsyncParser[E], i: IterV[E,A], bytes : () => (Array[Byte], Int), depth : Int, started : Boolean): IterV[E,A] = 
+    def intern[E,A](parser: AsyncParser[E], i: IterV[E,A], bytes : () => (Array[Byte], Int), depth : Int, started : Boolean): IterV[E,A] =       
       i match {
 	case _ if parser.isClosed => 
 	  //println("closed and got " +i)
@@ -209,7 +209,14 @@ final class AsyncParserEnumerator extends Enumerator[AsyncParser] {
 		println("parser incompletes in read  "+ empties)
 		intern(parser, k(EOF[E]), bytes, depth, started)
 	      case 0 =>
-		intern(parser, k(IterV.Empty[E]), bytes, depth, started)
+		// if its done, we can bomb early, if not we shouldn't ping pong
+		// but dump out early
+		val res = k(IterV.Empty[E])
+		if (isDone(res)) 
+		  res
+		else
+		  throw new ContMe[E,A](parser, res, bytes, depth, started)
+		//intern(parser, k(IterV.Empty[E]), bytes, depth, started)
 	      case _ =>
 		// feed data in
 		parser.feeder.feedInput(ar, 0, read)
@@ -219,13 +226,25 @@ final class AsyncParserEnumerator extends Enumerator[AsyncParser] {
 		  throw new NeedsRingBuffer("Was pumped, but needs more to do anything, which requires us to add a ring")
 		} else {
 		  // we can pump
+		  //println("enough")
 		  val o = pump(parser, depth, started)
 		  o match {
 		    case Some((in, odepth, ostarted)) => 
-		      intern(parser, k(in), bytes, odepth, ostarted)
+		      if (IterV.Empty.unapply[E](in)) {
+			// don't ping pong for empty 
+			// as we can only go back out anyway
+			val res = k(in)
+			if (isDone(res))
+			  res
+			else
+			  throw new ContMe[E,A](parser, res, bytes, depth, started)
+		      }
+			else
+			  intern(parser, k(in), bytes, odepth, ostarted)
 		    case _ => 
 		      throw new ContMe[E,A](parser, i, bytes, depth, started)
 		  }
+		  
 		}
 	    }
 	    
@@ -234,7 +253,17 @@ final class AsyncParserEnumerator extends Enumerator[AsyncParser] {
 	    val o = pump(parser, depth, started)
 	    o match {
 	      case Some((in, odepth, ostarted)) => 
-		intern(parser, k(in), bytes, odepth, ostarted)
+		if (IterV.Empty.unapply[E](in)) {
+		  // don't ping pong for empty 
+		  // as we can only go back out anyway
+		  val res = k(in)
+		  if (isDone(res))
+		    res
+		  else
+		    throw new ContMe[E,A](parser, res, bytes, depth, started)
+		}
+		  else
+		    intern(parser, k(in), bytes, odepth, ostarted)
 	      case _ => 
 		throw new ContMe[E,A](parser, i, bytes, depth, started)
 	    }

@@ -21,10 +21,37 @@ class AsyncPullTest extends junit.framework.TestCase {
   import scalaz.IterV._
 
   import scales.utils.{resource => sresource}
+
+
+/**
+ * Runs a previously eval'd continuation to completion - no "Diverging Iteratee" on the first iteration from a cont but may give "Confused Iteratee" when not finding an end state.
+ */ 
+trait RunEval[WHAT,RETURN] {
+  
+  val orig : IterV[WHAT, RETURN]
+
+  def runEval : RETURN = {
+    var i = orig
+    while(!isDone(i)) {
+      i = i.fold(done = (x, y) => Done(x,y),
+	 cont = k => k(EOF[WHAT]))
+    }
+    i.fold(done = (x, _) => x,
+	 cont = k => error("Confused Iteratee!"))
+  }
+}
+
+//trait IterateeImplicits {
+  implicit def toRunEval[WHAT, RETURN]( i : IterV[WHAT, RETURN] ) = new RunEval[WHAT, RETURN] {
+    lazy val orig = i
+  }
+
   
   val aenum = new AsyncParserEnumerator()
 
   implicit val enum : Enumerator[AsyncParser] = aenum
+
+//  def reEval[E,A]( iter : 
  
   /**
    * Drain through all, returning the last
@@ -33,11 +60,15 @@ class AsyncPullTest extends junit.framework.TestCase {
     def step(last : TO)(s: Input[FROM]): IterV[FROM, TO] =
       s(el = e => {
 	val to = f(e)
+//	println(" about to cont to")
 	Cont(step(to)) // swallow them all
       },
-        empty = Cont(step(last)),
+        empty = {
+//	  println(" about to cont last")
+	  Cont(step(last))
+	},
         eof = {
-//	  println(">>>>>>>> last is "+last)
+//	  println(">>>>>>>> last is "+last)	  
 	  Done(last, IterV.EOF[FROM])
 	}
 	)
@@ -141,7 +172,7 @@ class AsyncPullTest extends junit.framework.TestCase {
    * Hideously spams with various sizes of data, and more than a few 0 lengths.
    *
    * The aim is to test the proverbial out of the asynch code.  It should be able to handle being called with a single byte repeatedly.
-   */ 
+   */
   def testRandomAmounts = {
     val url = sresource(this, "/data/BaseXmlTest.xml")
 
@@ -185,10 +216,7 @@ class AsyncPullTest extends junit.framework.TestCase {
     var count = 1
     while(!isDone(c)) {
       count += 1
-      c = c.fold[SerialIterT]( 
-	done = (a,b) => error("Was done"),
-	cont = k => k(EOF[PullType])
-	)
+      c = c.eval
     }
     println("eval'd "+ count +" times ") 
     println("got a zero len "+zerod+" times ")
@@ -210,7 +238,7 @@ class AsyncPullTest extends junit.framework.TestCase {
 
   // TODO end misc
 
-/*  def testSimpleLoadSerializing = {
+  def testSimpleLoadSerializing = {
     val url = sresource(this, "/data/BaseXmlTest.xml")
 
     val doc = loadXmlReader(url, parsers = NoVersionXmlReaderFactoryPool)
@@ -245,17 +273,17 @@ class AsyncPullTest extends junit.framework.TestCase {
 
     var c = iter(parser).eval
     assertFalse(isDone(c))
-    c = iter(parser).eval
+    c = c.eval
     assertFalse(isDone(c))
-    c = iter(parser).eval
+    c = c.eval
     assertFalse(isDone(c))
-    c = iter(parser).eval
-    
-    assertTrue("Should have pumped a whole lot of doc now" + c, isDone(c))
+    c = c.eval
+    assertFalse(isDone(c))
+    //c = c.eval
     
     // finalle
 
-    val e = c(parser).run
+    val e = c.runEval
     assertEquals("{urn:default}Default", e.right.get.name.qualifiedName)
     // purposefully small, well we are async here
   }
@@ -275,7 +303,7 @@ class AsyncPullTest extends junit.framework.TestCase {
     val e = iter(parser).run
     assertEquals("{urn:default}Default", e.right.get.name.qualifiedName)
   }
-*/
+
   
 
 }
