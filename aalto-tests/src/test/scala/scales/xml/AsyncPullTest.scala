@@ -260,7 +260,7 @@ trait RunEval[WHAT,RETURN] {
     assertEquals(str, strout.toString)
   }
 
-  def testSimpleLoadTinyBuffer = {
+  def testSimpleLoadTinyBufferRunEval = {
     val url = sresource(this, "/data/BaseXmlTest.xml")
 
     val channel = Channels.newChannel(url.openStream())
@@ -284,6 +284,35 @@ trait RunEval[WHAT,RETURN] {
     // finalle
 
     val e = c.runEval
+    assertEquals("{urn:default}Default", e.right.get.name.qualifiedName)
+    // purposefully small, well we are async here
+  }
+/*  can't work with normal run as we must bring back a cont, there is no way of moving forward without data. */
+  def testSimpleLoadTinyBufferRunEvalSeperateState = {
+    val url = sresource(this, "/data/BaseXmlTest.xml")
+
+    val channel = Channels.newChannel(url.openStream())
+
+    val parser = AsyncParser(channel, bytePool = tinyBuffers)
+
+    val iter = evalAll(Left(Text("I is a fake")), (p : PullType) => {
+//      println(p)
+      p} )
+
+
+    var c = iter(parser).eval
+    assertFalse(isDone(c))
+    //c = c.eval
+    while(!parser.startedElementProcessing) {
+      c = c.eval
+    }
+    
+    assertFalse("Should not have been done, much more to process", isDone(c))
+
+    // as it has now started and the
+    // parser maintains state, new iter should be working on that
+    
+    val e = iter(parser).runEval
     assertEquals("{urn:default}Default", e.right.get.name.qualifiedName)
     // purposefully small, well we are async here
   }
