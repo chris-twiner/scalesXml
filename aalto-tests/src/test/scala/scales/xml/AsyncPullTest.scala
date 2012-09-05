@@ -287,6 +287,39 @@ trait RunEval[WHAT,RETURN] {
     assertEquals("{urn:default}Default", e.right.get.name.qualifiedName)
     // purposefully small, well we are async here
   }
+
+  /**
+   * ensure that the enumerator doesn't break basic assumptions when it can get
+   * all the data
+   */ 
+  def testFlatMapMultipleDones = {
+    val url = sresource(this, "/data/BaseXmlTest.xml")
+
+    val channel = Channels.newChannel(url.openStream())
+
+    val parser = AsyncParser(channel) // let the whole thing be swallowed in one
+    
+    val iter = 
+      for {
+	_ <- peek[PullType]
+	_ <- peek[PullType]
+	_ <- peek[PullType]
+	_ <- peek[PullType]
+	_ <- peek[PullType]
+	i <- evalWith((p : PullType) => {
+//	  println("first is " + p)
+	  p} )
+	j <- dropWhile((p : PullType) => {
+	   p.fold( x => !x.isInstanceOf[Elem] , y => false)
+	  } )
+      } yield j
+    
+    val e = iter(parser).run
+    assertTrue("Should be defined", e.isDefined)
+    assertEquals("{urn:default}DontRedeclare", e.get.left.get.asInstanceOf[Elem].name.qualifiedName)
+    parser.closeResource
+  }
+
 /*  can't work with normal run as we must bring back a cont, there is no way of moving forward without data. */
   def testSimpleLoadTinyBufferRunEvalSeperateState = {
     val url = sresource(this, "/data/BaseXmlTest.xml")
