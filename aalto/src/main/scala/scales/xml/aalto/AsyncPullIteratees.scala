@@ -204,7 +204,9 @@ final class AsyncParserEnumerator extends Enumerator[AsyncParser] {
     (to, read)
   }
 
-  private[this] class ContMe[E,A]( val parser: AsyncParser[E], val i: IterV[E,A], val bytes : () => (Array[Byte], Int)) extends Exception
+  private[this] class ContMe[E,A]( val parser: AsyncParser[E], val i: IterV[E,A], val bytes : () => (Array[Byte], Int)) extends Exception {
+    override def fillInStackTrace() = this
+  }
 
   def apply[E,A](parser: AsyncParser[E], i: IterV[E,A]): IterV[E,A] = {
 

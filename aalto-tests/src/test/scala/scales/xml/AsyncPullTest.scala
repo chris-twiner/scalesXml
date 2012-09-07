@@ -147,13 +147,15 @@ trait RunEval[WHAT,RETURN] {
       cont = f => error("Should have been done")
     )
 
-  }  
+  }
+
+//Array[Byte] => PullType  
 
   def testSimpleLoadSerializingMisc = {
     val url = sresource(this, "/data/MiscTests.xml")
 
     val doc = loadXmlReader(url, parsers = NoVersionXmlReaderFactoryPool)
-    println("doc miscs p "+doc.prolog.misc+ " e "+ doc.end.misc)
+//    println("doc miscs p "+doc.prolog.misc+ " e "+ doc.end.misc)
     val str = asString(doc) // especially needed here as we may have whitespace which isn't collected.
 
 //    println("asString is " + str)
@@ -167,7 +169,7 @@ trait RunEval[WHAT,RETURN] {
     // we can swallow the lot, but endmiscs don't know there is more until the main loop, which needs evaling
     val (out, thrown) = iter(parser).runEval
     assertFalse( "shouldn't have thrown", thrown.isDefined)
-    println(" iter was " + strout.toString)
+//    println(" iter was " + strout.toString)
     assertTrue("should have been auto closed", closer.isClosed)
     assertEquals(str, strout.toString)
   }
@@ -300,6 +302,68 @@ trait RunEval[WHAT,RETURN] {
     assertEquals("{urn:default}Default", e.right.get.name.qualifiedName)
   }
 
+  /**
+   * Enumeratee that folds over the Iteratee with Cont or Done and Empty, returning with Done and EOF.
+   *
+   * Converts ResumableIters on Done via a fold, returning Done only when receiving EOF from the initResumable.
+   *
+   * NB - This can be thought of the reverse of toResumableIter but also accumulating.
+   */
+  def foldOnDoneIter[E,A, ACC]( initAcc : ACC, initIter : ResumableIter[E,A])( f : (ACC, A) => ACC ) : IterV[E, ACC] = {
+    
+    def next( acc : ACC, i : ResumableIter[E,A]) : IterV[E, ACC] = 
+      i.fold( 
+	done = (ac, y) => {
+	  val (e, cont) = ac 
+	  val newacc = f(acc, e)
+	  y match {
+	    case IterV.El(a) =>
+	      error("Cannot process an input element from Done")
+	    case IterV.Empty() => 
+	      // can continue
+	      Cont( (x : Input[E]) => 
+		// is the cont itself actually a don or a cont?
+		next(newacc, 
+		     cont match {
+		       case Done(x,y) => error("got a Done from a resumableIter cont "+ x +" "+y)
+		       case Cont(k) => 
+			 k(x).asInstanceOf[ResumableIter[E,A]]
+		     }
+		      ))
+	    case IterV.EOF() => Done(newacc, IterV.EOF[E])
+	  }
+	},
+	cont = k => Cont((x: Input[E]) => 
+	  next(acc, k(x)))
+      )
+
+    next(initAcc, initIter)
+  }
+
+  def testSimpleLoadAndFold = {
+    val url = sresource(this, "/data/BaseXmlTest.xml")
+
+    val channel = Channels.newChannel(url.openStream())
+
+    val parser = AsyncParser(channel)
+
+    val ns = Namespace("urn:default")
+
+    val iter = foldOnDoneIter( List[String](), 
+      onQNames(List(ns("Default"), "NoNamespace"l,"DontRedeclare"l))){
+	(l, qmatch) => qmatch._2.  // its empty as it was eof
+	  map(p => qname(p.tree) :: l).getOrElse( l )
+      }
+
+    val e = iter(parser).run
+
+    //println(" e is " + e)
+    assertEquals(2, e.size)
+    e match {
+      case List("DontRedeclare", "DontRedeclare") => ()
+      case _ => fail("got "+e)
+    }
+  }
   
 
 }
