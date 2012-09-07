@@ -303,6 +303,45 @@ trait RunEval[WHAT,RETURN] {
   }
 
   /**
+   * Enumeratee that converts input 1:1
+   * String => Int, enumerator Iterator[String] but IterV[Int, Int]
+   */
+  def enumerateeMap[E, A, R]( dest : IterV[A,R])( f : E => A ) : IterV[E, R] = {
+    
+    def next( i : IterV[A,R] ) : IterV[E, R] =
+      i.fold( 
+	done = (a, y) => Done(a, IterV.EOF[E]),
+	cont = k => Cont((x: Input[E]) => 
+	  x( el = e => next(k(IterV.El(f(e)))),
+	    empty = next(k(IterV.Empty[A])),
+	     eof = next(k(IterV.EOF[A])))
+//	  next(k(x))
+	)
+      )
+
+    next(dest)
+  }
+
+  def testSimpleEnumerateeMap = {
+    
+    val i = List("1","2","3","4").iterator
+    
+    val sum : IterV[Int,Int] = {
+	def step(acc : Int)( s : Input[Int] ) : IterV[Int, Int] =
+	  s( el = e => Cont(step(acc + e)),
+	    empty = Cont(step(acc)),
+	    eof = Done(acc, IterV.EOF[Int])
+	  )
+	Cont(step(0))
+      }
+
+    val res = enumerateeMap(sum)( (s : String) => s.toInt )(i).run
+    assertEquals(10, res)
+  }
+  
+
+
+  /**
    * Enumeratee that folds over the Iteratee with Cont or Done and Empty, returning with Done and EOF.
    *
    * Converts ResumableIters on Done via a fold, returning Done only when receiving EOF from the initResumable.
