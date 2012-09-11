@@ -11,7 +11,8 @@ package object xml extends XmlTypes
   with TraxSourceConversions
   with XmlUtils
   with PullIteratees
-  with equals.XmlEquals {
+  with equals.XmlEquals
+  with serializers.SerializingIter {
 
   import strategies.ElemToken
 

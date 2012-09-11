@@ -21,10 +21,36 @@ class AsyncPullTest extends junit.framework.TestCase {
   import scalaz.IterV._
 
   import scales.utils.{resource => sresource}
+
+/**
+ * Runs a previously eval'd continuation to completion - no "Diverging Iteratee" on the first iteration from a cont but may give "Confused Iteratee" when not finding an end state.  Its not in the standard utils as its dangerous and requires knowledge of both the enumerator and the data it enumerates.
+ */ 
+trait RunEval[WHAT,RETURN] {
+  
+  val orig : IterV[WHAT, RETURN]
+
+  def runEval : RETURN = {
+    var i = orig
+    while(!isDone(i)) {
+      i = i.fold(done = (x, y) => Done(x,y),
+	 cont = k => k(EOF[WHAT]))
+    }
+    i.fold(done = (x, _) => x,
+	 cont = k => error("Confused Iteratee!"))
+  }
+}
+
+//trait IterateeImplicits {
+  implicit def toRunEval[WHAT, RETURN]( i : IterV[WHAT, RETURN] ) = new RunEval[WHAT, RETURN] {
+    lazy val orig = i
+  }
+
   
   val aenum = new AsyncParserEnumerator()
 
   implicit val enum : Enumerator[AsyncParser] = aenum
+
+//  def reEval[E,A]( iter : 
  
   /**
    * Drain through all, returning the last
@@ -33,103 +59,33 @@ class AsyncPullTest extends junit.framework.TestCase {
     def step(last : TO)(s: Input[FROM]): IterV[FROM, TO] =
       s(el = e => {
 	val to = f(e)
+//	println(" about to cont to")
 	Cont(step(to)) // swallow them all
       },
-        empty = Cont(step(last)),
+        empty = {
+//	  println(" about to cont last")
+	  Cont(step(last))
+	},
         eof = {
-//	  println(">>>>>>>> last is "+last)
+//	  println(">>>>>>>> last is "+last)	  
 	  Done(last, IterV.EOF[FROM])
 	}
 	)
     Cont(step(init) _)
   }
+
+  val smallBufSize = 10
   
   // Tiny jvm buffer, lots of reloading
-  val tinyBuffers = new JVMBufferPool( bufferSize = 10 )
+  val tinyBuffers = new JVMBufferPool( bufferSize = smallBufSize )
 
   import serializers._
-
-  import java.nio.charset.Charset
-
-  type SerialIterT = IterV[PullType, (XmlOutput, Option[Throwable])] 
-
-  /**
-   * The serializer will be returned automatically to the pool by calling closer
-   * 
-   * doc functions are only evaluated upon the first elem / last elem
-   */
-  def serializeIter( output : XmlOutput, serializer : Serializer, closer : () => Unit, doc : DocLike = EmptyDoc()) : SerialIterT = {
-    def done( status : StreamStatus ) : SerialIterT = {
-      // give it back
-      closer()
-      Done((status.output, status.thrown), EOF[PullType])
-    }
-
-    def rest( status : StreamStatus, prev : PullType, serializer : Serializer )(s : Input[PullType]) : SerialIterT = {
-      s(el = e => {
-	if (status.thrown.isDefined) done(status)
-	else {
-	  val r = StreamSerializer.pump((prev, e), status, serializer)
-	  if (r.thrown.isDefined) done(r)
-	  else Cont(rest(r, e, serializer))
-	}
-	},
-        empty = Cont(rest(status, prev, serializer)),
-        eof =  {
-	if (status.thrown.isDefined) done(status)
-	else {
-	  val r = StreamSerializer.pump((prev, StreamSerializer.dummy), status, serializer)
-	  // TODO add end misc
-	  done(r)
-	}})
-    }
-    
-    def first( status : StreamStatus, serializer : Serializer )(s : Input[PullType]) : SerialIterT =
-      s(el = e => {
-	// decl and prolog misc, which should have been collected by now
-	val opt = serializer.xmlDeclaration(status.output.data.encoding, 
-				  status.output.data.version).orElse{
-	    serializeMisc(status.output, doc.prolog.misc, serializer)._2
-	  }
-	val nstatus = status.copy(thrown = opt)
-	  
-	Cont(rest(nstatus, e, serializer))
-	},
-        empty = Cont(first(status, serializer)),
-        eof = Done((status.output, Some(NoDataInStream())), EOF[PullType]))
-
-    Cont(first(StreamStatus(output), serializer))
-  }
-
-  /**
-   * Returns an Iteratee that can serialize PullTypes to out.  The serializer factory management is automatically handled upon calling with eof.  This can be triggered earlier by calling closeResource on the returned CloseOnNeed.
-   */ 
-  def pushXml( out: java.io.Writer, doc : DocLike = EmptyDoc(), version: Option[XmlVersion] = None, encoding: Option[Charset] = None )(implicit serializerFI: SerializerFactory) : (CloseOnNeed, SerialIterT) = {
-
-    val decl = doc.prolog.decl
-    val sd = SerializerData(out, 
-      version.getOrElse(decl.version), 
-      encoding.getOrElse(decl.encoding))
-
-    val xo = XmlOutput(sd)(serializerFI)
-
-    val ser = serializerFI.borrow( sd ) 
-
-    val closer : CloseOnNeed = new CloseOnNeed {
-      def doClose() {
-	serializerFI.giveBack(ser)
-      }
-    }
-    val iter = serializeIter( xo, ser, () => closer.closeResource, doc)
-
-    (closer, iter)
-  }
 
   /**
    * Hideously spams with various sizes of data, and more than a few 0 lengths.
    *
    * The aim is to test the proverbial out of the asynch code.  It should be able to handle being called with a single byte repeatedly.
-   */ 
+   */
   def testRandomAmounts = {
     val url = sresource(this, "/data/BaseXmlTest.xml")
 
@@ -138,7 +94,7 @@ class AsyncPullTest extends junit.framework.TestCase {
 
     val stream = url.openStream()
 
-    val ourbuf = Array.ofDim[Byte](10)
+    val ourbuf = Array.ofDim[Byte](smallBufSize)
 
     val rand = new scala.util.Random()
 
@@ -147,9 +103,12 @@ class AsyncPullTest extends junit.framework.TestCase {
     val randomChannel = new java.nio.channels.ReadableByteChannel {
       var closed = false
       def read( buf : java.nio.ByteBuffer ) : Int = {
-	val red = rand.nextInt(10)
-	if (red == 0) {
-	  zerod += 1
+	val red = {
+	  val t = rand.nextInt(smallBufSize)
+	  if (t == 0) {
+	    zerod += 1
+	    1
+	  } else t
 	}
 	val did = stream.read(ourbuf, 0, red)
 	if (did > -1) {
@@ -164,16 +123,13 @@ class AsyncPullTest extends junit.framework.TestCase {
     val parser = AsyncParser(randomChannel, bytePool = tinyBuffers)
 
     val strout = new java.io.StringWriter()
-    val (closer, iter) = pushXml( strout , doc )
+    val (closer, iter) = pushXmlIter( strout , doc )
 
     var c = iter(parser).eval
     var count = 1
     while(!isDone(c)) {
       count += 1
-      c = c.fold[SerialIterT]( 
-	done = (a,b) => error("Was done"),
-	cont = k => k(EOF[PullType])
-	)
+      c = c.eval
     }
     println("eval'd "+ count +" times ") 
     println("got a zero len "+zerod+" times ")
@@ -191,9 +147,32 @@ class AsyncPullTest extends junit.framework.TestCase {
       cont = f => error("Should have been done")
     )
 
-  }  
+  }
 
-  // TODO end misc
+//Array[Byte] => PullType  
+
+  def testSimpleLoadSerializingMisc = {
+    val url = sresource(this, "/data/MiscTests.xml")
+
+    val doc = loadXmlReader(url, parsers = NoVersionXmlReaderFactoryPool)
+//    println("doc miscs p "+doc.prolog.misc+ " e "+ doc.end.misc)
+    val str = asString(doc) // especially needed here as we may have whitespace which isn't collected.
+
+//    println("asString is " + str)
+    val channel = Channels.newChannel(url.openStream())
+
+    val parser = AsyncParser(channel)
+
+    val strout = new java.io.StringWriter()
+    val (closer, iter) = pushXmlIter( strout , doc )
+
+    // we can swallow the lot, but endmiscs don't know there is more until the main loop, which needs evaling
+    val (out, thrown) = iter(parser).runEval
+    assertFalse( "shouldn't have thrown", thrown.isDefined)
+//    println(" iter was " + strout.toString)
+    assertTrue("should have been auto closed", closer.isClosed)
+    assertEquals(str, strout.toString)
+  }
 
   def testSimpleLoadSerializing = {
     val url = sresource(this, "/data/BaseXmlTest.xml")
@@ -207,7 +186,7 @@ class AsyncPullTest extends junit.framework.TestCase {
     val parser = AsyncParser(channel)
 
     val strout = new java.io.StringWriter()
-    val (closer, iter) = pushXml( strout , doc )
+    val (closer, iter) = pushXmlIter( strout , doc )
 
     // we can swallow the lot
     val (out, thrown) = iter(parser).run
@@ -217,7 +196,7 @@ class AsyncPullTest extends junit.framework.TestCase {
     assertEquals(str, strout.toString)
   }
 
-  def testSimpleLoadTinyBuffer = {
+  def testSimpleLoadTinyBufferRunEval = {
     val url = sresource(this, "/data/BaseXmlTest.xml")
 
     val channel = Channels.newChannel(url.openStream())
@@ -230,17 +209,79 @@ class AsyncPullTest extends junit.framework.TestCase {
 
     var c = iter(parser).eval
     assertFalse(isDone(c))
-    c = iter(parser).eval
+    c = c.eval
     assertFalse(isDone(c))
-    c = iter(parser).eval
+    c = c.eval
     assertFalse(isDone(c))
-    c = iter(parser).eval
-    
-    assertTrue("Should have pumped a whole lot of doc now" + c, isDone(c))
+    c = c.eval
+    assertFalse(isDone(c))
+    //c = c.eval
     
     // finalle
 
-    val e = c(parser).run
+    val e = c.runEval
+    assertEquals("{urn:default}Default", e.right.get.name.qualifiedName)
+    // purposefully small, well we are async here
+  }
+
+  /**
+   * ensure that the enumerator doesn't break basic assumptions when it can get
+   * all the data
+   */ 
+  def testFlatMapMultipleDones = {
+    val url = sresource(this, "/data/BaseXmlTest.xml")
+
+    val channel = Channels.newChannel(url.openStream())
+
+    val parser = AsyncParser(channel) // let the whole thing be swallowed in one
+    
+    val iter = 
+      for {
+	_ <- peek[PullType]
+	_ <- peek[PullType]
+	_ <- peek[PullType]
+	_ <- peek[PullType]
+	_ <- peek[PullType]
+	i <- evalWith((p : PullType) => {
+//	  println("first is " + p)
+	  p} )
+	j <- dropWhile((p : PullType) => {
+	   p.fold( x => !x.isInstanceOf[Elem] , y => false)
+	  } )
+      } yield j
+    
+    val e = iter(parser).run
+    assertTrue("Should be defined", e.isDefined)
+    assertEquals("{urn:default}DontRedeclare", e.get.left.get.asInstanceOf[Elem].name.qualifiedName)
+    parser.closeResource
+  }
+
+/*  can't work with normal run as we must bring back a cont, there is no way of moving forward without data. */
+  def testSimpleLoadTinyBufferRunEvalSeperateState = {
+    val url = sresource(this, "/data/BaseXmlTest.xml")
+
+    val channel = Channels.newChannel(url.openStream())
+
+    val parser = AsyncParser(channel, bytePool = tinyBuffers)
+
+    val iter = evalAll(Left(Text("I is a fake")), (p : PullType) => {
+//      println(p)
+      p} )
+
+
+    var c = iter(parser).eval
+    assertFalse(isDone(c))
+    //c = c.eval
+    while(!parser.startedElementProcessing) {
+      c = c.eval
+    }
+    
+    assertFalse("Should not have been done, much more to process", isDone(c))
+
+    // as it has now started and the
+    // parser maintains state, new iter should be working on that
+    
+    val e = iter(parser).runEval
     assertEquals("{urn:default}Default", e.right.get.name.qualifiedName)
     // purposefully small, well we are async here
   }
@@ -261,6 +302,107 @@ class AsyncPullTest extends junit.framework.TestCase {
     assertEquals("{urn:default}Default", e.right.get.name.qualifiedName)
   }
 
+  /**
+   * Enumeratee that converts input 1:1
+   * String => Int, enumerator Iterator[String] but IterV[Int, Int]
+   */
+  def enumerateeMap[E, A, R]( dest : IterV[A,R])( f : E => A ) : IterV[E, R] = {
+    
+    def next( i : IterV[A,R] ) : IterV[E, R] =
+      i.fold( 
+	done = (a, y) => Done(a, IterV.EOF[E]),
+	cont = k => Cont((x: Input[E]) => 
+	  x( el = e => next(k(IterV.El(f(e)))),
+	    empty = next(k(IterV.Empty[A])),
+	     eof = next(k(IterV.EOF[A])))
+//	  next(k(x))
+	)
+      )
+
+    next(dest)
+  }
+
+  def testSimpleEnumerateeMap = {
+    
+    val i = List("1","2","3","4").iterator
+    
+    val sum : IterV[Int,Int] = {
+	def step(acc : Int)( s : Input[Int] ) : IterV[Int, Int] =
+	  s( el = e => Cont(step(acc + e)),
+	    empty = Cont(step(acc)),
+	    eof = Done(acc, IterV.EOF[Int])
+	  )
+	Cont(step(0))
+      }
+
+    val res = enumerateeMap(sum)( (s : String) => s.toInt )(i).run
+    assertEquals(10, res)
+  }
+  
+
+
+  /**
+   * Enumeratee that folds over the Iteratee with Cont or Done and Empty, returning with Done and EOF.
+   *
+   * Converts ResumableIters on Done via a fold, returning Done only when receiving EOF from the initResumable.
+   *
+   * NB - This can be thought of the reverse of toResumableIter but also accumulating.
+   */
+  def foldOnDoneIter[E,A, ACC]( initAcc : ACC, initIter : ResumableIter[E,A])( f : (ACC, A) => ACC ) : IterV[E, ACC] = {
+    
+    def next( acc : ACC, i : ResumableIter[E,A]) : IterV[E, ACC] = 
+      i.fold( 
+	done = (ac, y) => {
+	  val (e, cont) = ac 
+	  val newacc = f(acc, e)
+	  y match {
+	    case IterV.El(a) =>
+	      error("Cannot process an input element from Done")
+	    case IterV.Empty() => 
+	      // can continue
+	      Cont( (x : Input[E]) => 
+		// is the cont itself actually a don or a cont?
+		next(newacc, 
+		     cont match {
+		       case Done(x,y) => error("got a Done from a resumableIter cont "+ x +" "+y)
+		       case Cont(k) => 
+			 k(x).asInstanceOf[ResumableIter[E,A]]
+		     }
+		      ))
+	    case IterV.EOF() => Done(newacc, IterV.EOF[E])
+	  }
+	},
+	cont = k => Cont((x: Input[E]) => 
+	  next(acc, k(x)))
+      )
+
+    next(initAcc, initIter)
+  }
+
+  def testSimpleLoadAndFold = {
+    val url = sresource(this, "/data/BaseXmlTest.xml")
+
+    val channel = Channels.newChannel(url.openStream())
+
+    val parser = AsyncParser(channel)
+
+    val ns = Namespace("urn:default")
+
+    val iter = foldOnDoneIter( List[String](), 
+      onQNames(List(ns("Default"), "NoNamespace"l,"DontRedeclare"l))){
+	(l, qmatch) => qmatch._2.  // its empty as it was eof
+	  map(p => qname(p.tree) :: l).getOrElse( l )
+      }
+
+    val e = iter(parser).run
+
+    //println(" e is " + e)
+    assertEquals(2, e.size)
+    e match {
+      case List("DontRedeclare", "DontRedeclare") => ()
+      case _ => fail("got "+e)
+    }
+  }
   
 
 }

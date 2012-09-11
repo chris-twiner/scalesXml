@@ -9,6 +9,9 @@ import scales.utils._
 import java.nio.ByteBuffer
 import java.nio.channels.ReadableByteChannel
 
+import scalaz._
+import scalaz.IterV._
+
 sealed trait PullTypeEvidence[T]
 
 object PullTypeEvidence {
@@ -19,7 +22,7 @@ object PullTypeEvidence {
  * Represents an asnych parser.  T is a dummy for the enumerator, only PullType is supported.
  * Callers MUST ensure that close is called in the case of an exception as well as the end of processing, failing to do so will cause unnecessary ByteBuffer creation. 
  */ 
-abstract class AsyncParser[-T]( val parsers : Pool[AsyncXMLInputFactory], val channel : ReadableByteChannel, private val bytePool : Pool[ByteBuffer] )(implicit xmlVersion : XmlVersion, ev : PullTypeEvidence[T] ) extends CloseOnNeed with DocLike {
+abstract class AsyncParser[T]( val parsers : Pool[AsyncXMLInputFactory], val channel : ReadableByteChannel, private val bytePool : Pool[ByteBuffer] )(implicit xmlVersion : XmlVersion, ev : PullTypeEvidence[T] ) extends CloseOnNeed with DocLike {
 
   type Token <: OptimisationToken
 
@@ -69,6 +72,95 @@ abstract class AsyncParser[-T]( val parsers : Pool[AsyncXMLInputFactory], val ch
     parser.close
     parsers.giveBack(pf)
   }
+
+  protected var depth = -1
+  protected var started = false
+
+  //private var empties = 0
+
+  /**
+   * The document element has been reached
+   */ 
+  def startedElementProcessing = started
+  
+  protected val incompOrEnd : PullType = Left(Text("I am incomplete or doc end"))
+
+  protected val eventHandler = (x : Int) => {
+    if (x == EVENT_INCOMPLETE || x == END_DOCUMENT)
+      incompOrEnd
+    else
+      error("Got an unexpected event type " + x +" cannot proceed.") 
+  }
+
+  /**
+   * Pushes through Misc items in either prolog or the epilog
+   */
+  protected def pumpMisc() : Option[Input[T]] = {
+
+    val (event, num, odepth, oprolog) = PullUtils.pumpEvent(parser, strategy, token, prolog, depth)(eventHandler)
+
+    depth = odepth
+
+    if (oprolog != prolog) {
+      // doc start
+      copyProlog( oprolog ) 
+    }
+    
+    if (num == END_DOCUMENT) {
+      // EOF - let the iter deal 
+      //println("parser incompletes depth 1 "+ empties)
+      closeResource
+      Some(EOF[T])
+    } else if (num == EVENT_INCOMPLETE) {
+      None//pumpInMisc
+    } else if (odepth == -1) {
+      // still misc
+      
+      if (event.isLeft && (event.left.get eq PullUtils.dtdDummy)) {
+	copyProlog( prolog.copy(dtd = Some(
+	  DTD("", "", "") // DTD has funnyness TODO find out what it looks like
+        )))
+      } else {
+	if (!started)
+	  addPrologMisc(event)
+	else
+	  addEndMisc(event)	      
+      }
+
+      None
+    } else {
+      started = true
+      // pump actual first event - yay !!, next depth -1 is endmisc
+      Some(El(event.asInstanceOf[T]))
+    }
+  }
+
+  def pump() : Option[Input[T]] = {
+    // don't have to re-read, let it push what it has
+    if (depth == -1) {
+      pumpMisc()
+    } else {
+      // 2nd > events
+      val (event, num, odepth, oprolog) = PullUtils.pumpEvent(parser, strategy, token, prolog, depth)(eventHandler)
+
+      depth = odepth
+
+      if (num == END_DOCUMENT) {
+	// EOF - let the iter deal -- should not occur here though, only when depth == -1
+	//println("parser incompletes in events "+ empties)
+	closeResource
+	Some(EOF[T])
+      } else if (num == EVENT_INCOMPLETE) {
+	// let the iter attempt to deal
+	//empties += 1
+	Some(IterV.Empty[T])
+      } else {
+	// actual data present, odepth -1 is looked at for the next iter
+	Some(El(event.asInstanceOf[T]))
+      }
+    }
+  }
+
 }
 
 object AsyncParser {
@@ -87,15 +179,13 @@ object AsyncParser {
     val parser = pf.createAsyncXMLStreamReader()
     val feeder = parser.getInputFeeder
   }
+
 }
 
 /**
  * NOTE this will be removed as soon as I have a workable solution to keeping buffers around
  */ 
 class NeedsRingBuffer(msg : String) extends Exception(msg)
-
-import scalaz._
-import scalaz.IterV._
 
 final class AsyncParserEnumerator extends Enumerator[AsyncParser] {
 
@@ -105,7 +195,7 @@ final class AsyncParserEnumerator extends Enumerator[AsyncParser] {
     (parser.buffer.array, read)
   }
 
-  def direct[E](to : Array[Byte])(parser : AsyncParser[E]) : (Array[Byte], Int) = {
+  def direct[E](to : Array[Byte], parser : AsyncParser[E]) : (Array[Byte], Int) = {
     parser.buffer.clear()
     val read = parser.channel.read(parser.buffer)
     if (read != -1) {
@@ -114,75 +204,14 @@ final class AsyncParserEnumerator extends Enumerator[AsyncParser] {
     (to, read)
   }
 
-  val incompOrEnd : PullType = Left(Text("I am incomplete or doc end"))
-
-
-  val eventHandler = (x : Int) => {
-    if (x == EVENT_INCOMPLETE || x == END_DOCUMENT)
-      incompOrEnd
-    else
-      error("Got an unexpected event type " + x +" cannot proceed.") 
+  private[this] class ContMe[E,A]( val parser: AsyncParser[E], val i: IterV[E,A], val bytes : () => (Array[Byte], Int)) extends Exception {
+    override def fillInStackTrace() = this
   }
-
-  private[this] class ContMe[E,A]( val parser: AsyncParser[E], val i: IterV[E,A], val bytes : () => (Array[Byte], Int), val depth : Int, val started : Boolean) extends Exception
 
   def apply[E,A](parser: AsyncParser[E], i: IterV[E,A]): IterV[E,A] = {
 
-    def pump[E](parser: AsyncParser[E], depth : Int, started : Boolean) : Option[(Input[E], Int, Boolean)] = {
-      // don't have to re-read, let it push what it has
-      if (depth == -1) {
-	// miscs
-
-	val (event, num, odepth, oprolog) = PullUtils.pumpEvent(parser.parser, parser.strategy, parser.token, parser.prolog, depth)(eventHandler)
-
-	if (oprolog != parser.prolog) {
-	  // doc start
-	  parser.copyProlog( oprolog ) 
-	}
-	
-	if (num == END_DOCUMENT) {
-	  // EOF - let the iter deal 
-	  Some((EOF[E], odepth, started))
-	} else if (num == EVENT_INCOMPLETE) {
-	  None//pumpInMisc
-	} else if (odepth == -1) {
-	  // still misc
-	  
-	  if (event.isLeft && (event.left.get eq PullUtils.dtdDummy)) {
-	    parser.copyProlog( parser.prolog.copy(dtd = Some(
-	      DTD("", "", "") // DTD has funnyness TODO find out what it looks like
-            )))
-	  } else {
-	    if (!started)
-	      parser.addPrologMisc(event)
-	    else
-	      parser.addEndMisc(event)	      
-	  }
-
-	  None
-	} else {
-	  // pump actual first event - yay !!, next depth -1 is endmisc
-	  Some((El(event.asInstanceOf[E]), odepth, true))
-	}
-      } else {
-	// 2nd > events
-	val (event, num, odepth, oprolog) = PullUtils.pumpEvent(parser.parser, parser.strategy, parser.token, parser.prolog, depth)(eventHandler)
-
-	if (num == END_DOCUMENT) {
-	  // EOF - let the iter deal -- should not occur here though, only when depth == -1
-	  Some((EOF[E], odepth, started))
-	} else if (num == EVENT_INCOMPLETE) {
-	  // let the iter attempt to deal
-	  Some((IterV.Empty[E], odepth, started))
-	} else {
-	  // actual data present, odepth -1 is looked at for the next iter
-	  Some((El(event.asInstanceOf[E]), odepth, started))
-	}
-      }
-    }
-
     @annotation.tailrec
-    def intern[E,A](parser: AsyncParser[E], i: IterV[E,A], bytes : () => (Array[Byte], Int), depth : Int, started : Boolean): IterV[E,A] = 
+    def intern[E,A](parser: AsyncParser[E], i: IterV[E,A], bytes : () => (Array[Byte], Int)): IterV[E,A] =       
       i match {
 	case _ if parser.isClosed => 
 	  //println("closed and got " +i)
@@ -199,9 +228,17 @@ final class AsyncParserEnumerator extends Enumerator[AsyncParser] {
 	    read match {
 	      case -1 => 
 		parser.closeResource
-		intern(parser, k(EOF[E]), bytes, depth, started)
+		//println("parser incompletes in read  "+ empties)
+		intern(parser, k(EOF[E]), bytes)
 	      case 0 =>
-		intern(parser, k(IterV.Empty[E]), bytes, depth, started)
+		// if its done, we can bomb early, if not we shouldn't ping pong
+		// but dump out early
+		val res = k(IterV.Empty[E])
+		if (isDone(res)) 
+		  res
+		else
+		  throw new ContMe[E,A](parser, res, bytes)
+		//intern(parser, k(IterV.Empty[E]), bytes, depth, started)
 	      case _ =>
 		// feed data in
 		parser.feeder.feedInput(ar, 0, read)
@@ -211,24 +248,46 @@ final class AsyncParserEnumerator extends Enumerator[AsyncParser] {
 		  throw new NeedsRingBuffer("Was pumped, but needs more to do anything, which requires us to add a ring")
 		} else {
 		  // we can pump
-		  val o = pump(parser, depth, started)
+		  //println("enough")
+		  val o = parser.pump()
 		  o match {
-		    case Some((in, odepth, ostarted)) => 
-		      intern(parser, k(in), bytes, odepth, ostarted)
+		    case Some(in) => 
+		      if (IterV.Empty.unapply[E](in)) {
+			// don't ping pong for empty 
+			// as we can only go back out anyway
+			val res = k(in)
+			if (isDone(res))
+			  res
+			else
+			  throw new ContMe[E,A](parser, res, bytes)
+		      }
+			else
+			  intern(parser, k(in), bytes)
 		    case _ => 
-		      throw new ContMe[E,A](parser, i, bytes, depth, started)
+		      throw new ContMe[E,A](parser, i, bytes)
 		  }
+		  
 		}
 	    }
 	    
 	  } else {
 	    //println("enough")
-	    val o = pump(parser, depth, started)
+	    val o = parser.pump()
 	    o match {
-	      case Some((in, odepth, ostarted)) => 
-		intern(parser, k(in), bytes, odepth, ostarted)
+	      case Some(in) => 
+		if (IterV.Empty.unapply[E](in)) {
+		  // don't ping pong for empty 
+		  // as we can only go back out anyway
+		  val res = k(in)
+		  if (isDone(res))
+		    res
+		  else
+		    throw new ContMe[E,A](parser, res, bytes)
+		}
+		  else
+		    intern(parser, k(in), bytes)
 	      case _ => 
-		throw new ContMe[E,A](parser, i, bytes, depth, started)
+		throw new ContMe[E,A](parser, i, bytes)
 	    }
 	  }
 	}
@@ -236,17 +295,16 @@ final class AsyncParserEnumerator extends Enumerator[AsyncParser] {
     def callInt( x : ContMe[E,A] ) : IterV[E,A] = {
       try {
 	if (x ne null) 
-	  intern(x.parser, x.i, x.bytes, x.depth, x.started)
+	  intern(x.parser, x.i, x.bytes)
 	else
 	  intern(parser, i, 
 	       if (parser.buffer.hasArray)
 		 () => jbytes(parser)
 	       else {
 		 // perfectly valid for a mem mapped to be huge, in which case, we would have grief ?
-		 val d = direct(Array.ofDim[Byte](parser.buffer.capacity)) _
-		 () => d(parser)
-	       }, -1, false
-	     )
+		 var ar = Array.ofDim[Byte](parser.buffer.capacity)
+		 () => direct(ar, parser)
+	       })
       } catch {
 	case e : ContMe[E,A] => Cont( ( _ : Input[E] ) =>
 	  callInt(e) /*
