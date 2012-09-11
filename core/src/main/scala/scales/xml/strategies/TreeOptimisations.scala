@@ -11,7 +11,6 @@ trait TreeOptimisation[TOKEN <: scales.xml.OptimisationToken] extends PathOptimi
   def newTree( elem : Elem, children : XmlChildren, token : TOKEN ) : XmlTree
 
   final override def elementEnd( xml : TreeProxies, token : TOKEN ) {
-
     import scales.utils.Tree
     import ScalesXml.xmlCBF
 
@@ -23,12 +22,11 @@ trait TreeOptimisation[TOKEN <: scales.xml.OptimisationToken] extends PathOptimi
       xml.depth = nd
       val c = xml.proxy( nd )
       xml.current = c
-      c.builder += nt
+      c.builder.+=(nt)
     } else {
       xml.rootTree = nt 
       xml.depth = nd
     }
-
   }
 
 }
@@ -42,10 +40,7 @@ abstract class NameValue(val name : QName, val text : String) extends Tree[XmlIt
   def section : Elem
   def children : XmlChildren = IAOne(Text(text))
 
-  private[this] def csection = section
-  private[this] def cchildren = children
-
-  def copy( section : Elem = csection, children : XmlChildren = cchildren) : Tree[XmlItem, Elem, XCC] = {
+  def copy( section : Elem = section, children : XmlChildren = children) : Tree[XmlItem, Elem, XCC] = {
     // if we are copying we are no longer in a parse
     import ScalesXml.fromParserDefault
     LazyOptimisedTree(section, children)
@@ -60,10 +55,7 @@ class ElemValue(val section : Elem, val text : String) extends Tree[XmlItem, Ele
 
   def children : XmlChildren = IAOne(Text(text))
 
-  private[this] def csection = section
-  private[this] def cchildren = children
-
-  def copy( section : Elem = csection, children : XmlChildren = cchildren) : Tree[XmlItem, Elem, XCC] = {
+  def copy( section : Elem = section, children : XmlChildren = children) : Tree[XmlItem, Elem, XCC] = {
     // if we are copying we are no longer in a parse
     import ScalesXml.fromParserDefault
     LazyOptimisedTree(section, children)
@@ -81,18 +73,22 @@ object LazyOptimisedTree {
   /**
    * Returns an optimised Tree if Possible
    */ 
-  def apply( section : Elem, children : XmlChildren ) ( implicit fromParser : FromParser ) : XmlTree = {
-    val head = children.head
-    if (head.isLeft) {
-      val left = head.getLeft
-      if (left.isInstanceOf[Text]) {
-	if (section.attributes.isEmpty && section.namespaces.isEmpty && children.size == 1)
-	  newNameValue(section.name, left.value)
-	else
-	  new ElemValue(section, left.value)
+  def apply( section : Elem, children : XmlChildren ) ( implicit fromParser : FromParser ) : XmlTree = 
+    if (children.isEmpty)
+      Tree(section, children)
+    else {
+      val head = children.head
+      if (head.isLeft) {
+	val left = head.getLeft
+	if (left.isInstanceOf[Text] && children.size == 1) {
+	  if (section.attributes.isEmpty && section.namespaces.isEmpty)
+	    newNameValue(section.name, left.value)
+	  else
+	    new ElemValue(section, left.value)
+	} else Tree(section, children)
       } else Tree(section, children)
-    } else Tree(section, children)
-  }
+    }
+  
 
   def newNameValue( iname : QName, itext : String ) ( implicit fromParser : FromParser ) : NameValue = 
     if (fromParser eq NotFromParser)
