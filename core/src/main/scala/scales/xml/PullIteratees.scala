@@ -175,12 +175,12 @@ trait PullIteratees {
     import ScalesXml._
     import ScalesUtils._
 
-    val orig = withIter(xml)(onDone(List(onQNames(path))))
+    val orig = withIter(xml)(onQNames(path))
     def getNext = {
       if (orig.hasNext) {
         val t = orig.next
-        if (t.size == 1)
-          (true, t.head._2)
+        if (t._2.isDefined)
+          (true, t._2)
         else (false, None)
       } else (false, None)
     }
