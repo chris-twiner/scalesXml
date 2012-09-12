@@ -39,7 +39,7 @@ trait PullIteratees {
           case Left(elem@Elem(q, a, n)) => {
             val nfocus = if (q == focus._1) (focus._1, focus._2 + 1)
             else focus
-            lazy val npath = addAndFocus(path, elem)
+            val npath = addAndFocus(path, elem)
 
             val shouldCollect = collecting || (toGo.isEmpty && q == focus._1)
 
