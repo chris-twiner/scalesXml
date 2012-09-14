@@ -2,6 +2,8 @@ package scales.xml
 
 import scales.utils._
 
+import impl.TreeProxies
+
 trait OptimisingStrategiesImplicits {
 
 }

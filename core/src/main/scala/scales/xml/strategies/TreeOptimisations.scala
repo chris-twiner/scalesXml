@@ -3,6 +3,8 @@ package scales.xml.strategies
 import scales.xml._
 import scales.utils._
 
+import impl.TreeProxies
+
 /**
  * Allows replacing a tree for memory optimisations
  */ 
