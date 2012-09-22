@@ -174,7 +174,127 @@ trait PullIteratees {
   class Iterate(path: List[QName], xml: Iterator[PullType]) extends FlatMapIterator[XmlPath] { self =>
     import ScalesXml._
     import ScalesUtils._
+										       import impl.TreeProxies
+										       val qnames = path
 
+    if (qnames.isEmpty) error("QNames is empty")
+    
+    /* see onQName for implementation basis */
+
+    var before: List[(QName, Int)] = _
+    var focus: (QName, Int) = _
+    var toGo: List[(QName, Int)] = _
+    var proxies: TreeProxies = new TreeProxies()
+    var collecting: Boolean = _
+
+    def reset {
+      set(Nil, (qnames.head, 0), qnames.tail.map((_,0)), 
+	  proxies.reuse, false)
+    }
+
+    reset
+
+    def set(before: List[(QName, Int)], focus: (QName, Int), toGo: List[(QName, Int)], proxies: TreeProxies, collecting: Boolean) {
+      this.before = before
+      this.focus = focus
+      this.toGo = toGo
+      this.proxies = proxies
+      this.collecting = collecting
+    }
+
+    def getNext = step
+    var cur = getNext
+
+    def hasNext = cur ne null
+    def next = {
+      val t = cur
+      cur = getNext
+      t
+    }
+    
+    def step : XmlPath = {
+      var res : XmlPath = null.asInstanceOf[XmlPath]
+      while(xml.hasNext && res == null) { 
+	val e = xml.next
+        e match {
+
+          case Left(elem@Elem(q, a, n)) => {
+            val nfocus = 
+	      if (q == focus._1) (focus._1, focus._2 + 1)
+              else focus
+	    
+	    proxies.beginSub(elem, XmlBuilder())
+            //val npath = addAndFocus(path, elem)
+
+            val shouldCollect = collecting || (toGo.isEmpty && q == focus._1)
+
+            // is it our head?
+            if ((!toGo.isEmpty) && q == focus._1)
+              // move down
+              set(before :+ focus, toGo.head, toGo.tail, proxies, false)
+            else
+              // wait for a down
+              set(before, nfocus, toGo, proxies, shouldCollect)
+          }
+
+          case Left(x: XmlItem) =>
+            if (collecting) {// collect 
+	      //addChild(path, x)
+	      proxies.addChild(x)
+              set(before, focus, toGo, proxies, true)
+	    }
+            else
+              set(before, focus, toGo, proxies, false) // don't collect
+
+          case Right(EndElem(q, n)) =>
+
+            if (q == focus._1) {
+              val ncfocus = (focus._1, focus._2 - 1)
+
+              if (toGo.isEmpty && ncfocus._2 == 0) { // we are popping to the selected level
+		res = proxies.proxyPath
+		set(before, ncfocus, toGo,
+                    // remove all children on the next iteration path.removeAndUp.getOrElse(noXmlPath)
+                    proxies, false)
+	      }
+              else {
+                if (before.isEmpty)
+                  reset // only when the root is asked for, could just refuse that of course?		
+                else {
+                  if (collecting) {
+                    // we are collecting but we still have more than 0 repeated qnames deep
+		    proxies.elementEnd() // path.zipUp
+                    set(before, ncfocus, toGo, proxies, true)
+		  }
+                  else {
+                    // we aren't collecting but we are moving up, we just have repeated names 
+                    val nfocus = before.last
+                    val nbefore = before.dropRight(1)
+                    set(nbefore, nfocus, focus :: toGo, // removeand
+                      proxies.proxyRemoveAndUp(), false // we have NOT been collecting	
+                      )
+                  }
+                }
+              }
+            } else {
+              set(before, focus, toGo,
+                if (collecting) { // empty is not enough, it should also be definitely collecting
+                  //path.zipUp
+		  proxies.elementEnd
+		  proxies
+                } else
+                  proxies.proxyRemoveAndUp(), collecting)
+            }
+
+        }
+      }
+
+      res
+    }
+
+
+
+/*
     val orig = withIter(xml)(onQNames(path))
     def getNext = {
       if (orig.hasNext) {
@@ -191,7 +311,7 @@ trait PullIteratees {
       cur = getNext
       t.get
     }
-        
+        */
   }
 
   /**
