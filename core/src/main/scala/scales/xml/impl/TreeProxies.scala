@@ -37,23 +37,20 @@ class TreeProxies( ){
    * existing cached trees are then effectively re-created without the current position (one depth less)
    */ 
   def proxyPath() : XmlPath = {
-    var d = _depth - 1
+    var d = _depth
     val l = _current
 
     val te = l.elem
-    val tc = l.builder.result
-
+    val tcc = l.builder.result
+     
     var elems = Array.ofDim[Elem](if (d < 0) 0 else d)
     while( d > 0 ) {
       d -= 1
 
       elems(d) = _proxies(d).elem
-      //if (d == 0) {
-	
-      //}
     }
 
-    reuse//new TreeProxies()
+    reuse
 
     var p = noXmlPath
 
@@ -63,16 +60,16 @@ class TreeProxies( ){
       beginSub(elems(d), XmlBuilder())
       // add child to path
       p = addAndFocus(p, elems(d))
-
       d += 1
     }
-    p = addAndFocus(p, te, tc)
+    p = addAndFocus(p, te, tcc)
     
     p
   }
 
   /**
    * Pushes up the tree discarding the last, if its the top it "resets" the tree
+   * Note unlike Paths, there is only the notion of last child on the parent depth.
    */
   def proxyRemoveAndUp() : TreeProxies = {
     
@@ -80,9 +77,13 @@ class TreeProxies( ){
 
     if (_depth > 0) {
       _current = _proxies( nd )
+      // scrap the last
+      //val r = _current.builder.result
+      _current.builder.clear()
     } else {
       // end of doc
       rootTree = null.asInstanceOf[XmlTree]
+      _current = null.asInstanceOf[TreeProxy]
     }
     if (nd > -2)
       _depth = nd

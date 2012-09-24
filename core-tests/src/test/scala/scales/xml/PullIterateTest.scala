@@ -59,11 +59,12 @@ class PullIterateTest extends junit.framework.TestCase {
     for {
       (x, i) <- itr.zipWithIndex
     } {
+      assertEquals("Wasn't giving back child", "{}child", qualifiedName(x))
       assertEquals( "interesting content "+ (i+1) +"interesting content "+ (i + 2)
 		   , text(x))
       val count = x.zipUp.children.size
       if (count != 1){
-	x.zipUp.children.foreach{x => println(x);println()}
+	x.zipUp.children.foreach{x => printTree(x.getRight);println()}
 	printTree(rootPath(x).tree)
 	fail("more than one " + count +" at "+ println(elem(x)))
       }
@@ -90,5 +91,4 @@ class PullIterateTest extends junit.framework.TestCase {
     
   }
 
-  def testIt : Unit = {()}
 }
