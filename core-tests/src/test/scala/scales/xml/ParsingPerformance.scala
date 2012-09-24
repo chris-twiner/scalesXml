@@ -579,23 +579,6 @@ object RunHighPerf extends ReconTest {
     //doc = p.timeScalesXmlTreeOp(5)
   }
 }
-
-object RunDeferred extends RunTest {
-
-  val p = new contributions.jason_calabrese.JCParsingPerformance()
-
-  val size = 5000
-
-  def prepare(args: Array[String]) {
-    p.s = p.allTheXml(size)
-  }
-
-  def doTest {
-    p.timeScalesIterateMutable(5)
-  }
-}
-
-
 /*
 object RunMemoryOptimised extends ReconTest {
 
