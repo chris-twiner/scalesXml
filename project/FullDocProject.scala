@@ -74,7 +74,7 @@ object FullDocs {
 	libraryDependencies <+= scalaVersion{ v => compilerPlugin(sxrVersionMap(v)) },
 
         // Include SXR in the Scaladoc Build to generated HTML annotated sources.
-        (scaladocOptions in Compile in doc) <++= (baseDirectory, allSourceDirectories) map sxrOptions,
+        scalacOptions in (Compile, doc) <++= (baseDirectory, allSourceDirectories) map sxrOptions,
        	
 	/*scalacOptions in (Compile, doc) <++= (baseDirectory in LocalProject(projectId)).map {
 	  bd => Seq("-sourcepath", projectRoot.getAbsolutePath, "-doc-source-url", docPathToken + "€{FILE_PATH}.scala.html")
