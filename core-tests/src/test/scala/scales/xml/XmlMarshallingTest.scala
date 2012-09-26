@@ -295,6 +295,25 @@ class XmlMarshallingTest extends junit.framework.TestCase {
 	       str.toString.indexOf("<Child xmlns=\"\" />") > -1)
   }
 
+  // tests #6
+  def testXHTMLNonEmpty = {
+    implicit val defaultSerializerFactory : SerializerFactory = serializers.LSSerializerFactoryXHTML 
+    val str = new java.io.StringWriter()
+
+    val ns = Namespace(LSSerializerFactoryXHTML.xhtmlNS)
+
+    val builder = ns("Root") /( ns("Child"), ns("img") )
+    val r = writeTo(builder, str)
+
+//    println(str.toString)
+    assertFalse("should not have an error", r.isDefined)
+    assertTrue("should not have had gaps on Child", 
+	       str.toString.indexOf("<Child></Child>") > -1)
+    assertTrue("but img should have",
+	       str.toString.indexOf("<img />") > -1)
+
+  }
+
   def testLSSerializerNoCacheFactory  = {
     implicit val defaultSerializerFactory : SerializerFactory = serializers.LSSerializerNoCacheFactory
     val str = new java.io.StringWriter()
