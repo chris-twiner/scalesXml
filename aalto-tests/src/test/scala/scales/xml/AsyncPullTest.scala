@@ -322,24 +322,92 @@ trait RunEval[WHAT,RETURN] {
     next(dest)
   }
 
+  val sum : IterV[Int,Int] = {
+    def step(acc : Int)( s : Input[Int] ) : IterV[Int, Int] =
+      s( el = e => Cont(step(acc + e)),
+	empty = Cont(step(acc)),
+	eof = Done(acc, IterV.EOF[Int])
+      )
+    Cont(step(0))
+  }
+
   def testSimpleEnumerateeMap = {
     
     val i = List("1","2","3","4").iterator
-    
-    val sum : IterV[Int,Int] = {
-	def step(acc : Int)( s : Input[Int] ) : IterV[Int, Int] =
-	  s( el = e => Cont(step(acc + e)),
-	    empty = Cont(step(acc)),
-	    eof = Done(acc, IterV.EOF[Int])
-	  )
-	Cont(step(0))
-      }
 
     val res = enumerateeMap(sum)( (s : String) => s.toInt )(i).run
     assertEquals(10, res)
   }
   
+  /**
+   * Takes a function f that turns input into Seq of a different type.
+   * This function must return an ResumableIter in order to capture early
+   * Done's without losing intermediate chunks.  If the dest iteratee is Done
+   * any remaining continuation will also restart with dest.
+   */ 
+  def enumerateeOneToMany[E, A, R]( dest: IterV[A,R])( f: E => Seq[A]): ResumableIter[E, R] = {
+    val empty = Seq()
+ /*   def loop( i: IterV[A,R], s: Seq[A] ): ResumableIter[E, R] =
+      if (!s.isEmpty)
+	i.fold(
+	  done = (a, y) => next( i, s ),// send it back
+	  cont = 
+	    k => loop(k(IterV.El(s.head)), s.tail)
+	    )
+      else next(i, s) // send it back
+*/
+    def loop( i: IterV[A,R], s: Seq[A] ): ResumableIter[E, R] = {
+      var c: IterV[A,R] = i
+      var cs: Seq[A] = s
 
+      while(!isDone(c) && !cs.isEmpty) {
+	val (nc, ncs): (IterV[A,R], Seq[A]) = c.fold(
+	  done = (a, y) => (cs, s),// send it back
+	  cont = 
+	    k => (k(IterV.El(cs.head)), cs.tail)
+	    )
+	c = nc
+	cs = ncs
+      }
+      next(c, cs) // let it deal with it.
+    }
+
+    def next( i: IterV[A,R], s: Seq[A] ): ResumableIter[E, R] =
+      i.fold(
+	done = (a, y) => Done((a, 
+			       if (s.isEmpty)
+				 Done(a, IterV.EOF[E])
+			       else 
+				 next(dest, s)
+			     ), IterV.EOF[E]),
+	cont = 
+	  k => {
+	    if (!s.isEmpty) 
+	      loop(i, s)
+	    else
+	      Cont((x: Input[E]) => 
+		x( el = e => {
+		  val news = f(e)
+		  next(k(IterV.El(news.head)), news.tail)
+		},
+		  empty = next(k(IterV.Empty[A]), empty),
+		  eof = next(k(IterV.EOF[A]), empty)
+		))
+	  }
+      )
+
+    next(dest, empty)
+  }
+  
+
+  def testEnumerateeOneToManyExhaust = {
+    
+    val i = List(1,2,3,4).iterator
+
+    val (res, cont) = enumerateeOneToMany(sum)( (i: Int) => (1 to i).toSeq )(i).run
+    assertEquals(20, res)
+    assertTrue("should have been done", isDone(cont))
+  }
 
   /**
    * Enumeratee that folds over the Iteratee with Cont or Done and Empty, returning with Done and EOF.
