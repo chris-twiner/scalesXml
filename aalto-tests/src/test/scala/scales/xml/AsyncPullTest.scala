@@ -343,10 +343,9 @@ trait RunEval[WHAT,RETURN] {
   /**
    * Takes a function f that turns input into Seq of a different type.
    * This function must return an ResumableIter in order to capture early
-   * Done's without losing intermediate chunks.  If the dest iteratee is Done
-   * any remaining continuation will also restart with dest.
+   * Done's without losing intermediate chunks, the destination iter having the same requirements.
    */ 
-  def enumerateeOneToMany[E, A, R]( dest: IterV[A,R])( f: E => Seq[A]): ResumableIter[E, R] = {
+  def enumerateeOneToMany[E, A, R]( dest: ResumableIter[A,R])( f: E => Seq[A]): ResumableIter[E, R] = {
     val empty = Seq()
  /*   def loop( i: IterV[A,R], s: Seq[A] ): ResumableIter[E, R] =
       if (!s.isEmpty)
@@ -357,12 +356,12 @@ trait RunEval[WHAT,RETURN] {
 	    )
       else next(i, s) // send it back
 */
-    def loop( i: IterV[A,R], s: Seq[A] ): ResumableIter[E, R] = {
-      var c: IterV[A,R] = i
+    def loop( i: ResumableIter[A,R], s: Seq[A] ): ResumableIter[E, R] = {
+      var c: ResumableIter[A,R] = i
       var cs: Seq[A] = s
 
       while(!isDone(c) && !cs.isEmpty) {
-	val (nc, ncs): (IterV[A,R], Seq[A]) = c.fold(
+	val (nc, ncs): (ResumableIter[A,R], Seq[A]) = c.fold(
 	  done = (a, y) => (cs, s),// send it back
 	  cont = 
 	    k => (k(IterV.El(cs.head)), cs.tail)
@@ -373,14 +372,17 @@ trait RunEval[WHAT,RETURN] {
       next(c, cs) // let it deal with it.
     }
 
-    def next( i: IterV[A,R], s: Seq[A] ): ResumableIter[E, R] =
+    def next( i: ResumableIter[A,R], s: Seq[A] ): ResumableIter[E, R] =
       i.fold(
-	done = (a, y) => Done((a, 
-			       if (s.isEmpty)
-				 Done(a, IterV.EOF[E])
-			       else 
-				 next(dest, s)
-			     ), IterV.EOF[E]),
+	done = (a, y) => {
+	  val (res, nextCont) = a
+	  Done((res, 
+		if (s.isEmpty)
+		  Done(res, IterV.EOF[E])
+		else 
+		  next(nextCont.asInstanceOf[ResumableIter[A,R]], s)
+	      ), IterV.EOF[E])
+	  },
 	cont = 
 	  k => {
 	    if (!s.isEmpty) 
