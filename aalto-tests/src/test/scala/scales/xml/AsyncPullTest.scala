@@ -322,20 +322,21 @@ trait RunEval[WHAT,RETURN] {
     next(dest)
   }
 
-  val sum : IterV[Int,Int] = {
-    def step(acc : Int)( s : Input[Int] ) : IterV[Int, Int] =
+  def sum[T](implicit n: Numeric[T]): IterV[T,T] = {
+    import n._
+    def step(acc: T)( s : Input[T] ) : IterV[T, T] =
       s( el = e => Cont(step(acc + e)),
 	empty = Cont(step(acc)),
-	eof = Done(acc, IterV.EOF[Int])
+	eof = Done(acc, IterV.EOF[T])
       )
-    Cont(step(0))
+    Cont(step(zero))
   }
 
   def testSimpleEnumerateeMap = {
     
     val i = List("1","2","3","4").iterator
 
-    val res = enumerateeMap(sum)( (s : String) => s.toInt )(i).run
+    val res = enumerateeMap(sum[Int])( (s : String) => s.toInt )(i).run
     assertEquals(10, res)
   }
   
@@ -404,9 +405,53 @@ trait RunEval[WHAT,RETURN] {
     
     val i = List(1,2,3,4).iterator
 
-    val (res, cont) = enumerateeOneToMany(sum)( (i: Int) => (1 to i).toSeq )(i).run
+    val (res, cont) = enumerateeOneToMany(sum[Int])( (i: Int) => (1 to i).toSeq )(i).run
     assertEquals(20, res)
     assertTrue("should have been done", isDone(cont))
+  }
+
+  /**
+   * Make sure it doesn't soe in the loop
+   */ 
+  def testEnumerateeOneToManySOE = {
+    val i = List[Long](1,2,3,4,5).iterator
+    
+    val (res, cont) = enumerateeOneToMany(sum[Long])( (_:Long) => (1L to 100000L).toSeq )(i).run
+    assertEquals(25000250000L, res)
+    assertTrue("should have been done", isDone(cont))
+  }
+
+  def testEventsNotLostOneToMany = {
+    val i = List[Long](1,2,3,4,5).iterator
+
+    // bad, but simpler to test against before a resumableiter version
+    var gotto = 0L
+
+    val sum: IterV[Long,Long] = {
+      def initial = (s : Input[Long]) =>
+	step(gotto)(s) 
+      
+      def step(acc: Long)( s : Input[Long] ) : IterV[Long, Long] =
+	s( el = e => 
+	    if ((acc + e) == 25000050001L) {
+	      gotto = acc + e
+	      Done(gotto, IterV.EOF[Long])
+	    } else
+	      Cont(step(acc + e)),
+	  empty = Cont(step(acc)),
+	  eof = Done(acc, IterV.EOF[Long])
+	)
+
+      Cont(initial)
+    }
+    
+    val (res, cont) = enumerateeOneToMany(sum)( (_:Long) => (1L to 100000L).toSeq )(i).run
+    assertEquals(25000050001L, res)
+    assertTrue("should have been done", !isDone(cont))
+
+    val (res2, cont2) : ((Long,ResumableIter[Long, Long])) = cont.run
+    assertEquals(25000250000L, res2)
+    assertTrue("should have been done", isDone(cont2))
   }
 
   /**
