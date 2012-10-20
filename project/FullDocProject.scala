@@ -2,8 +2,6 @@ import sbt._
 import Keys._
 import sbt.Package._
 import java.util.jar.Attributes.Name._
-import org.ensime.sbt.Plugin.Settings.ensimeConfig
-import org.ensime.sbt.util.SExp._
 import Defaults._
 
 import scales.sbtplugins._
