@@ -133,7 +133,8 @@ object ScalesXmlRoot extends Build {
 //    (scaladocOptions in Compile in doc) += "-diagrams",
     autoCompilerPlugins := false,
     fork in run := true, 
-    parallelExecution in runSecurely := false
+    parallelExecution in runSecurely := false,
+    scalaBinaryVersion <<= scalaVersion(sV => if (CrossVersion.isStable(sV)) CrossVersion.binaryScalaVersion(sV) else sV)
 //,
 //    parallelExecution in jacoco.Config := false
   ) ++ sonatype.settings// ++ jacoco.settings
