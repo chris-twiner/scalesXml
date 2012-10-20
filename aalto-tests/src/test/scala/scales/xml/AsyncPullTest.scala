@@ -341,43 +341,35 @@ trait RunEval[WHAT,RETURN] {
   }
   
   /**
-   * Takes a function f that turns input into Seq of a different type.
-   * This function must return an ResumableIter in order to capture early
-   * Done's without losing intermediate chunks, the destination iter having the same requirements.
+   * Takes a function f that turns input into an Input[EphemeralStream] of a different type A.  The function f may return El(EphemeralStream.empty) which is treated as Empty.
+   * This function must return an ResumableIter in order to capture early Done's without losing intermediate chunks,
+   * the destination iter having the same requirements.
    */ 
-  def enumerateeOneToMany[E, A, R]( dest: ResumableIter[A,R])( f: E => Seq[A]): ResumableIter[E, R] = {
-    val empty = Seq()
- /*   def loop( i: IterV[A,R], s: Seq[A] ): ResumableIter[E, R] =
-      if (!s.isEmpty)
-	i.fold(
-	  done = (a, y) => next( i, s ),// send it back
-	  cont = 
-	    k => loop(k(IterV.El(s.head)), s.tail)
-	    )
-      else next(i, s) // send it back
-*/
-    def loop( i: ResumableIter[A,R], s: Seq[A] ): ResumableIter[E, R] = {
+  def enumerateeOneToMany[E, A, R]( dest: ResumableIter[A,R])( f: E => Input[EphemeralStream[A]]): ResumableIter[E, R] = {
+    val empty = () => EphemeralStream.empty
+
+    def loop( i: ResumableIter[A,R], s: () => EphemeralStream[A] ): ResumableIter[E, R] = {
       var c: ResumableIter[A,R] = i
-      var cs: Seq[A] = s
+      var cs: EphemeralStream[A] = s() // need it now
 
       while(!isDone(c) && !cs.isEmpty) {
-	val (nc, ncs): (ResumableIter[A,R], Seq[A]) = c.fold(
-	  done = (a, y) => (cs, s),// send it back
+	val (nc, ncs): (ResumableIter[A,R], EphemeralStream[A]) = c.fold(
+	  done = (a, y) => (cs, s()),// send it back
 	  cont = 
-	    k => (k(IterV.El(cs.head)), cs.tail)
+	    k => (k(IterV.El(cs.head())), cs.tail())
 	    )
 	c = nc
 	cs = ncs
       }
-      next(c, cs) // let it deal with it.
+      next(c, () => cs) // let it deal with it.
     }
 
-    def next( i: ResumableIter[A,R], s: Seq[A] ): ResumableIter[E, R] =
+    def next( i: ResumableIter[A,R], s: () => EphemeralStream[A] ): ResumableIter[E, R] =
       i.fold(
 	done = (a, y) => {
 	  val (res, nextCont) = a
 	  Done((res, 
-		if (s.isEmpty)
+		if (s().isEmpty)
 		  Done(res, IterV.EOF[E])
 		else 
 		  next(nextCont.asInstanceOf[ResumableIter[A,R]], s)
@@ -385,13 +377,22 @@ trait RunEval[WHAT,RETURN] {
 	  },
 	cont = 
 	  k => {
-	    if (!s.isEmpty) 
+	    if (!s().isEmpty) 
 	      loop(i, s)
 	    else
 	      Cont((x: Input[E]) => 
 		x( el = e => {
 		  val news = f(e)
-		  next(k(IterV.El(news.head)), news.tail)
+		  news(	      
+		    el = e1 => { 
+		      if (e1.isEmpty)
+			next(k(IterV.Empty[A]), empty)
+		      else
+			next(k(IterV.El(e1.head())), e1.tail)
+		    },
+		    empty = next(k(IterV.Empty[A]), empty),
+		    eof = next(k(IterV.EOF[A]), empty)
+		  )
 		},
 		  empty = next(k(IterV.Empty[A]), empty),
 		  eof = next(k(IterV.EOF[A]), empty)
@@ -407,10 +408,29 @@ trait RunEval[WHAT,RETURN] {
     
     val i = List(1,2,3,4).iterator
 
-    val (res, cont) = enumerateeOneToMany(sum[Int])( (i: Int) => (1 to i).toSeq )(i).run
+    val (res, cont) = enumerateeOneToMany(sum[Int])( (i: Int) => El(iTo(1, i)) )(i).run
     assertEquals(20, res)
     assertTrue("should have been done", isDone(cont))
   }
+
+  def testEnumerateeOneToManyEOFFromMap = {
+    
+    val i = List(1,2,3,4).iterator
+
+    val (res, cont) = enumerateeOneToMany(sum[Int])( (i: Int) => EOF[EphemeralStream[Int]] )(i).run
+    assertEquals(0, res)
+    assertTrue("should have been done", isDone(cont))
+
+    val rest = i.take(4).toSeq
+    println(rest)
+    assertEquals("Should still have had items in the list", 9, rest.sum)
+  }
+
+  def lTo(lower: Long, upper: Long): EphemeralStream[Long] =
+    if (lower > upper) EphemeralStream.empty else EphemeralStream.cons(lower, lTo(lower + 1, upper))
+
+  def iTo(lower: Int, upper: Int): EphemeralStream[Int] =
+    if (lower > upper) EphemeralStream.empty else EphemeralStream.cons(lower, iTo(lower + 1, upper))
 
   /**
    * Make sure it doesn't soe in the loop
@@ -418,7 +438,7 @@ trait RunEval[WHAT,RETURN] {
   def testEnumerateeOneToManySOE = {
     val i = List[Long](1,2,3,4,5).iterator
     
-    val (res, cont) = enumerateeOneToMany(sum[Long])( (_:Long) => (1L to 100000L).toSeq )(i).run
+    val (res, cont) = enumerateeOneToMany(sum[Long])( (_:Long) => El(lTo(1L, 100000L)) )(i).run
     assertEquals(25000250000L, res)
     assertTrue("should have been done", isDone(cont))
   }
@@ -426,28 +446,24 @@ trait RunEval[WHAT,RETURN] {
   def testEventsNotLostOneToMany = {
     val i = List[Long](1,2,3,4,5).iterator
 
-    // bad, but simpler to test against before a resumableiter version
-    var gotto = 0L
-
-    val sum: IterV[Long,Long] = {
-      def initial = (s : Input[Long]) =>
-	step(gotto)(s) 
-      
-      def step(acc: Long)( s : Input[Long] ) : IterV[Long, Long] =
-	s( el = e => 
-	    if ((acc + e) == 25000050001L) {
-	      gotto = acc + e
-	      Done(gotto, IterV.EOF[Long])
+    // force a restart at magic number 1
+    val sum: ResumableIter[Long,Long] = {
+      def step(acc: Long)( s : Input[Long] ) : ResumableIter[Long, Long] =
+	s( el = e => {
+	    val nacc = acc + e
+	    if (nacc == 25000050001L) {
+	      Done((nacc, Cont(step(nacc))), IterV.EOF[Long])
 	    } else
-	      Cont(step(acc + e)),
+	      Cont(step(nacc))
+	  },
 	  empty = Cont(step(acc)),
-	  eof = Done(acc, IterV.EOF[Long])
+	  eof = Done((acc, Done(acc, IterV.EOF[Long])), IterV.EOF[Long])
 	)
 
-      Cont(initial)
+      Cont(step(0))
     }
-    
-    val (res, cont) = enumerateeOneToMany(sum)( (_:Long) => (1L to 100000L).toSeq )(i).run
+
+    val (res, cont) = enumerateeOneToMany(sum)( (_:Long) => El(lTo(1L, 100000L)) )(i).run
     assertEquals(25000050001L, res)
     assertTrue("should have been done", !isDone(cont))
 

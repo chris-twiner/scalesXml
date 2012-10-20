@@ -317,3 +317,29 @@ final class AsyncParserEnumerator extends Enumerator[AsyncParser] {
     callInt( null.asInstanceOf[ContMe[E,A]] )
   }
 }
+
+/*
+
+
+let the func hide the mutability, resulting iteratee could be mapped to turn Array[Byte] into the triple.
+enumManyToOne(PullType -> X)(parser ( (Array[Byte], start, len) ) => Seq[PullType] ) 
+
+*/
+
+/**
+ * Represents a chunk of data to feed into an async parser.
+ * The instance is deemed "owned" by the asnyc parser until it requires more input. 
+ */ 
+trait DataChunk {
+  def array: Array[Byte]
+  def offset: Int
+  def length: Int 
+}
+
+case class FullChunk( array: Array[Byte] ) extends DataChunk {
+  def offset = 0
+  def length = array.length
+}
+
+case class Chunk( array: Array[Byte], offset: Int, length: Int) extends DataChunk
+
