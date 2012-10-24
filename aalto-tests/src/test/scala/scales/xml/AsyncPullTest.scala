@@ -339,16 +339,26 @@ trait RunEval[WHAT,RETURN] {
     val res = enumerateeMap(sum[Int])( (s : String) => s.toInt )(i).run
     assertEquals(10, res)
   }
+
+  /**
+   * Takes a function f that turns input into an Input[EphemeralStream] of a different type A.  The function f may return El(EphemeralStream.empty) which is treated as Empty.
+   * This function must return an ResumableIter in order to capture early Done's without losing intermediate chunks,
+   * the destination iter having the same requirements.
+   */ 
+  def enumerateeOneToMany[E, A, R]( dest: ResumableIter[A,R])( f: E => Input[EphemeralStream[A]]): ResumableIter[E, R] = 
+    enumerateeOneToManyState[E, A, R, Unit](dest)( (e : E, s : Unit) => (f(e), ()) ) ( () )  
+
   
   /**
    * Takes a function f that turns input into an Input[EphemeralStream] of a different type A.  The function f may return El(EphemeralStream.empty) which is treated as Empty.
    * This function must return an ResumableIter in order to capture early Done's without losing intermediate chunks,
    * the destination iter having the same requirements.
    */ 
-  def enumerateeOneToMany[E, A, R]( dest: ResumableIter[A,R])( f: E => Input[EphemeralStream[A]]): ResumableIter[E, R] = {
+  def enumerateeOneToManyState[E, A, R, S]( dest: ResumableIter[A,R])( f: (E, S) => (Input[EphemeralStream[A]], S))(initialState: S): ResumableIter[E, R] = {
     val empty = () => EphemeralStream.empty
 
-    def loop( i: ResumableIter[A,R], s: () => EphemeralStream[A] ): ResumableIter[E, R] = {
+    def loop( i: ResumableIter[A,R], s: () => EphemeralStream[A], state: S ):
+      (ResumableIter[A,R], () => EphemeralStream[A], S) = {
       var c: ResumableIter[A,R] = i
       var cs: EphemeralStream[A] = s() // need it now
 
@@ -361,10 +371,11 @@ trait RunEval[WHAT,RETURN] {
 	c = nc
 	cs = ncs
       }
-      next(c, () => cs) // let it deal with it.
+      (c, () => cs, state)
+      //next(c, () => cs, state) // let it deal with it.
     }
 
-    def next( i: ResumableIter[A,R], s: () => EphemeralStream[A] ): ResumableIter[E, R] =
+    def next( i: ResumableIter[A,R], s: () => EphemeralStream[A], state: S ): ResumableIter[E, R] =
       i.fold(
 	done = (a, y) => {
 	  val (res, nextCont) = a
@@ -372,39 +383,60 @@ trait RunEval[WHAT,RETURN] {
 		if (s().isEmpty)
 		  Done(res, IterV.EOF[E])
 		else 
-		  next(nextCont.asInstanceOf[ResumableIter[A,R]], s)
+		  next(nextCont.asInstanceOf[ResumableIter[A,R]], s, state)
 	      ), IterV.EOF[E])
 	  },
 	cont = 
 	  k => {
-	    if (!s().isEmpty) 
-	      loop(i, s)
-	    else
+	    if (!s().isEmpty) {
+	      val (ni, ns, nstate) = loop(i, s, state)
+	      next(ni, ns, nstate)
+	    } else
 	      Cont((x: Input[E]) => 
 		x( el = e => {
-		  val news = f(e)
+		  val (news, newState) = f(e, state)
 		  news(	      
 		    el = e1 => { 
 		      if (e1.isEmpty)
-			next(k(IterV.Empty[A]), empty)
+			next(k(IterV.Empty[A]), empty, newState)
 		      else
-			next(k(IterV.El(e1.head())), e1.tail)
+			next(k(IterV.El(e1.head())), e1.tail, newState)
 		    },
-		    empty = next(k(IterV.Empty[A]), empty),
-		    eof = next(k(IterV.EOF[A]), empty)
+		    empty = next(k(IterV.Empty[A]), empty, newState),
+		    eof = next(k(IterV.EOF[A]), empty, newState)
 		  )
 		},
-		  empty = next(k(IterV.Empty[A]), empty),
-		  eof = next(k(IterV.EOF[A]), empty)
+		  empty = next(k(IterV.Empty[A]), empty, state),
+		  eof = next(k(IterV.EOF[A]), empty, state)
 		))
 	  }
       )
 
-    next(dest, empty)
+    next(dest, empty, initialState)
   }
   
 
   def testEnumerateeOneToManyExhaust = {
+    
+    val l = List(1,2,3,4)
+
+    val f = (i: Int, s: Int) => (El(iTo(s, i)), s + 1)
+
+    val enum = enumerateeOneToManyState(sum[Int])(f) _
+
+    // 1, 2, 3, 4 only, the to is ignored
+    val (res, cont) = enum(1)(l.iterator).run
+    assertEquals(10, res)
+    assertTrue("should have been done", isDone(cont))
+
+    // -1->1 0, 0->2 3, 1->3 6, 2->4 9 
+    val (res2, cont2) = enum(-1)(l.iterator).run
+    assertEquals(18, res2)
+    assertTrue("2 should have been done", isDone(cont2))
+
+  }
+
+  def testEnumerateeOneToManyExhaustState = {
     
     val i = List(1,2,3,4).iterator
 
