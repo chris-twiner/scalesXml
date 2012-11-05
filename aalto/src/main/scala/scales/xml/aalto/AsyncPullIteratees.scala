@@ -542,12 +542,47 @@ abstract class AsyncParser2(implicit xmlVersion : XmlVersion) extends CloseOnNee
 object AsyncParser2 {
   /**
    * Function to use with enumToMany
-   */
+   *
   val parse: (DataChunk, AsyncParser2) => (Input[EphemeralStream[PullType]], AsyncParser2) = (dc: DataChunk, parser: AsyncParser2) => {
     val r = parser.nextInput(dc)
     println(r)
     (r, parser)
+  }*/
+
+  /**
+   * Pumps a DataChunk into a parser
+   */ 
+  def parse(parser: AsyncParser2): ResumableIter[DataChunk, EphemeralStream[PullType]] = {
+
+    def EOF: ResumableIter[DataChunk, EphemeralStream[PullType]] = {
+      parser.closeResource
+
+      Done((EphemeralStream.empty, 
+	  Cont(
+	    error("Called the continuation on a closed parser")
+	  )), IterV.EOF[DataChunk])
+    }
+
+    def step(s: Input[DataChunk]): ResumableIter[DataChunk, EphemeralStream[PullType]] = 
+      s(el = e => {
+	  val r = parser.nextInput(e)
+	  r( el = es => {
+	      Done((es,
+		    Cont(
+		      step
+		      )), IterV.Empty[DataChunk])
+	      },
+	      empty = Cont(step),
+	      eof = EOF
+	  )
+	},
+	empty = Cont(step),
+	eof = EOF
+      )
+
+    Cont(step)
   }
+
 
   /**
    * Creates a parser based on the input channel provided
