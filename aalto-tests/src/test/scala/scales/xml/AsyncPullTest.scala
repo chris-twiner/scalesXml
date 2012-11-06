@@ -388,6 +388,8 @@ trait RunEval[WHAT,RETURN] {
       i.fold(
 	done = (a, y) => {
 	  val (res, nextCont) = a
+
+	  val returnThis : ResumableIter[E, R] = 
 	  if ((isDone(nextCont) && isEOF(nextCont)) ||
 	    (isDone(toMany) && isEOF(toMany))) { // either eof then its not restartable
 	    Done((res, Done(res, IterV.EOF[E])), IterV.EOF[E])
@@ -402,6 +404,16 @@ trait RunEval[WHAT,RETURN] {
 		  n
 	      }), IterV.Empty[E])
 	  }
+
+	  if (EOF.unapply(y)) {
+	    // signal the end here to toMany, don't care about result
+	    toMany.fold(done= (a1, y1) => false,
+			cont = k => {
+			  k(IterV.EOF[E]); false
+			})
+	  }
+	  
+	  returnThis
 	  },
 	cont = 
 	  k => {

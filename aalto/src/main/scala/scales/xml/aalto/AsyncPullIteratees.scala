@@ -383,11 +383,6 @@ abstract class AsyncParser2(implicit xmlVersion : XmlVersion) extends CloseOnNee
    * Closes the feeder and parser
    */ 
   protected def doClose = { 
-    try{ 
-      throw new Exception("I iz here")
-    } catch {
-      case t:Throwable => t.printStackTrace()
-    }
     feeder.endOfInput
     parser.close
   }
@@ -525,7 +520,6 @@ abstract class AsyncParser2(implicit xmlVersion : XmlVersion) extends CloseOnNee
 
   def nextInput(d: DataChunk): Input[EphemeralStream[PullType]] = {
     if (isClosed) {
-      println("EOF'd")
       IterV.EOF[EphemeralStream[PullType]]      
     } else {
       feeder.feedInput(d.array, d.offset, d.length)
