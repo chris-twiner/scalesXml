@@ -388,12 +388,20 @@ trait RunEval[WHAT,RETURN] {
       i.fold(
 	done = (a, y) => {
 	  val (res, nextCont) = a
-	  Done((res, 
+	  if ((isDone(nextCont) && isEOF(nextCont)) ||
+	    (isDone(toMany) && isEOF(toMany))) { // either eof then its not restartable
+	    Done((res, Done(res, IterV.EOF[E])), IterV.EOF[E])
+	  } else {
+	    Done((res, 
+	      {
+		val n = next(nextCont.asInstanceOf[ResumableIter[A,R]], s, toMany)
+	      
 		if (s().isEmpty)
-		  Done(res, IterV.EOF[E])
+		  Done((res, n), IterV.Empty[E])
 		else
-		  next(nextCont.asInstanceOf[ResumableIter[A,R]], s, toMany)
-	      ), IterV.EOF[E])
+		  n
+	      }), IterV.Empty[E])
+	  }
 	  },
 	cont = 
 	  k => {
@@ -846,7 +854,7 @@ trait RunEval[WHAT,RETURN] {
 	case Cont(k) =>
 	  val realChunk = wrapped.nextChunk
 	  val nextChunk = realChunk.asInstanceOf[E]
-	  apply(wrapped, 
+	  apply(wrapped,
 		if (realChunk.isEOF)
 		  k(IterV.EOF[E])
 		else
