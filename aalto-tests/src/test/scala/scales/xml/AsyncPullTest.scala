@@ -413,15 +413,14 @@ trait RunEval[WHAT,RETURN] {
 			
 		    },
 		    cont = y => {
-		      println("just cont")
 		      val afterNewCall = y(x)
 		      afterNewCall.fold(
 			done = (nextContPair, rest) => {
 			  val (e1, nextCont) = nextContPair
 			  val nextContR = nextCont.asInstanceOf[ResumableIter[E,scalaz.EphemeralStream[A]]]
-			  if (isEOF(afterNewCall))
-			    error("TODO - unpack nextContPair. possibly let back again")
-			  else {
+			  if (isEOF(afterNewCall)) {
+			    next(k(IterV.EOF[A]), empty, nextContR)
+			  } else {
 			    if (e1.isEmpty)
 			      next(k(IterV.Empty[A]), empty, nextContR)
 			    else
@@ -875,6 +874,7 @@ trait RunEval[WHAT,RETURN] {
     val (e, cont) = enumeratee(channel: ReadableByteChannelWrapper[DataChunk]).run
 
     assertEquals("{urn:default}Default", e.right.get.name.qualifiedName)
+    assertTrue("The parser should have been closed", parser.isClosed)
   }
 
 }
