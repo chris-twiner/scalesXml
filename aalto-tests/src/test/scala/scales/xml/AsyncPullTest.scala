@@ -375,7 +375,10 @@ trait RunEval[WHAT,RETURN] {
 	val (nc, ncs): (ResumableIter[A,R], EphemeralStream[A]) = c.fold(
 	  done = (a, y) => (cs, s()),// send it back
 	  cont = 
-	    k => (k(IterV.El(cs.head())), cs.tail())
+	    k => {
+	      val head = cs.head() // if used in El it captures the byname not the value
+	      (k(IterV.El(head)), cs.tail())
+	    }
 	    )
 	c = nc
 	cs = ncs
@@ -628,12 +631,81 @@ trait RunEval[WHAT,RETURN] {
     }
   }/*
   
+
+
+/* */
+
+/*  can't work with normal run as we must bring back a cont, there is no way of moving forward without data.
+ *
+    def testSimpleLoadTinyBufferRunEval = {
+    val url = sresource(this, "/data/BaseXmlTest.xml")
+
+    val channel = Channels.newChannel(url.openStream())
+
+    val parser = AsyncParser(channel, bytePool = tinyBuffers)
+
+    val iter = evalAll(Left(Text("I is a fake")), (p : PullType) => {
+//      println(p)
+      p} )
+
+    var c = iter(parser).eval
+    assertFalse(isDone(c))
+    c = c.eval
+    assertFalse(isDone(c))
+    c = c.eval
+    assertFalse(isDone(c))
+    c = c.eval
+    assertFalse(isDone(c))
+    //c = c.eval
+    
+    // finalle
+
+    val e = c.runEval
+    assertEquals("{urn:default}Default", e.right.get.name.qualifiedName)
+    // purposefully small, well we are async here
+  }
+
+  * 
+  def testSimpleLoadTinyBufferRunEvalSeperateState2 = {
+    val url = sresource(this, "/data/BaseXmlTest.xml")
+
+    val channel = Channels.newChannel(url.openStream())
+
+    val parser = AsyncParser2()
+
+    val iter = evalAll(Left(Text("I is a fake")), (p : PullType) => {
+//      println(p)
+      p} )
+
+
+    val enumeratee = enumerateeOneToMany(iter)(AsyncParser2.parse(parser))
+    val wrapped = new ReadableByteChannelWrapper(channel, tinyBuffers)
+    var c = enumeratee(wrapped).eval
+    assertFalse("was done?", isDone(c))
+    while(!parser.startedElementProcessing) {
+      c = c.eval
+    }
+    
+    assertFalse("Should not have been done, much more to process", isDone(c))
+
+    // as it has now started and the
+    // parser maintains state, new iter should be working on that
+    
+    val (e, cont) = c.runEval
+//    assertEquals("{urn:default}Default", e.right.get.name.qualifiedName)
+    assertTrue("The parser should have been closed", parser.isClosed)
+    // purposefully small, well we are async here
+  }
+*/
+*/
+
+
   /**
    * Hideously spams with various sizes of data, and more than a few 0 lengths.
    *
    * The aim is to test the proverbial out of the asynch code.  It should be able to handle being called with a single byte repeatedly.
    */
-  def testRandomAmounts = {
+  def testRandomAmounts2 = {
     val url = sresource(this, "/data/BaseXmlTest.xml")
 
     val doc = loadXmlReader(url, parsers = NoVersionXmlReaderFactoryPool)
@@ -667,12 +739,16 @@ trait RunEval[WHAT,RETURN] {
       def isOpen = !closed
     }
 
-    val parser = AsyncParser(randomChannel, bytePool = tinyBuffers)
+    val parser = AsyncParser2()
 
     val strout = new java.io.StringWriter()
     val (closer, iter) = pushXmlIter( strout , doc )
 
-    var c = iter(parser).eval
+    val enumeratee = enumerateeOneToMany(iter)(AsyncParser2.parse(parser))
+    val wrapped = new ReadableByteChannelWrapper(randomChannel, tinyBuffers)
+    var c = enumeratee(wrapped).eval
+    
+//    var c = iter(parser).eval
     var count = 1
     while(!isDone(c)) {
       count += 1
@@ -681,11 +757,12 @@ trait RunEval[WHAT,RETURN] {
     println("eval'd "+ count +" times ") 
     println("got a zero len "+zerod+" times ")
 
+    println("Got a "+extract(c))
     assertTrue("should have been EOF", isEOF(c))
 
     c.fold[Unit](
       done = (a,i) => {
-	val (out, thrown) = a
+	val ((out, thrown), cont) = a
 	assertFalse( "shouldn't have thrown", thrown.isDefined)
 	//println(" iter was " + strout.toString)
 	assertTrue("should have been auto closed", closer.isClosed)
@@ -696,9 +773,9 @@ trait RunEval[WHAT,RETURN] {
 
   }
 
-//Array[Byte] => PullType  
 
-  def testSimpleLoadSerializingMisc = {
+
+  def testSimpleLoadSerializingMisc2 = {
     val url = sresource(this, "/data/MiscTests.xml")
 
     val doc = loadXmlReader(url, parsers = NoVersionXmlReaderFactoryPool)
@@ -708,20 +785,23 @@ trait RunEval[WHAT,RETURN] {
 //    println("asString is " + str)
     val channel = Channels.newChannel(url.openStream())
 
-    val parser = AsyncParser(channel)
+    val parser = AsyncParser2()
 
     val strout = new java.io.StringWriter()
     val (closer, iter) = pushXmlIter( strout , doc )
 
+    val enumeratee = enumerateeOneToMany(iter)(AsyncParser2.parse(parser))
+    val ((out, thrown), cont) = enumeratee(channel: ReadableByteChannelWrapper[DataChunk]).runEval
+
     // we can swallow the lot, but endmiscs don't know there is more until the main loop, which needs evaling
-    val (out, thrown) = iter(parser).runEval
+//    val (out, thrown) = iter(parser).runEval
     assertFalse( "shouldn't have thrown", thrown.isDefined)
 //    println(" iter was " + strout.toString)
     assertTrue("should have been auto closed", closer.isClosed)
     assertEquals(str, strout.toString)
   }
 
-  def testSimpleLoadSerializing = {
+  def testSimpleLoadSerializing2 = {
     val url = sresource(this, "/data/BaseXmlTest.xml")
 
     val doc = loadXmlReader(url, parsers = NoVersionXmlReaderFactoryPool)
@@ -730,78 +810,23 @@ trait RunEval[WHAT,RETURN] {
 //    println("asString is " + str)
     val channel = Channels.newChannel(url.openStream())
 
-    val parser = AsyncParser(channel)
+    val parser = AsyncParser2()
 
     val strout = new java.io.StringWriter()
     val (closer, iter) = pushXmlIter( strout , doc )
 
+    val enumeratee = enumerateeOneToMany(iter)(AsyncParser2.parse(parser))
+    val ((out, thrown), cont) = enumeratee(channel: ReadableByteChannelWrapper[DataChunk]).run
+
     // we can swallow the lot
-    val (out, thrown) = iter(parser).run
+//    val (out, thrown) = iter(parser).run
     assertFalse( "shouldn't have thrown", thrown.isDefined)
 //    println(" iter was " + strout.toString)
     assertTrue("should have been auto closed", closer.isClosed)
     assertEquals(str, strout.toString)
   }
 
-  def testSimpleLoadTinyBufferRunEval = {
-    val url = sresource(this, "/data/BaseXmlTest.xml")
 
-    val channel = Channels.newChannel(url.openStream())
-
-    val parser = AsyncParser(channel, bytePool = tinyBuffers)
-
-    val iter = evalAll(Left(Text("I is a fake")), (p : PullType) => {
-//      println(p)
-      p} )
-
-    var c = iter(parser).eval
-    assertFalse(isDone(c))
-    c = c.eval
-    assertFalse(isDone(c))
-    c = c.eval
-    assertFalse(isDone(c))
-    c = c.eval
-    assertFalse(isDone(c))
-    //c = c.eval
-    
-    // finalle
-
-    val e = c.runEval
-    assertEquals("{urn:default}Default", e.right.get.name.qualifiedName)
-    // purposefully small, well we are async here
-  }
-
-/*  can't work with normal run as we must bring back a cont, there is no way of moving forward without data. */
-  def testSimpleLoadTinyBufferRunEvalSeperateState = {
-    val url = sresource(this, "/data/BaseXmlTest.xml")
-
-    val channel = Channels.newChannel(url.openStream())
-
-    val parser = AsyncParser(channel, bytePool = tinyBuffers)
-
-    val iter = evalAll(Left(Text("I is a fake")), (p : PullType) => {
-//      println(p)
-      p} )
-
-
-    var c = iter(parser).eval
-    assertFalse(isDone(c))
-    //c = c.eval
-    while(!parser.startedElementProcessing) {
-      c = c.eval
-    }
-    
-    assertFalse("Should not have been done, much more to process", isDone(c))
-
-    // as it has now started and the
-    // parser maintains state, new iter should be working on that
-    
-    val e = iter(parser).runEval
-    assertEquals("{urn:default}Default", e.right.get.name.qualifiedName)
-    // purposefully small, well we are async here
-  }
-*/
-/* */
 
   
   import java.nio.ByteBuffer
