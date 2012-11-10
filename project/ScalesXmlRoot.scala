@@ -60,11 +60,11 @@ object ScalesXmlRoot extends Build {
   lazy val fullDocsAndSxr = FullDocs.fullDocsNSources(
     projects = Seq(core, jaxen), projectId = "site",
     projectRoot = file("site"), 
-    sxrVersionMap = { v =>
-      if (v.startsWith("2.8"))
+    sxrVersionMap = {
+      case v : String if v.startsWith("2.8") =>
 	"org.scala-tools.sxr" % "sxr_2.8.0" % "0.2.7"
-      else 
-	"org.scala-tools.sxr" % "sxr_2.9.0" % "0.2.7"
+      case v : String if v.startsWith("2.9") =>
+	"org.scala-tools.sxr" % "sxr_2.9.0" % "0.2.7"      
     }, 
     rootProjectId = "scales-xml-root", projectDependencies = Seq(core, jaxen),
     standardSettings = standardSettings ++ Utils.resourceSettings ++ 
@@ -125,7 +125,17 @@ object ScalesXmlRoot extends Build {
       //,(SEALED, "true")
       )
     ),
-//    (scaladocOptions in Compile in doc) += "-diagrams",
+    /* requires many other command line options and installations for windows:
+      -Ddot_exe=%dot_exe%
+      * against - no spaces
+      set dot_exe=c:/PROGRA~2/GRAPHV~1.28/bin/dot.exe
+     */ 
+    (scaladocOptions in Compile in doc) <++= (scalaVersion).map{(v: String) => 
+      if (v.startsWith("2.10"))
+	Seq("-diagrams")
+      else
+	Seq()
+    },
     autoCompilerPlugins := false,
     fork in run := true, 
     parallelExecution in runSecurely := false
