@@ -54,9 +54,12 @@
 ; '''Accessing and Querying Data'''
 ;* [XPaths.html XPath Embedded DSL]
 ;** [XPaths.html#Simple_Usage_Examples Simple Usage Examples]
+;** [XPaths.html#XPath_Crash_Course XPath Crash Course]
 ;** [XPaths.html#XPath_Axe XPath Axe]
 ;** [XPaths.html#Node_Tests Node Tests]
 ;** [XPaths.html#Predicates Predicates]
+;*** [XPaths.html#Predicate_Construction Predicate Construction]
+;*** [XPaths.html#Chaining_Predicates Chaining Predicates]
 ;*** [XPaths.html#Positional_Predicates Positional Predicates]
 ;*** [XPaths.html#Direct_Filtering Direct Filtering]
 ;** [XPaths.html#Unsorted_Results_and_Views Unsorted Results and Views]
