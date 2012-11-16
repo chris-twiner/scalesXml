@@ -478,6 +478,10 @@ abstract class AsyncParser2(implicit xmlVersion : XmlVersion) extends CloseOnNee
   }
 
   def pump() : Option[PullType] = {
+    if (feeder.needMoreInput) {
+      println("needed more but we still pumped")
+    }
+
     // don't have to re-read, let it push what it has
     if (depth == -1) {
       pumpMisc()
@@ -519,6 +523,8 @@ abstract class AsyncParser2(implicit xmlVersion : XmlVersion) extends CloseOnNee
     }
 
   def nextInput(d: DataChunk): Input[EphemeralStream[PullType]] = {
+    println("called nextInput")
+
     if (isClosed) {
       IterV.EOF[EphemeralStream[PullType]]      
     } else {
@@ -557,20 +563,30 @@ object AsyncParser2 {
 	  )), IterV.EOF[DataChunk])
     }
 
+    def emptyness : ResumableIter[DataChunk, EphemeralStream[PullType]] = Done((EphemeralStream.empty, Cont(step)), IterV.Empty[DataChunk])
+
     def step(s: Input[DataChunk]): ResumableIter[DataChunk, EphemeralStream[PullType]] = 
       s(el = e => {
 	  val r = parser.nextInput(e)
 	  r( el = es => {
+		println("got el")
 	      Done((es,
 		    Cont(
 		      step
 		      )), IterV.Empty[DataChunk])
 	      },
-	      empty = Cont(step),
+	      empty = {
+		println("empty from done")
+		emptyness//Cont(step)
+	      },
 	      eof = EOF
 	  )
 	},
-	empty = Cont(step),
+	empty = {
+	  println("doneage on empty")
+	  emptyness
+	  //Done((EphemeralStream.empty, Cont(step)), IterV.Empty[DataChunk]) // nothing that can be done on empty
+	},
 	eof = EOF
       )
 

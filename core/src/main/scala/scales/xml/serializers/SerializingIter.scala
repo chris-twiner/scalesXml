@@ -46,6 +46,7 @@ trait SerializingIter {
 	},
         empty = {
 	  empties += 1
+	  println("outitr empty")
 	  Cont(rest(status, prev, serializer))
 	},
         eof =  {
