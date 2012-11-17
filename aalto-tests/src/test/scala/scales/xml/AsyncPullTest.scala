@@ -591,7 +591,7 @@ trait RunEval[WHAT,RETURN] {
   }
 */
 */
-
+*/
 
   // Just using the parser
   def testRandomAmountsDirectParser2 = {
@@ -601,34 +601,8 @@ trait RunEval[WHAT,RETURN] {
     val str = asString(doc)
 
     val stream = url.openStream()
-
-    val ourbuf = Array.ofDim[Byte](smallBufSize)
-
-    val rand = new scala.util.Random()
-
-    var zerod = 0
-
-    val randomChannel = new java.nio.channels.ReadableByteChannel {
-      var closed = false
-      def read( buf : java.nio.ByteBuffer ) : Int = {
-	val red = {
-	  val t = rand.nextInt(smallBufSize)
-	  if (t == 0) {
-	    zerod += 1
-	    0
-	  } else t
-	}
-	if (red != 0) {
-	  val did = stream.read(ourbuf, 0, red)
-	  if (did > -1) {
-	    buf.put(ourbuf, 0, did)
-	  }
-	  did
-	} else red
-      }
-      def close = { closed = true; stream.close }
-      def isOpen = !closed
-    }
+    
+    val randomChannel = new RandomChannelStreamWrapper(stream, smallBufSize)
 
     val parser = AsyncParser2()
 
@@ -658,11 +632,11 @@ trait RunEval[WHAT,RETURN] {
       )
     }
     
-    println("got a zero len "+zerod+" times. Nexted "+nexted+" - headed "+headed)
+    println("got a zero len "+randomChannel.zeroed+" times. Nexted "+nexted+" - headed "+headed)
     val s = asString(res.iterator : Iterator[PullType])
     assertEquals(s, str)
 
-    assertEquals(zerod + 1, nexted)
+    assertEquals(randomChannel.zeroed + 1, nexted)
   }
 
   // using the parser and the parse iteratee
@@ -674,33 +648,7 @@ trait RunEval[WHAT,RETURN] {
 
     val stream = url.openStream()
 
-    val ourbuf = Array.ofDim[Byte](smallBufSize)
-
-    val rand = new scala.util.Random()
-
-    var zerod = 0
-
-    val randomChannel = new java.nio.channels.ReadableByteChannel {
-      var closed = false
-      def read( buf : java.nio.ByteBuffer ) : Int = {
-	val red = {
-	  val t = rand.nextInt(smallBufSize)
-	  if (t == 0) {
-	    zerod += 1
-	    0
-	  } else t
-	}
-	if (red != 0) {
-	  val did = stream.read(ourbuf, 0, red)
-	  if (did > -1) {
-	    buf.put(ourbuf, 0, did)
-	  }
-	  did
-	} else red
-      }
-      def close = { closed = true; stream.close }
-      def isOpen = !closed
-    }
+    val randomChannel = new RandomChannelStreamWrapper(stream, smallBufSize)
 
     val parser = AsyncParser2()
 
@@ -755,15 +703,11 @@ trait RunEval[WHAT,RETURN] {
       }
     }
     
-    println("got a zero len "+zerod+" times. Nexted "+nexted+" - headed "+headed)
     val s = asString(res.iterator : Iterator[PullType])
-    //println("s was "+s)
     assertEquals(s, str)
-
-//    assertEquals(zerod + 1, nexted)
   }
 
-*/
+
 
   class RandomChannelStreamWrapper(val stream: java.io.InputStream, bufSize: Int) extends BaseRandomChannelWrapper(bufSize) {
     protected def fillBuffer(buffer: Array[Byte], len: Int): Int = 
@@ -872,8 +816,6 @@ trait RunEval[WHAT,RETURN] {
     assertTrue("should have been EOF", isEOF(c))
   }
 
-/*
-
   def testSimpleLoadSerializingMisc2 = {
     val url = sresource(this, "/data/MiscTests.xml")
 
@@ -924,8 +866,6 @@ trait RunEval[WHAT,RETURN] {
     assertTrue("should have been auto closed", closer.isClosed)
     assertEquals(str, strout.toString)
   }
-
-*/
 
   /**
    * This version of enumerateeOneToMany returns Done((None, cont), Empty) when the toMany iteratee cannot supply anything else than Empty for an Empty input.
@@ -1193,7 +1133,7 @@ trait RunEval[WHAT,RETURN] {
       }
     }
   }
-/*
+
   def testSimpleLoad2 = {
     val url = sresource(this, "/data/BaseXmlTest.xml")
 
@@ -1211,5 +1151,5 @@ trait RunEval[WHAT,RETURN] {
     assertEquals("{urn:default}Default", e.right.get.name.qualifiedName)
     assertTrue("The parser should have been closed", parser.isClosed)
   }
-*/
+
 }
