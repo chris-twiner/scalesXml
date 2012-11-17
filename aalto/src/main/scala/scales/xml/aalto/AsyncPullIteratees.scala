@@ -523,7 +523,7 @@ abstract class AsyncParser2(implicit xmlVersion : XmlVersion) extends CloseOnNee
     }
 
   def nextInput(d: DataChunk): Input[EphemeralStream[PullType]] = {
-    println("called nextInput")
+    //println("called nextInput")
 
     if (isClosed) {
       IterV.EOF[EphemeralStream[PullType]]      
@@ -569,21 +569,21 @@ object AsyncParser2 {
       s(el = e => {
 	  val r = parser.nextInput(e)
 	  r( el = es => {
-		println("got el")
+		//println("got el")
 	      Done((es,
 		    Cont(
 		      step
 		      )), IterV.Empty[DataChunk])
 	      },
 	      empty = {
-		println("empty from done")
+		//println("empty from done")
 		emptyness//Cont(step)
 	      },
 	      eof = EOF
 	  )
 	},
 	empty = {
-	  println("doneage on empty")
+	  //println("doneage on empty")
 	  emptyness
 	  //Done((EphemeralStream.empty, Cont(step)), IterV.Empty[DataChunk]) // nothing that can be done on empty
 	},

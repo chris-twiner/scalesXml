@@ -31,7 +31,7 @@ trait SerializingIter {
     def done( status : StreamStatus ) : SerialIterT = {
       // give it back
       closer()
-      println("empties was "+empties)
+      //println("empties was "+empties)
       Done((status.output, status.thrown), EOF[PullType])
     }
 
@@ -46,7 +46,7 @@ trait SerializingIter {
 	},
         empty = {
 	  empties += 1
-	  println("outitr empty")
+	  //println("outitr empty")
 	  Cont(rest(status, prev, serializer))
 	},
         eof =  {

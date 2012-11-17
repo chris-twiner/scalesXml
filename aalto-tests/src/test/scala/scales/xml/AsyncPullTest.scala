@@ -765,6 +765,49 @@ trait RunEval[WHAT,RETURN] {
 
 */
 
+  class RandomChannelStreamWrapper(val stream: java.io.InputStream, bufSize: Int) extends BaseRandomChannelWrapper(bufSize) {
+    protected def fillBuffer(buffer: Array[Byte], len: Int): Int = 
+      stream.read(buffer, 0, len)
+
+    protected def closeUnderlying: Unit = stream.close
+  }
+
+  abstract class BaseRandomChannelWrapper(bufSize: Int) extends java.nio.channels.ReadableByteChannel {
+    
+    protected def fillBuffer(buffer: Array[Byte], len: Int): Int
+
+    private[this] var _zeroed = 0
+    
+    def zeroed = _zeroed
+
+    private[this] val ourbuf = Array.ofDim[Byte](bufSize)
+    private[this] val rand = new scala.util.Random()
+
+    private[this] var closed = false
+    
+    def read( buf : java.nio.ByteBuffer ) : Int = {
+      val red = {
+	val t = rand.nextInt(bufSize)
+	if (t == 0) {
+	  _zeroed += 1
+	  0
+	} else t
+      }
+      if (red != 0) {
+	val did = fillBuffer(ourbuf, red)
+	if (did > -1) {
+	  buf.put(ourbuf, 0, did)
+	}
+	did
+      } else red
+    }
+
+    protected def closeUnderlying: Unit
+
+    def close = { closed = true; closeUnderlying }
+    def isOpen = !closed
+  }
+
   /**
    * Hideously spams with various sizes of data, and more than a few 0 lengths.
    *
@@ -778,41 +821,15 @@ trait RunEval[WHAT,RETURN] {
 
     val stream = url.openStream()
 
-    val ourbuf = Array.ofDim[Byte](smallBufSize)
-
-    val rand = new scala.util.Random()
-
-    var zerod = 0
-
-    val randomChannel = new java.nio.channels.ReadableByteChannel {
-      var closed = false
-      def read( buf : java.nio.ByteBuffer ) : Int = {
-	val red = {
-	  val t = rand.nextInt(smallBufSize)
-	  if (t == 0) {
-	    zerod += 1
-	    0
-	  } else t
-	}
-	if (red != 0) {
-	  val did = stream.read(ourbuf, 0, red)
-	  if (did > -1) {
-	    buf.put(ourbuf, 0, did)
-	  }
-	  did
-	} else red
-      }
-      def close = { closed = true; stream.close }
-      def isOpen = !closed
-    }
-
+    val randomChannel = new RandomChannelStreamWrapper(stream, smallBufSize)
+    
     val parser = AsyncParser2()
 
     val strout = new java.io.StringWriter()
     val (closer, iter) = pushXmlIter( strout , doc )
 
-    val enumeratee = enumerateeOneToMany(iter)(AsyncParser2.parse(parser))
-    val wrapped = new ReadableByteChannelWrapper(randomChannel, tinyBuffers)
+    val enumeratee = enumToManyAsync(iter)(AsyncParser2.parse(parser))
+    val wrapped = new ReadableByteChannelWrapper(randomChannel, true, tinyBuffers)
     val cstable = enumeratee(wrapped).eval
     var c = cstable
     
@@ -825,12 +842,14 @@ trait RunEval[WHAT,RETURN] {
     while((extract(c) == FEEDME) || (!isDone(c))) {
       c = extractCont(c)(wrapped).eval
       count += 1
-      println("evals")
+      //println("evals")
     }
-    println("eval'd "+ count +" times ") 
-    println("got a zero len "+zerod+" times ")
+//    println("eval'd "+ count +" times ") 
+//    println("got a zero len "+ randomChannel.zeroed+" times ")
 
-    println("is " + c.fold( done = (a, i) => i, cont = k => ""))
+    assertEquals("eval "+count+" zero "+randomChannel.zeroed, count, randomChannel.zeroed)
+
+//    println("is " + c.fold( done = (a, i) => i, cont = k => ""))
     
 //    println("Got a "+extract(c))
 //    println("was " + strout.toString)
@@ -907,6 +926,24 @@ trait RunEval[WHAT,RETURN] {
   }
 
 */
+
+  /**
+   * This version of enumerateeOneToMany returns Done((None, cont), Empty) when the toMany iteratee cannot supply anything else than Empty for an Empty input.
+   */ 
+  def enumToManyAsync[E, A, R]( dest: ResumableIter[A,R])( toMany: ResumableIter[E, EphemeralStream[A]]): ResumableIter[E, Option[R]] = 
+    enumerateeOneToManyOption[E, A, R, Option[R]](
+      identity, // keep the option
+      true // should send us the option
+      )(dest)(toMany)
+  
+  /**
+   * Defaults to continuing when Empty is returned by toMany for an Empty input.
+   */ 
+  def enumerateeOneToMany[E, A, R]( dest: ResumableIter[A,R])( toMany: ResumableIter[E, EphemeralStream[A]]): ResumableIter[E, R] = 
+    enumerateeOneToManyOption[E, A, R, R](
+      _.getOrElse(error("No Asynchnronous Behaviour Expected But the toMany still recieved an Empty and returned a Done Empty")), // throw if async somehow got returned
+      false // use cont instead
+      )(dest)(toMany)
   
   /**
    * Takes a function f that turns input into an Input[EphemeralStream] of a different type A.  The function f may return El(EphemeralStream.empty) which is treated as Empty.
@@ -915,16 +952,16 @@ trait RunEval[WHAT,RETURN] {
    *
    * Option is required in the return to handle the case of empty -> empty infinite loops.  For asynchronous parsing, for example, we should be able to return an empty result but with Empty as the input type.
    */ 
-  def enumerateeOneToMany[E, A, R]( dest: ResumableIter[A,R])( toMany: ResumableIter[E, EphemeralStream[A]]): ResumableIter[E, Option[R]] = {
+  def enumerateeOneToManyOption[E, A, R, T](converter: Option[R] => T, doneOnEmptyForEmpty: Boolean)( dest: ResumableIter[A,R])( toMany: ResumableIter[E, EphemeralStream[A]]): ResumableIter[E, T] = {
     val empty = () => EphemeralStream.empty
 
     def loop( i: ResumableIter[A,R], s: () => EphemeralStream[A] ):
       (ResumableIter[A,R], () => EphemeralStream[A]) = {
       var c: ResumableIter[A,R] = i
       var cs: EphemeralStream[A] = s() // need it now
-println("loopy")
+//println("loopy")
       while(!isDone(c) && !cs.isEmpty) {
-	println("doing a loop")
+//	println("doing a loop")
 	val (nc, ncs): (ResumableIter[A,R], EphemeralStream[A]) = c.fold(
 	  done = (a, y) => (cs, s()),// send it back
 	  cont = 
@@ -940,15 +977,15 @@ println("loopy")
       //next(c, () => cs, state) // let it deal with it.
     }
 
-    def next( i: ResumableIter[A,R], s: () => EphemeralStream[A], toMany: ResumableIter[E, EphemeralStream[A]] ): ResumableIter[E, Option[R]] =
+    def next( i: ResumableIter[A,R], s: () => EphemeralStream[A], toMany: ResumableIter[E, EphemeralStream[A]] ): ResumableIter[E, T] =
       i.fold(
 	done = (a, y) => {
-	  println(" y is "+y) 
+	  //println(" y is "+y) 
 
 	  val (rawRes, nextCont) = a
-	  val res = Option(rawRes)
+	  val res = converter(Option(rawRes))
 
-	  val returnThis : ResumableIter[E, Option[R]] = 
+	  val returnThis : ResumableIter[E, T] = 
 	  if ((isDone(nextCont) && isEOF(nextCont)) ||
 	      (isDone(toMany) && isEOF(toMany))     || // either eof then its not restartable
 	      (EOF.unapply(y)) // or the source is out of elements
@@ -984,7 +1021,7 @@ println("loopy")
 	    } else
 	      Cont((x: Input[E]) => 
 		x( el = e => {
-		  println("got a "+e)
+		  //println("got a "+e)
 		  toMany.fold (
 		    done = (a, y) => {
 		      val (e1, nextContR) = a
@@ -1004,7 +1041,7 @@ println("loopy")
 			    next(k(IterV.EOF[A]), empty, nextContR)
 			  } else {
 			    if (e1.isEmpty) {
-			      println("empty on nextcontr")
+			      //println("empty on nextcontr")
 			      next(k(IterV.Empty[A]), empty, nextContR)
 			    }
 			    else
@@ -1019,7 +1056,7 @@ println("loopy")
 		  )
 		},
 		  empty = {
-		    println("empty on cont")
+		    //println("empty on cont")
 		    toMany.fold (
 		      done = (a, y) => {
 			error("shouldn't be done ever, unless it was done to start with")
@@ -1038,21 +1075,21 @@ println("loopy")
 			}*/
 		      },
 		      cont = y => {
-			println("looping back again, the to many can't do anything with empty")
+			//println("looping back again, the to many can't do anything with empty")
 			// push it through
 			val res = y(x)
 			res.fold (
 			  done = (a1, y1) => {
 			    val (e1 : EphemeralStream[A], nextCont : ResumableIter[E,EphemeralStream[A]]) = a1.asInstanceOf[(EphemeralStream[A], ResumableIter[E,EphemeralStream[A]])]
-			    if (e1.isEmpty && IterV.Empty.unapply[E](y1)) {
+			    if (doneOnEmptyForEmpty && e1.isEmpty && IterV.Empty.unapply[E](y1)) {
 			      // the toMany has indicated it can't do anything more
 			      // don't loop but drop out
-			      println("drop out")
-			      Done((None, 
+			      //println("drop out")
+			      Done((converter(None), 
 				    next(k(IterV.Empty[A]), empty, nextCont)), IterV.Empty[E])	
 			    }
 			    else {
-			      println("couldn't drop out ")
+			      //println("couldn't drop out ")
 			      next(k(IterV.Empty[A]), () => e1, nextCont)
 			    }   
 			  },
@@ -1082,14 +1119,17 @@ println("loopy")
   implicit def toRBCWrapper(channel: ReadableByteChannel)(implicit ev: DataChunkEvidence[DataChunk]): ReadableByteChannelWrapper[DataChunk] = new ReadableByteChannelWrapper(channel)
 
   /**
-   * Does not close the channel
+   * Wraps a ReadableByteChannel to provide DataChunks, optionally closes the channel (defaults to closing)
    */ 
-  class ReadableByteChannelWrapper[T](val channel: ReadableByteChannel, private val bytePool: Pool[ByteBuffer] = defaultBufferPool)(implicit ev: DataChunkEvidence[T]) extends CloseOnNeed {
+  class ReadableByteChannelWrapper[T](val channel: ReadableByteChannel, private val closeChannel: Boolean = true, private val bytePool: Pool[ByteBuffer] = defaultBufferPool)(implicit ev: DataChunkEvidence[T]) extends CloseOnNeed {
 
     val buffer = bytePool.grab
 
     protected def doClose = {
       bytePool.giveBack(buffer)
+      if (closeChannel) {
+	channel.close()
+      }
     }
 
     protected def jbytes() : DataChunk = {
@@ -1142,14 +1182,12 @@ println("loopy")
 	  val realChunk = wrapped.nextChunk
 	  val nextChunk = realChunk.asInstanceOf[E]
 	  apply(wrapped,
-		if (realChunk.isEOF) {
-		  println("EOFin hell chunk")
+		if (realChunk.isEOF)
 		  k(IterV.EOF[E])
-		} else
-		  if (realChunk.isEmpty) {
-		    println("The chunk was empty man")
+		else
+		  if (realChunk.isEmpty)
 		    k(IterV.Empty[E])
-		  } else
+		  else
 		    k(El(nextChunk))
 		)
       }
