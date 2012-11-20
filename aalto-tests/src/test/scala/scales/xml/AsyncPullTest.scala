@@ -45,11 +45,6 @@ trait RunEval[WHAT,RETURN] {
     lazy val orig = i
   }
 
-  
-  val aenum = new AsyncParserEnumerator()
-
-  implicit val enum : Enumerator[AsyncParser] = aenum
-
 //  def reEval[E,A]( iter : 
  
   /**
@@ -116,35 +111,7 @@ trait RunEval[WHAT,RETURN] {
     parser.closeResource
     wrapped.closeResource
   }
-/*
-  def testFlatMapMultipleDones = {
-    val url = sresource(this, "/data/BaseXmlTest.xml")
 
-    val channel = Channels.newChannel(url.openStream())
-
-    val parser = AsyncParser(channel) // let the whole thing be swallowed in one
-    
-    val iter = 
-      for {
-	_ <- peek[PullType]
-	_ <- peek[PullType]
-	_ <- peek[PullType]
-	_ <- peek[PullType]
-	_ <- peek[PullType]
-	i <- evalWith((p : PullType) => {
-//	  println("first is " + p)
-	  p} )
-	j <- dropWhile((p : PullType) => {
-	   p.fold( x => !x.isInstanceOf[Elem] , y => false)
-	  } )
-      } yield j
-    
-    val e = iter(parser).run
-    assertTrue("Should be defined", e.isDefined)
-    assertEquals("{urn:default}DontRedeclare", e.get.left.get.asInstanceOf[Elem].name.qualifiedName)
-    parser.closeResource
-  }
-*/
   /**
    * Enumeratee that converts input 1:1
    * String => Int, enumerator Iterator[String] but IterV[Int, Int]
@@ -308,7 +275,7 @@ trait RunEval[WHAT,RETURN] {
   /**
    * Enumeratee that folds over the Iteratee with Cont or Done and Empty, returning with Done and EOF.
    *
-   * Converts ResumableIters on Done via a fold, returning Done only when receiving EOF from the initResumable.
+   * Converts ResumableIters on Done via a fold, returning Done only when receiving EOF from the initIter.
    *
    * NB - This can be thought of the reverse of toResumableIter but also accumulating.
    */
@@ -425,7 +392,7 @@ trait RunEval[WHAT,RETURN] {
       )
     }
     
-    println("got a zero len "+randomChannel.zeroed+" times. Nexted "+nexted+" - headed "+headed)
+    //println("got a zero len "+randomChannel.zeroed+" times. Nexted "+nexted+" - headed "+headed)
     val s = asString(res.iterator : Iterator[PullType])
     assertEquals(s, str)
 
