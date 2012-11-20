@@ -50,20 +50,22 @@ case class Chunk( array: Array[Byte], offset: Int, length: Int) extends DataChun
 
 
 /**
- * Represents an asnych parser.  T is a dummy for the enumerator, only PullType is supported.
- * Callers MUST ensure that close is called in the case of an exception as well as the end of processing, failing to do so will cause unnecessary ByteBuffer creation. 
- */ 
-abstract class AsyncParser2(implicit xmlVersion : XmlVersion) extends CloseOnNeed with DocLike {
+ * An AynscParser, a DataChunk is fed in via nextInput which, in turn, returns an Input[EphmeralStream[PullType]] of events.
+ * When the Input is El then the stream may be evaluated to get all available events, and will return empty when no more for that data chunk is available.
+ * 
+ * See nextInput for more info.
+ */
+abstract class AsyncParser(implicit xmlVersion : XmlVersion) extends CloseOnNeed with DocLike {
 
-  type Token <: OptimisationToken
+  protected type Token <: OptimisationToken
 
-  val strategy : MemoryOptimisationStrategy[Token]
+  protected val strategy : MemoryOptimisationStrategy[Token]
 
-  val feeder : AsyncInputFeeder
+  protected val feeder : AsyncInputFeeder
 
-  val token : Token
+  protected val token : Token
 
-  val parser : AsyncXMLStreamReader
+  protected val parser : AsyncXMLStreamReader
 
   /**
    * Closes the feeder and parser
@@ -76,11 +78,11 @@ abstract class AsyncParser2(implicit xmlVersion : XmlVersion) extends CloseOnNee
   // to capture the miscs.
   private[this] var docImpl = EmptyDoc()
 
-  def copyProlog(p : Prolog) { 
+  protected def copyProlog(p : Prolog) { 
     docImpl = docImpl.copy( prolog = p )
   }
 
-  def addPrologMisc(m : PullType) { 
+  protected def addPrologMisc(m : PullType) { 
     copyProlog( 
       prolog.copy(
 	misc = prolog.misc :+ PullUtils.getMisc(m, "prolog") 
@@ -88,7 +90,7 @@ abstract class AsyncParser2(implicit xmlVersion : XmlVersion) extends CloseOnNee
     )
   }
 
-  def addEndMisc(m : PullType) { 
+  protected def addEndMisc(m : PullType) { 
     docImpl = docImpl.copy( 
       end = end.copy( 
 	misc = end.misc :+ PullUtils.getMisc(m, "endMisc") 
@@ -98,7 +100,6 @@ abstract class AsyncParser2(implicit xmlVersion : XmlVersion) extends CloseOnNee
 
   def prolog = docImpl.prolog
   def end = docImpl.end
-
 
   protected var depth = -1
   protected var started = false
@@ -163,7 +164,7 @@ abstract class AsyncParser2(implicit xmlVersion : XmlVersion) extends CloseOnNee
     }
   }
 
-  def pump() : Option[PullType] = {
+  protected def pump() : Option[PullType] = {
     if (feeder.needMoreInput) {
       println("needed more but we still pumped")
     }
@@ -197,7 +198,7 @@ abstract class AsyncParser2(implicit xmlVersion : XmlVersion) extends CloseOnNee
   }
 
   // keep going until we get needs more input
-  def nextStream(): EphemeralStream[PullType] =
+  protected def nextStream(): EphemeralStream[PullType] =
     if (isClosed || feeder.needMoreInput) // keep num around?
       EphemeralStream.empty
     else {
@@ -208,6 +209,16 @@ abstract class AsyncParser2(implicit xmlVersion : XmlVersion) extends CloseOnNee
       getOrElse(nextStream()) // 
     }
 
+  /**
+   * Given a DataChunk will return the next available data stream.
+   * Returns EOF when the Parser is closed, Empty when more DataChunks are needed.
+   * Returning El[EphemeralStream[PullType]] provides a stream which will lazily evalulate all available Xml Events from this DataChunk.
+   *
+   *
+   * NOTEs (see Aalto-xml feeder.feedInput for details on this):
+   * 1) All existing events from the last El should be consumed before calling nextInput again
+   * 2) The DataChunk passed in should not be re-used until the stream returns empty (or Empty/EOF is returned).
+   */ 
   def nextInput(d: DataChunk): Input[EphemeralStream[PullType]] = {
     //println("called nextInput")
 
@@ -225,20 +236,11 @@ abstract class AsyncParser2(implicit xmlVersion : XmlVersion) extends CloseOnNee
   
 }
 
-object AsyncParser2 {
-  /**
-   * Function to use with enumToMany
-   *
-  val parse: (DataChunk, AsyncParser2) => (Input[EphemeralStream[PullType]], AsyncParser2) = (dc: DataChunk, parser: AsyncParser2) => {
-    val r = parser.nextInput(dc)
-    println(r)
-    (r, parser)
-  }*/
-
+object AsyncParser {
   /**
    * Pumps a DataChunk into a parser
    */ 
-  def parse(parser: AsyncParser2): ResumableIter[DataChunk, EphemeralStream[PullType]] = {
+  def parse(parser: AsyncParser): ResumableIter[DataChunk, EphemeralStream[PullType]] = {
 
     def EOF: ResumableIter[DataChunk, EphemeralStream[PullType]] = {
       parser.closeResource
@@ -283,7 +285,7 @@ object AsyncParser2 {
   /**
    * Creates a parser based on the input channel provided
    */
-  def apply[TokenT <: OptimisationToken]( optimisationStrategy : MemoryOptimisationStrategy[TokenT] = defaultOptimisation, parsers : Pool[AsyncXMLInputFactory] = AsyncXMLInputFactoryPool )( implicit xmlVersion : XmlVersion ) : AsyncParser2 = new AsyncParser2(){
+  def apply[TokenT <: OptimisationToken]( optimisationStrategy : MemoryOptimisationStrategy[TokenT] = defaultOptimisation, parsers : Pool[AsyncXMLInputFactory] = AsyncXMLInputFactoryPool )( implicit xmlVersion : XmlVersion ) : AsyncParser = new AsyncParser(){
     type Token = TokenT
     val strategy = optimisationStrategy
     

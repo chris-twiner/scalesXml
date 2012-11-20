@@ -85,7 +85,7 @@ trait RunEval[WHAT,RETURN] {
 
     val channel = Channels.newChannel(url.openStream())
 
-    val parser = AsyncParser2() // let the whole thing be swallowed in one
+    val parser = AsyncParser() // let the whole thing be swallowed in one
     
     val iter = 
       for {
@@ -102,7 +102,7 @@ trait RunEval[WHAT,RETURN] {
 	  } )
       } yield j
     
-    val enumeratee = enumerateeOneToMany(iter)(AsyncParser2.parse(parser))
+    val enumeratee = enumToMany(iter)(AsyncParser.parse(parser))
     val wrapped = new ReadableByteChannelWrapper(channel, true, tinyBuffers)
     
     val (e,cont) = enumeratee(wrapped).run
@@ -159,7 +159,7 @@ trait RunEval[WHAT,RETURN] {
     
     Cont(step)
   }
-/*
+
   def testSimpleEnumerateeMap = {
     
     val i = List("1","2","3","4").iterator
@@ -168,7 +168,7 @@ trait RunEval[WHAT,RETURN] {
     assertEquals(10, res)
   }
   
-  def testEnumerateeOneToManyExhaustState = {
+  def testEnumToManyExhaustState = {
     
     val l = List(1,2,3,4)
 
@@ -187,7 +187,7 @@ trait RunEval[WHAT,RETURN] {
 
 //    val f = (i: Int) => mapTo((s: Int) => (El(iTo(s, i)), s + 1))
 
-    val enum = (i: Int) => enumerateeOneToMany(sum[Int])(f(i))
+    val enum = (i: Int) => enumToMany(sum[Int])(f(i))
 
     // 1, 2, 3, 4 only, the to is ignored
     val (res, cont) = enum(1)(l.iterator).run
@@ -201,41 +201,38 @@ trait RunEval[WHAT,RETURN] {
 
   }
 
-  def testEnumerateeOneToManyExhaust = {
+  def testEnumToManyExhaust = {
     
     val i = List(1,2,3,4).iterator
 
-    val (res, cont) = enumerateeOneToMany(sum[Int])( mapTo( (i: Int) => El(iTo(1, i)) ) )(i).run
+    val (res, cont) = enumToMany(sum[Int])( mapTo( (i: Int) => El(iTo(1, i)) ) )(i).run
     assertEquals(20, res)
     assertTrue("should have been done", isDone(cont))
   }
 
-  def testEnumerateeOneToManyEOFFromMap = {
+  def testEnumToManyEOFFromMap = {
     
     val i = List(1,2,3,4).iterator
 
-    val (res, cont) = enumerateeOneToMany(sum[Int])( mapTo( (i: Int) => EOF[EphemeralStream[Int]] ) )(i).run
+    val (res, cont) = enumToMany(sum[Int])( mapTo( (i: Int) => EOF[EphemeralStream[Int]] ) )(i).run
     assertEquals(0, res)
     assertTrue("should have been done", isDone(cont))
 
     val rest = i.take(4).toSeq
-    println(rest)
+    //println(rest)
     assertEquals("Should still have had items in the list", 9, rest.sum)
   }
 
   /**
    * Make sure it doesn't soe in the loop
    */ 
-  def testEnumerateeOneToManySOE = {
+  def testEnumToManySOE = {
     val i = List[Long](1,2,3,4,5).iterator
     
-    val (res, cont) = enumerateeOneToMany(sum[Long])( mapTo( (_:Long) => El(lTo(1L, 100000L)) ) )(i).run
+    val (res, cont) = enumToMany(sum[Long])( mapTo( (_:Long) => El(lTo(1L, 100000L)) ) )(i).run
     assertEquals(25000250000L, res)
     assertTrue("should have been done", isDone(cont))
   }
-
-*/
-
 
   def lTo(lower: Long, upper: Long): EphemeralStream[Long] =
     if (lower > upper) EphemeralStream.empty else EphemeralStream.cons(lower, lTo(lower + 1, upper))
@@ -263,7 +260,7 @@ trait RunEval[WHAT,RETURN] {
       Cont(step(0))
     }
 
-    val (res, cont) = enumerateeOneToMany(sum)( mapTo( (_:Long) => El(lTo(1L, 100000L)) ) )(i).run
+    val (res, cont) = enumToMany(sum)( mapTo( (_:Long) => El(lTo(1L, 100000L)) ) )(i).run
     assertEquals(25000050001L, res)
     assertTrue("should not have been done", !isDone(cont))
 
@@ -313,17 +310,17 @@ trait RunEval[WHAT,RETURN] {
   def testSimpleLoadAndFold =
     doSimpleLoadAndFold{
       (p, iter, wrapped) => 
-      val enumeratee = enumerateeOneToMany(iter)(AsyncParser2.parse(p))
+      val enumeratee = enumToMany(iter)(AsyncParser.parse(p))
       val (e,cont) = enumeratee(wrapped).run
       e
     }
 
-  def doSimpleLoadAndFold[T](test: (AsyncParser2, IterV[PullType, List[String]], ReadableByteChannelWrapper[DataChunk ]) =>  List[String] ) : Unit = {
+  def doSimpleLoadAndFold[T](test: (AsyncParser, IterV[PullType, List[String]], ReadableByteChannelWrapper[DataChunk ]) =>  List[String] ) : Unit = {
     val url = sresource(this, "/data/BaseXmlTest.xml")
 
     val channel = Channels.newChannel(url.openStream())
 
-    val parser = AsyncParser2()
+    val parser = AsyncParser()
 
     val ns = Namespace("urn:default")
 
@@ -348,13 +345,13 @@ trait RunEval[WHAT,RETURN] {
     // should have collected all anyway
     doSimpleLoadAndFold{
       (p, iter, wrapped) => 
-      val enumeratee = enumToManyAsync(iter)(AsyncParser2.parse(p))
+      val enumeratee = enumToManyAsync(iter)(AsyncParser.parse(p))
       val (Some(e),cont) = enumeratee(wrapped).run
       e
     }
 
   // Just using the parser
-  def testRandomAmountsDirectParser2 = {
+  def testRandomAmountsDirectParser = {
     val url = sresource(this, "/data/BaseXmlTest.xml")
 
     val doc = loadXmlReader(url, parsers = NoVersionXmlReaderFactoryPool)
@@ -364,7 +361,7 @@ trait RunEval[WHAT,RETURN] {
     
     val randomChannel = new RandomChannelStreamWrapper(stream, smallBufSize)
 
-    val parser = AsyncParser2()
+    val parser = AsyncParser()
 
     val empty = () => EphemeralStream.empty
 
@@ -400,7 +397,7 @@ trait RunEval[WHAT,RETURN] {
   }
 
   // using the parser and the parse iteratee
-  def testRandomAmountsParse2 = {
+  def testRandomAmountsParse = {
     val url = sresource(this, "/data/BaseXmlTest.xml")
 
     val doc = loadXmlReader(url, parsers = NoVersionXmlReaderFactoryPool)
@@ -410,7 +407,7 @@ trait RunEval[WHAT,RETURN] {
 
     val randomChannel = new RandomChannelStreamWrapper(stream, smallBufSize)
 
-    val parser = AsyncParser2()
+    val parser = AsyncParser()
 
     val empty = () => EphemeralStream.empty
 
@@ -419,7 +416,7 @@ trait RunEval[WHAT,RETURN] {
 
     var res = Vector.empty[PullType]
 
-    var c = AsyncParser2.parse(parser)
+    var c = AsyncParser.parse(parser)
     
     var b : DataChunk = EmptyData
     while(b != EOFData) {
@@ -517,7 +514,7 @@ trait RunEval[WHAT,RETURN] {
    *
    * The aim is to test the proverbial out of the asynch code.  It should be able to handle being called with a single byte repeatedly.
    */
-  def testRandomAmounts2 = {
+  def testRandomAmounts = {
     val url = sresource(this, "/data/BaseXmlTest.xml")
 
     val doc = loadXmlReader(url, parsers = NoVersionXmlReaderFactoryPool)
@@ -527,12 +524,12 @@ trait RunEval[WHAT,RETURN] {
 
     val randomChannel = new RandomChannelStreamWrapper(stream, smallBufSize)
     
-    val parser = AsyncParser2()
+    val parser = AsyncParser()
 
     val strout = new java.io.StringWriter()
     val (closer, iter) = pushXmlIter( strout , doc )
 
-    val enumeratee = enumToManyAsync(iter)(AsyncParser2.parse(parser))
+    val enumeratee = enumToManyAsync(iter)(AsyncParser.parse(parser))
     val wrapped = new ReadableByteChannelWrapper(randomChannel, true, tinyBuffers)
     val cstable = enumeratee(wrapped).eval
     var c = cstable
@@ -576,7 +573,7 @@ trait RunEval[WHAT,RETURN] {
     assertTrue("should have been EOF", isEOF(c))
   }
 
-  def testSimpleLoadSerializingMisc2 = {
+  def testSimpleLoadSerializingMisc = {
     val url = sresource(this, "/data/MiscTests.xml")
 
     val doc = loadXmlReader(url, parsers = NoVersionXmlReaderFactoryPool)
@@ -586,12 +583,12 @@ trait RunEval[WHAT,RETURN] {
 //    println("asString is " + str)
     val channel = Channels.newChannel(url.openStream())
 
-    val parser = AsyncParser2()
+    val parser = AsyncParser()
 
     val strout = new java.io.StringWriter()
     val (closer, iter) = pushXmlIter( strout , doc )
 
-    val enumeratee = enumerateeOneToMany(iter)(AsyncParser2.parse(parser))
+    val enumeratee = enumToMany(iter)(AsyncParser.parse(parser))
     val ((out, thrown), cont) = enumeratee(channel: ReadableByteChannelWrapper[DataChunk]).runEval
 
     // we can swallow the lot, but endmiscs don't know there is more until the main loop, which needs evaling
@@ -602,7 +599,7 @@ trait RunEval[WHAT,RETURN] {
     assertEquals(str, strout.toString)
   }
 
-  def testSimpleLoadSerializing2 = {
+  def testSimpleLoadSerializing = {
     val url = sresource(this, "/data/BaseXmlTest.xml")
 
     val doc = loadXmlReader(url, parsers = NoVersionXmlReaderFactoryPool)
@@ -611,12 +608,12 @@ trait RunEval[WHAT,RETURN] {
 //    println("asString is " + str)
     val channel = Channels.newChannel(url.openStream())
 
-    val parser = AsyncParser2()
+    val parser = AsyncParser()
 
     val strout = new java.io.StringWriter()
     val (closer, iter) = pushXmlIter( strout , doc )
 
-    val enumeratee = enumerateeOneToMany(iter)(AsyncParser2.parse(parser))
+    val enumeratee = enumToMany(iter)(AsyncParser.parse(parser))
     val ((out, thrown), cont) = enumeratee(channel: ReadableByteChannelWrapper[DataChunk]).run
 
     // we can swallow the lot
@@ -627,7 +624,7 @@ trait RunEval[WHAT,RETURN] {
     assertEquals(str, strout.toString)
   }
 
-  def testSimpleLoad2 = {
+  def testSimpleLoad = {
     val url = sresource(this, "/data/BaseXmlTest.xml")
 
     val channel = Channels.newChannel(url.openStream())
@@ -636,9 +633,9 @@ trait RunEval[WHAT,RETURN] {
 //      println(p); 
       p} )
 
-    val parser = AsyncParser2()
+    val parser = AsyncParser()
     
-    val enumeratee = enumerateeOneToMany(iter)(AsyncParser2.parse(parser))
+    val enumeratee = enumToMany(iter)(AsyncParser.parse(parser))
     val (e, cont) = enumeratee(channel: ReadableByteChannelWrapper[DataChunk]).run
 
     assertEquals("{urn:default}Default", e.right.get.name.qualifiedName)
@@ -649,7 +646,7 @@ trait RunEval[WHAT,RETURN] {
    * This version of enumerateeOneToMany returns Done((None, cont), Empty) when the toMany iteratee cannot supply anything else than Empty for an Empty input.
    */ 
   def enumToManyAsync[E, A, R]( dest: ResumableIter[A,R])( toMany: ResumableIter[E, EphemeralStream[A]]): ResumableIter[E, Option[R]] = 
-    enumerateeOneToManyOption[E, A, R, Option[R]](
+    enumToManyOption[E, A, R, Option[R]](
       identity, // keep the option
       true // should send us the option
       )(dest)(toMany)
@@ -657,8 +654,8 @@ trait RunEval[WHAT,RETURN] {
   /**
    * Defaults to continuing when Empty is returned by toMany for an Empty input.
    */ 
-  def enumerateeOneToMany[E, A, R]( dest: ResumableIter[A,R])( toMany: ResumableIter[E, EphemeralStream[A]]): ResumableIter[E, R] = 
-    enumerateeOneToManyOption[E, A, R, R](
+  def enumToMany[E, A, R]( dest: ResumableIter[A,R])( toMany: ResumableIter[E, EphemeralStream[A]]): ResumableIter[E, R] = 
+    enumToManyOption[E, A, R, R](
       _.getOrElse(error("No Asynchnronous Behaviour Expected But the toMany still recieved an Empty and returned a Done Empty")), // throw if async somehow got returned
       false // use cont instead
       )(dest)(toMany)
@@ -670,7 +667,7 @@ trait RunEval[WHAT,RETURN] {
    *
    * Option is required in the return to handle the case of empty -> empty infinite loops.  For asynchronous parsing, for example, we should be able to return an empty result but with Empty as the input type.
    */ 
-  def enumerateeOneToManyOption[E, A, R, T](converter: Option[R] => T, doneOnEmptyForEmpty: Boolean)( dest: ResumableIter[A,R])( toMany: ResumableIter[E, EphemeralStream[A]]): ResumableIter[E, T] = {
+  def enumToManyOption[E, A, R, T](converter: Option[R] => T, doneOnEmptyForEmpty: Boolean)( dest: ResumableIter[A,R])( toMany: ResumableIter[E, EphemeralStream[A]]): ResumableIter[E, T] = {
     val empty = () => EphemeralStream.empty
 
     def loop( i: ResumableIter[A,R], s: () => EphemeralStream[A] ):
