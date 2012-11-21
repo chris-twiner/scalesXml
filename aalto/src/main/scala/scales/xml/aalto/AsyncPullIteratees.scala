@@ -1,53 +1,17 @@
 package scales.xml.aalto
 
+import scales.xml._
+import scales.utils._
+import io._
 import com.fasterxml.aalto._
 import AsyncXMLStreamReader.EVENT_INCOMPLETE
 import javax.xml.stream.XMLStreamConstants.END_DOCUMENT
-import scales.xml._
-import scales.utils._
 
 import java.nio.ByteBuffer
 import java.nio.channels.ReadableByteChannel
 
 import scalaz._
 import scalaz.IterV._
-
-/**
- * Represents a chunk of data to feed into an async parser.
- * The instance is deemed "owned" by the asnyc parser until it requires more input. 
- */ 
-sealed trait DataChunk {
-  def array: Array[Byte]
-  def offset: Int
-  def length: Int
-
-  def isEOF: Boolean = false
-  def isEmpty: Boolean = false
-}
-
-object EOFData extends DataChunk {
-  val array = Array.empty[Byte]
-  val offset = 0
-  val length = -1
-
-  override val isEOF = true
-}
-
-object EmptyData extends DataChunk {
-  val array = Array.empty[Byte]
-  val offset = 0
-  val length = 0
-
-  override val isEmpty = true
-}
-
-case class FullChunk( array: Array[Byte] ) extends DataChunk {
-  def offset = 0
-  def length = array.length
-}
-
-case class Chunk( array: Array[Byte], offset: Int, length: Int) extends DataChunk
-
 
 /**
  * An AynscParser, a DataChunk is fed in via nextInput which, in turn, returns an Input[EphmeralStream[PullType]] of events.

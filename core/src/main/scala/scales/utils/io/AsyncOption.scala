@@ -1,4 +1,4 @@
-package scales.utils
+package scales.utils.io
 
 /**
  * Simple option adt to allow handling the difference between a result and an operation that needs more data.

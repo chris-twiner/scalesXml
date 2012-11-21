@@ -10,6 +10,8 @@ class AsyncPullTest extends junit.framework.TestCase {
   import ScalesUtils._
   import scales.xml._
   import ScalesXml._
+  import io._
+  import ScalesUtilsIO._
 
   import Functions._
 
@@ -225,51 +227,6 @@ class AsyncPullTest extends junit.framework.TestCase {
     assertEquals(s, str)
   }
 
-
-
-  class RandomChannelStreamWrapper(val stream: java.io.InputStream, bufSize: Int) extends BaseRandomChannelWrapper(bufSize) {
-    protected def fillBuffer(buffer: Array[Byte], len: Int): Int = 
-      stream.read(buffer, 0, len)
-
-    protected def closeUnderlying: Unit = stream.close
-  }
-
-  abstract class BaseRandomChannelWrapper(bufSize: Int) extends java.nio.channels.ReadableByteChannel {
-    
-    protected def fillBuffer(buffer: Array[Byte], len: Int): Int
-
-    private[this] var _zeroed = 0
-    
-    def zeroed = _zeroed
-
-    private[this] val ourbuf = Array.ofDim[Byte](bufSize)
-    private[this] val rand = new scala.util.Random()
-
-    private[this] var closed = false
-    
-    def read( buf : java.nio.ByteBuffer ) : Int = {
-      val red = {
-	val t = rand.nextInt(bufSize)
-	if (t == 0) {
-	  _zeroed += 1
-	  0
-	} else t
-      }
-      if (red != 0) {
-	val did = fillBuffer(ourbuf, red)
-	if (did > -1) {
-	  buf.put(ourbuf, 0, did)
-	}
-	did
-      } else red
-    }
-
-    protected def closeUnderlying: Unit
-
-    def close = { closed = true; closeUnderlying }
-    def isOpen = !closed
-  }
-
   /**
    * Hideously spams with various sizes of data, and more than a few 0 lengths.
    *
@@ -403,91 +360,4 @@ class AsyncPullTest extends junit.framework.TestCase {
     assertTrue("The parser should have been closed", parser.isClosed)
   }
   
-  import java.nio.ByteBuffer
-
-  sealed trait DataChunkEvidence[T]
-    
-  object DataChunkEvidence {
-    implicit val justDataChunk: DataChunkEvidence[DataChunk] = 
-      new DataChunkEvidence[DataChunk]{}
-  }
-
-  implicit def toRBCWrapper(channel: ReadableByteChannel)(implicit ev: DataChunkEvidence[DataChunk]): ReadableByteChannelWrapper[DataChunk] = new ReadableByteChannelWrapper(channel)
-
-  /**
-   * Wraps a ReadableByteChannel to provide DataChunks, optionally closes the channel (defaults to closing)
-   */ 
-  class ReadableByteChannelWrapper[T](val channel: ReadableByteChannel, private val closeChannel: Boolean = true, private val bytePool: Pool[ByteBuffer] = defaultBufferPool)(implicit ev: DataChunkEvidence[T]) extends CloseOnNeed {
-
-    val buffer = bytePool.grab
-
-    protected def doClose = {
-      bytePool.giveBack(buffer)
-      if (closeChannel) {
-	channel.close()
-      }
-    }
-
-    protected def jbytes() : DataChunk = {
-      buffer.clear()
-      val read = channel.read(buffer)
-      read match {
-	case -1 => {
-	  closeResource
-	  EOFData
-	}
-	case 0 => EmptyData
-	case _ => Chunk(buffer.array, 0, read)
-      }
-    }
-
-    protected def direct(to : Array[Byte]) : DataChunk = {
-      buffer.clear()
-      val read = channel.read(buffer)
-      read match {
-	case -1 => {
-	  closeResource
-	  EOFData
-	}
-	case 0 => EmptyData
-	case _ => 
-	  buffer.get(to)
-	  Chunk(to, 0, read)
-      }
-    }
-
-    protected val bytes: () => DataChunk =
-      if (buffer.hasArray)
-	() => jbytes()
-      else {
-	// perfectly valid for a mem mapped to be huge, in which case, we would have grief ?
-	var ar = Array.ofDim[Byte](buffer.capacity)
-	() => direct(ar)
-      }
-
-    def nextChunk: DataChunk = bytes()
-
-  }
-
-  implicit val readableByteChannelEnumerator: Enumerator[ReadableByteChannelWrapper] = new Enumerator[ReadableByteChannelWrapper] {
-    def apply[E,A](wrapped: ReadableByteChannelWrapper[E], i: IterV[E,A]): IterV[E,A] = {	  
-      i match {
-	case _ if !wrapped.channel.isOpen || wrapped.isClosed => i
-	case Done(acc, input) => i
-	case Cont(k) =>
-	  val realChunk = wrapped.nextChunk
-	  val nextChunk = realChunk.asInstanceOf[E]
-	  apply(wrapped,
-		if (realChunk.isEOF)
-		  k(IterV.EOF[E])
-		else
-		  if (realChunk.isEmpty)
-		    k(IterV.Empty[E])
-		  else
-		    k(El(nextChunk))
-		)
-      }
-    }
-  }
-
 }

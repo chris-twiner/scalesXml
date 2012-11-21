@@ -411,8 +411,8 @@ trait Iteratees {
   /**
    * This version of enumToMany returns Done((None, cont), Empty) when the toMany iteratee cannot supply anything else than Empty for an Empty input.
    */ 
-  def enumToManyAsync[E, A, R]( dest: ResumableIter[A,R])( toMany: ResumableIter[E, EphemeralStream[A]]): ResumableIter[E, AsyncOption[R]] = 
-    enumToManyAsyncOption[E, A, R, AsyncOption[R]](
+  def enumToManyAsync[E, A, R]( dest: ResumableIter[A,R])( toMany: ResumableIter[E, EphemeralStream[A]]): ResumableIter[E, io.AsyncOption[R]] = 
+    enumToManyAsyncOption[E, A, R, io.AsyncOption[R]](
       identity, // keep the option
       true // should send us the option
       )(dest)(toMany)
@@ -433,7 +433,7 @@ trait Iteratees {
    *
    * Option is required in the return to handle the case of empty -> empty infinite loops.  For asynchronous parsing, for example, we should be able to return an empty result but with Empty as the input type.
    */ 
-  def enumToManyAsyncOption[E, A, R, T](converter: AsyncOption[R] => T, doneOnEmptyForEmpty: Boolean)( dest: ResumableIter[A,R])( toMany: ResumableIter[E, EphemeralStream[A]]): ResumableIter[E, T] = {
+  def enumToManyAsyncOption[E, A, R, T](converter: io.AsyncOption[R] => T, doneOnEmptyForEmpty: Boolean)( dest: ResumableIter[A,R])( toMany: ResumableIter[E, EphemeralStream[A]]): ResumableIter[E, T] = {
     val empty = () => EphemeralStream.empty
 
     def loop( i: ResumableIter[A,R], s: () => EphemeralStream[A] ):
@@ -463,7 +463,7 @@ trait Iteratees {
 //	  println(" y is "+y) 
 
 	  val (rawRes, nextCont) = a
-	  val res = converter(HasResult(rawRes))
+	  val res = converter(io.HasResult(rawRes))
 
 	  val returnThis : ResumableIter[E, T] = 
 	  if ((isDone(nextCont) && isEOF(nextCont)) ||
@@ -549,7 +549,7 @@ trait Iteratees {
 			      // the toMany has indicated it can't do anything more
 			      // don't loop but drop out
 			      //println("drop out")
-			      Done((converter(NeedsMoreData), 
+			      Done((converter(io.NeedsMoreData), 
 				    next(k(IterV.Empty[A]), empty, nextCont)), IterV.Empty[E])	
 			    }
 			    else {
