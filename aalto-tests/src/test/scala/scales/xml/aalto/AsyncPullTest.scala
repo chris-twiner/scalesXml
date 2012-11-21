@@ -107,7 +107,7 @@ class AsyncPullTest extends junit.framework.TestCase {
     doSimpleLoadAndFold{
       (p, iter, wrapped) => 
       val enumeratee = enumToManyAsync(iter)(AsyncParser.parse(p))
-      val (Some(e),cont) = enumeratee(wrapped).run
+      val (HasResult(e),cont) = enumeratee(wrapped).run
       e
     }
 
@@ -297,7 +297,7 @@ class AsyncPullTest extends junit.framework.TestCase {
     
     type cType = cstable.type
 
-    val FEEDME : Option[Option[(XmlOutput, Option[Throwable])]] = Some(None)
+    val FEEDME : Option[AsyncOption[(XmlOutput, Option[Throwable])]] = Some(NeedsMoreData)
 
 //    var c = iter(parser).eval
     var count = 0
@@ -318,7 +318,7 @@ class AsyncPullTest extends junit.framework.TestCase {
 
     c.fold[Unit](
       done = (a,i) => {
-	val (Some((out, thrown)), cont) = a
+	val (HasResult((out, thrown)), cont) = a
 	assertFalse( "shouldn't have thrown", thrown.isDefined)
 	//println(" iter was " + strout.toString)
 	assertTrue("should have been auto closed", closer.isClosed)
