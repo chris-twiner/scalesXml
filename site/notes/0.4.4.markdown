@@ -1,0 +1,27 @@
+
+This is a minor feature release with one performance enhancement to the pull parsing iterate function ([issue #9](https://github.com/chris-twiner/scalesXml/issues/9)) increasing its performance by up to 40%.  It also adds some documentation ([issue #13](https://github.com/chris-twiner/scalesXml/issues/13)) and fixes up two bugs:
+
+1. TreeOptimisation ([issue #7](https://github.com/chris-twiner/scalesXml/issues/7))
+2. XHTML Serialization only allows 10 empty tags ([issue #6](https://github.com/chris-twiner/scalesXml/issues/6))
+
+The new site can be found [here](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.4.4/index.html) and uses the new 2.10 scaladoc.
+
+### How To Use
+
+Scales 0.4.4 supports for 2.8.1, 2.8.2, 2.9.1, 2.9.2, 2.10.0-RC2.  As such add:
+
+    libraryDependencies ++= Seq(
+      // just for the core library
+      "org.scalesxml" %% "scales-xml" % "0.4.4"
+      // and additionally use these for String based XPaths
+      "org.scalesxml" %% "scales-jaxen" % "0.4.4" intransitive(),
+      "jaxen" % "jaxen" % "1.1.3" intransitive()
+    )
+
+to your xsbt builds or use scales-xml_2.9.2 as the id when using Maven.
+
+If using the 2.10.0 RC candidates and sbt 0.12.1 please also use:
+
+     cross CrossVersion.full
+
+against the dependencies (as the RCs are not guaranteed to be binary compatible).

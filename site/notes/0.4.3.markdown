@@ -1,0 +1,20 @@
+
+This release is a minor feature release adding only ([issue #5](https://github.com/chris-twiner/scalesXml/issues/5)) - support of direct optionality for Text, Attributes and ItemOrElem in the XML builder DSL.
+
+Please note that due to [SI-6271](https://issues.scala-lang.org/browse/SI-6271) the 2.10.0-M7 build should not be used with lazyRaw/viewed, the default usage is unaffected.
+
+The new site can be found [here](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.4.3/index.html) and uses the new 2.10 scaladoc.  Users of Scalaz 6.0.3 can use 0.3.3 instead.
+
+### How To Use
+
+Scales 0.4.3 supports for 2.8.1, 2.8.2, 2.9.1, 2.9.2, 2.10.0-M6 and 2.10.0-M7.  As such add:
+
+    libraryDependencies ++= Seq(
+      // just for the core library
+      "org.scalesxml" %% "scales-xml" % "0.4.3"
+      // and additionally use these for String based XPaths
+      "org.scalesxml" %% "scales-jaxen" % "0.4.3" intransitive(),
+      "jaxen" % "jaxen" % "1.1.3" intransitive()
+    )
+
+to your xsbt builds or use scales-xml_2.9.2 as the id when using Maven.

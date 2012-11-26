@@ -2,9 +2,9 @@
 
 Maven users should use scales-xml_2.9.2 as the dependency (org.scalesxml as the group).
 
-The 0.3 documentation site is [http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.3/index.html here] and a zip of the site documentation is available at [http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.3/org.scalesxml-scales-xml-0.3-site.zip scales-xml.zip].
+The 0.4.4 documentation site is [http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.4.4/index.html here] and a zip of the site documentation is available at [http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.4.4/org.scalesxml-scales-xml-0.4.4-site.zip scales-xml.zip].
 
-Scales is cross compiled for 2.8.1, 2.8.2, 2.9.1 and 2.9.2.
+Scales is cross compiled for 2.8.1, 2.8.2, 2.9.1 and 2.9.2 (with 2.10.0-RC2 builds and more to follow).
 
 == Sbt 0.11.x ==
 
@@ -12,19 +12,16 @@ ${cscala}
 
 libraryDependencies ++= Seq(
   // just for the core library
-  "org.scalesxml" %% "scales-xml" % "0.3" // or 0.4 for a Scalaz 6.0.4 dependency
-  // or, use this instead for String based XPaths (Jaxen, also includes the core)
-  "org.scalesxml" %% "scales-jaxen" % "0.3" // or 0.4 for a Scalaz 6.0.4 dependency
+  "org.scalesxml" %% "scales-xml" % "0.4.4" 
+  // and additionally use these for String based XPaths
+  "org.scalesxml" %% "scales-jaxen" % "0.4.4" intransitive(),
+  "jaxen" % "jaxen" % "1.1.3" intransitive()
 )
 ${cend}
- 
-== Sbt 0.7 ==
 
+
+If using the 2.10.0 RC candidates and sbt 0.12.1 please also use:
 ${cscala}
-// the core
-val scalesXml = "org.scalesxml" %% "scales-xml" % "0.3"
-// use this instead for String based XPaths (Jaxen, also includes the core)
-val scalesJaxenAndCore = "org.scalesxml" %% "scales-jaxen" % "0.3"
+     cross CrossVersion.full
 ${cend}
-
-
+against the dependencies (as the RCs are not guaranteed to be binary compatible).

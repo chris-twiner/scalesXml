@@ -17,11 +17,11 @@ All XML types that can be serialized provide a SerializeableXml type class insta
 
 Typically one of the following functions will be used:
 
-* [./doc/scales/xml/package.html#writeTo%5bT%5d(T,Writer,Option%5bXmlVersion%5d,Option%5bCharset%5d)(SerializerFactory,SerializeableXml%5bT%5d):Option%5bThrowable%5d writeTo( it, out )]
-* it [./doc/scales/xml/WriteTo.html#writeTo(Writer)(SerializerFactory):Option%5bThrowable%5d writeTo] out
-* [./doc/scales/xml/package.html#asString%5bT%5d(T)(SerializerFactory,SerializeableXml%5bT%5d):String asString( it )]
-* [./doc/scales/xml/package.html#itemAsString(XmlItem)(SerializerFactory):String itemAsString( xmlItem )]
-* [./doc/scales/xml/package.html#printTree%5bT%5d(T)(SerializerFactory,SerializeableXml%5bT%5d):Unit printTree( it )]
+* [./doc/index.html#scales.xml.package@writeTo%5bT%5d(T,Writer,Option%5bXmlVersion%5d,Option%5bCharset%5d)(SerializerFactory,SerializeableXml%5bT%5d):Option%5bThrowable%5d writeTo( it, out )]
+* it [./doc/index.html#scales.xml.WriteTo@writeTo(Writer)(SerializerFactory):Option%5bThrowable%5d writeTo] out
+* [./doc/index.html#scales.xml.package@asString%5bT%5d(T)(SerializerFactory,SerializeableXml%5bT%5d):String asString( it )]
+* [./doc/index.html#scales.xml.package@itemAsString(XmlItem)(SerializerFactory):String itemAsString( xmlItem )]
+* [./doc/index.html#scales.xml.package@printTree%5bT%5d(T)(SerializerFactory,SerializeableXml%5bT%5d):Unit printTree( it )]
 
 The first two (writeTo) are the most general and the later three useful for debugging.
 
@@ -66,4 +66,4 @@ The following types can be serialized:
 
 With the itemAsString allowing simple debug output.
 
-If an object can be meaningfully written as Xml it is suggested to wrap [./doc/scales/xml/ScalesXml$.html#streamSerializeable:SerializeableXml%5bIterator%5bPullType%5d%5d streamSerializeable] directly, converting your object into a stream as required. See [./api.sxr/scales/xml/serializers/SerializeableXmls.scala.html here] for code examples (e.g. pullOnlySerializable).
+If an object can be meaningfully written as Xml it is suggested to wrap [./doc/index.html#scales.xml.ScalesXml$@streamSerializeable:xml.SerializeableXml%5bIterator%5bxml.PullType%5d%5d streamSerializeable] directly, converting your object into a stream as required. See [./api.sxr/scales/xml/serializers/SerializeableXmls.scala.html here] for code examples (e.g. pullOnlySerializable).

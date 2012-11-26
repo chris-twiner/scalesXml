@@ -165,6 +165,8 @@ trait XmlTypes {
       top(Tree(
         elem, dchildren))
     } else {
+      import ScalesXml.xmlCBF
+
       // using a Function1 causes 2% of the cost for init alone
       
       // cache it here as we are going to fudge the path
@@ -187,7 +189,9 @@ trait XmlTypes {
     }
 
   final def addChild(path: XmlPath, child: XmlItem) = {
+    import ScalesXml.xmlCBF
     import path.node.focus
+
     val parent = focus.getRight
     Path( path.top, 
 	       scales.utils.Node( path.node.index,

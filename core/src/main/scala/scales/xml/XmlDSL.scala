@@ -112,29 +112,39 @@ class DslBuilder private( tree : XmlTree ) {
   import ScalesXml._
   /**
    * Add attributes
-  */ 
+   */ 
   def /@(attribs : Attribute*) = new DslBuilder( tree.copy(section = tree.section.copy (attributes = tree.section.attributes ++ attribs) ))
+
+  /**
+   * Add attributes
+   */ 
+  def /@(attribs : => Iterable[Attribute]) : DslBuilder = new DslBuilder( tree.copy(section = tree.section.copy (attributes = tree.section.attributes ++ attribs) ))
+
+  /**
+   * Optionally add a single attribute, when None no attribute will be added
+   */
+  def /@(attrib : Option[Attribute]) = 
+    attrib.map{ a => 
+      new DslBuilder( tree.copy(section = tree.section.copy (attributes = tree.section.attributes + a) ))
+	     }.getOrElse{this}
 
   /**
    * Remove attributes
    */
   def -/@(attribs : QName*) = new DslBuilder( tree.copy(section = tree.section.copy (attributes = tree.section.attributes -- attribs)))
   
-  /**
-   * Add a number of child elements (as trees).  Via the implicit DslBuilders can then be embedded
-  def /( elems : XmlTree * ) : DslBuilder = 
-    /(elems)
-
-  def add( elems : XmlTree * ) = /( elems :_* )
-
-  def /( elems : => Iterable[XmlTree] ) : DslBuilder =
-    new DslBuilder( tree.copy( children = (tree.children ++ elems  )))
-   */
-
   def add( itemOrElems : ItemOrElem * ) = /( itemOrElems :_* )
 
   def /( itemOrElems : => Iterable[ItemOrElem] ) : DslBuilder =
     new DslBuilder( tree.copy( children = (tree.children ++ itemOrElems  )))
+
+  /**
+   * Optionally add a child, when None no child we be added
+   */
+  def /( itemOrElem : Option[ItemOrElem] ) = 
+    itemOrElem.map{ i => 
+      new DslBuilder( tree.copy( children = (tree.children :+ i  )))
+		 }.getOrElse{this}
 
   /**
    * Fold over the current tree, allows folding deep within a builder.  Either the fold works or `this` is returned with the FoldError.
@@ -175,13 +185,34 @@ class DslBuilder private( tree : XmlTree ) {
   /**
    * sets the tree to a single Text node child, replacing all others
    */
-  def ~>( value : String ) = // note ~> is used not -> as it will then get in the way of the tupler
-    new DslBuilder( tree.copy(children = emptyChildren :+ item[XmlItem, Elem, XCC](Text(value))))
-
+  def ~>( value : String ) : DslBuilder = // note ~> is used not -> as it will then get in the way of the tupler
+    if (value ne null)
+      new DslBuilder( tree.copy(children = emptyChildren :+ item[XmlItem, Elem, XCC](Text(value))))
+    else this
+    
   /**
    * see ~>
    */ 
   def setValue( value : String ) = ~>(value)
+
+  /**
+   * Optionally sets the tree to a single Text node child, replacing all others, None will not change the current node.
+   * 
+   * {{{
+   *    <(Elem("root"l)) ~> None
+   * }}}
+   *
+   * would leave an empty <root/>
+   */
+  def ~>( value : Option[String] ) : DslBuilder = 
+    value.map{ v =>
+      new DslBuilder( tree.copy(children = emptyChildren :+ item[XmlItem, Elem, XCC](Text(v))))
+	    }.getOrElse{this}
+
+  /**
+   * see ~> Option[String]
+   */
+  def setValue( value : Option[String] ) = ~>(value)
   
   /**
    * Cleans out any child text nodes (comments, cdata etc) and just leaves child elements

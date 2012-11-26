@@ -42,25 +42,57 @@ ${cscala}
   qname(res) // Subchild
 ${cend}
 
+== XPath Crash Course ==
+
+Scales Xml follows the XPath spec fairly closely and accordingly represents the concepts of context, location steps and axe, full details of which can be found in the [http://www.w3.org/TR/xpath20/#id-path-expressions XPath Standard].
+
+The context, which can be thought of as current "place" in the document, is represented by the following:
+
+* a notional node - where we are in the document - an element, a text node, an attribute etc.
+* the position - index within a context and the size of this context
+
+Location steps are a combination of axe, node test and predicates e.g. <nowiki>/*fred</nowiki> which represents the child axe, element node test and a predicate against a no-namespace local name of "fred".
+
+As the XPath adds more axe, steps and predicates the context changes, reducing or expanding possible matches as it develops.  Scales Xml's XPath DSL represents that context with the [./doc/scales/xml/XPath.html XPath] class, where each operation on that class returns another immutable instance for the next context.
+
+As with XPath, Scales Xml predicates, axe and node tests can be chained with the current context (the self axe in XPath) always represented by the resulting Scales XPath object.  Only when the underlying results are used (for example by string or qname functions) do they leave the XPath object and get transformed into a, by default, ordered list of matching nodes.
+
 == XPath Axe ==
 
-Scales supports the complete useful XPath axe:
+Scales supports the complete useful XPath axe, each of which can be used against a given context (an instance of [./doc/scales/xml/XPath.html Scales XPath]), for the full XPath axe details find the spec [http://www.w3.org/TR/xpath20/#axes here]:
 
-* ancestor (ancestor_::)
-* ancestor-or-self (ancestor_or_self::)
-* attribute (*@)
+{|class="genTable"
+!XPath Axis
+!Scales DSL
+!Details
+|-
+|ancestor||ancestor_::||All the parents of this context
+|-
+|ancestor-or-self||ancestor_or_self::||All the parents of this context and this node
+|-
+|attribute||*@||All the attributes for a given context, is often combined directly with a name
+|-
 
-* child (\ or \+ to expand XmlItems)
-* descendant (descendant_::)
-* descendant-or-self (descendant_or_self_::)
+|child||\ or \+ to expand XmlItems||Children of this context. NB: \ alone in Scales DSL simply removes the initialNode setting required by \\.  If the children should be expanded (e.g. to use .filter directly) then \+ will "unpack" the child nodes.
+|-
+|descendant||descendant_::||All children, and their children
+|-
+|descendant-or-self||descendant_or_self_::||This node and all descendants, also known as \\
+|-
 
-* following (following_::)
-* following-sibling (following_sibling_::)
-* parent (\^)
+|following||following_::||All nodes that follow this context in document order without child nodes of this context
+|-
+|following-sibling||following_sibling_::||All direct children of this contexts parent node that follow in document order.
+|-
+|parent||\^||The parent context of this context.  For elements it represents the parent eleemnt and for attributes the containing element.
+|-
 
-* preceding (preceding_::)
-* preceding-sibling (preceding_sibling_::)
-* self (.)
+|preceding||preceding_::||All nodes that precede this context in document order excluding the parent nodes
+|-
+|preceding-sibling||preceding_sibling_::||All previous children of the parent in the current context in document order.
+|-
+|self||The XPath object itself via '''.'''||The current context node within a document.
+|}
 
 A commonly used abbreviation not listed above is of course \\, which means descendant_or_self_::.  The difference being that \\ also supports possible eager evaluation and as per the spec the notion of [http://www.w3.org/TR/xpath20/#id-path-expressions \\ in the beginning expression].
 
@@ -70,15 +102,23 @@ A commonly used abbreviation not listed above is of course \\, which means desce
 
 Scales embedded XPath DSL views the majority of node tests as predicates
 
-* node() (\+)
-* text() (.text)
-* comment() (.comment)
+{|class="genTable"
+!XPath Node Test
+!Scales DSL
+!Details
+|-
+|node()||.\+||Returns a new context for all the children below a given context
+|-
+|text()||.text||Returns a new context for all the text and cdata below a given context
+|-
+|comment()||.comment||Returns a new context for all the comments below a given context
+|}
 
 Scales XML also adds:
 
-* .textOnly (filters out CData, just giving text nodes)
-* .cdata (provides CData nodes)
-* .pi (provides processing instructions)
+* .textOnly - filters out CData, just giving text nodes
+* .cdata - provides CData nodes
+* .pi - provides processing instructions
 
 == Predicates ==
 
@@ -105,7 +145,7 @@ ${cscala}
   qualifiedName(elemsWithASubchild) // {test:uri}Child2
 ${cend}
 
-In each case the XmlPath (or AttributePath) is passed to the predicate with a number of short cuts for the common QName based matches and positional matches for elements:
+In each case the XmlPath (or AttributePath) is passed to the predicate with a number of shortcuts for the common QName based matches and positional matches for elements:
 
 ${cscala}
   val second = path \*(2) // path \* 2 is also valid but doesn't read like \*[2]
@@ -114,14 +154,51 @@ ${cend}
 
 The developer can chose to ignore namespaces (not recommended) by using the *:* and *:@ predicates instead (equivalent to string xpath /*[local-name() = "x"]).
 
+=== Predicate Construction ===
+
+All the predicates in Scales are built from two simple building blocks:
+
+# XmlPath => Boolean - via the XPath.filter function
+# AttributePath => Boolean - via the [./doc/scales/xml/xpath/AttributeAxis.html AttributeAxis].*@ function
+
+The various base node types and filters are based on these functions, for example the element predicate * is implemented as:
+
+${cscala}
+def *(pred : XmlPath => Boolean) : XPath[T] = 
+  filter(x => x.isItem == false && pred(x))
+${cend}
+
+In turn \* can be seen as a combination of the \ child step and the * predicate (via xflatMap) and is provided as syntactic sugar.
+
+Similarly text is implemented using filter.
+
+All of the standard set of predicates (and axis combinations) can be found in the [./doc/scales/xml/XPath.html XPath] ScalaDoc.  Clicking the right arrow for many of the functions will lead you to the Definition Classes docs and their code. 
+
+=== Chaining Predicates ===
+
+Predicates can be chained on the context itself, i.e. the XPath object, for example:
+
+${cscala}
+val pathsCombinedPredicates =
+    root.\*(ns("Child")).
+      *(_.\@( nsp("attr3") )) // context is still Child matches, but has additionally reduced it to only items with an attribute of attr3
+${cend}
+
+This represents <nowiki>/root/*ns:Child[.\@nsp:attr3]</nowiki> where the * Scales Xml element predicate allows matching on the self axis.  The same chaining is available on the attribute axis represented by the [./doc/scales/xml/AttributePaths.html AttributePaths] class.
+
 === Positional Predicates ===
 
-* position() (pos)
-** pos_<, pos_==, pos_>
-* last() (last)
-** last_<, last_==, last_>
-* position() == last() 
-** pos_eq_last
+{|class="genTable"
+!XPath Position Function
+!Scales DSL
+!Details
+|-
+|position()||pos_<, pos_==, pos() and pos_>||Functions to work against the current position within a context
+|-
+|last()||last_<, last_== and last_>||Functions that work against the size of a given context
+|-
+|position() == last()||pos_eq_last||Take the last item in a context
+|}
 
 These, more difficult to model, positional tests can be leveraged the same way as position() and last() can be in XPath.
 

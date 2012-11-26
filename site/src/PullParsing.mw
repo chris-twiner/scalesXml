@@ -100,7 +100,7 @@ When parsing xml messages it is often necessary to identify the type of the mess
 
 To help with this issue Scales pull parsing offers the ability to "peek" into an event stream and replay the events again to fully process them.
 
-A simple example is processing soap messages based on the first body element, you may want to choose different code paths based on this, but require elements in the header to do so.  The usage is simple via the [./doc/scales/utils/package.html#capture%5bA%5d(Iterator%5bA%5d):CapturedIterator%5bA%5d capture function] and the [./doc/scales/xml/package.html#skip(⇒%20List%5bInt%5d):IterV%5bPullType,%20PeekMatch%5d skip/skipv functions]:
+A simple example is processing soap messages based on the first body element, you may want to choose different code paths based on this, but require elements in the header to do so.  The usage is simple via the [./doc/index.html#scales.utils.package@capture%5bA%5d(Iterator%5bA%5d):CapturedIterator%5bA%5d capture function] and the [./doc/index.html#scales.xml.package@skip(⇒List%5bInt%5d):IterV%5bPullType,PeekMatch%5d skip/skipv functions]:
 
 ${cscala}
 
@@ -117,6 +117,6 @@ ${cscala}
   processor.process(captured.restart)
 ${cend}
 
-The result from skip is simply Option[XmlPath], if the stream runs out or its no longer possible to get that position it is None. Only as much of the stream is read as needed, it will stop on the Left(Elem) event.
+The result from skip is simply <nowiki>Option[XmlPath]</nowiki>, if the stream runs out or its no longer possible to get that position it is None. Only as much of the stream is read as needed, it will stop on the Left(Elem) event.
 
 NB to only identify the first element, simply use skip(Nil) instead (or skipv()).
