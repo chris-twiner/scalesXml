@@ -1,4 +1,4 @@
-package scales.utils
+package scales.utils.collection
 
 import scalaz._
 import Scalaz._

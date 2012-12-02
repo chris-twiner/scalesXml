@@ -1,8 +1,8 @@
 package scales.xml
 
-import scales.utils._
+import scales.utils.{collection, one, toPositionalEqual, sortT, sort, comparePathsDirect}
+import collection.DuplicateFilter
 import scala.collection.generic.CanBuildFrom
-import scales.utils.one
 
 object PositionalEquals {
 

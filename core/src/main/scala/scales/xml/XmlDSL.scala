@@ -1,6 +1,7 @@
 package scales.xml
 
-import scales.utils._
+import scales.utils.collection.path._
+import scales.utils.{AsBoolean, subtree, foldPositions, booleanMatcher, booleanAndTMatcher, top, item}
 
 import ScalesXml.xmlCBF
 

@@ -11,6 +11,8 @@ import ScalesUtils._
 import scales.xml._
 import ScalesXml._
 
+import collection.DuplicateFilter
+
 import scala.collection.JavaConversions._
 
 //TODO - get a type class in here, looks like doclike usage from the serializers, smells like re-use to me

@@ -1,4 +1,4 @@
-package scales.utils
+package scales.utils.collection
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue

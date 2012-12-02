@@ -8,6 +8,9 @@ class DslBuildersTest extends junit.framework.TestCase {
   import scales.utils._
   import ScalesUtils._
 
+  import collection.path._
+  import collection.ImmutableArrayProxy.{one => IAOne}
+
   import ScalesXml._
 
   import Functions._

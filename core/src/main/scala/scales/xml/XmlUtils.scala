@@ -6,7 +6,8 @@ import ScalesXml.xmlCBF
  * A collection of whitespace related functions
  */
 trait Whitespace {
-  import scales.utils._
+  import scales.utils.collection.Tree
+
 //  import scala.collection.generic.CanBuildFrom
 
   /**

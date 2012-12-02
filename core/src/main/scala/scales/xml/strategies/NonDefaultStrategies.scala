@@ -1,7 +1,8 @@
 package scales.xml.strategies
 
 import scales.xml._
-import scales.utils._
+import scales.utils.collection.Tree
+import scales.utils.valueOf
 
 class ElemToken(implicit ver : XmlVersion, fromParser : FromParser) extends QNameToken {
   val ekey = new ElemKey()

@@ -16,6 +16,8 @@ class EqualsNormalImportsTest extends junit.framework.TestCase {
   import scales.utils._
   import ScalesUtils._
 
+  import collection.path._
+
   import org.xml.sax.{InputSource, XMLReader}
 
   def doLoadXml[Token <: OptimisationToken](in : InputSource, strategy : PathOptimisationStrategy[Token] = defaultPathOptimisation) = {

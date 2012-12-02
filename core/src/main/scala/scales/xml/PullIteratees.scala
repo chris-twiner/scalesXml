@@ -2,6 +2,8 @@ package scales.xml
 
 import scales.utils._
 
+import collection.FlatMapIterator
+
 /**
  * Iteratees related to pull parsing
  */ 

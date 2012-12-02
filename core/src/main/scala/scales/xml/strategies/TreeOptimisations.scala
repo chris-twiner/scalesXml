@@ -1,7 +1,9 @@
 package scales.xml.strategies
 
 import scales.xml._
-import scales.utils._
+import scales.utils.collection.{Tree, ImmutableArrayProxy}
+
+import ImmutableArrayProxy.one
 
 import impl.TreeProxies
 
@@ -13,7 +15,6 @@ trait TreeOptimisation[TOKEN <: scales.xml.OptimisationToken] extends PathOptimi
   def newTree( elem : Elem, children : XmlChildren, token : TOKEN ) : XmlTree
 
   final override def elementEnd( xml : TreeProxies, token : TOKEN ) {
-    import scales.utils.Tree
     import ScalesXml.xmlCBF
 
     val l = xml.current
@@ -40,7 +41,7 @@ trait TreeOptimisation[TOKEN <: scales.xml.OptimisationToken] extends PathOptimi
 abstract class NameValue(val name : QName, val text : String) extends Tree[XmlItem, Elem, XCC] {
 
   def section : Elem
-  def children : XmlChildren = IAOne(Text(text))
+  def children : XmlChildren = one(Text(text))
 
   def copy( section : Elem = section, children : XmlChildren = children) : Tree[XmlItem, Elem, XCC] = {
     // if we are copying we are no longer in a parse
@@ -55,7 +56,7 @@ abstract class NameValue(val name : QName, val text : String) extends Tree[XmlIt
  */
 class ElemValue(val section : Elem, val text : String) extends Tree[XmlItem, Elem, XCC] {
 
-  def children : XmlChildren = IAOne(Text(text))
+  def children : XmlChildren = one(Text(text))
 
   def copy( section : Elem = section, children : XmlChildren = children) : Tree[XmlItem, Elem, XCC] = {
     // if we are copying we are no longer in a parse

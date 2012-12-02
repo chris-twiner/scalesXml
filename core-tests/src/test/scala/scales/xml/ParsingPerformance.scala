@@ -5,15 +5,19 @@ import ScalesUtils._
 import scales.xml._
 import ScalesXml._
 
-import scalaz._
-import Scalaz._
-
 import java.io.StringReader
 import javax.xml.transform._
 import dom._
 import stream._
 
 import strategies._
+
+import collection.path._
+import collection.{Tree, ImmutableArrayProxy}
+import ImmutableArrayProxy.{one => IAOne}
+
+import scalaz._
+import Scalaz._
 
 object QNameAndAttr extends PathOptimisationStrategy[ElemToken] with ElemQNameOptimisationT[ElemToken] with ElemTokenF {
 
@@ -41,14 +45,14 @@ object QNameAndAttr extends PathOptimisationStrategy[ElemToken] with ElemQNameOp
  * Single text value but a known elem or qname
  *
  */
-abstract class KnownTextValue(val text : String) extends scales.utils.Tree[XmlItem, Elem, XCC] {
+abstract class KnownTextValue(val text : String) extends Tree[XmlItem, Elem, XCC] {
 
   def children : XmlChildren = IAOne(Text(text))
 
   private[this] def csection = section
   private[this] def cchildren = children
 
-  def copy( section : Elem = csection, children : XmlChildren = cchildren) : scales.utils.Tree[XmlItem, Elem, XCC] = {
+  def copy( section : Elem = csection, children : XmlChildren = cchildren) : Tree[XmlItem, Elem, XCC] = {
     // if we are copying we are no longer in a parse
     import ScalesXml.fromParserDefault
     LazyOptimisedTree(section, children)
@@ -59,12 +63,12 @@ abstract class KnownTextValue(val text : String) extends scales.utils.Tree[XmlIt
  * Full children but a known elem or qname
  *
  */
-abstract class KnownName(val children : XmlChildren) extends scales.utils.Tree[XmlItem, Elem, XCC] {
+abstract class KnownName(val children : XmlChildren) extends Tree[XmlItem, Elem, XCC] {
 
   private[this] def csection = section
   private[this] def cchildren = children
 
-  def copy( section : Elem = csection, children : XmlChildren = cchildren) : scales.utils.Tree[XmlItem, Elem, XCC] = {
+  def copy( section : Elem = csection, children : XmlChildren = cchildren) : Tree[XmlItem, Elem, XCC] = {
     // if we are copying we are no longer in a parse
     import ScalesXml.fromParserDefault
     LazyOptimisedTree(section, children)

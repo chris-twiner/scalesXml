@@ -4,10 +4,13 @@ import scala.collection.immutable.Map
 
 import scala.collection.generic.CanBuildFrom
 
+//import scales.utils.collection.path.{Path, Node, Position}
+import scales.utils.{TreeCBF, subtree, item, top, ItemOrTree, noPath => fno, EitherLike, LeftLike}
+import scales.utils.collection.{ListSet, Tree, ImmutableArrayProxy, ImmutableArrayProxyBuilder }
+import scales.utils.collection.path.{ Path, Position, Node }
+
 import scalaz._
 import Scalaz._
-
-import scales.utils.{ListSet, ImmutableArray, EitherLike, LeftLike, Tree}
 
 import java.nio.charset.Charset
 
@@ -64,7 +67,7 @@ trait XmlTypesImplicits {
   /**
    * Implicit manifest for sorting positions, big silent cpu eater otherwise, just like the builders.
    */ 
-  implicit val xpathSortingClassManifest = implicitly[ClassManifest[(scales.utils.Position[XmlItem,Elem,XCC], XmlPath)]]
+  implicit val xpathSortingClassManifest = implicitly[ClassManifest[(Position[XmlItem,Elem,XCC], XmlPath)]]
 
   /**
    * Defaults to NotFromParser
@@ -102,8 +105,6 @@ trait XmlTypes {
 
   private[xml] case object NotFromParserO extends FromParser
   private[xml] val NotFromParser = NotFromParserO 
-
-  import scales.utils.{ Tree, ItemOrTree, subtree, item, top, noPath => fno, Path, TreeCBF, ImmutableArrayProxy, ImmutableArrayProxyBuilder }
 
   type XmlCBF = TreeCBF[XmlItem, Elem, XCC]
 
@@ -180,12 +181,12 @@ trait XmlTypes {
       
       // add a child, focus on it
       val tpath = Path( path.top, 
-		       scales.utils.Node( path.node.index, 
+		       Node( path.node.index, 
 			    Tree(parent.section,
 				       c :+ n)) )
 
       // drill down to last child
-      Path(tpath, scales.utils.Node(size, n))
+      Path(tpath, Node(size, n))
     }
 
   final def addChild(path: XmlPath, child: XmlItem) = {
@@ -194,7 +195,7 @@ trait XmlTypes {
 
     val parent = focus.getRight
     Path( path.top, 
-	       scales.utils.Node( path.node.index,
+	       Node( path.node.index,
 		     Tree(parent.section,
         parent.children :+ item[XmlItem, Elem, XCC](child))
 			       ))

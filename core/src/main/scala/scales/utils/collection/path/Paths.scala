@@ -1,8 +1,11 @@
-package scales.utils
+package scales.utils.collection.path
 
 import scala.collection.immutable.Stack
 import scala.collection.IndexedSeqLike
 import scala.collection.generic.CanBuildFrom
+
+import scales.utils.{LeftLike, RightLike, EitherLike, ItemOrTree, collection, subtree}
+import collection.Tree
 
 /**
  * Represents the Top for a given Path, there isn't a tree above this

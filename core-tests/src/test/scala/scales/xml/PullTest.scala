@@ -6,6 +6,7 @@ class PullTest extends junit.framework.TestCase {
   import java.io._
 
   import scales.utils._
+  import io._
   import ScalesUtils._
   import ScalesXml._
 

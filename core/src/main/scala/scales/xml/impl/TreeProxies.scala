@@ -1,8 +1,7 @@
 package scales.xml.impl
 
 import scales.xml._
-import scales.utils._
-
+import scales.utils.collection.Tree
 
 // XmlBuilder, XmlChildren
 final class TreeProxy( private[this] var _elem : Elem, private[this] val _builder : XmlBuilder){

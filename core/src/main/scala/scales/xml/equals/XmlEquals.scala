@@ -110,12 +110,14 @@ trait DefaultXmlEquals
 
 object DefaultXmlEquals extends DefaultXmlEquals {}
 
+import scales.utils.collection.{path => upath}
+
 /**
  * Makes the given path the top path
  */ 
-class PathAsPullTypeIterable( originalPath : XmlPath ) extends scales.utils.AbstractPathIterator[XmlItem, Elem, XCC, PullType] {
+class PathAsPullTypeIterable( originalPath : XmlPath ) extends upath.AbstractPathIterator[XmlItem, Elem, XCC, PullType] {
 
-  def initialPath : XmlPath = originalPath.copy( top = scales.utils.Top() )
+  def initialPath : XmlPath = originalPath.copy( top = upath.Top() )
 
   def event : PullType = path.node.focus.fold(x=>x,y=>y.section)
 

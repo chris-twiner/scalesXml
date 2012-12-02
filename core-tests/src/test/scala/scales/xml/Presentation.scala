@@ -5,6 +5,8 @@ import ScalesUtils._
 import scales.xml._
 import ScalesXml._
 
+import collection.path.Replace
+
 import Functions._
 
 /**

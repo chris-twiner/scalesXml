@@ -1,7 +1,9 @@
-package scales.utils
+package scales.utils.collection
 
 import scala.collection.IndexedSeqLike
 import scala.collection.generic.CanBuildFrom
+
+import scales.utils.{LeftLike, RightLike, EitherLike}
 
 trait Trees {
 
@@ -16,6 +18,8 @@ trait Trees {
     tree.fold(a)(folder)
 
 }
+
+import scales.utils.{ItemOrTree, ItemOrSectionWalk}
 
 /**
  * IF hasChildren then isStart indicates that this particular occurence
@@ -41,6 +45,7 @@ object Tree {
 
 
 trait Tree[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[C] <: IndexedSeqLike[C, CC[C]]] extends RightLike[Item, Tree[Item, Section, CC]] {
+
   def section: Section
   def children: CC[ItemOrTree[Item, Section, CC]]
 

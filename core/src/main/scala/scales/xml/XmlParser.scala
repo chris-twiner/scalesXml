@@ -132,7 +132,8 @@ trait XmlParser {
 
     import ScalesXml.xmlCBF
 
-    import scales.utils.{noPath, Path, top, ScalesUtils }
+    import scales.utils.{noPath, top, ScalesUtils }
+    import scales.utils.collection.path.Path
     import org.xml.sax._
     import scala.collection.immutable.Stack
     import ScalesUtils._
