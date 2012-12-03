@@ -21,7 +21,7 @@ import scales.xml.{ XmlTypes ,
     XmlParserImplicits,
     PullTypeConversionImplicits}
 
-import scales.xml.{Elem, Attribs, Attributes, Attribute, XmlItem, Text, PI, CData, Comment, <, Namespace}
+import scales.xml.{Elem, Attribs, Attributes, Attribute, XmlItem, Text, PI, CData, Comment, <, Namespace, qualifiedName}
 
 class EqualsTest extends junit.framework.TestCase {
 

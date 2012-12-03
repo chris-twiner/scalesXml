@@ -12,20 +12,14 @@ package object xml extends XmlTypes
   with XmlUtils
   with PullIteratees
   with equals.XmlEquals
-  with serializers.SerializingIter {
+  with serializers.SerializingIter
+  with xpath.Functions {
 
   import strategies.ElemToken
 
   val defaultPathOptimisation : PathOptimisationStrategy[QNameToken] = QNameMemoryOptimisation
   val defaultOptimisation : MemoryOptimisationStrategy[QNameToken] = QNameMemoryOptimisation
 
-  val Functions = xpath.Functions
-
-  // work around my own version of SI-5031
-  @deprecated(message="Please import Functions._ instead - since 0.3")
-  val Attributes = xpath.Attributes
-  @deprecated(message="Please import Functions._ instead - since 0.3")
-  val Elements = xpath.Elements
-  @deprecated(message="Please import Functions._ instead - since 0.3")
-  val TextFunctions = xpath.OldTextFunctions
+  @deprecated(message="Functions - since 0.3 - imports are provided via the xml package object")
+  val Functions = new Object()
 }

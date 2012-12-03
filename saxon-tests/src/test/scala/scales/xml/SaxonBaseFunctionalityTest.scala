@@ -1,6 +1,6 @@
 package scales.xml
 
-class SaxonBaseFunctionalityTest extends BaseFunctionalityTest {
+class SaxonBaseFunctionalityTest extends test.BaseFunctionalityTest {
 
   import junit.framework.Assert._
   import java.io._

@@ -229,7 +229,6 @@ object Recon {
   val version = ns("version")
 
   val versionf = {
-    import Elements.Functions.text
 //    (x : XmlPath) => (text(raw(x.\*(id)).head).toInt, text(raw(x.\*(version)).head).toInt)
     (x : XmlPath) => (text(x.\*(id).head).toInt, text(x.\*(version).head).toInt)
   }

@@ -273,7 +273,7 @@ class ScalesNavigator(val nameConversion : QName => QName) extends DefaultNaviga
   def getNamespaceStringValue( ctx : AnyRef ) = error("no namespace nodes yet")
   def isNamespace( ctx : AnyRef ) = false//error("no namespace nodes yet")
 
-  def getTextStringValue( ctx : AnyRef ) = TextFunctions.value(ctx)
+  def getTextStringValue( ctx : AnyRef ) = text(ctx: XmlPath)
 
   // attributes
   def getAttributeStringValue( ctx : AnyRef ) = ctx match {
@@ -313,7 +313,7 @@ class ScalesNavigator(val nameConversion : QName => QName) extends DefaultNaviga
     case _ => error("not an attribute")
   }
 
-  def getCommentStringValue( ctx : AnyRef ) = TextFunctions.value(ctx)
+  def getCommentStringValue( ctx : AnyRef ) = text(ctx: XmlPath)
 
   def pOr[T]( ctx: AnyRef, f : XmlPath => T, e : => T) = 
     if (ctx.isInstanceOf[DocsUp[_]]) {
@@ -342,7 +342,7 @@ class ScalesNavigator(val nameConversion : QName => QName) extends DefaultNaviga
 
   def getElementStringValue( ctx : AnyRef ) = 
     if (isElement(ctx))
-      Elements.Functions.text(ctx)
+      text(ctx: XmlPath)
     else null
 
 // ScalesXPath.defaultNoConversion

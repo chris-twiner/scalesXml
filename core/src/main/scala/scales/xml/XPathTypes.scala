@@ -8,16 +8,18 @@ import scales.utils.one
 case class AttributePath(attribute: Attribute, parent: XmlPath)
 
 case class XmlPathComparisoms(path: XmlPath) {
-  def ===(other: String) = Elements.Functions.text(path) == other
+  import ScalesXml.xmlpathText
+  def ===(other: String) = text(path) == other
 }
 
 case class AttributePathComparisoms(path: AttributePath) {
-  def ===(other: String) = Attributes.Functions.text(path) == other
+  import ScalesXml.attribPathText
+  def ===(other: String) = text(path) == other
 }
 
 /** Attributes that have been selected */
 case class AttributePaths[PT <: Iterable[XmlPath]](attributes: Iterable[AttributePath], path: XPathInfo, cbf: CanBuildFrom[PT, XmlPath, PT]) {
-  import ScalesXml._
+  import EqualsHelpers.toQName
   /** Parents of the attributepaths */
   def \^(): XPath[PT] = new XPath[PT](path.copy(nodes = List(attributes.map(_.parent))), cbf)
 

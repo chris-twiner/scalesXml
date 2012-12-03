@@ -142,8 +142,6 @@ object SaxonPresentation {
 
     val builder = <("root"l) /( bits(0).take(6) )
     println("transformations "+ asString(builder))
-    
-    import Elements.Functions.normalizeSpace
 
     val subnodes = top(builder).\\.*("subnode"l)
     val folded = foldPositions( subnodes )( p => 
@@ -173,8 +171,6 @@ object SaxonPresentation {
   }
 
   def iterateEg {
-    import Attributes.Functions.text
-    import TextFunctions.value
     val pull = pullXml(new java.io.
 		  FileReader("./src/test/data/svnLogIteratorEg.xml"))
 
@@ -198,8 +194,6 @@ object SaxonPresentation {
   }
 
   def foldNames {
-    import Attributes.Functions.text
-    import TextFunctions.value
     val pull = pullXml(new java.io.
 		  FileReader("./src/test/data/svnLogIteratorEg.xml"))
 

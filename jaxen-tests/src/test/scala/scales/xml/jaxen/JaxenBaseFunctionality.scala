@@ -7,7 +7,7 @@ import ScalesXml._
 
 import Functions._
 
-class JaxenBaseFunctionalityTest extends BaseFunctionalityTest {
+class JaxenBaseFunctionalityTest extends test.BaseFunctionalityTest {
 
   import junit.framework.Assert._
 
