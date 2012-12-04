@@ -1,20 +1,6 @@
 package scales.utils
 
-trait LeftLikeProjection[+L] {
-  def get : L
-}
-
-trait RightLikeProjection[+R] {
-  def get : R
-}
-
-object NonLeftP extends LeftLikeProjection[Nothing] {
-  def get : Nothing = error("Cannot get a left from a RightLike.")
-}
-
-object NonRightP extends RightLikeProjection[Nothing] {
-  def get : Nothing = error("Cannot get a right from a LeftLike.")
-}
+import impl.{LeftLikeProjection, RightLikeProjection, NonLeftP, NonRightP}
 
 /**
  * Either is great, perfect for what is needed, except for the indirection and the added memory and cpu costs thereof.  If ScalesXml is meant to be used in the placesthat JAXP and friends would live it should perform the best it can.

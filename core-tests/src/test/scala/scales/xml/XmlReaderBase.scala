@@ -6,7 +6,9 @@ import ScalesUtils._
 import ScalesXml._
 import org.xml.sax.XMLReader
 
-object NuValidatorFactoryPool extends scales.utils.SimpleUnboundedPool[XMLReader] with DefaultSaxSupport {
+import resources.SimpleUnboundedPool
+
+object NuValidatorFactoryPool extends SimpleUnboundedPool[XMLReader] with DefaultSaxSupport {
   
   def create = {
     import nu.validator.htmlparser.{sax,common}
@@ -22,7 +24,7 @@ object NuValidatorFactoryPool extends scales.utils.SimpleUnboundedPool[XMLReader
   
 }    
 
-object TagSoupFactoryPool extends scales.utils.SimpleUnboundedPool[XMLReader] with DefaultSaxSupport {
+object TagSoupFactoryPool extends SimpleUnboundedPool[XMLReader] with DefaultSaxSupport {
   
   // doesn't support xml version retrieval
   override def getXmlVersion( reader : XMLReader ) : AnyRef =

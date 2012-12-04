@@ -2,6 +2,8 @@ package scales.xml.serializers
 
 import scales.utils._
 
+import resources._
+
 import scales.xml._
 
 import java.io.Writer

@@ -3,7 +3,7 @@ package scales
 package object utils extends collection.IterableUtils 
   with AsBooleanTrait
   with collection.StackUtils
-  with Iteratees
+  with iteratee.Iteratees
   with EquivFunctions
   with collection.Trees
   with collection.path.Paths

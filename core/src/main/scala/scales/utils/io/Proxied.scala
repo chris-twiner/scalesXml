@@ -1,6 +1,6 @@
 package scales.utils.io
 
-import scales.utils.CloseOnNeed
+import scales.utils.resources.CloseOnNeed
 
 /**
  * Wrap the Reader to allow better bracketing etc.

@@ -4,6 +4,13 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
 
 /**
+ * Only created once and via calcOnce
+ */ 
+sealed trait Once[T] {
+  val value : T
+}
+
+/**
  * Simple helper functions to get and remove ConcurrentLinkedQueues from a ConcurrentHashMap
  */
 trait ConcurrentMapUtils {
@@ -25,13 +32,6 @@ trait ConcurrentMapUtils {
     }
 
     res
-  }
-
-  /**
-   * Only created once and via calcOnce
-   */ 
-  sealed trait Once[T] {
-    val value : T
   }
 
   /**

@@ -3,6 +3,7 @@ package scales.xml.aalto
 import scales.xml._
 import scales.utils._
 import io._
+import resources._
 import com.fasterxml.aalto._
 import AsyncXMLStreamReader.EVENT_INCOMPLETE
 import javax.xml.stream.XMLStreamConstants.END_DOCUMENT

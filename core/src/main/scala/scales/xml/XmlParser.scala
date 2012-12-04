@@ -3,6 +3,7 @@ package scales.xml
 import org.xml.sax.{InputSource, XMLReader}
 import javax.xml.parsers.SAXParser
 import scales.utils._
+import scales.utils.resources._
 import java.io._
 
 trait XmlParserImplicits {

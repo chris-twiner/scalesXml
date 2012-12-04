@@ -8,6 +8,8 @@ import javax.xml.transform._
 import org.xml.sax.XMLReader
 import org.xml.sax.helpers.XMLReaderFactory
 
+import scales.utils.resources._
+
 /**
  * Most of the JAXP, STAX and DOM apis don't mention much about
  * thread safety but the dominant xerces is completely unsafe with regards
@@ -25,7 +27,7 @@ import org.xml.sax.helpers.XMLReaderFactory
  */ 
 trait XmlFactories {
 
-  def newSchema( source : Source, factory : scales.utils.Loaner[SchemaFactory] = DefaultXSDSchemaFactoryPool ) =
+  def newSchema( source : Source, factory : Loaner[SchemaFactory] = DefaultXSDSchemaFactoryPool ) =
     factory.loan{ 
       f => 
 
@@ -47,7 +49,7 @@ trait XmlFactories {
 /**
  * Default SAXParser Factory
  */ 
-object DefaultSAXParserFactoryPool extends scales.utils.SimpleUnboundedPool[SAXParserFactory] { pool =>
+object DefaultSAXParserFactoryPool extends SimpleUnboundedPool[SAXParserFactory] { pool =>
   
   def create = {
     val parserFactory = SAXParserFactory.newInstance()
@@ -56,7 +58,7 @@ object DefaultSAXParserFactoryPool extends scales.utils.SimpleUnboundedPool[SAXP
     parserFactory.setValidating(false)
     parserFactory
   }
-										     val parsers = new scales.utils.Loaner[SAXParser] with DefaultSaxSupport {
+										     val parsers = new Loaner[SAXParser] with DefaultSaxSupport {
 										       def loan[X]( tThunk : SAXParser => X ) : X =
 											 pool.loan{ x => tThunk(x.newSAXParser) }
 										     }
@@ -65,7 +67,7 @@ object DefaultSAXParserFactoryPool extends scales.utils.SimpleUnboundedPool[SAXP
 /**
  * SAXParser Factory without version support
  */ 
-object NoVersionSAXParserFactoryPool extends scales.utils.SimpleUnboundedPool[SAXParserFactory] { pool =>
+object NoVersionSAXParserFactoryPool extends SimpleUnboundedPool[SAXParserFactory] { pool =>
   
   def create = {
     val parserFactory = SAXParserFactory.newInstance()
@@ -74,7 +76,7 @@ object NoVersionSAXParserFactoryPool extends scales.utils.SimpleUnboundedPool[SA
     parserFactory.setValidating(false)
     parserFactory
   }
-										     val parsers = new scales.utils.Loaner[SAXParser] with DefaultSaxSupport {
+										     val parsers = new Loaner[SAXParser] with DefaultSaxSupport {
 										       // doesn't support xml version retrieval
     override def getXmlVersion( reader : XMLReader ) : AnyRef =
       null
@@ -86,7 +88,7 @@ object NoVersionSAXParserFactoryPool extends scales.utils.SimpleUnboundedPool[SA
 /**
  * Default XMLReader Factory
  */ 
-object DefaultXMLReaderFactoryPool extends scales.utils.SimpleUnboundedPool[XMLReader] with DefaultSaxSupport { pool =>
+object DefaultXMLReaderFactoryPool extends SimpleUnboundedPool[XMLReader] with DefaultSaxSupport { pool =>
   
   def create = 
     XMLReaderFactory.createXMLReader()
@@ -96,7 +98,7 @@ object DefaultXMLReaderFactoryPool extends scales.utils.SimpleUnboundedPool[XMLR
 /**
  * Aalto and others don't support getting the xml version, if your parser doesn't you could use loadXmlReader with this pool directly.
  */ 
-object NoVersionXmlReaderFactoryPool extends scales.utils.SimpleUnboundedPool[XMLReader] with DefaultSaxSupport {
+object NoVersionXmlReaderFactoryPool extends SimpleUnboundedPool[XMLReader] with DefaultSaxSupport {
   
   // doesn't support xml version retrieval
   override def getXmlVersion( reader : XMLReader ) : AnyRef =
@@ -110,7 +112,7 @@ object NoVersionXmlReaderFactoryPool extends scales.utils.SimpleUnboundedPool[XM
 /**
  * Default DOMFactory impl
  */ 
-object DefaultDOMFactoryPool extends scales.utils.SimpleUnboundedPool[DocumentBuilderFactory] { pool =>
+object DefaultDOMFactoryPool extends SimpleUnboundedPool[DocumentBuilderFactory] { pool =>
   
   def create = {
     val dbFactory = DocumentBuilderFactory.newInstance()
@@ -119,7 +121,7 @@ object DefaultDOMFactoryPool extends scales.utils.SimpleUnboundedPool[DocumentBu
     dbFactory
   }
 
-  val parsers = new scales.utils.Loaner[DocumentBuilder] {
+  val parsers = new Loaner[DocumentBuilder] {
     def loan[X]( tThunk : DocumentBuilder => X ) : X =
       pool.loan{ x => tThunk(x.newDocumentBuilder) }
   }
@@ -128,7 +130,7 @@ object DefaultDOMFactoryPool extends scales.utils.SimpleUnboundedPool[DocumentBu
 /**
  * Default StaxInputFactory impl
  */ 
-object DefaultStaxInputFactoryPool extends scales.utils.SimpleUnboundedPool[XMLInputFactory] { pool =>
+object DefaultStaxInputFactoryPool extends SimpleUnboundedPool[XMLInputFactory] { pool =>
   
   val cdata = "http://java.sun.com/xml/stream/properties/report-cdata-event"
 
@@ -144,7 +146,7 @@ object DefaultStaxInputFactoryPool extends scales.utils.SimpleUnboundedPool[XMLI
 /**
  * Default XSD SchemaFactory impl
  */ 
-object DefaultXSDSchemaFactoryPool extends scales.utils.SimpleUnboundedPool[SchemaFactory] { pool =>
+object DefaultXSDSchemaFactoryPool extends SimpleUnboundedPool[SchemaFactory] { pool =>
   
   def create = {
     val fac = SchemaFactory.newInstance(javax.xml.XMLConstants.W3C_XML_SCHEMA_NS_URI)

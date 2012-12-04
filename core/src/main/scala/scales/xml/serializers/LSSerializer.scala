@@ -7,6 +7,7 @@ import java.nio.charset.Charset
 import scales.xml._
 
 import scales.utils._
+import resources._
 
 import javax.xml.parsers._
 
@@ -121,6 +122,7 @@ object LSSerializerFactory extends LSSerializerConcurrentCacheFactory {
 
 trait LSSerializerConcurrentCacheFactory extends LSSerializerFactoryBase {
   import java.util.concurrent.ConcurrentHashMap
+  import scales.utils.collection.Once
 
   /**
    * On the assumption that a given apps qname population is larger than that of its possible encodings.

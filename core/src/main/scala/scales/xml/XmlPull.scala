@@ -3,7 +3,7 @@ package scales.xml
 
 import javax.xml.stream._
 import scales.utils.io.{ProxiedCloseOnNeedReader, ProxiedCloseOnNeedInputStream}
-import scales.utils.{CloseOnNeed, IsClosed, Pool}
+import scales.utils.resources.{CloseOnNeed, IsClosed, Pool}
 
 import java.io._
 

@@ -5,10 +5,12 @@ import com.fasterxml.aalto.stax.InputFactoryImpl
 
 import scales.xml._
 
+import scales.utils.resources.SimpleUnboundedPool
+
 /**
  * Default AsyncXMLInputFactory impl
  */ 
-object AsyncXMLInputFactoryPool extends scales.utils.SimpleUnboundedPool[AsyncXMLInputFactory] { pool =>
+object AsyncXMLInputFactoryPool extends SimpleUnboundedPool[AsyncXMLInputFactory] { pool =>
   
   val cdata = "http://java.sun.com/xml/stream/properties/report-cdata-event"
 

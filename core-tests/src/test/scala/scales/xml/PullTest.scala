@@ -10,6 +10,8 @@ class PullTest extends junit.framework.TestCase {
   import ScalesUtils._
   import ScalesXml._
 
+  import resources._
+
   import Functions._
 
   val Default = Namespace("urn:default")

@@ -3,6 +3,8 @@ package scales.xml
 import scales.utils._
 
 import scala.collection.immutable.{ Stack, Map }
+
+import resources._
 
 import java.io.Writer
 
@@ -169,7 +171,7 @@ trait XmlPrinter {
     def apply(it: T)(out: XmlOutput, serializer: Serializer): (XmlOutput, Option[Throwable])
   }
 
-  type CloseablePull = XmlPull with java.io.Closeable with scales.utils.IsClosed
+  type CloseablePull = XmlPull with java.io.Closeable with IsClosed
 
   /**
    * Placeholder - prefer serialize instead

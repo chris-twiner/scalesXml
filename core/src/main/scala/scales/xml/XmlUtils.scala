@@ -1,7 +1,8 @@
 package scales.xml
 
 import ScalesXml.xmlCBF
-
+import scales.utils.resources.Loaner
+  
 /**
  * A collection of whitespace related functions
  */
@@ -48,12 +49,11 @@ trait Whitespace {
 import org.xml.sax.XMLReader
 
 trait XmlUtils {
-
   
   /**
    * Conversion from Scala XML into Scales XML
    */ 
-  def convertFromScalaXml[Token <: OptimisationToken]( elem : scala.xml.Elem, parsers : scales.utils.Loaner[XMLReader] with SaxSupport = DefaultXMLReaderFactoryPool, optimisationStrategy : PathOptimisationStrategy[Token] = defaultPathOptimisation, encoding : String = "UTF-8" )(implicit xmlVer : XmlVersion)  : Doc = {
+  def convertFromScalaXml[Token <: OptimisationToken]( elem : scala.xml.Elem, parsers : Loaner[XMLReader] with SaxSupport = DefaultXMLReaderFactoryPool, optimisationStrategy : PathOptimisationStrategy[Token] = defaultPathOptimisation, encoding : String = "UTF-8" )(implicit xmlVer : XmlVersion)  : Doc = {
     // simple stream conversion.., for "large docs" a conversion in place might be better, but for now its isolated....
     var out = new java.io.StringWriter()
     val p = parsers						 
@@ -65,7 +65,7 @@ trait XmlUtils {
 
 trait XmlUtilsImplicits {
   class ToScales( elem : scala.xml.Elem)(implicit xmlVer : XmlVersion) {
-    def asScales[Token <: OptimisationToken](parsers : scales.utils.Loaner[XMLReader] with SaxSupport = DefaultXMLReaderFactoryPool, optimisationStrategy : PathOptimisationStrategy[Token] = defaultPathOptimisation, encoding : String = "UTF-8" ) = convertFromScalaXml(elem, parsers, optimisationStrategy, encoding)
+    def asScales[Token <: OptimisationToken](parsers : Loaner[XMLReader] with SaxSupport = DefaultXMLReaderFactoryPool, optimisationStrategy : PathOptimisationStrategy[Token] = defaultPathOptimisation, encoding : String = "UTF-8" ) = convertFromScalaXml(elem, parsers, optimisationStrategy, encoding)
   }
 
   implicit def toScalesXml( elem : scala.xml.Elem)(implicit xmlVer : XmlVersion) = new ToScales(elem)
