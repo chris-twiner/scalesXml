@@ -4,12 +4,12 @@ trait ScalesXmlImplicits extends XmlTypesImplicits
   with XmlPathImplicits 
   with DslImplicits 
   with QNameImplicits 
-  with XmlParserImplicits
+  with parser.sax.XmlParserImplicits
   with DefaultXmlVersion
   with XmlPrinterImplicits 
-  with TraxConversionImplicits 
+  with trax.TraxConversionImplicits 
   with XmlUtilsImplicits
-  with OptimisingStrategiesImplicits
+  with parser.strategies.OptimisingStrategiesImplicits
   with serializers.SerializerImplicits
   with xpath.FunctionImplicits
   with PullTypeConversionImplicits 

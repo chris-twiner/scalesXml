@@ -128,7 +128,7 @@ object Presentation {
     println("trax")
     println("source only " + wr.toString)
     
-    val sr = ScalesResult()
+    val sr = scales.xml.trax.ScalesResult()
     trax.transform(doc, sr)
     
     println("roundtrip " + asString(sr.doc))

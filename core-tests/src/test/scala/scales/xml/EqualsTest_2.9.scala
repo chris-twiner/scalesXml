@@ -2,14 +2,11 @@ package scales.xml.equalsTest // different to keep default xml._ out
 
 // why the hell can't scala resolve just xml.XmlTypes ??
 import scales.xml.{ XmlTypes ,
-    XmlParser, 
     XmlPaths,
     XPathMatcher, 
     XmlPrinter ,
     Whitespace, 
     XmlPulls ,
-    XmlFactories ,
-    TraxSourceConversions,
     XmlUtils,
     PullIteratees, 
     QNameImplicits, 
@@ -18,8 +15,11 @@ import scales.xml.{ XmlTypes ,
     XmlPrinterImplicits,
     DslImplicits,
     XmlPathImplicits,
-    XmlParserImplicits,
-    PullTypeConversionImplicits}
+    PullTypeConversionImplicits, impl, parser, trax}
+
+import impl.XmlFactories
+import trax.TraxSourceConversions
+import parser.sax.{XmlParserImplicits, XmlParser}
 
 import scales.xml.{Elem, Attribs, Attributes, Attribute, XmlItem, Text, PI, CData, Comment, <, Namespace, qualifiedName}
 

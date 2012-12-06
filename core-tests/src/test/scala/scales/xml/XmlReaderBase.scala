@@ -8,6 +8,8 @@ import org.xml.sax.XMLReader
 
 import resources.SimpleUnboundedPool
 
+import parser.sax._
+
 object NuValidatorFactoryPool extends SimpleUnboundedPool[XMLReader] with DefaultSaxSupport {
   
   def create = {

@@ -5,6 +5,8 @@ import javax.xml.stream._
 import scales.utils.io.{ProxiedCloseOnNeedReader, ProxiedCloseOnNeedInputStream}
 import scales.utils.resources.{CloseOnNeed, IsClosed, Pool}
 
+import scales.xml.parser.strategies.{MemoryOptimisationStrategy, PathOptimisationStrategy, OptimisationToken}
+
 import java.io._
 
 /**
@@ -50,7 +52,7 @@ trait XmlPulls {
   /**
    * Load xml via pull parsing
    */ 
-  def pullXmlCompletely[RToken <: OptimisationToken]( source : org.xml.sax.InputSource, strategy : PathOptimisationStrategy[RToken] = defaultPathOptimisation, parserFactoryPool : Pool[XMLInputFactory] = DefaultStaxInputFactoryPool, closeAfterUse : Boolean = true) : Doc = {
+  def pullXmlCompletely[RToken <: OptimisationToken]( source : org.xml.sax.InputSource, strategy : PathOptimisationStrategy[RToken] = defaultPathOptimisation, parserFactoryPool : Pool[XMLInputFactory] = impl.DefaultStaxInputFactoryPool, closeAfterUse : Boolean = true) : Doc = {
     val pull = pullXml[RToken](source, strategy, parserFactoryPool, closeAfterUse)
     
     Doc(toTree(pull, strategy), pull.prolog, pull.end)
@@ -81,7 +83,7 @@ trait XmlPulls {
    * Creates a new XmlPull based on source for direct handling of the stream.  Note to close the stream you must bracket.
    * The individual XmlPull will be closed after the document end but the stream will remain open
    */
-  def pullXmlResource[RToken <: OptimisationToken](source: org.xml.sax.InputSource, optimisationStrategy : MemoryOptimisationStrategy[RToken] = defaultOptimisation, parserFactoryPool: Pool[XMLInputFactory] = DefaultStaxInputFactoryPool) : (CloseOnNeed, XmlPull) = {
+  def pullXmlResource[RToken <: OptimisationToken](source: org.xml.sax.InputSource, optimisationStrategy : MemoryOptimisationStrategy[RToken] = defaultOptimisation, parserFactoryPool: Pool[XMLInputFactory] = impl.DefaultStaxInputFactoryPool) : (CloseOnNeed, XmlPull) = {
     val stream = sourceUser(source)
 
     val pf = parserFactoryPool.grab
@@ -107,7 +109,7 @@ trait XmlPulls {
   /**
    * Creates a new XmlPull based on source.  By default it will close the stream after use.
    */
-  def pullXml[RToken <: OptimisationToken](source: org.xml.sax.InputSource, optimisationStrategy : MemoryOptimisationStrategy[RToken] = defaultOptimisation, parserFactoryPool: Pool[XMLInputFactory] = DefaultStaxInputFactoryPool, closeAfterUse: Boolean = true) : XmlPull with java.io.Closeable with IsClosed = {
+  def pullXml[RToken <: OptimisationToken](source: org.xml.sax.InputSource, optimisationStrategy : MemoryOptimisationStrategy[RToken] = defaultOptimisation, parserFactoryPool: Pool[XMLInputFactory] = impl.DefaultStaxInputFactoryPool, closeAfterUse: Boolean = true) : XmlPull with java.io.Closeable with IsClosed = {
     val stream = sourceUser(source)
 
     val pf = parserFactoryPool.grab

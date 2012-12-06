@@ -14,6 +14,8 @@ import java.nio.channels.ReadableByteChannel
 import scalaz._
 import scalaz.IterV._
 
+import scales.xml.parser.strategies.{MemoryOptimisationStrategy, OptimisationToken}
+
 /**
  * An AynscParser, a DataChunk is fed in via nextInput which, in turn, returns an Input[EphmeralStream[PullType]] of events.
  * When the Input is El then the stream may be evaluated to get all available events, and will return empty when no more for that data chunk is available.

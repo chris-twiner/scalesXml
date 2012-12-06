@@ -2,6 +2,8 @@ package scales.xml
 
 import scales.utils._
 
+import scales.xml.parser.strategies.{MemoryOptimisationStrategy, OptimisationToken}
+
 import collection.FlatMapIterator
 
 /**

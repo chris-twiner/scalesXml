@@ -10,7 +10,8 @@ import javax.xml.transform._
 import dom._
 import stream._
 
-import strategies._
+import parser.strategies._
+import scales.xml.impl.DefaultDOMFactoryPool
 
 import collection.path._
 import collection.{Tree, ImmutableArrayProxy}

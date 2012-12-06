@@ -10,6 +10,9 @@ class AsyncPullTest extends junit.framework.TestCase {
   import ScalesUtils._
   import scales.xml._
   import ScalesXml._
+ 
+  import scales.xml.impl.NoVersionXmlReaderFactoryPool
+
   import io._
   import ScalesUtilsIO._
 

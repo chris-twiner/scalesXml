@@ -1,4 +1,4 @@
-package scales.xml.strategies
+package scales.xml.parser.strategies
 
 import scales.xml._
 import scales.utils.collection.{Tree, ImmutableArrayProxy}
@@ -10,7 +10,7 @@ import impl.TreeProxies
 /**
  * Allows replacing a tree for memory optimisations
  */ 
-trait TreeOptimisation[TOKEN <: scales.xml.OptimisationToken] extends PathOptimisationStrategy[TOKEN] {
+trait TreeOptimisation[TOKEN <: OptimisationToken] extends PathOptimisationStrategy[TOKEN] {
 
   def newTree( elem : Elem, children : XmlChildren, token : TOKEN ) : XmlTree
 

@@ -5,6 +5,7 @@ import java.io.Writer
 import java.nio.charset.Charset
 
 import scales.xml._
+import impl._
 
 import scales.utils._
 import resources._

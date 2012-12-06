@@ -1,21 +1,21 @@
 package scales
 
 package object xml extends XmlTypes 
-  with XmlParser 
+  with parser.sax.XmlParser 
   with XmlPaths
   with XPathMatcher 
   with XmlPrinter 
   with Whitespace 
   with XmlPulls 
-  with XmlFactories 
-  with TraxSourceConversions
+  with impl.XmlFactories 
+  with trax.TraxSourceConversions
   with XmlUtils
   with PullIteratees
   with equals.XmlEquals
   with serializers.SerializingIter
   with xpath.Functions {
 
-  import strategies.ElemToken
+  import scales.xml.parser.strategies.{QNameMemoryOptimisation, PathOptimisationStrategy, QNameToken, MemoryOptimisationStrategy}
 
   val defaultPathOptimisation : PathOptimisationStrategy[QNameToken] = QNameMemoryOptimisation
   val defaultOptimisation : MemoryOptimisationStrategy[QNameToken] = QNameMemoryOptimisation

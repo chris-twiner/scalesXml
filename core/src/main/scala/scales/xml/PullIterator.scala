@@ -2,6 +2,10 @@ package scales.xml
 
 import javax.xml.stream._
 import scales.utils._
+import parser._
+
+import strategies.{MemoryOptimisationStrategy, OptimisationToken}
+
 
 /**
  * Basis for xmlpulls, next is (event, start/finish)

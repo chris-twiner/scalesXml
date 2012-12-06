@@ -17,6 +17,8 @@ class XmlMarshallingTest29 extends junit.framework.TestCase {
 
   import Functions._
 
+  import parser.strategies
+
   val xmlFile = resource(this, "/data/BaseXmlTest.xml")
 
   import scales.xml.equals._

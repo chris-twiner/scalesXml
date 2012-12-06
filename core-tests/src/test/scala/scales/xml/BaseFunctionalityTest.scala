@@ -1,7 +1,7 @@
 package scales.xml.test // to get around package overloads
 
 import scales.xml._
-import scales.xml.strategies._
+import scales.xml.parser.strategies._
 
 class BaseFunctionalityTest extends junit.framework.TestCase {
   import junit.framework.Assert._
