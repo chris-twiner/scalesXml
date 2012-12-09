@@ -1,7 +1,7 @@
 package scales.xml
 
 trait ScalesXmlImplicits extends XmlTypesImplicits 
-  with XmlPathImplicits 
+  with xpath.XmlPathImplicits 
   with DslImplicits 
   with QNameImplicits 
   with parser.sax.XmlParserImplicits

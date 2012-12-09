@@ -2,7 +2,7 @@ package scales
 
 package object xml extends XmlTypes 
   with parser.sax.XmlParser 
-  with XmlPaths
+  with xpath.XmlPaths
   with XPathMatcher 
   with XmlPrinter 
   with Whitespace 
@@ -22,4 +22,24 @@ package object xml extends XmlTypes
 
   @deprecated(message="Functions - since 0.3 - imports are provided via the xml package object")
   val Functions = new Object()
+
+  // forwarders
+
+  /**
+   * XPath type, provides all XPath Axe against a given collection of XmlPaths 
+   * @see [xpath.XPath]
+   */ 
+  type XPath[PT <: Iterable[XmlPath]] = xpath.XPath[PT]
+
+  /**
+   * AttributePath provides access to the parent XmlPath
+   */
+  type AttributePath = xpath.AttributePath
+
+  /**
+   * AttributePaths provides all XPath Axe that are attribute relevant against a given collection of attributes on a colletion of XmlPaths
+   * @see [xpath.AttributePaths]
+   */ 
+  type AttributePaths[PT <: Iterable[XmlPath]] = xpath.AttributePaths[PT]
+
 }

@@ -2,7 +2,6 @@ package scales.xml.equalsTest // different to keep default xml._ out
 
 // why the hell can't scala resolve just xml.XmlTypes ??
 import scales.xml.{ XmlTypes ,
-    XmlPaths,
     XPathMatcher, 
     XmlPrinter ,
     Whitespace, 
@@ -14,13 +13,15 @@ import scales.xml.{ XmlTypes ,
     XmlTypesImplicits,
     XmlPrinterImplicits,
     DslImplicits,
-    XmlPathImplicits,
-    PullTypeConversionImplicits, impl, parser, trax}
+    PullTypeConversionImplicits, 
+    impl, parser, trax, xpath}
 
 import impl.XmlFactories
 import trax.TraxSourceConversions
 import parser.sax.{XmlParserImplicits, XmlParser}
 
+import xpath.{XmlPaths, XmlPathImplicits}
+    
 import scales.xml.{Elem, Attribs, Attributes, Attribute, XmlItem, Text, PI, CData, Comment, <, Namespace, qualifiedName}
 
 class EqualsTest extends junit.framework.TestCase {
