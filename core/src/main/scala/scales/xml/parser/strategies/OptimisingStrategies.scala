@@ -98,6 +98,8 @@ trait PathOptimisationStrategy[Token <: OptimisationToken] extends MemoryOptimis
   }
 }
 
+import scales.xml.impl.FullEqualQNameKey
+
 class QNameToken(implicit val ver : XmlVersion, val fromParser : FromParser) extends OptimisationToken {
   val qkey = new FullEqualQNameKey()
 

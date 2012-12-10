@@ -263,6 +263,8 @@ class EqualsNormalImportsTest extends junit.framework.TestCase {
     val attr1 : Attribute = qn -> "v1"
     val attr2 : Attribute = qnd -> "v1"
 
+    import scales.xml.impl.EqualsHelpers
+
     assertFalse(".equal toQName", prefixQNameEqual.equal(EqualsHelpers.toQName(attr1.name), EqualsHelpers.toQName(attr2.name)))
     
     assertFalse("attr1 === attr2", attr1 === attr2)

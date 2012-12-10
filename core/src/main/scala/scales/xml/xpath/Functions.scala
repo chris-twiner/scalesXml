@@ -1,7 +1,10 @@
 package scales.xml.xpath
 
 import scales.xml._
+import impl.EqualsHelpers
+
 import scales.utils._
+
 
 /**
  * Type class representing Xml objects which provide qnames.  Most of the

@@ -4,7 +4,9 @@ import scales.utils._
 import scala.collection.generic.CanBuildFrom
 import scales.utils.one
 
-import scales.xml.{Elem, Attributes, Attribute, XCC, XmlItem, XmlPath, AttributeQName, EqualsHelpers, ScalesXml, text, UnprefixedQName}
+import scales.xml.{Elem, Attributes, Attribute, XCC, XmlItem, XmlPath, AttributeQName, ScalesXml, text, UnprefixedQName}
+
+import scales.xml.impl.EqualsHelpers
 
 /** Simple container for keeping relationship between the parent and attribute */
 case class AttributePath(attribute: Attribute, parent: XmlPath)
@@ -21,7 +23,7 @@ case class AttributePathComparisoms(path: AttributePath) {
 
 /** Attributes that have been selected */
 case class AttributePaths[PT <: Iterable[XmlPath]](attributes: Iterable[AttributePath], path: XPathInfo, cbf: CanBuildFrom[PT, XmlPath, PT]) {
-  import EqualsHelpers.toQName
+  import scales.xml.impl.EqualsHelpers.toQName
   /** Parents of the attributepaths */
   def \^(): XPath[PT] = new XPath[PT](path.copy(nodes = List(attributes.map(_.parent))), cbf)
 

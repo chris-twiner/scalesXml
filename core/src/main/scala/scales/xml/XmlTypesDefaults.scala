@@ -4,6 +4,8 @@ import scala.collection.immutable.Map
 
 import scala.collection.generic.CanBuildFrom
 
+import impl.EqualsHelpers
+
 //import scales.utils.collection.path.{Path, Node, Position}
 import scales.utils.{TreeCBF, subtree, item, top, ItemOrTree, noPath => fno, EitherLike, LeftLike}
 import scales.utils.collection.{ListSet, Tree, ImmutableArrayProxy, ImmutableArrayProxyBuilder }
@@ -13,17 +15,6 @@ import scalaz._
 import Scalaz._
 
 import java.nio.charset.Charset
-
-/**
- * Needed to help with cyclic issues in multi threaded MODULE$ access, after startup no problem, but we can't gaurantee that.
- */ 
-object EqualsHelpers extends equals.DefaultQNameEquals {
-  // only used for default attribute comparisoms in Attributes
-  implicit val aqnameEqual = equal { (a: Attribute, b: Attribute) => a.name =:= b.name }
-  implicit val qnameEquiv : scales.utils.Equiv[QName] = new scales.utils.Equiv[QName]
-  implicit def toQName(attribQName: AttributeQName): QName = attribQName.asInstanceOf[QName] // otherwise it blows the stack calling itself
-  implicit val toQNameF = (a: Attribute) => { a.name : QName }
-}
 
 trait XmlTypesImplicits {
 
@@ -129,9 +120,6 @@ trait XmlTypes {
 
   val emptyAttributes = ListSet.empty[Attribute]
   val emptyNamespaces: Map[String, String] = Map[String, String]()
-
-  val emptyAttributesHash = emptyAttributes.hashCode
-  val emptyNamespacesHash = emptyNamespaces.hashCode
 
   val emptyChildren = ImmutableArrayProxy[ItemOrElem]()
 
