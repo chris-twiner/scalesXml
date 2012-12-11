@@ -11,7 +11,7 @@ import ScalesUtils._
 import scales.xml._
 import ScalesXml._
 
-//import xpath._
+import scales.xml.impl.{DocumentRoot, DocsUp}
 
 import collection.DuplicateFilter
 

@@ -1,6 +1,7 @@
 package scales.xml.impl
 
-import scales.xml.{QName, AttributeQName}
+import scales.xml.{QName, AttributeQName, UnprefixedQName, Namespace, NoNamespaceQName, FromParser, XmlVersion}
+
 import scales.xml.parser.strategies.{MemoryOptimisationStrategy, OptimisationToken}
 
 /**
@@ -48,4 +49,33 @@ object NameCreators {
         strategy.prefixedQName(localName, uri,bits(0), token) // Left
       }
     }
+}
+
+
+trait QNameImplicits {
+
+  implicit def stringToNoNamespace( localOnly : String )(implicit ver : XmlVersion, fromParser: FromParser) = NoNamespaceQName(localOnly)
+
+  implicit def localStringToNSBuilder( local : String)(implicit ver : XmlVersion, fromParser: FromParser) = new StringToNSBuilder(local)
+}
+
+/**
+ * Pimps a string for namespace handling
+ */ 
+class StringToNSBuilder(local: String)(implicit ver : XmlVersion, fromParser: FromParser) {
+
+  /**
+   * ns :: localname pimp.
+   */ 
+  def ::( namespace : String ) = if ((namespace eq null) || namespace == "") error("Namespace should not be non empty or null") else UnprefixedQName(local, Namespace(namespace))
+
+  /**
+   * When there are other implicits after the string conversion gold add an "l" for local only 
+   */
+  def l(implicit ver : XmlVersion, fromParser : FromParser) = NoNamespaceQName(local)
+
+  /**
+   * When there are other implicits after the string conversion gold add an "localOnly" or "l" for local only 
+   */
+  def localOnly(implicit ver : XmlVersion, fromParser : FromParser) = NoNamespaceQName(local)
 }

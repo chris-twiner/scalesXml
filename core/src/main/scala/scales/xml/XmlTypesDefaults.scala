@@ -72,10 +72,6 @@ trait XmlTypesImplicits {
 
 }
 
-object ExtraTypesImplicits {
-  implicit val toAttrN = (nons: AttributeQName) => Attribute(nons, "")
-}
-
 /**
  * Simple constructor for Attributes
  */ 
@@ -135,7 +131,7 @@ trait XmlTypes {
    * What is returned is either a Seq of attribute values or a simple boolean
    */
   def ElemMatcher(name: QName, attributes: AttributeQName*) = new {
-    import ExtraTypesImplicits._
+    import impl.ExtraTypesImplicits._
 
     def matchAttribs(elem: Elem) = for (attribute <- attributes; matches <- elem.attributes(attribute)) yield matches
 

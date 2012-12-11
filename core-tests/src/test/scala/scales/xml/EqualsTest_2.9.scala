@@ -8,15 +8,13 @@ import scales.xml.{ XmlTypes ,
     XmlPulls ,
     XmlUtils,
     PullIteratees, 
-    QNameImplicits, 
-    DefaultXmlVersion ,
     XmlTypesImplicits,
     XmlPrinterImplicits,
     DslImplicits,
     PullTypeConversionImplicits, 
     impl, parser, trax, xpath}
 
-import impl.XmlFactories
+import impl.{XmlFactories, QNameImplicits, DefaultXmlVersion}
 import trax.TraxSourceConversions
 import parser.sax.{XmlParserImplicits, XmlParser}
 

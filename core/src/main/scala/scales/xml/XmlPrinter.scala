@@ -1,5 +1,7 @@
 package scales.xml
 
+import impl.NamespaceDefaults
+
 import scales.utils._
 
 import scala.collection.immutable.{ Stack, Map }
@@ -77,8 +79,8 @@ trait XmlPrinter {
 
     // is this namespace declared?
     val addedDefaultNS = {
-      val currentDefault = mappings(Default.namespace.uri)
-      if (x.name.namespace != Default.noNamespace) {
+      val currentDefault = mappings(NamespaceDefaults.namespace.uri)
+      if (x.name.namespace != NamespaceDefaults.noNamespace) {
         // is there a prefix?
         if (x.name.prefix.isDefined) {
           // then it is a normal laddNS
@@ -98,29 +100,29 @@ trait XmlPrinter {
             // must redefine it
             // then the namespace has been badly declared as we have a conflict, but in order for at
             // least this element to be valid we must remap it, log it?
-            mappings = mappings.updated(Default.namespace.uri, x.name.namespace.uri)
+            mappings = mappings.updated(NamespaceDefaults.namespace.uri, x.name.namespace.uri)
             true
           }
         }
       } else {
         // then if the current default is not "" we must redeclare it
-        if (currentDefault == Default.noNamespace.uri) {
+        if (currentDefault == NamespaceDefaults.noNamespace.uri) {
           false
         } else {
-          mappings = mappings.updated(Default.namespace.uri, Default.noNamespace.uri)
+          mappings = mappings.updated(NamespaceDefaults.namespace.uri, NamespaceDefaults.noNamespace.uri)
           true
         }
       }
     }
 
     // don't render it here, mappings contains it
-    declMap = declMap - Default.namespace.uri
+    declMap = declMap - NamespaceDefaults.namespace.uri
 
-    val default = x.namespaces.get(Default.namespace.uri)
+    val default = x.namespaces.get(NamespaceDefaults.namespace.uri)
     val addDef =
       if (addedDefaultNS || default.isDefined) {
         // we have a new mapping, old one doesn't work anymore
-        Some(mappings(Default.namespace.uri))
+        Some(mappings(NamespaceDefaults.namespace.uri))
       } else
         None
 

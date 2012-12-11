@@ -313,13 +313,3 @@ case class EmptyDoc(prolog: Prolog = Prolog(), end: EndMisc = EndMisc()) extends
 case class Doc(rootElem: XmlTree, prolog: Prolog = Prolog(), end: EndMisc = EndMisc()) extends DocLike {
   override def toString() = "scales.xml.doc"
 }
-
-/**
- * exists only to provide Jaxen and JXPath with a document "root"
- */ 
-case class DocumentRoot(xmlPath : XmlPath)
-
-/**
- * exists only to provide Jaxen and JXPath with the same document root
- */ 
-case class DocsUp[WHAT](what : WHAT, docroot : DocumentRoot)

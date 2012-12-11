@@ -3,9 +3,9 @@ package scales.xml
 trait ScalesXmlImplicits extends XmlTypesImplicits 
   with xpath.XmlPathImplicits 
   with DslImplicits 
-  with QNameImplicits 
+  with impl.QNameImplicits 
   with parser.sax.XmlParserImplicits
-  with DefaultXmlVersion
+  with impl.DefaultXmlVersion
   with XmlPrinterImplicits 
   with trax.TraxConversionImplicits 
   with XmlUtilsImplicits
