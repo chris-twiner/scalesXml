@@ -1,9 +1,10 @@
-
 package scales.xml
 
 import javax.xml.stream._
 import scales.utils.io.{ProxiedCloseOnNeedReader, ProxiedCloseOnNeedInputStream}
 import scales.utils.resources.{CloseOnNeed, IsClosed, Pool}
+
+import scales.xml.impl.{FromParser, IsFromParser}
 
 import scales.xml.parser.strategies.{MemoryOptimisationStrategy, PathOptimisationStrategy, OptimisationToken}
 

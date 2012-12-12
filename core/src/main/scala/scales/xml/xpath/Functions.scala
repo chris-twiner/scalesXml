@@ -5,6 +5,8 @@ import impl.EqualsHelpers
 
 import scales.utils._
 
+import scales.xml.impl.{IsFromParser}
+
 
 /**
  * Type class representing Xml objects which provide qnames.  Most of the

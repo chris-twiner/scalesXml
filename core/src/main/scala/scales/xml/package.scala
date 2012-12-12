@@ -5,11 +5,11 @@ package object xml extends XmlTypes
   with xpath.XmlPaths
   with XPathMatcher 
   with XmlPrinter 
-  with Whitespace 
+  with impl.Whitespace 
   with XmlPulls 
   with impl.XmlFactories 
   with trax.TraxSourceConversions
-  with XmlUtils
+  with impl.XmlUtils
   with PullIteratees
   with equals.XmlEquals
   with serializers.SerializingIter

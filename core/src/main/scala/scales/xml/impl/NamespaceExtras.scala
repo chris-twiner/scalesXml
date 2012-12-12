@@ -1,6 +1,6 @@
 package scales.xml.impl
 
-import scales.xml.{XmlVersion, IsFromParser, Xml10, EmptyNamespace, Namespace}
+import scales.xml.{XmlVersion, Xml10, EmptyNamespace, Namespace}
 
 trait DefaultXmlVersion {
   implicit val defaultVersion : XmlVersion = Xml10
@@ -67,3 +67,4 @@ object QNameCharUtils {
       error("The local name '"+validLocal+"' is not valid for Xml "+ver.version)
 
 }
+

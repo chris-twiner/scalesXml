@@ -11,7 +11,7 @@ import dom._
 import stream._
 
 import parser.strategies._
-import scales.xml.impl.DefaultDOMFactoryPool
+import scales.xml.impl.{DefaultDOMFactoryPool, IsFromParser}
 
 import collection.path._
 import collection.{Tree, ImmutableArrayProxy}

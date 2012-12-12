@@ -6,6 +6,7 @@ import parser._
 
 import strategies.{MemoryOptimisationStrategy, OptimisationToken}
 
+import scales.xml.impl.{FromParser, IsFromParser}
 
 /**
  * Basis for xmlpulls, next is (event, start/finish)

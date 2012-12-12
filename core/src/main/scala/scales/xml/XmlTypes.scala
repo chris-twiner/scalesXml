@@ -12,6 +12,8 @@ import scales.utils.collection.{ListSet, Tree}
 
 import java.nio.charset.Charset
 
+import scales.xml.impl.{FromParser, IsFromParser}
+
 /**
  * Attributes can only work with either a prefixed qname or an empty ns name
  */

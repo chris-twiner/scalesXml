@@ -4,6 +4,8 @@ import scales.xml._
 import scales.utils.collection.Tree
 import scales.utils.valueOf
 
+import scales.xml.impl.{NotFromParser, FromParser}
+
 import impl.ElemKey
 
 class ElemToken(implicit ver : XmlVersion, fromParser : FromParser) extends QNameToken {

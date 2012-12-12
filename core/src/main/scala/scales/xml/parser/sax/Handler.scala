@@ -7,6 +7,8 @@ import scales.xml._
 import parser._
 import scales.xml.parser.strategies.{PathOptimisationStrategy, OptimisationToken}
 
+import scales.xml.impl.{NotFromParser, IsFromParser, FromParser}
+
 import impl.{NameCreators, TreeProxies}
 
 class Handler[Token <: OptimisationToken](strategy : PathOptimisationStrategy[Token])(implicit val defaultVersion : XmlVersion) extends org.xml.sax.ext.DefaultHandler2 {

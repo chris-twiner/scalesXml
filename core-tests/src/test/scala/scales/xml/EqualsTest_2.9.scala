@@ -4,17 +4,16 @@ package scales.xml.equalsTest // different to keep default xml._ out
 import scales.xml.{ XmlTypes ,
     XPathMatcher, 
     XmlPrinter ,
-    Whitespace, 
     XmlPulls ,
-    XmlUtils,
     PullIteratees, 
-    XmlTypesImplicits,
     XmlPrinterImplicits,
-    DslImplicits,
     PullTypeConversionImplicits, 
     impl, parser, trax, xpath}
 
-import impl.{XmlFactories, QNameImplicits, DefaultXmlVersion}
+import impl.{XmlFactories, QNameImplicits, DefaultXmlVersion, 
+	     XmlUtils, Whitespace,
+	     XmlTypesImplicits,
+	     DslImplicits}
 import trax.TraxSourceConversions
 import parser.sax.{XmlParserImplicits, XmlParser}
 

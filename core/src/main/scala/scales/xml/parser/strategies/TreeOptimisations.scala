@@ -3,6 +3,8 @@ package scales.xml.parser.strategies
 import scales.xml._
 import scales.utils.collection.{Tree, ImmutableArrayProxy}
 
+import scales.xml.impl.{NotFromParser, IsFromParser, FromParser}
+
 import ImmutableArrayProxy.one
 
 import impl.TreeProxies
