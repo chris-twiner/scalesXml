@@ -315,3 +315,9 @@ case class EmptyDoc(prolog: Prolog = Prolog(), end: EndMisc = EndMisc()) extends
 case class Doc(rootElem: XmlTree, prolog: Prolog = Prolog(), end: EndMisc = EndMisc()) extends DocLike {
   override def toString() = "scales.xml.doc"
 }
+
+/**
+ * Exists purely to satisfy staxs events and indicate to the client code that the xml "stack" should be popped
+ */
+case class EndElem(name: QName, namespaces: Map[String, String] = Map[String, String]())
+

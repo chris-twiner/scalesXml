@@ -1,4 +1,4 @@
-package scales.xml.aalto
+package scales.xml.parser.pull.aalto
 
 import scales.xml._
 import scales.utils._
@@ -10,6 +10,8 @@ import javax.xml.stream.XMLStreamConstants.END_DOCUMENT
 
 import java.nio.ByteBuffer
 import java.nio.channels.ReadableByteChannel
+
+import scales.xml.parser.pull.PullUtils
 
 import scalaz._
 import scalaz.IterV._

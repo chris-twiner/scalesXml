@@ -3,14 +3,14 @@ package scales
 package object xml extends XmlTypes 
   with parser.sax.XmlParser 
   with xpath.XmlPaths
-  with XPathMatcher 
+  with impl.XPathMatcher 
   with XmlPrinter 
   with impl.Whitespace 
-  with XmlPulls 
+  with parser.pull.XmlPulls 
   with impl.XmlFactories 
   with trax.TraxSourceConversions
   with impl.XmlUtils
-  with PullIteratees
+  with parser.pull.PullIteratees
   with equals.XmlEquals
   with serializers.SerializingIter
   with xpath.Functions {
@@ -41,5 +41,10 @@ package object xml extends XmlTypes
    * @see [xpath.AttributePaths]
    */ 
   type AttributePaths[PT <: Iterable[XmlPath]] = xpath.AttributePaths[PT]
+
+  /**
+   * Basis for xmlpulls, an Iterator[PullType]
+   */
+  type XmlPull = scales.xml.parser.pull.XmlPull
 
 }

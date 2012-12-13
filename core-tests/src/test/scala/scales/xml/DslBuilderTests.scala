@@ -5,6 +5,8 @@ class DslBuildersTest extends junit.framework.TestCase {
   import junit.framework.Assert._
   import java.io._
 
+  import impl.FoldErrorException
+
   import scales.utils._
   import ScalesUtils._
 

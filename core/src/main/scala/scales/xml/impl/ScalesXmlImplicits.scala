@@ -1,6 +1,6 @@
 package scales.xml.impl
 
-import scales.xml.{xpath, trax, equals, parser, serializers, XmlPrinterImplicits, PullTypeConversionImplicits}
+import scales.xml.{xpath, trax, equals, parser, serializers, XmlPrinterImplicits}
 
 trait ScalesXmlImplicits extends XmlTypesImplicits 
   with xpath.XmlPathImplicits 
@@ -14,7 +14,7 @@ trait ScalesXmlImplicits extends XmlTypesImplicits
   with parser.strategies.OptimisingStrategiesImplicits
   with serializers.SerializerImplicits
   with xpath.FunctionImplicits
-  with PullTypeConversionImplicits 
+  with trax.PullTypeConversionImplicits 
   with equals.DefaultXmlEquals
   with equals.StreamComparableImplicits 
   with equals.ComparisonContextImplicits

@@ -5,7 +5,7 @@ import impl.EqualsHelpers
 
 import scales.utils._
 
-import scales.xml.impl.{IsFromParser}
+import scales.xml.impl.{IsFromParser, DslBuilder}
 
 
 /**

@@ -7,7 +7,7 @@ import scales.xml.{
   NoNamespaceQName, PrefixedQName, AttributeQName, 
   Attribute, XmlTree, Doc, XmlVersion, XmlCBF, 
   XmlPath, Elem, XCC, XmlItem, QName, 
-  DslBuilder, ScalesXml, Text, Namespace, <}
+  ScalesXml, Text, Namespace, <}
 
 import ScalesXml.xmlCBF
 
