@@ -1,18 +1,18 @@
 package scales
 
 package object xml extends XmlTypes 
-  with parser.sax.XmlParser 
-  with xpath.XmlPaths
   with impl.XPathMatcher 
-  with XmlPrinter 
   with impl.Whitespace 
-  with parser.pull.XmlPulls 
   with impl.XmlFactories 
-  with trax.TraxSourceConversions
   with impl.XmlUtils
+  with parser.sax.XmlParser 
+  with parser.pull.XmlPulls 
   with parser.pull.PullIteratees
-  with equals.XmlEquals
+  with trax.TraxSourceConversions
+  with serializers.XmlPrinter 
   with serializers.SerializingIter
+  with equals.XmlEquals
+  with xpath.XmlPaths
   with xpath.Functions {
 
   import scales.xml.parser.strategies.{QNameMemoryOptimisation, PathOptimisationStrategy, QNameToken, MemoryOptimisationStrategy}

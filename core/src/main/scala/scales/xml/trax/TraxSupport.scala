@@ -11,8 +11,9 @@ import scales.utils._
 import scales.xml.parser.sax.Handler
 import scales.xml.parser.strategies.{PathOptimisationStrategy, OptimisationToken}
 
-import scales.xml.{Doc, DocLike, EmptyDoc, PullType, XmlTree, streamOr, SerializeableXml, convertToStream, asString, ScalesXml}
+import scales.xml.{Doc, DocLike, EmptyDoc, PullType, XmlTree, streamOr, convertToStream, asString, ScalesXml}
 import scales.xml.impl.Versions
+import scales.xml.serializers.SerializeableXml
 
 /**
  * A TrAX Result
