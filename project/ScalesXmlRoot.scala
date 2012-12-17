@@ -135,7 +135,7 @@ object ScalesXmlRoot extends Build {
       * against - no spaces
       set dot_exe=c:/PROGRA~2/GRAPHV~1.28/bin/dot.exe
      */ 
-    (scaladocOptions in Compile in doc) <++= (scalaVersion).map{(v: String) => 
+    scalacOptions in (Compile, doc) <++= (scalaVersion).map{(v: String) => 
       if (v.startsWith("2.10"))
 	Seq("-diagrams")
       else
