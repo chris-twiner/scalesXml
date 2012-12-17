@@ -5,6 +5,8 @@ import ScalesUtils._
 import scales.xml._
 import ScalesXml._
 
+import collection.path.Replace
+
 import Functions._
 
 /**
@@ -126,7 +128,7 @@ object Presentation {
     println("trax")
     println("source only " + wr.toString)
     
-    val sr = ScalesResult()
+    val sr = scales.xml.trax.ScalesResult()
     trax.transform(doc, sr)
     
     println("roundtrip " + asString(sr.doc))

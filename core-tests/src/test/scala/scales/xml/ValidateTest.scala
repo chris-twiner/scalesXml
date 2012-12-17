@@ -14,6 +14,8 @@ class ValidateTest extends junit.framework.TestCase {
 
   import ScalesXml._
 
+  import parser.strategies._
+
   import org.xml.sax.InputSource
   import ScalesXml._
   import Functions._

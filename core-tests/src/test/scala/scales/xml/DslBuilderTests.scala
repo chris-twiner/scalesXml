@@ -5,8 +5,13 @@ class DslBuildersTest extends junit.framework.TestCase {
   import junit.framework.Assert._
   import java.io._
 
+  import impl.FoldErrorException
+
   import scales.utils._
   import ScalesUtils._
+
+  import collection.path._
+  import collection.ImmutableArrayProxy.{one => IAOne}
 
   import ScalesXml._
 
@@ -604,9 +609,10 @@ class DslBuildersTest extends junit.framework.TestCase {
       case e : Throwable => fail("Not expecting this exception " + e)
     }
   }
+  
+  import parser.strategies._
 
   def testBuilderWithCustomTree : Unit = {
-    import strategies._
 
     val x = <("Alocal"l) /( LazyOptimisedTree(Elem("another"l), IAOne("value")) )
 
@@ -626,7 +632,6 @@ class DslBuildersTest extends junit.framework.TestCase {
   }
 
   def testWriteBackWithStrategies : Unit = {
-    import strategies._
 
     val x = <("Alocal"l) /( <("another"l) ~> "value" )
 

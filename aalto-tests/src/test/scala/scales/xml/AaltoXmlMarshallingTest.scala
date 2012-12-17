@@ -13,6 +13,9 @@ class AaltoXmlMarshallingTest extends XmlMarshallingTest {
   import serializers._
   import scales.utils.resource
 
+  import impl.NoVersionXmlReaderFactoryPool
+  import parser.strategies._
+
   override val readBack_S = { tree : XmlTree => 
     val s = asString(tree)(SimpleSerializerFactory, treeSerializeable)
     loadXmlReader(new StringReader(s), parsers = NoVersionXmlReaderFactoryPool).rootElem 

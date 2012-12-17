@@ -14,10 +14,14 @@ class EqualsPullTest extends EqualsNormalImportsTest {
   import scalaz._
   import Scalaz._
 
+  import impl.NoVersionXmlReaderFactoryPool
+
   import junit.framework.Assert._
   import java.io._
   import scales.utils._
   import ScalesUtils._
+
+  import parser.strategies._
 
   import org.xml.sax.{InputSource, XMLReader}
 

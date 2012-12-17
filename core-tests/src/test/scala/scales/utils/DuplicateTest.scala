@@ -1,6 +1,8 @@
 package scales.utils
 import ScalesUtils._
 
+import collection.DuplicateFilter
+
 class DuplicateTest extends junit.framework.TestCase {
   
   import junit.framework.Assert._

@@ -1,6 +1,7 @@
-package scales.xml
+package scales.xml.test // to get around package overloads
 
-import strategies._
+import scales.xml._
+import scales.xml.parser.strategies._
 
 class BaseFunctionalityTest extends junit.framework.TestCase {
   import junit.framework.Assert._
@@ -11,7 +12,7 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
 
   import Functions._
 
-  import strategies.TextNodeJoiner
+//  import strategies.TextNodeJoiner
 
   import BaseTestConstants._
 
@@ -645,7 +646,7 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
   def testNamespaceFunctions = {
     implicit val qn : QName = pre("local")
 
-    val has = hasNamespace[QName](preNS)
+    val has = hasNamespace[QName](preNS : Namespace)
     assertTrue(has(qn))
     val hass = hasNamespace[QName](preNS.uri)
     assertTrue(hass(qn))

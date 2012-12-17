@@ -66,7 +66,7 @@ class QNameTest extends junit.framework.TestCase {
   def testLocalOnlyMatch = {
     val name = "LocalOnly"l;
     val name2 = "LocalOnly"l;
-    assertEquals(Default.noNamespace, name.namespace)
+    assertEquals(scales.xml.impl.NamespaceDefaults.noNamespace, name.namespace)
     assertTrue("Should have been =:=",name =:= name2)
     assertEquals(name, name2)
   }

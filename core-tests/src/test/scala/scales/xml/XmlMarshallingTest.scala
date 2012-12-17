@@ -11,9 +11,13 @@ class XmlMarshallingTest extends junit.framework.TestCase {
   import junit.framework.Assert._
   import java.io._
       
+  import impl.DslBuilder
+
   import scales.utils._
   import ScalesUtils._
   import ScalesXml._
+
+  import parser.strategies._
 
   import Functions._
   import org.xml.sax.InputSource
