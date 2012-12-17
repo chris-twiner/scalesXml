@@ -5,7 +5,7 @@ import scales.utils.{LeftLike, RightLike}
 
 import impl.QNameCharUtils._
 
-import scales.xml.impl.FromParser
+import scales.xml.impl.{FromParser, NotFromParser}
 
 /**
  * QNames together with a tree structure form the basis of XML, what type of QName is available depends on Attribute (either no namespace or prefxied - fully qualified) or Elem (attribute's options and non prefixed but still qualified)

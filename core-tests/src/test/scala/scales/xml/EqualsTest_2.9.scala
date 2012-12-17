@@ -1,19 +1,24 @@
 package scales.xml.equalsTest // different to keep default xml._ out
 
 // why the hell can't scala resolve just xml.XmlTypes ??
-import scales.xml.{ XmlTypes ,
-    XmlPrinter ,
-    XmlPrinterImplicits, 
-    impl, parser, trax, xpath}
+import scales.xml.{
+    impl, parser, trax, xpath, serializers}
 
 import impl.{XmlFactories, QNameImplicits, DefaultXmlVersion, 
-	     XmlUtils, Whitespace,
+	     XmlUtils, Whitespace, XmlTypes ,
 	     XmlTypesImplicits,
 	     XPathMatcher, 
 	     DslImplicits}
+
 import trax.{
     TraxSourceConversions, 
     PullTypeConversionImplicits}
+
+import serializers.{
+    XmlPrinter ,
+    XmlPrinterImplicits,
+    SerializeableXml}
+
 import parser.sax.{XmlParserImplicits, XmlParser}
 
 import parser.pull.{XmlPulls ,
@@ -58,8 +63,8 @@ class EqualsTest extends junit.framework.TestCase {
     with FromEqualsImplicit {
 
     /** PullType is different for the compiler here */
-    implicit val myStreamSerializeable: KeepEmSeperate.SerializeableXml[Iterator[KeepEmSeperate.PullType]] = 
-      streamSerializeable.asInstanceOf[KeepEmSeperate.SerializeableXml[Iterator[KeepEmSeperate.PullType]]]
+    implicit val myStreamSerializeable: SerializeableXml[Iterator[KeepEmSeperate.PullType]] = 
+      streamSerializeable.asInstanceOf[SerializeableXml[Iterator[KeepEmSeperate.PullType]]]
 
   }
 

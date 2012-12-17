@@ -12,7 +12,7 @@ import scales.utils.collection.{ListSet, Tree}
 
 import java.nio.charset.Charset
 
-import scales.xml.impl.{FromParser, IsFromParser}
+import scales.xml.impl.{FromParser, IsFromParser, NotFromParser, EqualsHelpers}
 
 /**
  * Attributes can only work with either a prefixed qname or an empty ns name
@@ -321,3 +321,13 @@ case class Doc(rootElem: XmlTree, prolog: Prolog = Prolog(), end: EndMisc = EndM
  */
 case class EndElem(name: QName, namespaces: Map[String, String] = Map[String, String]())
 
+
+/**
+ * Simple constructor for Attributes
+ */ 
+object Attribs {
+  def apply( attribs : Attribute * ) : Attributes = {
+    import EqualsHelpers._
+    ListSet[Attribute](attribs :_*)
+  }
+}

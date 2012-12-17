@@ -3,7 +3,7 @@ package scales.xml
 import scales.utils.error
 import scales.utils.{LeftLike, RightLike}
 
-import scales.xml.impl.{FromParser}
+import scales.xml.impl.{FromParser, NotFromParser}
 
 /**
  * Scales supports many aspects of Xml10 and Xml11, verification of serialization and values takes place with the XmlVersion ADT. 

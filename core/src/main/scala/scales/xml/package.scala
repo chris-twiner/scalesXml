@@ -1,6 +1,6 @@
 package scales
 
-package object xml extends XmlTypes 
+package object xml extends impl.XmlTypes 
   with impl.XPathMatcher 
   with impl.Whitespace 
   with impl.XmlFactories 
