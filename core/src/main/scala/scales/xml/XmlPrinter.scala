@@ -128,7 +128,7 @@ trait XmlPrinter {
 
   def withWriter(decl: Declaration, out: Writer): SerializerData = SerializerData(out, decl.version, decl.encoding)
 
-  protected def serializeMisc(pout: XmlOutput, misc: Iterable[Misc], serializer: Serializer) = {
+  def serializeMisc(pout: XmlOutput, misc: Iterable[Misc], serializer: Serializer) = {
     val opt = misc.foldLeft(None: Option[Throwable]) { (x, m) =>
       x.orElse {
         serializer.item(m.fold[XmlItem](z => z, y => y), List())
@@ -140,7 +140,7 @@ trait XmlPrinter {
   def headerAndFooter(pout: XmlOutput, doc: DocLike)(serializerf: (XmlOutput, Serializer) => (XmlOutput, Option[Throwable])): Serializer => Option[Throwable] = { serializer =>
 
     var out = pout
-    // TODO DTD and header
+    // TODO DTD
     serializer.xmlDeclaration(pout.data.encoding, pout.data.version).orElse {
       // DTD
       None

@@ -16,9 +16,15 @@ class EqualsNormalImportsTest extends junit.framework.TestCase {
   import scales.utils._
   import ScalesUtils._
 
-  val xmlFile = loadXml(scales.utils.resource(this, "/data/BaseXmlTest.xml"))
+  import org.xml.sax.{InputSource, XMLReader}
+
+  def doLoadXml[Token <: OptimisationToken](in : InputSource, strategy : PathOptimisationStrategy[Token] = defaultPathOptimisation) = {
+    loadXml(in, strategy = strategy)
+  }
+
+  val xmlFile = doLoadXml(scales.utils.resource(this, "/data/BaseXmlTest.xml"))
   val xml = xmlFile.rootElem
-  val xmlFile2 = loadXml(scales.utils.resource(this, "/data/BaseXmlTest.xml"))
+  val xmlFile2 = doLoadXml(scales.utils.resource(this, "/data/BaseXmlTest.xml"))
   val xml2 = xmlFile2.rootElem
 
   val ns = Namespace("urn:default")
@@ -700,7 +706,7 @@ class EqualsNormalImportsTest extends junit.framework.TestCase {
    * Utility function, but very useful
    */ 
   def testDifferenceAsStream : Unit = {
-    val x = loadXml(scales.utils.resource(this, "/data/Nested.xml")).rootElem
+    val x = doLoadXml(scales.utils.resource(this, "/data/Nested.xml")).rootElem
 
     val y = x.fold_!( _.\*.\*("urn:default"::"ShouldRedeclare") )(_ => Remove())
 

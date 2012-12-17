@@ -47,30 +47,20 @@ trait XmlPull extends Iterator[PullType] with DocLike {
   protected[xml] var depth = -1
   protected[xml] var haveRoot = false
 
-  private[xml] val dtdDummy = PI("onlyforme", "init")
-
-  protected[xml] def getMisc(c: PullType, in: String): Misc =
-    c.fold[Misc](e => e match {
-      case ev: Comment => Left(ev)
-      case ev: PI => Right(ev)
-      case _ => error("Got an event (" + e + ") that should not be in the " + in)
-    }, f => error("End element found in " + in + " " + c))
-  // it must be a left and a comment or pi
-
   /**
    * Pumps until the first elem, always collecting the prolog
    */
   protected[xml] def start = {
     while (depth == -1) {
       current = pumpEvent
-      if (current.isLeft && (current.left.get eq dtdDummy)) {
+      if (current.isLeft && (current.left.get eq PullUtils.dtdDummy)) {
         vprolog = vprolog.copy(dtd = Some(
           DTD("", "", "") // DTD has funnyness TODO find out what it looks like
           ))
       }
 
       if (depth == -1) {
-        vprolog = vprolog.copy(misc = vprolog.misc :+ getMisc(current, "prolog"))
+        vprolog = vprolog.copy(misc = vprolog.misc :+ PullUtils.getMisc(current, "prolog"))
       }
     }
   }
@@ -79,7 +69,57 @@ trait XmlPull extends Iterator[PullType] with DocLike {
 
   def hasNext = current ne null
 
-  private[this] def getAttributes: Attributes = {
+  def next: PullType = {
+    val c = current // cache current
+    if (current eq null) throw new NoSuchElementException("The end of the document has been reached")
+
+    current = pumpEvent // pump for the next
+    if ((current ne null) && current.isRight && depth == -1) {
+      // we are now into the end doc, no more events will be pumped
+      var ends = pumpEvent
+      while (ends ne null) {
+        emisc = emisc.copy(misc = emisc.misc :+ PullUtils.getMisc(ends, "document end Misc"))
+        ends = pumpEvent
+      }
+    }
+
+    c // return cached
+  }
+
+  protected[xml] def pumpEvent: PullType = {
+    if (!parser.hasNext) return null
+
+    var nextEvent = XMLStreamConstants.END_DOCUMENT
+    try {
+      val (event, num, odepth, oprolog) = PullUtils.pumpEvent(parser, strategy, token, vprolog, depth){_ => pumpEvent}
+      nextEvent = num
+      depth = odepth
+      vprolog = oprolog
+      event
+    } finally {
+      // should we close it? 
+      if (nextEvent == XMLStreamConstants.END_DOCUMENT) {
+        internalClose
+      }
+    }
+  }
+}
+
+object PullUtils {
+
+  private[xml] val dtdDummy = PI("onlyforme", "init")
+
+  implicit val weAreInAParser : FromParser = IsFromParser
+
+  def getMisc(c: PullType, in: String): Misc =
+    c.fold[Misc](e => e match {
+      case ev: Comment => Left(ev)
+      case ev: PI => Right(ev)
+      case _ => error("Got an event (" + e + ") that should not be in the " + in)
+    }, f => error("End element found in " + in + " " + c))
+  // it must be a left and a comment or pi
+
+  def getAttributes[Token <: OptimisationToken]( parser: XMLStreamReader, strategy : MemoryOptimisationStrategy[Token], token : Token ): Attributes = {
     import ScalesXml.toQName
 
     val count = parser.getAttributeCount()
@@ -106,7 +146,7 @@ trait XmlPull extends Iterator[PullType] with DocLike {
     map
   }
 
-  private[this] def getNamespaces: Map[String, String] = {
+  def getNamespaces[Token <: OptimisationToken]( parser: XMLStreamReader, strategy : MemoryOptimisationStrategy[Token], token : Token ): Map[String, String] = {
     val count = parser.getNamespaceCount()
     var i = 0
     var map = Map[String, String]()
@@ -120,7 +160,7 @@ trait XmlPull extends Iterator[PullType] with DocLike {
     map
   }
 
-  private[this] def getElemQName = {
+  def getElemQName[Token <: OptimisationToken]( parser: XMLStreamReader, strategy : MemoryOptimisationStrategy[Token], token : Token ) = {
     // elems can have all three, prefixed, ns and none
 /*    val jqname = parser.getName()
     val ns = jqname.getNamespaceURI
@@ -142,64 +182,49 @@ trait XmlPull extends Iterator[PullType] with DocLike {
     
   }
 
-  def next: PullType = {
-    val c = current // cache current
-    if (current eq null) throw new NoSuchElementException("The end of the document has been reached")
-
-    current = pumpEvent // pump for the next
-    if ((current ne null) && current.isRight && depth == -1) {
-      // we are now into the end doc, no more events will be pumped
-      var ends = pumpEvent
-      while (ends ne null) {
-        emisc = emisc.copy(misc = emisc.misc :+ getMisc(ends, "document end Misc"))
-        ends = pumpEvent
-      }
-    }
-
-    c // return cached
-  }
-
-  protected[xml] def pumpEvent: PullType = {
-    if (!parser.hasNext) return null
+  def pumpEvent[Token <: OptimisationToken]( parser: XMLStreamReader, strategy : MemoryOptimisationStrategy[Token], token : Token, prolog : Prolog, idepth : Int )(otherEventHandler : Int => PullType) : (PullType, Int, Int, Prolog) = {
+    var depth = idepth
+    var vprolog = prolog
 
     var nextEvent = XMLStreamConstants.END_DOCUMENT // use this in the case of error from calling next as well, blow it up but try to shut down
-    try {
-      nextEvent = parser.next
+    nextEvent = parser.next
 
-      val event: PullType = nextEvent match {
-        case XMLStreamConstants.START_ELEMENT => 
-	  depth += 1
-	  strategy.elem(getElemQName, getAttributes, getNamespaces, token)
+    val event: PullType = nextEvent match {
+      case XMLStreamConstants.START_ELEMENT => 
+	depth += 1
+      strategy.elem(getElemQName(parser, strategy, token), getAttributes(parser, strategy, token), getNamespaces(parser, strategy, token), token)
 
-        case XMLStreamConstants.END_ELEMENT => depth -= 1; EndElem(getElemQName, getNamespaces)
-        case XMLStreamConstants.CHARACTERS => Text(parser.getText)
-        case XMLStreamConstants.CDATA => CData(parser.getText)
-        case XMLStreamConstants.COMMENT => Comment(parser.getText)
-        case XMLStreamConstants.PROCESSING_INSTRUCTION => PI(parser.getPITarget(), parser.getPIData())
-        case XMLStreamConstants.SPACE => Text(parser.getText) // jdk impl never calls but to be safe we should grab it
-        case XMLStreamConstants.START_DOCUMENT => {
-          // get the encoding etc
-          val ec = parser.getCharacterEncodingScheme()
+      case XMLStreamConstants.END_ELEMENT => depth -= 1; EndElem(getElemQName(parser, strategy, token), getNamespaces(parser, strategy, token))
+      case XMLStreamConstants.CHARACTERS => Text(parser.getText)
+      case XMLStreamConstants.CDATA => CData(parser.getText)
+      case XMLStreamConstants.COMMENT => Comment(parser.getText)
+      case XMLStreamConstants.PROCESSING_INSTRUCTION => PI(parser.getPITarget(), parser.getPIData())
+      case XMLStreamConstants.SPACE => Text(parser.getText) // jdk impl never calls but to be safe we should grab it
+      case XMLStreamConstants.START_DOCUMENT => {
+        // get the encoding etc
+	// NB the asynch variety can also call this, if no more events are available then it returns the waiting object.
+        val ec = parser.getCharacterEncodingScheme()
 
-          vprolog = vprolog.copy(decl = Declaration(
-            version = if (parser.getVersion() == "1.1")
-              Xml11 else Xml10,
-            encoding = if (ec eq null) defaultCharset else java.nio.charset.Charset.forName(ec), // TODO what do we do about unsupported, throwing is probably fine, but it irritates, if we can get here the parser at least supports it, even if we can't write to it
-            standalone = parser.isStandalone()))
+        vprolog = vprolog.copy(decl = Declaration(
+          version = if (parser.getVersion() == "1.1")
+            Xml11 else Xml10,
+          encoding = if (ec eq null) defaultCharset else java.nio.charset.Charset.forName(ec), // TODO what do we do about unsupported, throwing is probably fine, but it irritates, if we can get here the parser at least supports it, even if we can't write to it
+          standalone = parser.isStandalone()))
 
-          pumpEvent // we don't want to handle this
-        }
-        case XMLStreamConstants.DTD => dtdDummy // push it through in start
+        val (nev, nex, nde, vvp) = pumpEvent(parser, strategy, token, vprolog, depth)(otherEventHandler) // we don't want to handle this
 
-        // we don't really want to handle other types?
-        case _ => pumpEvent // push another through if possible, this also stops doc starts and doc ends etc
+	// reset to keep the correct values
+	nextEvent = nex
+	depth = nde
+	vprolog = vvp
+	nev
       }
-      event
-    } finally {
-      // should we close it? 
-      if (nextEvent == XMLStreamConstants.END_DOCUMENT) {
-        internalClose
-      }
+      case XMLStreamConstants.DTD => dtdDummy // push it through in start
+
+      // we don't really want to handle other types?
+      case _ => otherEventHandler(nextEvent)
     }
+    (event, nextEvent, depth, vprolog)
   }
+  
 }

@@ -24,7 +24,8 @@ object ScalesXmlRoot extends Build {
     // Override more to taste
   }
 
-  lazy val root = Project("scales-xml-root", file("."), settings = standardSettings ++ dontPublishSettings) aggregate(core, coreTests, jaxen, saxonTests, jaxenTests)
+  lazy val root = Project("scales-xml-root", file("."), settings = standardSettings ++ dontPublishSettings) aggregate(core, coreTests, jaxen, saxonTests, jaxenTests
+, aalto, aaltoTests)
 
   lazy val core = Project("scales-xml", file("core"), settings = standardSettings ++ deployOrg)
 
@@ -35,6 +36,10 @@ object ScalesXmlRoot extends Build {
   lazy val jaxen = Project("scales-jaxen", file("jaxen"), settings = standardSettings ++ deployOrg) dependsOn(core)
 
   lazy val jaxenTests = Project("jaxen-tests", file("jaxen-tests"), settings = standardSettings ++ dontPublishSettings ++ dontBuildIn28) dependsOn(jaxen % "compile->test", coreTests % "test->test") //  % "compile->compile;test->test"
+
+  lazy val aalto = Project("scales-aalto", file("aalto"), settings = standardSettings ++ deployOrg) dependsOn(core)
+
+  lazy val aaltoTests = Project("aalto-tests", file("aalto-tests"), settings = standardSettings ++ dontPublishSettings ++ dontBuildIn28) dependsOn(aalto % "compile->test", coreTests % "test->test")
 
   /* project that sucks in the others like fullDocsAndSxr for the purpose of coverage tests
   lazy val coverageProject = {
@@ -110,10 +115,10 @@ object ScalesXmlRoot extends Build {
 */
 //    organization := "org.scalesxml",
     offline := true,
-    version := "0.4.4",
-    scalaVersion := "2.10.0-RC3",
+    version := "0.5-SNAPSHOT",
+    scalaVersion := "2.9.2",
 //    scalaVersion := "2.10.0-M7",
-    crossScalaVersions := Seq("2.8.1", "2.8.2", "2.9.1", "2.9.2", "2.10.0-RC2", "2.10.0-RC3"),
+    crossScalaVersions := Seq("2.8.1", "2.8.2", "2.9.1", "2.9.2","2.10.0-M7"),
     //publishSetting,
 //    parallelExecution in Test := false,
     scalacOptions ++= Seq("-optimise"),
@@ -138,7 +143,8 @@ object ScalesXmlRoot extends Build {
     },
     autoCompilerPlugins := false,
     fork in run := true, 
-    parallelExecution in runSecurely := false
+    parallelExecution in runSecurely := false,
+    scalaBinaryVersion <<= scalaVersion(sV => if (CrossVersion.isStable(sV)) CrossVersion.binaryScalaVersion(sV) else sV)
 //,
 //    parallelExecution in jacoco.Config := false
   ) ++ sonatype.settings// ++ jacoco.settings

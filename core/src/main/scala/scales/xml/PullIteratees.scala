@@ -174,6 +174,7 @@ trait PullIteratees {
   class Iterate(path: List[QName], xml: Iterator[PullType]) extends FlatMapIterator[XmlPath] { self =>
     import ScalesXml._
     import ScalesUtils._
+										       import impl.TreeProxies
 										       val qnames = path
 
     if (qnames.isEmpty) error("QNames is empty")

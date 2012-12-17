@@ -7,9 +7,15 @@ import scales.utils._
 import java.nio.charset.Charset
 
 object SimpleSerializerFactory extends SerializerFactory {
-  def apply[R](thunk: Serializer => R)(sdata: SerializerData): R =
-    thunk(new SimpleSerializer { val data = sdata })
+  type ExactSerializer = SimpleSerializer
 
+  def apply[R](thunk: Serializer => R)(sdata: SerializerData): R =
+    thunk(borrow(sdata))
+
+  def borrow( sdata : SerializerData ) : ExactSerializer =
+    new SimpleSerializer { val data = sdata }
+
+  def giveBack( serializer : ExactSerializer ) {}
 }
 
 /**

@@ -16,10 +16,15 @@ class XmlMarshallingTest extends junit.framework.TestCase {
   import ScalesXml._
 
   import Functions._
+  import org.xml.sax.InputSource
 
   val ns = Namespace("urn:test:uri")
   val nsa = Namespace("urn:test:uri:attribs")
   val nsp = nsa.prefixed("pre")
+
+  def doLoadXml[Token <: OptimisationToken](in : InputSource, strategy : PathOptimisationStrategy[Token] = defaultPathOptimisation) = {
+    loadXml(in, strategy = strategy)
+  }
 
   val readBack_S = { tree : XmlTree => 
     val s = asString(tree)(SimpleSerializerFactory, treeSerializeable)
@@ -365,7 +370,7 @@ class XmlMarshallingTest extends junit.framework.TestCase {
    * Reads the MiscTests to a doc, and writes the doc back out again, then re-reads it, should pass the same tests
    */ 
   def testMiscRoundTripping = {
-    val testXml = loadXml(miscml)
+    val testXml = doLoadXml(miscml)
     MarshallingTest.doMiscTest(testXml)
 //    printTree(testXml)
     val r = readBackDoc_LS(testXml)
@@ -389,7 +394,7 @@ class XmlMarshallingTest extends junit.framework.TestCase {
   }
 
   def testWriteTo = {
-    val testXml = loadXml(miscml)
+    val testXml = doLoadXml(miscml)
     val e = asString(testXml)
     var out = new java.io.StringWriter()
     writeTo(testXml, out)
@@ -429,7 +434,7 @@ class XmlMarshallingTest extends junit.framework.TestCase {
     MarshallingTest.doMiscTest(pull)
 
     pull = pullXml(miscml)
-    val r = loadXml(new StringReader(asString(pull)))
+    val r = doLoadXml(new StringReader(asString(pull)))
     MarshallingTest.doMiscTest(pull)
     MarshallingTest.doMiscTest(r)
 
@@ -452,7 +457,7 @@ class XmlMarshallingTest extends junit.framework.TestCase {
   val test11_val = """<?xml version="1.1" encoding="US-ASCII"?><x xmlns:n1="http://www.w3.org"><n1:a/><x xmlns:n1=""><x xmlns:n1="http://www.w3.org"><n1:a/></x></x></x>"""
 
   def test11_prefix : Unit = {
-    val tree = loadXml(resource(this, "/data/1.1_prefixes.xml"))
+    val tree = doLoadXml(resource(this, "/data/1.1_prefixes.xml"))
     val s = asString(tree)
     assertEquals(test11_val, s)
   }

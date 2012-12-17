@@ -61,7 +61,7 @@ trait XmlPulls {
   def toTree[RToken <: OptimisationToken]( pull : Iterator[PullType], strategy : PathOptimisationStrategy[RToken] = defaultPathOptimisation ) = {
     val token = strategy.createToken(Xml10, IsFromParser)
     // start with nothing
-    val buf = new TreeProxies()
+    val buf = new impl.TreeProxies()
 
     while( pull.hasNext ){
       pull.next match {
