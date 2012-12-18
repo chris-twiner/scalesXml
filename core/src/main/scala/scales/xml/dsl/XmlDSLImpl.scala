@@ -1,4 +1,4 @@
-package scales.xml.impl
+package scales.xml.dsl
 
 import scales.xml.{
   XmlTree, Elem, 
@@ -16,26 +16,31 @@ import ScalesXml.xmlCBF
 
 import ScalesXml.fromParserDefault // note cannot be in parser here
 
-trait XPathMatcher {
-
-  /**
-   * Wrap xpaths into matches, gives back the resulting path if its non empty
-   */ 
-  def pathMatcher[T : AsBoolean]( pathEval : (XmlTree) => T ) = booleanMatcher[XmlTree, T](pathEval)
-
+/**
+ * Entry point to creating DslBuilders, can be used without the implicit helpers
+ */ 
+object DslBuilder {
   
   /**
-   * Wrap xpaths into matches, gives back the resulting path if its non empty
-   * and the tree that matched it (doesn't force the user to create a val name beforehand)
+   * Creates a tree with @elem as the root
    */ 
-  def pathAndTreeMatcher[T : AsBoolean]( pathEval : (XmlTree) => T ) = booleanAndTMatcher[XmlTree, T](pathEval)
-
-}
-
-protected[xml] object DslBuilder {
   def elem2tree( elem : Elem ) : XmlTree = subtree[XmlItem, Elem, XCC](elem,emptyChildren).right.get
+  /**
+   * Creates a tree with @qname for the root Elem
+   */ 
   def q2tree( qname : QName ) = elem2tree(Elem(qname))
+
+  /**
+   * Creates a new tree for the DslBuilder with this @qname for the root elem
+   */ 
+  def apply( qname : QName ) = new DslBuilder(elem2tree(Elem(qname))) 
+  /**
+   * Creates a new tree for the DslBuilder with @elem as the root
+   */
   def apply( elem : Elem ) = new DslBuilder(elem2tree(elem))
+  /**
+   * Uses @tree to directly create the DslBuilder
+   */
   def apply( tree : XmlTree ) = new DslBuilder(tree)
 }
 

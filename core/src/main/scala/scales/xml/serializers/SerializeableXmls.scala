@@ -2,7 +2,7 @@ package scales.xml.serializers
 
 import scales.xml._
 
-import impl.DslBuilder
+import dsl.DslBuilder
 
 import scales.utils._
 
