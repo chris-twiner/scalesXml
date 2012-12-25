@@ -6,7 +6,8 @@ trait ScalesXmlImplicits extends XmlTypesImplicits
   with DefaultXmlVersion
   with QNameImplicits 
   with XmlUtilsImplicits
-  with dsl.DslImplicits 
+  with dsl.DslImplicits
+  with dsl.OptionalDslBuilderImplicits
   with parser.sax.XmlParserImplicits
   with parser.strategies.OptimisingStrategiesImplicits
   with trax.TraxConversionImplicits 

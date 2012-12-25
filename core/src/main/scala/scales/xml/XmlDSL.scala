@@ -18,7 +18,7 @@ object < {
 
 /**
  * Creates OptionalDslBuilder instances.  If none of the end Elems contain data (either attributes or child text nodes) the result of the builder is None.
- *
+ */
 object ?< {
   /**
    * Creates an OptionalDslBuilder with qname as the root Elems 
@@ -29,4 +29,3 @@ object ?< {
    */ 
   def apply(elem : Elem) = dsl.OptionalDslBuilder(elem)
 }
-*/

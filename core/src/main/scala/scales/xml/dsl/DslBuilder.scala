@@ -53,8 +53,9 @@ case class FoldErrorException(error : FoldError) extends RuntimeException
 /*
  * Must have a starting element, modelled as tree as we need to keep the data around and trees must always have an elem
  */
-class DslBuilder private( tree : XmlTree ) {
+final class DslBuilder private( tree : XmlTree ) {
   import ScalesXml._
+
   /**
    * Add attributes
    */ 

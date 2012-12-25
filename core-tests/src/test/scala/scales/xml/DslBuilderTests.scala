@@ -671,5 +671,34 @@ class DslBuildersTest extends junit.framework.TestCase {
     
   }
 
+  def testOptionalAdd: Unit = {
+    val x = <("Alocal"l) /( ?<("another"l) ?~> "value" )
+
+    val xml = """<?xml version="1.0" encoding="UTF-8"?><Alocal><another>value</another></Alocal>"""
+    assertEquals(xml, asString(x))
+
+    val nones = <("Alocal"l) /( ?<("another"l) ?~> None )
+
+    val justRoot = """<?xml version="1.0" encoding="UTF-8"?><Alocal/>"""
+    assertEquals(justRoot, asString(nones))
+    
+    val deepNones = <("Alocal"l) /( ?<("another"l) ?/( ("lowerstill"l) ?~> None ))
+    assertEquals(justRoot, asString(deepNones))
+    
+  }
+
+  def testOptionalAttribute: Unit = {
+    val qn = "A.local"l
+    val none = qn ?-> None
+
+    val some = qn ?-> Some("value")
+
+    val someDirect = qn ?-> "value"
+
+    assertEquals(some, someDirect)
+    assertTrue("should have been defined", some.isDefined)
+    assertTrue("should not have been defined", none.isEmpty)
+  }
+
 }
   
