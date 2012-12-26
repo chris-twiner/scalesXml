@@ -54,7 +54,7 @@ trait DslImplicits {
 /**
  * Add ?-> to an attributeqname
  */ 
-final class OptionalAttribute(name: AttributeQName) {
+final class OptionalAttribute(val name: AttributeQName) {
   def ?->(value: String): Option[Attribute] =
     Some(Attribute(name, value))
 

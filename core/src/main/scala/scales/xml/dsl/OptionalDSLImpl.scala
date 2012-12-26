@@ -38,7 +38,7 @@ object OptionalDslBuilder {
 /*
  * Must have a starting element, modelled as tree as we need to keep the data around and trees must always have an elem
  */
-class OptionalDslBuilder private(tree: XmlTree) {
+class OptionalDslBuilder private(val tree: XmlTree) {
   import ScalesXml._
 
   private implicit def dslToOptional(dsl: DslBuilder): OptionalDslBuilder =
