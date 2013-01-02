@@ -673,31 +673,79 @@ class DslBuildersTest extends junit.framework.TestCase {
 
   def testOptionalAdd: Unit = {
     val x = <("Alocal"l) /( ?<("another"l) ?~> "value" )
+    val x2 = <("Alocal"l) /( ?<("another"l).setOptionalValue( "value" ) )
 
     val xml = """<?xml version="1.0" encoding="UTF-8"?><Alocal><another>value</another></Alocal>"""
     assertEquals(xml, asString(x))
+    assertEquals(xml, asString(x2))
 
-    val nones = <("Alocal"l) /( ?<("another"l) ?~> None )
+    val xSome = <("Alocal"l) /( ?<("another"l) ?~> Some("value") )
+    assertEquals(xml, asString(xSome))
+
+    val nones = <("Alocal"l) /( ?<("another"l).setOptionalValue( None ) )
 
     val justRoot = """<?xml version="1.0" encoding="UTF-8"?><Alocal/>"""
     assertEquals(justRoot, asString(nones))
     
-    val deepNones = <("Alocal"l) /( ?<("another"l) ?/( ("lowerstill"l) ?~> None ))
+    val deepNones = 
+      <("Alocal"l).addOptionals( 
+	?<("another"l) ?/( 
+	  ("lowerstill"l) ?~> None ),
+	?<("yetan"l) ?~> None
+      )
     assertEquals(justRoot, asString(deepNones))
+  }
+
+  def testOptionalDslAdds: Unit = {
+    val x = ?<("Alocal"l).addOptionalChild( 
+	?<("another"l) ?~> "value" )
+    val x2 = ?<("Alocal"l).addOptionalChild(
+	?<("another"l).setOptionalValue( "value" ) )
+
+    val xml = """<?xml version="1.0" encoding="UTF-8"?><Alocal><another>value</another></Alocal>"""
+    assertEquals("x", xml, asString(x.toOptionalTree.get))
+    assertEquals("x2", xml, asString(x2.toOptionalTree.get))
     
+    val deepNones = 
+      ?<("Alocal"l).addOptionalChildren( 
+	?<("another"l) ?/( 
+	  ("lowerstill"l) ?~> None ),
+	?<("yetan"l) ?~> None
+      )
+    assertTrue("should have been empty", deepNones.toOptionalTree.isEmpty)
   }
 
   def testOptionalAttribute: Unit = {
     val qn = "A.local"l
     val none = qn ?-> None
+    assertTrue("should not have been defined", none.isEmpty)
 
     val some = qn ?-> Some("value")
+    assertTrue("should have been defined", some.isDefined)
 
     val someDirect = qn ?-> "value"
 
     assertEquals(some, someDirect)
-    assertTrue("should have been defined", some.isDefined)
-    assertTrue("should not have been defined", none.isEmpty)
+
+    val xnone = ?<("Alocal"l) ?/@ none
+    assertTrue("should be none", xnone.toOptionalTree.isEmpty)
+
+    val xsome = ?<("Alocal"l) ?/@ some
+    assertTrue("should have some", xsome.toOptionalTree.isDefined)
+
+    val xsomeDirect = ?<("Alocal"l) ?/@ someDirect
+    assertTrue("should have someDirect", xsomeDirect.toOptionalTree.isDefined)
+
+    val xEmpty = ?<("Alocal"l).?/@(List()).addOptionalAttributes(List())
+    assertTrue("empty iterable should be none", xEmpty.toOptionalTree.isEmpty)
+
+    val xAdded = ?<("Alocal"l).?/@(List[Attribute]("a" -> "a1")).
+	addOptionalAttributes(List[Attribute]("b" -> "b1"))
+    assertTrue("added should be defined", xAdded.toOptionalTree.isDefined)
+
+    val xAddedStr = asString(xAdded.toOptionalTree.get)
+    assertEquals("should have a and b", 
+      """<?xml version="1.0" encoding="UTF-8"?><Alocal b="b1" a="a1"/>""", xAddedStr)
   }
 
 }

@@ -85,6 +85,17 @@ final class DslBuilder private(val tree: XmlTree) {
     new DslBuilder( tree.copy( children = (tree.children ++ itemOrElems  )))
 
   /**
+   * Add a number of ItemOrElems wrapped in Option, those which are Some will be added.
+   */ 
+  def addOptionals( itemOrElems : Option[ItemOrElem] * ) : DslBuilder = /( itemOrElems.flatten )
+
+  /**
+   * Add an Iterable of ItemOrElems wrapped in Option, those which are Some will be added.
+   */ 
+  def addOptionals( itemOrElems : => Iterable[Option[ItemOrElem]] ) : DslBuilder =
+    /(itemOrElems.flatten)
+
+  /**
    * Optionally add a child, when None no child we be added
    */
   def /( itemOrElem : Option[ItemOrElem] ) = 
