@@ -16,7 +16,7 @@ The artifacts are now on Maven Central under the group org.scales.xml.
 
 # How To Use
 
-Currently 2.8.1, 2.8.2, 2.9.1 and 2.9.2 (including 2.10.0-RC2) are built against.
+Currently 2.8.1, 2.8.2, 2.9.1, 2.9.2 and 2.10 are built against.
 
 So for sbt its:
 
@@ -32,12 +32,6 @@ xsbt 0.10+ its:
       )
 
 intransitive() is required because the Jaxen pom cannot be fully used.
-
-If using the 2.10.0 RC candidates and sbt 0.12.1 please also use:
-
-     cross CrossVersion.full
-
-against the dependencies (as the RCs are not guaranteed to be binary compatible).
 
 Maven repos should therefore use org.scalesxml scales-xml_2.9.2 as the dependency.   Also note that Jaxen 1.1.4 isn't yet present via Maven, so if you use String XPath evaluation and you'd like to use the latest version you must add the folowing to the build:
 

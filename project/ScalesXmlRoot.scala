@@ -111,9 +111,8 @@ object ScalesXmlRoot extends Build {
 //    organization := "org.scalesxml",
     offline := true,
     version := "0.4.4",
-    scalaVersion := "2.10.0-RC5",
-//    scalaVersion := "2.10.0-M7",
-    crossScalaVersions := Seq("2.8.1", "2.8.2", "2.9.1", "2.9.2", "2.10.0-RC2", "2.10.0-RC5"),
+    scalaVersion := "2.10.0",
+    crossScalaVersions := Seq("2.8.1", "2.8.2", "2.9.1", "2.9.2", "2.10.0"),
     //publishSetting,
 //    parallelExecution in Test := false,
     scalacOptions ++= Seq("-optimise"),
@@ -130,14 +129,16 @@ object ScalesXmlRoot extends Build {
       * against - no spaces
       set dot_exe=c:/PROGRA~2/GRAPHV~1.28/bin/dot.exe
      */ 
-    (scaladocOptions in Compile in doc) <++= (scalaVersion).map{(v: String) => 
+    scalacOptions in (Compile, doc) <++= (scalaVersion).map{(v: String) => 
       if (v.startsWith("2.10"))
 	Seq("-diagrams")
       else
 	Seq()
     },
     autoCompilerPlugins := false,
-    fork in run := true, 
+    fork in run := true,
+    scalaBinaryVersion <<= scalaVersion(
+      sV => if (CrossVersion.isStable(sV)) CrossVersion.binaryScalaVersion(sV) else sV),
     parallelExecution in runSecurely := false
 //,
 //    parallelExecution in jacoco.Config := false
