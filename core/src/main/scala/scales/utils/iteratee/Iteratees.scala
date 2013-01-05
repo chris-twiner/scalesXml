@@ -447,7 +447,7 @@ trait Iteratees {
       while(!isDone(c) && !cs.isEmpty) {
 //	println("doing a loop")
 	val (nc, ncs): (ResumableIter[A,R], EphemeralStream[A]) = c.fold(
-	  done = (a, y) => (cs, s()),// send it back
+	  done = (a, y) => (c, s()),// send it back, shouldn't be possible to get here anyway due to while test
 	  cont = 
 	    k => {
 	      val head = cs.head() // if used in El it captures the byname not the value
