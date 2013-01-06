@@ -6,7 +6,7 @@ import scales.xml.{
   QName, ScalesXml,
   Attribute, emptyChildren,
   ItemOrElem, XPath,
-  XmlPath, Text, raw
+  XmlPath, Text, isEmptyTree
   }
 
 import scales.utils.collection.path._
@@ -40,7 +40,7 @@ object OptionalDslBuilder {
  * 
  * NB Must have a starting element, modelled as tree as we need to keep the data around and trees must always have an elem. 
  */
-class OptionalDslBuilder private(val tree: XmlTree) {
+final class OptionalDslBuilder private(val tree: XmlTree) {
   import ScalesXml._
 
   private implicit def dslToOptional(dsl: DslBuilder): OptionalDslBuilder =
@@ -70,32 +70,40 @@ class OptionalDslBuilder private(val tree: XmlTree) {
   def addOptionalAttribute(attrib : Option[Attribute]): OptionalDslBuilder = 
     tree./@(attrib)
 
+  /**
+   * Adds items and filters out empty trees.
+   */ 
   def ?/( itemOrElems : => Iterable[ItemOrElem] ): OptionalDslBuilder =
-    tree./(itemOrElems)
+    tree./(itemOrElems.filter{
+      _.fold(i => true, t => !isEmptyTree(t))
+    })
 
   /**
    * Optionally add a child, when None no child will be added
    */
-  def ?/( itemOrElem : Option[ItemOrElem] ): OptionalDslBuilder = 
-    tree./(itemOrElem)
+  def ?/( itemOrElem : OptionalDslBuilder ): OptionalDslBuilder = 
+    tree./(itemOrElem.toOptionalTree)
 
   /**
    * Optionally add a child, when None no child will be added
    */
-  def addOptionalChild( itemOrElem : Option[ItemOrElem] ): OptionalDslBuilder = 
-    tree./(itemOrElem)
+  def addOptionalChild( itemOrElem : OptionalDslBuilder ): OptionalDslBuilder = 
+    tree./(itemOrElem.toOptionalTree)
+
+  private def addOptionals( items : Iterable[OptionalDslBuilder] ): OptionalDslBuilder =
+    tree.addOptionals(items.map(_.toOptionalTree))
+
+  /**
+   * Optionally add a number of children, when None no child will be added
+  def addOptionalChildren( itemOrElem : OptionalDslBuilder *): OptionalDslBuilder = 
+    addOptionals( itemOrElem :_* )
+   */
 
   /**
    * Optionally add a number of children, when None no child will be added
    */
-  def addOptionalChildren( itemOrElem : Option[ItemOrElem] *): OptionalDslBuilder = 
-    tree.addOptionals(itemOrElem :_*)
-
-  /**
-   * Optionally add a number of children, when None no child will be added
-   */
-  def addOptionalChildren( itemOrElem : => Iterable[Option[ItemOrElem]] ): OptionalDslBuilder = 
-    tree.addOptionals(itemOrElem)
+  def addOptionalChildren( itemOrElem : => Iterable[OptionalDslBuilder] ): OptionalDslBuilder = 
+    addOptionals(itemOrElem)
 
   /**
    * sets the tree to a single Text node child, replacing all others
@@ -126,10 +134,12 @@ class OptionalDslBuilder private(val tree: XmlTree) {
   def setOptionalValue( value : Option[String] ): OptionalDslBuilder = ?~>(value)
 
   /**
-   * If all of the underly Elem is empty - no children or attributes then it returns None
+   * If all of the underly Elem is empty - no children or attributes then it returns None.
+   *
+   * NB xsi:nil still counts as an attribute as it has an intended meaning. 
    */ 
   def toOptionalTree: Option[XmlTree] = 
-    if (tree.children.isEmpty && tree.section.attributes.isEmpty)
+    if (isEmptyTree(tree))
       None
     else
       Some(tree)
