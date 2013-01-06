@@ -1,9 +1,14 @@
 package scales.xml.impl
 
-import scales.xml.{ItemOrElem, XmlChildren, XmlItem, Text, XmlTree, XmlVersion, ScalesXml, defaultPathOptimisation, Doc, loadXmlReader, convertFromScalaXml, emptyChildren}
+import scales.xml.{ItemOrElem, XmlChildren, 
+		   XmlItem, Text, XmlTree, XmlVersion, 
+		   ScalesXml, defaultPathOptimisation, 
+		   Doc, loadXmlReader, convertFromScalaXml, 
+		   emptyChildren, AttributeQName,
+		   Namespace, Xml10}
 
 import ScalesXml.xmlCBF
-import scales.utils.resources.Loaner
+import scales.utils.resources.Loaner
   
 import scales.xml.parser.strategies.{PathOptimisationStrategy, OptimisationToken}
 
@@ -67,6 +72,29 @@ trait XmlUtils {
     import ScalesXml.readerToSource
     loadXmlReader[Token](new java.io.StringReader(out.toString), parsers = p, strategy = optimisationStrategy)
   }
+
+  /**
+   * Returns true if the tree is effectively empty, i.e. no attributes or children
+   */
+  def isEmptyTree(tree: XmlTree): Boolean = 
+    (tree.children.isEmpty && tree.section.attributes.isEmpty)
+
+  /**
+   * A convenient AttributeQName for xsi:nil attributes
+   */ 
+  val xsiNil : AttributeQName = Namespace.xsi.prefixed("xsi", "nil")(Xml10, IsFromParser)
+
+  /**
+   * Tests if a given tree is nil, but does not check if children are present.
+   *
+   * @returns true if there is a xsi:nil="true" value (or 1)
+   */ 
+  def isNil(tree: XmlTree): Boolean = {
+    import ScalesXml._
+    tree.section.attributes(xsiNil).
+      map{b => java.lang.Boolean.parseBoolean(b.value) || (b.value == "1")}.getOrElse(false)
+  }
+    
 }
 
 trait XmlUtilsImplicits {
