@@ -673,7 +673,7 @@ class DslBuildersTest extends junit.framework.TestCase {
 
   def testOptionalAdd: Unit = {
     val x = <("Alocal"l) /( ?<("another"l) ?~> "value" )
-    val x2 = <("Alocal"l) /( ?<("another"l).setOptionalValue( "value" ) )
+    val x2 = <("Alocal"l) /( ?<("another"l).setNonOptionalValue( "value" ) )
 
     val xml = """<?xml version="1.0" encoding="UTF-8"?><Alocal><another>value</another></Alocal>"""
     assertEquals(xml, asString(x))
@@ -700,20 +700,35 @@ class DslBuildersTest extends junit.framework.TestCase {
     val x = ?<("Alocal"l).addOptionalChild( 
 	?<("another"l) ?~> "value" )
     val x2 = ?<("Alocal"l).addOptionalChild(
-	?<("another"l).setOptionalValue( "value" ) )
+	?<("another"l).setNonOptionalValue( "value" ) )
+    val x3 = ?<("Alocal"l).addOptionalChildren(
+	?<("another"l).setNonOptionalValue( "value" ) )
+    val x4 = ?<("Alocal"l).addNonEmpty(
+	<("another"l).setValue( "value" ) )
+    val x5 = ?<("Alocal"l).addOptionalChildren(
+	?<("another"l).addNonEmpty( Text("value") ) )
 
     val xml = """<?xml version="1.0" encoding="UTF-8"?><Alocal><another>value</another></Alocal>"""
     assertEquals("x", xml, asString(x.toOptionalTree.get))
     assertEquals("x2", xml, asString(x2.toOptionalTree.get))
+    assertEquals("x3", xml, asString(x3.toOptionalTree.get))
+    assertEquals("x4", xml, asString(x4.toOptionalTree.get))
+    assertEquals("x5", xml, asString(x5.toOptionalTree.get))
     
-/*    val deepNones = 
-      ?<("Alocal"l).addOptionalChildren( 
+    val deepNones = 
+      ?<("Alocal"l).?/( 
 	?<("another"l) ?/( 
 	  ("lowerstill"l) ?~> None ),
 	?<("yetan"l) ?~> None
-      )
+      ).addNonEmpty(one[XmlTree](("ShouldNotGetAdded"l))).
+      addNonEmpty(("ShouldNotGetAdded"l)).
+      ?/(one(?<("optfunc"l))).
+      addOptionalChildren(?<("another"l) ?/( 
+	  ("lowerstill"l) ?~> None ),
+	?<("yetan"l) ?~> None).
+      addOptionalChildren(one(?<("optfunc"l)))
     assertTrue("should have been empty", deepNones.toOptionalTree.isEmpty)
-  */}
+  }
 
   def testOptionalAttribute: Unit = {
     val qn = "A.local"l

@@ -70,13 +70,22 @@ final class OptionalDslBuilder private(val tree: XmlTree) {
   def addOptionalAttribute(attrib : Option[Attribute]): OptionalDslBuilder = 
     tree./@(attrib)
 
-  /**
-   * Adds items and filters out empty trees.
-   */ 
-  def ?/( itemOrElems : => Iterable[ItemOrElem] ): OptionalDslBuilder =
+  private def addNonEmptys(itemOrElems: Iterable[ItemOrElem] ): OptionalDslBuilder =
     tree./(itemOrElems.filter{
       _.fold(i => true, t => !isEmptyTree(t))
     })
+
+  /**
+   * Adds items and filters out empty trees.
+   */
+  def addNonEmpty( itemOrElems: => Iterable[ItemOrElem] ): OptionalDslBuilder =
+    addNonEmptys(itemOrElems)
+
+  /**
+   * Adds items and filters out empty trees.
+   */ 
+  def addNonEmpty( itemOrElems: ItemOrElem * ): OptionalDslBuilder =
+    addNonEmptys(itemOrElems)
 
   /**
    * Optionally add a child, when None no child will be added
@@ -90,23 +99,35 @@ final class OptionalDslBuilder private(val tree: XmlTree) {
   def addOptionalChild( itemOrElem : OptionalDslBuilder ): OptionalDslBuilder = 
     tree./(itemOrElem.toOptionalTree)
 
-  private def addOptionals( items : Iterable[OptionalDslBuilder] ): OptionalDslBuilder =
+  /**
+   * Optionally add a number of children, when empty no child will be added
+   */
+  def addOptionalChildren( items: => Iterable[OptionalDslBuilder] ): OptionalDslBuilder =
+    addOptionals(items)
+
+  /**
+   * Optionally add a number of children, when empty no child will be added
+   */
+  def addOptionalChildren( items: OptionalDslBuilder * ): OptionalDslBuilder =
+    addOptionals(items)
+
+  private def addOptionals( items: => Iterable[OptionalDslBuilder] ): OptionalDslBuilder =
     tree.addOptionals(items.map(_.toOptionalTree))
 
   /**
-   * Optionally add a number of children, when None no child will be added
-  def addOptionalChildren( itemOrElem : OptionalDslBuilder *): OptionalDslBuilder = 
-    addOptionals( itemOrElem :_* )
+   * Optionally add a number of children, when empty no child will be added
    */
-
-  /**
-   * Optionally add a number of children, when None no child will be added
-   */
-  def addOptionalChildren( itemOrElem : => Iterable[OptionalDslBuilder] ): OptionalDslBuilder = 
+  def ?/( itemOrElem: OptionalDslBuilder *): OptionalDslBuilder =
     addOptionals(itemOrElem)
 
   /**
-   * sets the tree to a single Text node child, replacing all others
+   * Optionally add a number of children, when empty no child will be added
+   */
+  def ?/( itemOrElem : => Iterable[OptionalDslBuilder] ): OptionalDslBuilder = 
+    addOptionals(itemOrElem)
+
+  /**
+   * sets the tree to a single Text node child, replacing all others, calling this forces the resulting OptionalDslBuilder to be non empty
    */
   def ?~>( value : String ): OptionalDslBuilder = // note ~> is used not -> as it will then get in the way of the tupler
     tree.~>(value)
@@ -114,7 +135,7 @@ final class OptionalDslBuilder private(val tree: XmlTree) {
   /**
    * see ?~>
    */ 
-  def setOptionalValue( value : String ): OptionalDslBuilder = ?~>(value)
+  def setNonOptionalValue( value : String ): OptionalDslBuilder = ?~>(value)
 
   /**
    * Optionally sets the tree to a single Text node child, replacing all others, None will not change the current node.

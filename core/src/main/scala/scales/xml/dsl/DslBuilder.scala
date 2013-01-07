@@ -126,15 +126,15 @@ final class DslBuilder private(val tree: XmlTree) {
       else throw new FoldErrorException(x._2))
 
   /**
-   * any qname will do given its elems
-   */
+   * Removes all child trees with a given qname
+   */ // any qname will do given its elems
   def -/( qname : QName ) = new DslBuilder(tree.copy(children = tree.children.filterNot{
     either =>
       either.fold( item => false, tree => tree.section.name =:= qname)
   }))
 
   /**
-   * Add a number of xmlITems, text, cdata, comments etc, the two params is to get around /(Seq) erasures.
+   * Add a number of trees, xmlItems, text, cdata, comments etc
    */
   def /( itemOrElems : ItemOrElem * ) = 
     new DslBuilder( tree.copy( children = (tree.children ++ itemOrElems )))
