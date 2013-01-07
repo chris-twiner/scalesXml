@@ -107,11 +107,11 @@ class IterateeTest extends junit.framework.TestCase {
       Cont(step(0))
     }
 
-    val (res, cont) = enumToMany(sum)( mapTo( (_:Long) => El(lTo(1L, 100000L)) ) )(i).run
+    val (res, cont) = enumToMany[Long, Long, Long](sum)( mapTo( (_:Long) => El(lTo(1L, 100000L)) ) )(i).run
     assertEquals(25000050001L, res)
     assertTrue("should not have been done", !isDone(cont))
 
-    val (res2, cont2) : ((Long,ResumableIter[Long, Long])) = cont.run
+    val (res2, cont2) = (cont.asInstanceOf[ResumableIter[Long, Long]]).run
     assertEquals(25000250000L, res2)
     assertTrue("should have been done", isDone(cont2))
   }

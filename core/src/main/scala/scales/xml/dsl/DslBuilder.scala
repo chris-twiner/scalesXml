@@ -53,8 +53,9 @@ case class FoldErrorException(error : FoldError) extends RuntimeException
 /*
  * Must have a starting element, modelled as tree as we need to keep the data around and trees must always have an elem
  */
-class DslBuilder private( tree : XmlTree ) {
+final class DslBuilder private(val tree: XmlTree) {
   import ScalesXml._
+
   /**
    * Add attributes
    */ 
@@ -82,6 +83,17 @@ class DslBuilder private( tree : XmlTree ) {
 
   def /( itemOrElems : => Iterable[ItemOrElem] ) : DslBuilder =
     new DslBuilder( tree.copy( children = (tree.children ++ itemOrElems  )))
+
+  /**
+   * Add a number of ItemOrElems wrapped in Option, those which are Some will be added.
+   */ 
+  def addOptionals( itemOrElems : Option[ItemOrElem] * ) : DslBuilder = /( itemOrElems.flatten )
+
+  /**
+   * Add an Iterable of ItemOrElems wrapped in Option, those which are Some will be added.
+   */ 
+  def addOptionals( itemOrElems : => Iterable[Option[ItemOrElem]] ) : DslBuilder =
+    /(itemOrElems.flatten)
 
   /**
    * Optionally add a child, when None no child we be added
@@ -114,15 +126,15 @@ class DslBuilder private( tree : XmlTree ) {
       else throw new FoldErrorException(x._2))
 
   /**
-   * any qname will do given its elems
-   */
+   * Removes all child trees with a given qname
+   */ // any qname will do given its elems
   def -/( qname : QName ) = new DslBuilder(tree.copy(children = tree.children.filterNot{
     either =>
       either.fold( item => false, tree => tree.section.name =:= qname)
   }))
 
   /**
-   * Add a number of xmlITems, text, cdata, comments etc, the two params is to get around /(Seq) erasures.
+   * Add a number of trees, xmlItems, text, cdata, comments etc
    */
   def /( itemOrElems : ItemOrElem * ) = 
     new DslBuilder( tree.copy( children = (tree.children ++ itemOrElems )))

@@ -3,7 +3,7 @@ package scales.xml
 import scales.utils.error
 import scales.utils.{LeftLike, RightLike}
 
-import scales.xml.impl.{FromParser, NotFromParser}
+import scales.xml.impl.{FromParser, NotFromParser, IsFromParser}
 
 /**
  * Scales supports many aspects of Xml10 and Xml11, verification of serialization and values takes place with the XmlVersion ADT. 
@@ -38,7 +38,7 @@ sealed trait UnderlyingNamespace {
  *
  * NOTE Users are recommended to use the prefixed function and work with prefixes directly for qnames.
  */
-trait Namespace extends UnderlyingNamespace {
+sealed trait Namespace extends UnderlyingNamespace {
 
   /**
    * Create an UnprefixedQName 
@@ -69,30 +69,40 @@ object EmptyNamespace extends UnderlyingNamespace {
   final val uri = ""
 }
 
-object Namespace {
-  val xmlnsNS = "http://www.w3.org/XML/1998/namespace"
-  val xmlNS = "http://www.w3.org/2000/xmlns/"
+private[xml] object NamespaceImpl {
+  import Namespace._
 
-  private[xml] def swapForKnown( validUri : String ) =
+  def swapForKnown( validUri : String )(implicit ver : XmlVersion, fromParser : FromParser) =
     validUri match {
-      case `xmlnsNS` => xmlnsNS
-      case `xmlNS` => xmlNS
-      case _ => validUri
+      case `xmlnsNS` => xmlns
+      case `xmlNS` => xml
+      case `xsiNS` => xsi
+      case _ => new Namespace{ val uri = validUri }
     }
+}
+
+object Namespace {
+  val xmlNS = "http://www.w3.org/XML/1998/namespace"
+  val xmlnsNS = "http://www.w3.org/2000/xmlns/"
+  val xsiNS = "http://www.w3.org/2001/XMLSchema-instance"
+
+  val xmlns: Namespace = new Namespace{ val uri = xmlnsNS }
+  val xml: Namespace  = new Namespace{ val uri = xmlNS }
+  val xsi: Namespace  = new Namespace{ val uri = xsiNS }
+
+  import NamespaceImpl.swapForKnown
 
   /**
    * parsers we trust, users we protect
    */ 
-  def apply( validUri : String )(implicit ver : XmlVersion, fromParser : FromParser) : Namespace = new Namespace {
-    val uri = 
-      if (fromParser eq NotFromParser) 
-	if (validXmlNamespace(validUri))
-	  swapForKnown(validUri)
-	else
-	  error("Namespaces must have valid URIs, '"+validUri+"' is invalid for Xml "+ver.version)
-      else
+  def apply( validUri : String )(implicit ver : XmlVersion, fromParser : FromParser) : Namespace = 
+    if (fromParser eq NotFromParser) 
+      if (validXmlNamespace(validUri))
 	swapForKnown(validUri)
-  }
+      else
+	error("Namespaces must have valid URIs, '"+validUri+"' is invalid for Xml "+ver.version)
+    else
+      swapForKnown(validUri)
 
   def unapply( n : Namespace) = Some((n.uri))
 }

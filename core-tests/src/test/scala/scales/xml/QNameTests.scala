@@ -82,13 +82,14 @@ class QNameTest extends junit.framework.TestCase {
   def testMismatchedPre = {
     val xml = Namespace(Namespace.xmlNS)
     val xmlns = Namespace(Namespace.xmlnsNS)
- 
+
     def validateTest( ns : Namespace, nsPre : String ) =
       try {
 	val x = PrefixedNamespace(ns, "fred")
 	fail("Did not throw when validating "+nsPre+" prefix")
       } catch {
-	case t : Throwable => assertTrue("Did not get expected error for "+nsPre+": "+t.getMessage, t.getMessage.indexOf("bound to prefix '"+nsPre+"'") > -1)
+	case t : Throwable => 
+	  assertTrue("Did not get expected error for "+nsPre+": "+t.getMessage, t.getMessage.indexOf("bound to prefix '"+nsPre+"'") > -1)
       }
 
     validateTest(xml, "xml")
@@ -98,10 +99,10 @@ class QNameTest extends junit.framework.TestCase {
     val xmlpre = PrefixedNamespace(xml, PrefixedNamespace.xmlPRE)
     val xmlnspre = PrefixedNamespace(xmlns, PrefixedNamespace.xmlnsPRE)
 
-    assertEquals(PrefixedNamespace.xmlPRE, xmlpre.prefix)
-    assertEquals(Namespace.xmlNS, xmlpre.ns.uri)
-    assertEquals(PrefixedNamespace.xmlnsPRE, xmlnspre.prefix)
-    assertEquals(Namespace.xmlnsNS, xmlnspre.ns.uri)
+    assertEquals("xmlPRE", PrefixedNamespace.xmlPRE, xmlpre.prefix)
+    assertEquals("xmlNS", Namespace.xmlNS, xmlpre.ns.uri)
+    assertEquals("xmlns.prefix", PrefixedNamespace.xmlnsPRE, xmlnspre.prefix)
+    assertEquals("xmlns ns and uri", Namespace.xmlnsNS, xmlnspre.ns.uri)
 
   }
 
@@ -169,6 +170,24 @@ class QNameTest extends junit.framework.TestCase {
     assertTrue("Should have the mvp", s.indexOf("localName2=\"mvp\"") > -1)
     assertTrue("Should have the nv", s.indexOf("localName=\"nv\"") > -1)
     assertTrue("Should have the pv", s.indexOf("pre:localName=\"pv\"") > -1)
+
+  }
+
+  def testXSI = {
+    val xtrue = ("alocal"l) /@(xsiNil -> "true")
+    val xfalse = ("alocal"l) /@(xsiNil -> "false")
+    val x1 = ("alocal"l) /@(xsiNil -> "1")
+    val x0 = ("alocal"l) /@(xsiNil -> "0")
+
+    val xrand = ("alocal"l) /@(xsiNil -> "rand")
+    val control: XmlTree = ("alocal"l)
+
+    assertTrue("true", isNil(xtrue))
+    assertTrue("x1", isNil(x1))
+    assertFalse("false", isNil(xfalse))
+    assertFalse("x0", isNil(x0))
+    assertFalse("rand", isNil(xrand))
+    assertFalse("control", isNil(control))
 
   }
 }

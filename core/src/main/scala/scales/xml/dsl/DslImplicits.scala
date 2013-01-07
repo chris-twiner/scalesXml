@@ -6,8 +6,8 @@ import scales.utils.{AsBoolean, subtree, foldPositions, booleanMatcher, booleanA
 import scales.xml.{
   NoNamespaceQName, PrefixedQName, AttributeQName, 
   Attribute, XmlTree, Doc, XmlVersion, XmlCBF, 
-  XmlPath, Elem, XCC, XmlItem, QName, 
-  ScalesXml, Text, Namespace, <}
+  XmlPath, Elem, XCC, XmlItem, QName, ItemOrElem,
+  ScalesXml, Text, Namespace, <, ?<}
 
 import ScalesXml.xmlCBF
 
@@ -49,4 +49,43 @@ trait DslImplicits {
   implicit def fromTreeToDsl( tree: XmlTree ) = DslBuilder(tree)
 
   implicit def fromNSToNSMPimper( ns : Namespace ) = new NSMPimper(ns)
+}
+
+/**
+ * Add ?-> to an attributeqname
+ */ 
+final class OptionalAttribute(val name: AttributeQName) {
+  def ?->(value: String): Option[Attribute] =
+    Some(Attribute(name, value))
+
+  def ?->(value: Option[String]): Option[Attribute] =
+    value.map(Attribute(name, _))
+}
+
+/**
+ * DslImplicits centered on the OptionalDslBuilder only
+ */ 
+trait OptionalDslBuilderImplicits {
+
+  implicit def fromElemToOptionalBuilder(elem : Elem) = ?<(elem)
+
+  /**
+   * Only works for elems, better looking than <
+   */
+  implicit def fromQNameToOptionalBuilder( qname : QName) = ?<(qname)
+
+  implicit def fromTreeToODsl( tree: XmlTree ) = OptionalDslBuilder(tree)
+
+  /**
+   * Provides access to the ~> pimps
+   */ 
+  implicit def fromPQNameToOptionalAttribute(name: AttributeQName) = 
+    new OptionalAttribute(name)
+
+  /**
+   * Convenience function for adding optional subtrees
+   */ 
+  implicit def fromOptionalDslToOptionalTree(optionalDsl: OptionalDslBuilder): Option[ItemOrElem] =
+    optionalDsl.toOptionalTree
+
 }

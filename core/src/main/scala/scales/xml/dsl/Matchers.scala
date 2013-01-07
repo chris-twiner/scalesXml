@@ -63,15 +63,16 @@ class NSMPimper( ns : Namespace ) {
 trait XPathMatcher {
 
   /**
-   * Wrap xpaths into matches, gives back the resulting path if its non empty
+   * Creates a booleanMatcher against a Tree based on the @pathEval function.
+   *
+   * For XPath evaluations on the tree this typically gives the paths back when the xpath evaluates to a non-empty result.  TODO ADD CODE
    */ 
   def pathMatcher[T : AsBoolean]( pathEval : (XmlTree) => T ) = booleanMatcher[XmlTree, T](pathEval)
 
   
   /**
-   * Wrap xpaths into matches, gives back the resulting path if its non empty
-   * and the tree that matched it (doesn't force the user to create a val name beforehand)
-   */ 
+   * Similar to pathMatcher but also gives the tree back into the pattern match.
+   */
   def pathAndTreeMatcher[T : AsBoolean]( pathEval : (XmlTree) => T ) = booleanAndTMatcher[XmlTree, T](pathEval)
 
 }
