@@ -2,7 +2,7 @@
 
 XML DOMs traditionally create trees by each element "owning" its children.  Scales eschews this model, instead using trees to model the containment, allowing re-use for all of the Scales model.
 
-To simplify both creating and basic manipulation of trees Scales provides a DSL that closely resembles the structure of XML.  The point of focus in the tree (or the depth) is controlled by nesting of the arguments.
+To simplify both creating and basic manipulation of trees Scales provides a DSL that closely resembles the structure of XML.  The point of focus in the tree (or the depth) is controlled by nesting of the arguments.  The implementing class is [./doc/scales/xml/dsl/DslBuilder.html DslBuilder]
 
 The following example is a quick introduction into how to create trees (also used within the [XPaths.html XPath guide]):
 
@@ -121,7 +121,7 @@ ${cend}
 
 == Optional XML ==
 
-When using the DSL to template XML its often necessary to express optional content.  This can be expressed via direct use of Option for an attribute, child or text directly:
+When using the DSL to template XML its often necessary to model optional content.  This can be expressed via direct use of Option for an attribute, child or text directly:
 
 ${cscala}
   def template(optionalText : Option[String) =
@@ -133,7 +133,7 @@ ${cend}
 
 As hasNoChildren demonstrates, when using None, there will be no child added.  Using "" instead, would add an empty Child, whilst semantically identical upon serialization it changes the meaning of the in-memory DOM itself.
 
-The Attribute and child variants function in the same way.
+The Attribute and child variants function in the same way, but for some usages a fully cascading solution may be required.  If the elem itself should also not be added when there are no children present then the [OptionalDsl.html Optional DSL] should be used.
 
 == Folding Within The DSL ==
 

@@ -2,9 +2,9 @@
 
 Maven users should use scales-xml_2.9.2 as the dependency (org.scalesxml as the group).
 
-The 0.4.4 documentation site is [http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.4.4/index.html here] and a zip of the site documentation is available at [http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.4.4/org.scalesxml-scales-xml-0.4.4-site.zip scales-xml.zip].
+The 0.5.0 documentation site is [http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.5.0/index.html here] and a zip of the site documentation is available at [http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.5.0/org.scalesxml-scales-xml-0.5.0-site.zip scales-xml.zip].
 
-Scales is cross compiled for 2.8.1, 2.8.2, 2.9.1 and 2.9.2 (with 2.10.0-RC2 builds and more to follow).
+Scales is cross compiled for 2.8.1, 2.8.2, 2.9.1, 2.9.2 and 2.10.
 
 == Sbt 0.11.x ==
 
@@ -19,9 +19,3 @@ libraryDependencies ++= Seq(
 )
 ${cend}
 
-
-If using the 2.10.0 RC candidates and sbt 0.12.1 please also use:
-${cscala}
-     cross CrossVersion.full
-${cend}
-against the dependencies (as the RCs are not guaranteed to be binary compatible).
