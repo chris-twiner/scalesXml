@@ -50,6 +50,8 @@
 ;** [XmlDsl.html#Removing_Attributes Removing Attributes]
 ;** [XmlDsl.html#Optional_XML Optional XML]
 ;** [XmlDsl.html#Folding_Within_The_DSL Folding Within The DSL]
+;* [OptionalDsl.html Optional Xml DSL]
+;** [OptionalDsl.html#Cascading_Optionals Cascading Optionals]
 
 ; '''Accessing and Querying Data'''
 ;* [XPaths.html XPath Embedded DSL]
@@ -65,7 +67,6 @@
 ;** [XPaths.html#Unsorted_Results_and_Views Unsorted Results and Views]
 ;* [XPathFunctions.html XPath Functions]
 ;** [XPathFunctions.html#Organisation Organisation]
-;** [XPathFunctions.html#Using Using]
 ;** [XPathFunctions.html#QName_Functions QName Functions]
 ;** [XPathFunctions.html#Text_Functions Text Functions]
 ;** [XPathFunctions.html#Boolean_Function Boolean Function]
