@@ -3,6 +3,7 @@ package scales.xml.equalsTest // different to keep default xml._ out
 import scales.xml._
 import ScalesXml._
 import Functions._
+import parser.strategies._
 
 import scales.xml.equals._
 
@@ -15,6 +16,8 @@ class EqualsNormalImportsTest extends junit.framework.TestCase {
   import java.io._
   import scales.utils._
   import ScalesUtils._
+
+  import collection.path._
 
   import org.xml.sax.{InputSource, XMLReader}
 
@@ -259,6 +262,8 @@ class EqualsNormalImportsTest extends junit.framework.TestCase {
 
     val attr1 : Attribute = qn -> "v1"
     val attr2 : Attribute = qnd -> "v1"
+
+    import scales.xml.impl.EqualsHelpers
 
     assertFalse(".equal toQName", prefixQNameEqual.equal(EqualsHelpers.toQName(attr1.name), EqualsHelpers.toQName(attr2.name)))
     

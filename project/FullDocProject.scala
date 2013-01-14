@@ -19,9 +19,10 @@ object FullDocs {
 
   /**
    * Nicked from Scalaz - thanks once again Jason and co.
-   * @projects The projects that are packaged in the full distribution.
+   * @param projects The projects that are packaged in the full distribution.
+   * @param sxrVersionMap If not defined at a given version SXR is disabled
    */ 
-  def fullDocsNSources( projects : Seq[Project], projectId : String, projectRoot : java.io.File, sxrVersionMap : (String) => sbt.ModuleID, rootProjectId : String, projectDependencies : Seq[sbt.ClasspathDep[sbt.ProjectReference]], standardSettings : Seq[sbt.Project.Setting[_]] = Defaults.defaultSettings) = {
+  def fullDocsNSources( projects : Seq[Project], projectId : String, projectRoot : java.io.File, sxrVersionMap : PartialFunction[String, sbt.ModuleID], rootProjectId : String, projectDependencies : Seq[sbt.ClasspathDep[sbt.ProjectReference]], standardSettings : Seq[sbt.Project.Setting[_]] = Defaults.defaultSettings) = {
 
     // Some intermediate keys to simplify extracting a task or setting from `projects`.
     val allPackagedArtifacts = TaskKey[Seq[Map[Artifact, File]]]("all-packaged-artifacts")
@@ -44,11 +45,14 @@ object FullDocs {
     }
 
     /** Scalac options for SXR */
-    def sxrOptions(baseDir: File, sourceDirs: Seq[Seq[File]]): Seq[String] = {
+    def sxrOptions(baseDir: File, sourceDirs: Seq[Seq[File]], scalaVersion: String): Seq[String] = {
       //val xplugin = "-Xplugin:" + (baseDir / "lib" / "sxr_2.8.0.RC2-0.2.4-SNAPSHOT.jar").asFile.getAbsolutePath
-      val baseDirs = sourceDirs.flatten
-      val sxrBaseDir = "-P:sxr:base-directory:" + baseDirs.mkString(";").replaceAll("\\\\","/")
-      Seq(sxrBaseDir)
+      if (sxrVersionMap.isDefinedAt(scalaVersion)) {
+	val baseDirs = sourceDirs.flatten
+	val sxrBaseDir = "-P:sxr:base-directory:" + baseDirs.mkString(";").replaceAll("\\\\","/")
+	Seq(sxrBaseDir)
+      } else
+	Seq()
     }
 
     Project(
@@ -69,17 +73,22 @@ object FullDocs {
 
 	// enable SXR for this project only
 	autoCompilerPlugins := true,
-	libraryDependencies <+= scalaVersion{ v => compilerPlugin(sxrVersionMap(v)) },
+	libraryDependencies <++= scalaVersion{(v : String) => 
+	  if (sxrVersionMap.isDefinedAt(v))
+	    Seq(compilerPlugin(sxrVersionMap(v)))
+	  else
+            Seq()
+        },
 
         // Include SXR in the Scaladoc Build to generated HTML annotated sources.
-	scalacOptions in (Compile,doc) <++= (baseDirectory, allSourceDirectories) map sxrOptions,
+	scalacOptions in (Compile,doc) <++= (baseDirectory, allSourceDirectories, scalaVersion) map sxrOptions,
        	
 	/*scalacOptions in (Compile, doc) <++= (baseDirectory in LocalProject(projectId)).map {
 	  bd => Seq("-sourcepath", projectRoot.getAbsolutePath, "-doc-source-url", docPathToken + "€{FILE_PATH}.scala.html")
 	},
 	*/
 	
-	scalacOptions in (Compile, doc) ++= Seq("-doc-source-url", docPathToken + "€{FILE_PATH}.scala.html"),
+	scalacOptions in (Compile,doc) ++= Seq("-doc-source-url", docPathToken + "€{FILE_PATH}.scala.html"),
 
 // can't be allsourcedirs but the target dir itself is needed
 	fullDocs in Compile <<= (streams, allSourceDirectories, target in Compile in doc in LocalProject(projectId)) map { 

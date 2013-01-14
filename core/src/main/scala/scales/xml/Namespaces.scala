@@ -3,6 +3,8 @@ package scales.xml
 import scales.utils.error
 import scales.utils.{LeftLike, RightLike}
 
+import scales.xml.impl.{FromParser, NotFromParser, IsFromParser}
+
 /**
  * Scales supports many aspects of Xml10 and Xml11, verification of serialization and values takes place with the XmlVersion ADT. 
  */ 
@@ -16,60 +18,7 @@ case object Xml10 extends XmlVersion {
   val version = "1.0"
 }
 
-trait DefaultXmlVersion {
-  implicit val defaultVersion : XmlVersion = Xml10
-}
-
-/**
- * Follows the XML 1.0 spec and XML 1.1 spec, all underlying code provided by a copied version of the Xerces libs.
- *
- * Throughout user QName code we default to XML 1.0, as all XML 1.0 docs are valid XML 1.1's but the reverse is not true.
- *
- * Also note that we do not accept :, we are namespace compliant first and foremost
- *
- * The reason I'm simply copying to another package is that the utils.XMLChar functions aren't then forcing a JAXP or
- * xerces version.
- */
-object QNameCharUtils {
-  import scales.org.apache.xerces.util._
-
-  def validLocalName( name : String )(implicit ver : XmlVersion) =
-    validXmlName(name) && (
-      if (name.length > 2) 
-	name.substring(0,2).toLowerCase != "xml"
-      else
-	true
-    ) &&
-    name.indexOf(':') == -1 // namespaces ftw
-
-  def validXmlName( name : String )(implicit ver : XmlVersion)  =
-    if (ver eq Xml10)
-      XMLChar.isValidName(name)
-    else
-      XML11Char.isXML11ValidName(name)
-
-  def validXmlPrefix( prefix : String )(implicit ver : XmlVersion) = 
-    validXmlName(prefix) &&// other xmlns etc validations must be done in the actual qnames and elements
-    prefix.indexOf(':') == -1
-
-  def validXmlNamespace( namespace : String )(implicit ver : XmlVersion) =
-    if ((ver eq Xml10) && (namespace.trim.length == 0))
-      false // can't do empties in 1.0, only 1.1
-    else // TODO - what else should we validate here, parsing URI / IRI?
-      true
-
-  /**
-   * Validates and returns or throws
-   */
-  def validateLocalName( validLocal : String ) ( implicit ver : XmlVersion) = 
-    if (validLocalName(validLocal)) 
-      validLocal
-    else
-      error("The local name '"+validLocal+"' is not valid for Xml "+ver.version)
-
-}
-
-import QNameCharUtils._
+import impl.QNameCharUtils._
 
 /**
  * Seperate the notion of a normal Namespace and that of the "empty namespace" - no default namespace
@@ -89,7 +38,7 @@ sealed trait UnderlyingNamespace {
  *
  * NOTE Users are recommended to use the prefixed function and work with prefixes directly for qnames.
  */
-trait Namespace extends UnderlyingNamespace {
+sealed trait Namespace extends UnderlyingNamespace {
 
   /**
    * Create an UnprefixedQName 
@@ -120,30 +69,40 @@ object EmptyNamespace extends UnderlyingNamespace {
   final val uri = ""
 }
 
-object Namespace {
-  val xmlnsNS = "http://www.w3.org/XML/1998/namespace"
-  val xmlNS = "http://www.w3.org/2000/xmlns/"
+private[xml] object NamespaceImpl {
+  import Namespace._
 
-  private[xml] def swapForKnown( validUri : String ) =
+  def swapForKnown( validUri : String )(implicit ver : XmlVersion, fromParser : FromParser) =
     validUri match {
-      case `xmlnsNS` => xmlnsNS
-      case `xmlNS` => xmlNS
-      case _ => validUri
+      case `xmlnsNS` => xmlns
+      case `xmlNS` => xml
+      case `xsiNS` => xsi
+      case _ => new Namespace{ val uri = validUri }
     }
+}
+
+object Namespace {
+  val xmlNS = "http://www.w3.org/XML/1998/namespace"
+  val xmlnsNS = "http://www.w3.org/2000/xmlns/"
+  val xsiNS = "http://www.w3.org/2001/XMLSchema-instance"
+
+  val xmlns: Namespace = new Namespace{ val uri = xmlnsNS }
+  val xml: Namespace  = new Namespace{ val uri = xmlNS }
+  val xsi: Namespace  = new Namespace{ val uri = xsiNS }
+
+  import NamespaceImpl.swapForKnown
 
   /**
    * parsers we trust, users we protect
    */ 
-  def apply( validUri : String )(implicit ver : XmlVersion, fromParser : FromParser) : Namespace = new Namespace {
-    val uri = 
-      if (fromParser eq NotFromParser) 
-	if (validXmlNamespace(validUri))
-	  swapForKnown(validUri)
-	else
-	  error("Namespaces must have valid URIs, '"+validUri+"' is invalid for Xml "+ver.version)
-      else
+  def apply( validUri : String )(implicit ver : XmlVersion, fromParser : FromParser) : Namespace = 
+    if (fromParser eq NotFromParser) 
+      if (validXmlNamespace(validUri))
 	swapForKnown(validUri)
-  }
+      else
+	error("Namespaces must have valid URIs, '"+validUri+"' is invalid for Xml "+ver.version)
+    else
+      swapForKnown(validUri)
 
   def unapply( n : Namespace) = Some((n.uri))
 }
@@ -200,16 +159,4 @@ object PrefixedNamespace {
   }
 
   def unapply( p : PrefixedNamespace) = Some((p.ns, p.prefix))
-}
-
-object Default {
-  /**
-   * placeholder for the current element default namespace
-   */
-  protected[xml] val namespace = Namespace("")(Xml10,IsFromParser)
-
-  /**
-   * The no namespace namespace (xmlns="")
-   */
-  val noNamespace = EmptyNamespace
 }

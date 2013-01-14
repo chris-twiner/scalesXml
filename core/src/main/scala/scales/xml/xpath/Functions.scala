@@ -1,6 +1,11 @@
 package scales.xml.xpath
 
 import scales.xml._
+import impl.EqualsHelpers
+
+import impl.IsFromParser
+import dsl.DslBuilder
+
 import scales.utils._
 
 /**
@@ -43,7 +48,7 @@ protected[xml] object EmptyQName {
  *
  * Also adds aliases for the common functions
  */ 
-object Functions extends NameFunctions with TextFunctions {
+trait Functions extends NameFunctions with TextFunctions {
   /**
    * hasLocalName for XmlPaths
    */ 
@@ -62,7 +67,7 @@ object Functions extends NameFunctions with TextFunctions {
  */ 
 trait NameFunctions {
 
-  private[NameFunctions] implicit def toQName[T]( t : T )(implicit name : Names[T]) =
+  private[NameFunctions] implicit def toQNameNF[T]( t : T )(implicit name : Names[T]) =
     name.flatName(t)
   
   /**
@@ -207,7 +212,7 @@ trait NameFunctions {
   /**
    * matches only the namespace
    */
-  def hasNamespace[T](namespaceUri : String)(implicit name : Names[T]) : T => Boolean =
+  def hasNamespace[T](namespaceUri : String)(implicit name : Names[T], d: DIF) : T => Boolean =
     (t : T) => t.namespace.uri == namespaceUri
 
 }

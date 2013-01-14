@@ -3,7 +3,9 @@ package scales.xml
 import scales.utils.error
 import scales.utils.{LeftLike, RightLike}
 
-import QNameCharUtils._
+import impl.QNameCharUtils._
+
+import scales.xml.impl.{FromParser, NotFromParser}
 
 /**
  * QNames together with a tree structure form the basis of XML, what type of QName is available depends on Attribute (either no namespace or prefxied - fully qualified) or Elem (attribute's options and non prefixed but still qualified)
@@ -116,7 +118,7 @@ trait CanHavePrefix {//extends QName {
  */
 trait NoNamespaceQName extends QName with RightLike[PrefixedQName, NoNamespaceQName] {
   final def prefix = None
-  final def namespace = Default.noNamespace
+  final def namespace = impl.NamespaceDefaults.noNamespace
 }
 
 object NoNamespaceQName {
@@ -171,32 +173,4 @@ object UnprefixedQName {
   }
 
   def unapply(n : UnprefixedQName) = Some((n.local, n.namespace))
-}
-
-trait QNameImplicits {
-
-  implicit def stringToNoNamespace( localOnly : String )(implicit ver : XmlVersion, fromParser: FromParser) = NoNamespaceQName(localOnly)
-
-  implicit def localStringToNSBuilder( local : String)(implicit ver : XmlVersion, fromParser: FromParser) = new StringToNSBuilder(local)
-}
-
-/**
- * Pimps a string for namespace handling
- */ 
-class StringToNSBuilder(local: String)(implicit ver : XmlVersion, fromParser: FromParser) {
-
-  /**
-   * ns :: localname pimp.
-   */ 
-  def ::( namespace : String ) = if ((namespace eq null) || namespace == "") error("Namespace should not be non empty or null") else UnprefixedQName(local, Namespace(namespace))
-
-  /**
-   * When there are other implicits after the string conversion gold add an "l" for local only 
-   */
-  def l(implicit ver : XmlVersion, fromParser : FromParser) = NoNamespaceQName(local)
-
-  /**
-   * When there are other implicits after the string conversion gold add an "localOnly" or "l" for local only 
-   */
-  def localOnly(implicit ver : XmlVersion, fromParser : FromParser) = NoNamespaceQName(local)
 }

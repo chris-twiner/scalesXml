@@ -1,31 +1,50 @@
 package scales
 
-package object xml extends XmlTypes 
-  with XmlParser 
-  with XmlPaths
-  with XPathMatcher 
-  with XmlPrinter 
-  with Whitespace 
-  with XmlPulls 
-  with XmlFactories 
-  with TraxSourceConversions
-  with XmlUtils
-  with PullIteratees
+package object xml extends dsl.XPathMatcher
+  with impl.XmlTypes 
+  with impl.Whitespace 
+  with impl.XmlFactories 
+  with impl.XmlUtils
+  with parser.sax.XmlParser 
+  with parser.pull.XmlPulls 
+  with parser.pull.PullIteratees
+  with trax.TraxSourceConversions
+  with serializers.XmlPrinter 
+  with serializers.SerializingIter
   with equals.XmlEquals
-  with serializers.SerializingIter {
+  with xpath.XmlPaths
+  with xpath.Functions {
 
-  import strategies.ElemToken
+  import scales.xml.parser.strategies.{QNameMemoryOptimisation, PathOptimisationStrategy, QNameToken, MemoryOptimisationStrategy}
 
   val defaultPathOptimisation : PathOptimisationStrategy[QNameToken] = QNameMemoryOptimisation
   val defaultOptimisation : MemoryOptimisationStrategy[QNameToken] = QNameMemoryOptimisation
 
-  val Functions = xpath.Functions
+  @deprecated(message="Functions - since 0.3 - imports are provided via the xml package object")
+  val Functions = new Object()
 
-  // work around my own version of SI-5031
-  @deprecated(message="Please import Functions._ instead - since 0.3")
-  val Attributes = xpath.Attributes
-  @deprecated(message="Please import Functions._ instead - since 0.3")
-  val Elements = xpath.Elements
-  @deprecated(message="Please import Functions._ instead - since 0.3")
-  val TextFunctions = xpath.OldTextFunctions
+  // forwarders
+
+  /**
+   * XPath type, provides all XPath Axe against a given collection of XmlPaths 
+   * @see [xpath.XPath]
+   */ 
+  type XPath[PT <: Iterable[XmlPath]] = xpath.XPath[PT]
+
+  /**
+   * AttributePath provides access to the parent XmlPath
+   */
+  type AttributePath = xpath.AttributePath
+
+  /**
+   * AttributePaths provides all XPath Axe that are attribute relevant against a given collection of attributes on a colletion of XmlPaths
+   * @see [xpath.AttributePaths]
+   */ 
+  type AttributePaths[PT <: Iterable[XmlPath]] = xpath.AttributePaths[PT]
+
+  /**
+   * Basis for xmlpulls, an Iterator[PullType]
+   */
+  type XmlPull = scales.xml.parser.pull.XmlPull
+
 }

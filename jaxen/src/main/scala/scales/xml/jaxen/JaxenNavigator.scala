@@ -11,6 +11,10 @@ import ScalesUtils._
 import scales.xml._
 import ScalesXml._
 
+import scales.xml.impl.{DocumentRoot, DocsUp}
+
+import collection.DuplicateFilter
+
 import scala.collection.JavaConversions._
 
 //TODO - get a type class in here, looks like doclike usage from the serializers, smells like re-use to me
@@ -19,7 +23,7 @@ object Implicits {
   import scalaz._
   import Scalaz._
 
-  import PositionalEquals.{xpathPositionalEqual => xpathEqual}
+  import xpath.PositionalEquals.{xpathPositionalEqual => xpathEqual}
 
   /**
    * Equal type class for either A or X
@@ -249,14 +253,14 @@ class ScalesNavigator(val nameConversion : QName => QName) extends DefaultNaviga
 	use(ctx, (d : DocsUp[XmlPath]) => 
 	  d.what.tree.section.
 	    attributes.map(a => DocsUp(
-	      AttributePath(a, ctx), 
+	      xpath.AttributePath(a, ctx), 
 	      d.docroot)).iterator)
       case _ => Nil.iterator
     }
   
   override def getParentNode( ctx : AnyRef ) =
     ctx match {
-      case DocsUp(AttributePath(a, x), d) => DocsUp(x,d)
+      case DocsUp(xpath.AttributePath(a, x), d) => DocsUp(x,d)
       case DocsUp(x : XmlPath, d) => 
 	if (x eq d.xmlPath)
 	  d
@@ -271,11 +275,11 @@ class ScalesNavigator(val nameConversion : QName => QName) extends DefaultNaviga
   def getNamespaceStringValue( ctx : AnyRef ) = error("no namespace nodes yet")
   def isNamespace( ctx : AnyRef ) = false//error("no namespace nodes yet")
 
-  def getTextStringValue( ctx : AnyRef ) = TextFunctions.value(ctx)
+  def getTextStringValue( ctx : AnyRef ) = text(ctx: XmlPath)
 
   // attributes
   def getAttributeStringValue( ctx : AnyRef ) = ctx match {
-    case DocsUp(AttributePath(a, x),d) => a.value
+    case DocsUp(xpath.AttributePath(a, x),d) => a.value
     case _ => error("not an attribute")
   }
   def isAttribute( ctx : AnyRef ) = 
@@ -287,7 +291,7 @@ class ScalesNavigator(val nameConversion : QName => QName) extends DefaultNaviga
     } else false
   
   def getAttributeQName( ctx : AnyRef ) =  ctx match {
-    case DocsUp(AttributePath(a, x),d) => 
+    case DocsUp(xpath.AttributePath(a, x),d) => 
       if (nameConversion eq ScalesXPath.defaultNoConversion)
 	a.name.qName
       else
@@ -295,7 +299,7 @@ class ScalesNavigator(val nameConversion : QName => QName) extends DefaultNaviga
     case _ => error("not an attribute")
   }
   def getAttributeName( ctx : AnyRef ) = ctx match {
-    case DocsUp(AttributePath(a, x),d) => 
+    case DocsUp(xpath.AttributePath(a, x),d) => 
       if (nameConversion eq ScalesXPath.defaultNoConversion)
 	a.name.local
       else
@@ -303,7 +307,7 @@ class ScalesNavigator(val nameConversion : QName => QName) extends DefaultNaviga
     case _ => error("not an attribute")
   }
   def getAttributeNamespaceUri( ctx : AnyRef ) = ctx match {
-    case DocsUp(AttributePath(a, x),d) => 
+    case DocsUp(xpath.AttributePath(a, x),d) => 
       if (nameConversion eq ScalesXPath.defaultNoConversion)
 	a.name.namespace.uri
       else
@@ -311,7 +315,7 @@ class ScalesNavigator(val nameConversion : QName => QName) extends DefaultNaviga
     case _ => error("not an attribute")
   }
 
-  def getCommentStringValue( ctx : AnyRef ) = TextFunctions.value(ctx)
+  def getCommentStringValue( ctx : AnyRef ) = text(ctx: XmlPath)
 
   def pOr[T]( ctx: AnyRef, f : XmlPath => T, e : => T) = 
     if (ctx.isInstanceOf[DocsUp[_]]) {
@@ -340,7 +344,7 @@ class ScalesNavigator(val nameConversion : QName => QName) extends DefaultNaviga
 
   def getElementStringValue( ctx : AnyRef ) = 
     if (isElement(ctx))
-      Elements.Functions.text(ctx)
+      text(ctx: XmlPath)
     else null
 
 // ScalesXPath.defaultNoConversion

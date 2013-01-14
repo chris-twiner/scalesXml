@@ -2,6 +2,8 @@ package scales.utils.io
 
 import scales.utils._
 
+import resources._
+
 import scalaz._
 import Scalaz._
 import scalaz.IterV._

@@ -51,3 +51,30 @@ h3 {
     margin-left: 1em;
     margin-top: 1em;
 }
+
+.genTable {
+    border-style: solid;
+    border-width: 1px;
+    box-shadow: 2px 2px 1px #888888;
+    width: 100%;
+}
+
+.genTable tr> th {
+    background-color: #e5e5e5;
+    color : lightblack;
+    font-weight: normal;
+}
+
+.genTable td {
+    padding-right: 1.5em;
+    padding-bottom: 0.3em;
+    padding-top: 0.3em;
+}
+
+.genTable tr:nth-child(even) {
+    background-color: white;
+}
+
+.genTable tr:nth-child(odd) {
+    background-color: #f5f5f5;
+}

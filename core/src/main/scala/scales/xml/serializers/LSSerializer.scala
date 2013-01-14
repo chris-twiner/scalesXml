@@ -5,8 +5,10 @@ import java.io.Writer
 import java.nio.charset.Charset
 
 import scales.xml._
+import impl._
 
 import scales.utils._
+import resources._
 
 import javax.xml.parsers._
 
@@ -85,6 +87,13 @@ trait LSSerializerFactoryBase extends SerializerFactory {
  * XHTML serialization extra touches
  */ 
 object LSSerializerFactoryXHTML extends LSSerializerConcurrentCacheFactoryXHTML {
+  val xhtmlNS = "http://www.w3.org/1999/xhtml"
+
+  /**
+   * Local names of all 10 xhtml elements that can be empty, issue #6
+   */ 
+  val canBeEmpty = Set( "area", "base", "br", "col", "hr",
+		       "img", "input", "link", "meta", "param" )
 }
 
 trait LSSerializerConcurrentCacheFactoryXHTML extends LSSerializerConcurrentCacheFactory {
@@ -121,6 +130,7 @@ object LSSerializerFactory extends LSSerializerConcurrentCacheFactory {
 
 trait LSSerializerConcurrentCacheFactory extends LSSerializerFactoryBase {
   import java.util.concurrent.ConcurrentHashMap
+  import scales.utils.collection.Once
 
   /**
    * On the assumption that a given apps qname population is larger than that of its possible encodings.
@@ -195,8 +205,23 @@ trait XHTMLLSSerializer extends LSSerializer {
 
   override def emptyElement(qName: QName, attributes: Traversable[Attribute], namespaces: Map[String, String], declareDefaultNS: Option[String], path: List[QName]): Option[Throwable] =
     doElem(qName, attributes, namespaces, declareDefaultNS) orElse {
-      out.append(" />")
-      None
+      // #6 
+      val canBeEmpty = 
+	if (qName.namespace.uri == LSSerializerFactoryXHTML.xhtmlNS)
+	  if (LSSerializerFactoryXHTML.canBeEmpty(qName.local))
+	    true
+	  else
+	    false // all others must be <></>
+	else
+	  true
+      
+      if (canBeEmpty) {
+	out.append(" />")
+	None
+      } else {
+	out.append(">")
+	endElement(qName, path)
+      }
     }
 }
 

@@ -20,7 +20,7 @@ class EqualsPullTest extends EqualsNormalImportsTest {
   import ScalesUtils._
 
   def pull( doc : Doc ) =
-    pullXml(new StringReader(asString(doc)))
+   pullXml(new StringReader(asString(doc)))
 
   def testPullDocHandling : Unit = {
     // we have to pull everything each time we want to compare

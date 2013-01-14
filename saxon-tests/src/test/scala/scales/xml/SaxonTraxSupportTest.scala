@@ -15,7 +15,7 @@ class SaxonTraxSupportTest extends TraxSupportTest  {
   def testMiscRoundTrippingTrAX = {
     val testXml = loadXml(resource(this, "/data/MiscTests.xml"))
     import javax.xml.transform._
-    val sr = ScalesResult()
+    val sr = trax.ScalesResult()
     TransformerFactory.newInstance.newTransformer.transform(testXml, sr)
 
     MarshallingTest.doMiscTest(sr.doc)

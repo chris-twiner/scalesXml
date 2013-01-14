@@ -8,8 +8,6 @@ ${cscala}
   import scales.xml._
   import ScalesXml._
 
-  import Functions._ // to add friendly and consistent access to the data model
-
   val prefixedNamespace = Namespace("uri:test").prefixed("pre")
   val prefixedQName = prefixedNamespace("prefixed")
 

@@ -7,6 +7,9 @@ class AaltoDslBuildersTest extends DslBuildersTest {
   import ScalesXml._
   import Functions._
  
+  import impl.NoVersionXmlReaderFactoryPool
+  import parser.strategies._
+
   override def doLoadXml[Token <: OptimisationToken](in : InputSource, strategy : PathOptimisationStrategy[Token] = defaultPathOptimisation) = {
     loadXmlReader(in, parsers = NoVersionXmlReaderFactoryPool, strategy = strategy)
   }

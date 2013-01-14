@@ -1,6 +1,8 @@
 package scales.xml.equals
 
-import scales.xml.{PullType, QName, Elem, Attribs, Attributes, Attribute, XmlItem, XmlPath, EndElem, XCC, NamespaceContext, Misc, Miscs}
+import scales.xml.{PullType, QName, Elem, Attribs, Attributes, Attribute, XmlItem, XmlPath, EndElem, XCC, Misc, Miscs}
+
+import scales.xml.serializers.NamespaceContext
 
 import scala.collection.immutable.{ Stack, Map }
 
@@ -110,12 +112,14 @@ trait DefaultXmlEquals
 
 object DefaultXmlEquals extends DefaultXmlEquals {}
 
+import scales.utils.collection.{path => upath}
+
 /**
  * Makes the given path the top path
  */ 
-class PathAsPullTypeIterable( originalPath : XmlPath ) extends scales.utils.AbstractPathIterator[XmlItem, Elem, XCC, PullType] {
+class PathAsPullTypeIterable( originalPath : XmlPath ) extends upath.AbstractPathIterator[XmlItem, Elem, XCC, PullType] {
 
-  def initialPath : XmlPath = originalPath.copy( top = scales.utils.Top() )
+  def initialPath : XmlPath = originalPath.copy( top = upath.Top() )
 
   def event : PullType = path.node.focus.fold(x=>x,y=>y.section)
 
