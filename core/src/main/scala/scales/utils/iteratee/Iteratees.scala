@@ -434,7 +434,7 @@ trait Iteratees {
    * This function must return an ResumableIter in order to capture early Done's without losing intermediate chunks,
    * the destination iter having the same requirements.
    *
-   * Option is required in the return to handle the case of empty -> empty infinite loops.  For asynchronous parsing, for example, we should be able to return an empty result but with Empty as the input type.
+   * The AsyncOption is required in the return to handle the case of empty -> empty infinite loops.  For asynchronous parsing, for example, we should be able to return an empty result but with Empty as the input type.
    */ 
   def enumToManyAsyncOption[E, A, R, T](converter: io.AsyncOption[R] => T, doneOnEmptyForEmpty: Boolean)( dest: ResumableIter[A,R])( toMany: ResumableIter[E, EphemeralStream[A]]): ResumableIter[E, T] = {
     val empty = () => EphemeralStream.empty

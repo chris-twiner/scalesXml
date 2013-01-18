@@ -121,7 +121,7 @@ object ScalesXmlRoot extends Build {
     crossScalaVersions := Seq("2.8.1", "2.8.2", "2.9.1", "2.9.2","2.10.0"),
     //publishSetting,
 //    parallelExecution in Test := false,
-    scalacOptions ++= Seq("-optimise"),
+//    scalacOptions ++= Seq("-optimise"),
 //    scalacOptions ++= Seq("-encoding", "UTF-8", "-deprecation", "-unchecked"),
     packageOptions ++= Seq[PackageOption](ManifestAttributes(
       (IMPLEMENTATION_TITLE, "Scales"),

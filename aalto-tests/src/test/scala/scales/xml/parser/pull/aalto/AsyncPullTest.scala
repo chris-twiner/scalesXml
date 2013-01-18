@@ -37,6 +37,301 @@ class AsyncPullTest extends junit.framework.TestCase {
 
   import serializers._
 
+
+
+  type SerialIterT = IterV[PullType, (XmlOutput, Option[Throwable])] 
+
+  import java.nio.charset.Charset
+  import scales.utils.{io, resources}
+  import resources._ 
+
+  /**
+   * The serializer will be returned automatically to the pool by calling closer
+   * 
+   * doc functions are only evaluated upon the first elem / last elem
+   */
+  def serializeIter( output : XmlOutput, serializer : Serializer, closer : () => Unit, doc : DocLike = EmptyDoc()) : SerialIterT = {
+
+    var empties = 0
+
+    def done( status : StreamStatus ) : SerialIterT = {
+      // give it back
+      closer()
+      println("empties was !!! "+empties)
+      Done((status.output, status.thrown), EOF[PullType])
+    }
+
+    def rest( status : StreamStatus, prev : PullType, serializer : Serializer )(s : Input[PullType]) : SerialIterT = {
+      s(el = e => {
+	if (status.thrown.isDefined) done(status)
+	else {
+	  val r = StreamSerializer.pump((prev, e), status, serializer)
+	  if (r.thrown.isDefined) done(r)
+	  else Cont(rest(r, e, serializer))
+	}
+	},
+        empty = {
+	  empties += 1
+	  //println("outitr empty")
+	  Cont(rest(status, prev, serializer))
+	},
+        eof =  {
+	if (status.thrown.isDefined) done(status)
+	else {
+	  val r = StreamSerializer.pump((prev, StreamSerializer.dummy), status, serializer)
+	  val opt = serializeMisc(r.output, doc.end.misc, serializer)._2
+	    
+	  val lastStatus = r.copy(thrown = opt)
+	  
+	  done(lastStatus)
+	}})
+    }
+    
+    def first( status : StreamStatus, serializer : Serializer )(s : Input[PullType]) : SerialIterT =
+      s(el = e => {
+	// decl and prolog misc, which should have been collected by now
+	val opt = serializer.xmlDeclaration(status.output.data.encoding, 
+				  status.output.data.version).orElse{
+	    serializeMisc(status.output, doc.prolog.misc, serializer)._2
+	  }
+	val nstatus = status.copy(thrown = opt)
+	  
+	Cont(rest(nstatus, e, serializer))
+	},
+        empty = {
+	  empties += 1
+	  Cont(first(status, serializer))
+	},
+        eof = {
+	  println("wtf !!!!! eof from nowhere")
+	  Done((status.output, Some(NoDataInStream())), EOF[PullType])
+	})
+
+    Cont(first(StreamStatus(output), serializer))
+  }
+
+  /**
+   * Returns an Iteratee that can serialize PullTypes to out.  The serializer factory management is automatically handled upon calling with eof.  This can be triggered earlier by calling closeResource on the returned CloseOnNeed.
+   */ 
+  def pushXmlIter( out: java.io.Writer, doc : DocLike = EmptyDoc(), version: Option[XmlVersion] = None, encoding: Option[Charset] = None )(implicit serializerFI: SerializerFactory) : (CloseOnNeed, SerialIterT) = {
+
+    val decl = doc.prolog.decl
+    val sd = SerializerData(out, 
+      version.getOrElse(decl.version), 
+      encoding.getOrElse(decl.encoding))
+
+    val xo = XmlOutput(sd)(serializerFI)
+
+    val ser = serializerFI.borrow( sd ) 
+
+    val closer : CloseOnNeed = new CloseOnNeed {
+      def doClose() {
+	serializerFI.giveBack(ser)
+      }
+    }
+    val iter = serializeIter( xo, ser, () => closer.closeResource, doc)
+
+    (closer, iter)
+  }
+
+
+  /**
+   * Defaults to continuing when Empty is returned by toMany for an Empty input.
+   */ 
+  def enumToMany[E, A, R]( dest: ResumableIter[A,R])( toMany: ResumableIter[E, EphemeralStream[A]]): ResumableIter[E, R] = 
+    enumToManyAsyncOption[E, A, R, R](
+      _.getOrElse(error("No Asynchnronous Behaviour Expected But the toMany still recieved an Empty and returned a Done Empty")), // throw if async somehow got returned
+      false // use cont instead
+      )(dest)(toMany)
+  
+  /**
+   * Takes a function f that turns input into an Input[EphemeralStream] of a different type A.  The function f may return El(EphemeralStream.empty) which is treated as Empty.
+   * This function must return an ResumableIter in order to capture early Done's without losing intermediate chunks,
+   * the destination iter having the same requirements.
+   *
+   * The AsyncOption is required in the return to handle the case of empty -> empty infinite loops.  For asynchronous parsing, for example, we should be able to return an empty result but with Empty as the input type.
+   */ 
+  def enumToManyAsyncOption[E, A, R, T](converter: io.AsyncOption[R] => T, doneOnEmptyForEmpty: Boolean)( dest: ResumableIter[A,R])( toMany: ResumableIter[E, EphemeralStream[A]]): ResumableIter[E, T] = {
+    val empty = () => EphemeralStream.empty
+
+    def loop( i: ResumableIter[A,R], s: () => EphemeralStream[A] ):
+      (ResumableIter[A,R], () => EphemeralStream[A]) = {
+      var c: ResumableIter[A,R] = i
+      var cs: EphemeralStream[A] = s() // need it now
+//println("loopy")
+      while(!isDone(c) && !cs.isEmpty) {
+	println("doing a loop")
+	val (nc, ncs): (ResumableIter[A,R], EphemeralStream[A]) = c.fold(
+	  done = (a, y) => (c, s()),// send it back, shouldn't be possible to get here anyway due to while test
+	  cont = 
+	    k => {
+	      val head = cs.head() // if used in El it captures the byname not the value
+	      (k(IterV.El(head)), cs.tail())
+	    }
+	    )
+	c = nc
+	cs = ncs
+      }
+      (c, () => cs)
+    }
+
+    def next( i: ResumableIter[A,R], s: () => EphemeralStream[A], toMany: ResumableIter[E, EphemeralStream[A]] ): ResumableIter[E, T] =
+      i.fold(
+	done = (a, y) => {
+	  println(" y is "+y) 
+
+	  val (rawRes, nextCont) = a
+	  println(" rawRes is "+rawRes) 
+	  val res = converter(io.HasResult(rawRes))
+	  println("converted "+res)
+
+	  val returnThis : ResumableIter[E, T] = 
+	  if ((isDone(nextCont) && isEOF(nextCont)) ||
+	      (isDone(toMany) && isEOF(toMany))     || // either eof then its not restartable
+	      (EOF.unapply(y)) // or the source is out of elements
+	      ) { 
+	    Done((res, Done(res, IterV.EOF[E])), IterV.EOF[E])
+	  } else {
+	    Done((res, 
+	      {
+		val n = next(nextCont.asInstanceOf[ResumableIter[A,R]], s, toMany)
+	      
+		if (s().isEmpty)
+		  Done((res, n), IterV.Empty[E])
+		else
+		  n
+	      }), IterV.Empty[E])
+	  }
+
+	  if (EOF.unapply(y)) {
+	    // signal the end here to toMany, don't care about result
+	    toMany.fold(done= (a1, y1) => false,
+			cont = k => {
+			  k(IterV.EOF[E]); false
+			})
+	  }
+	  
+	  returnThis
+	  },
+	cont = 
+	  k => {
+	    println("Fucksake")
+	    if (!s().isEmpty) {
+	      println("empty against the s")
+	      val (ni, ns) = loop(i, s)
+	      next(ni, ns, toMany)
+	    } else
+	      Cont((x: Input[E]) => 
+		x( el = e => {
+		  println("got a cont x el e "+e)
+		  toMany.fold (
+		    done = (a, y) => {
+		      val (e1, nextContR) = a
+		      val nextCont = nextContR.asInstanceOf[ResumableIter[E,scalaz.EphemeralStream[A]]]
+		      error("Unexpected State for enumToMany - Cont but toMany is done")		     	
+		    },
+		    cont = y => {
+		      println("and then I was here "+
+			      x(el = e => e.toString, 
+				   empty = "I'm empty ",
+				   eof = "I'm eof"))
+		      val afterNewCall = y(x)
+		      println("and then " + afterNewCall)
+
+/*
+ * So the first chunk is the only chunk, we have the first cont - should be done onthe cont?
+ */ 
+
+		      afterNewCall.fold(
+			done = (nextContPair, rest) => {
+			  println("was done wern't it")
+			  val (e1, nextCont) = nextContPair
+			  val nextContR = nextCont.asInstanceOf[ResumableIter[E,scalaz.EphemeralStream[A]]]
+			  if (isEOF(afterNewCall)) {
+			    next(k(IterV.EOF[A]), empty, nextContR)
+			  } else {
+			    if (e1.isEmpty) {
+			      //println("empty on nextcontr")
+			      next(k(IterV.Empty[A]), empty, nextContR)
+			    }
+			    else
+			      next(k(IterV.El(e1.head())), e1.tail, nextContR)
+			  }
+			},
+			cont = k1 => {
+			  println("conted after here")
+			  next(k(IterV.Empty[A]), empty, afterNewCall)
+			}
+			)
+		    }
+		  )
+		},
+		  empty = {
+		    println("here MOFO")
+		    toMany.fold (
+		      done = (a, y) => {
+			error("shouldn't be done ever, unless it was done to start with")
+		      },
+		      cont = y => {
+			println("looping back again, the to many can't do anything with empty")
+			// push it through
+			val res = y(x)
+			res.fold (
+			  done = (a1, y1) => {
+			    val (e1 : EphemeralStream[A], nextCont : ResumableIter[E,EphemeralStream[A]]) = a1.asInstanceOf[(EphemeralStream[A], ResumableIter[E,EphemeralStream[A]])]
+			    if (doneOnEmptyForEmpty && e1.isEmpty && IterV.Empty.unapply[E](y1)) {
+			      // the toMany has indicated it can't do anything more
+			      // don't loop but drop out
+			      //println("drop out")
+			      Done((converter(io.NeedsMoreData), 
+				    next(k(IterV.Empty[A]), empty, nextCont)), IterV.Empty[E])
+			    }
+			    else {
+			      //println("couldn't drop out ")
+			      next(k(IterV.Empty[A]), () => e1, nextCont)
+			    }   
+			  },
+			  cont = kn => next(k(IterV.Empty[A]), empty, res)
+			)
+		      }
+		    )
+		  },
+		  eof = {
+		    println("we be fucked eof on the data with the cont")
+		    next(k(IterV.EOF[A]), empty, toMany)
+		  }
+		))
+	  }
+      )
+
+    next(dest, empty, toMany)
+  }
+
+  implicit val readableByteChannelEnumerator: Enumerator[ReadableByteChannelWrapper] = new Enumerator[ReadableByteChannelWrapper] {
+    def apply[E,A](wrapped: ReadableByteChannelWrapper[E], i: IterV[E,A]): IterV[E,A] = {	  
+      i match {
+	case _ if !wrapped.channel.isOpen || wrapped.isClosed => i
+	case Done(acc, input) => i
+	case Cont(k) =>
+	  val realChunk = wrapped.nextChunk
+	val nextChunk = realChunk.asInstanceOf[E]
+	apply(wrapped,
+	      if (realChunk.isEOF) {
+		println("actual data was EOF !!!")
+		k(IterV.EOF[E])
+	      } else
+		if (realChunk.isEmpty)
+		  k(IterV.Empty[E])
+		else
+		  k(El(nextChunk))
+	    )
+      }
+    }
+  }
+
+
+
+
   /**
    * ensure that the enumerator doesn't break basic assumptions when it can get
    * all the data
@@ -115,7 +410,7 @@ class AsyncPullTest extends junit.framework.TestCase {
       val (HasResult(e),cont) = enumeratee(wrapped).run
       e
     }
-
+/*
   // Just using the parser
   def testRandomAmountsDirectParser = {
     val url = sresource(this, "/data/BaseXmlTest.xml")
@@ -155,12 +450,13 @@ class AsyncPullTest extends junit.framework.TestCase {
       )
     }
     
-    //println("got a zero len "+randomChannel.zeroed+" times. Nexted "+nexted+" - headed "+headed)
+    println("got a zero len "+randomChannel.zeroed+" times. Nexted "+nexted+" - headed "+headed)
     val s = asString(res.iterator : Iterator[PullType])
     assertEquals(s, str)
 
     assertEquals(randomChannel.zeroed + 1, nexted)
   }
+*/
 
   // using the parser and the parse iteratee
   def testRandomAmountsParse = {
@@ -197,7 +493,7 @@ class AsyncPullTest extends junit.framework.TestCase {
       
       def nextC = 
 	c.fold (
-	  done = (a, y) => { 
+	  done = (a, y) => { // if eof
 	    val (e, cont) = a
 	    headed += 1
 	    //println("got here "+ headed)
@@ -207,28 +503,33 @@ class AsyncPullTest extends junit.framework.TestCase {
 	      res = res :+ h
 	      st = st.tail()
 	    }
+	    // is
+	    //println(" -> "+res)
 	    cont.asInstanceOf[ResumableIter[DataChunk, EphemeralStream[PullType]]]
 	  },
 	  cont = k => {
 	    nexted += 1
+	    //println( "nexted " + nexted )
+	    // need to push the next chunk
 	    k(input)
 	  }
 	)
 
-      c = nextC 
-
-      if (isDone(c)) {
+      // if its done we have to pump
+      if (!randomChannel.isClosed && !isDone(c))
 	b = randomChannel.nextChunk
-	if (b == EOFData) {
-	  //do it one last time
-	  c = nextC
-	}
-      }
+
+      //println("next chunked " + b)
+      c = nextC
     }
     
     val s = asString(res.iterator : Iterator[PullType])
     assertEquals(s, str)
+
+    assertTrue("Cont should have been eof", isEOF(c))
+    assertTrue("Parser should have been closed", parser.isClosed)
   }
+ 
 
   /**
    * Hideously spams with various sizes of data, and more than a few 0 lengths.
@@ -269,7 +570,7 @@ class AsyncPullTest extends junit.framework.TestCase {
 //    println("eval'd "+ count +" times ") 
 //    println("got a zero len "+ randomChannel.zeroed+" times ")
 
-    assertEquals("eval "+count+" zero "+randomChannel.zeroed, count, randomChannel.zeroed)
+//    assertEquals("eval "+count+" zero "+randomChannel.zeroed, count, randomChannel.zeroed)
 
 //    println("is " + c.fold( done = (a, i) => i, cont = k => ""))
     
@@ -294,6 +595,7 @@ class AsyncPullTest extends junit.framework.TestCase {
     assertTrue("should have been EOF", isEOF(c))
   }
 
+/*
   def testSimpleLoadSerializingMisc = {
     val url = sresource(this, "/data/MiscTests.xml")
 
@@ -362,5 +664,5 @@ class AsyncPullTest extends junit.framework.TestCase {
     assertEquals("{urn:default}Default", e.right.get.name.qualifiedName)
     assertTrue("The parser should have been closed", parser.isClosed)
   }
-  
+*/
 }
