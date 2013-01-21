@@ -105,16 +105,16 @@ abstract class AsyncParser(implicit xmlVersion : XmlVersion) extends CloseOnNeed
     // FUCKING MISC MUST RETURN EMPTY FOR ALL - OPTION SHIT!!!
     if (num == END_DOCUMENT) {
       // EOF - let the iter deal 
-      println("closing")
+      //println("closing")
       closeResource
       //Some(EOF[T])
       EOF[PullType]
     } else if (num == EVENT_INCOMPLETE) {
-      println("event incomplete ")
+      //println("event incomplete ")
       IterV.Empty[PullType]//None//pumpInMisc
     } else if (odepth == -1) {
       // still misc
-      println("didn't get out of misc , none??")
+      //println("didn't get out of misc , none??")
       
       if (event.isLeft && (event.left.get eq PullUtils.dtdDummy)) {
 	copyProlog( prolog.copy(dtd = Some(
@@ -129,7 +129,7 @@ abstract class AsyncParser(implicit xmlVersion : XmlVersion) extends CloseOnNeed
 
       IterV.Empty[PullType]//None
     } else {
-      println("actually started with first event")
+      //println("actually started with first event")
       started = true
       // pump actual first event - yay !!, next depth -1 is endmisc
       El(event)
@@ -138,12 +138,12 @@ abstract class AsyncParser(implicit xmlVersion : XmlVersion) extends CloseOnNeed
 
   protected def pump() : Input[PullType] = {
     if (feeder.needMoreInput) {
-      println("needed more but we still pumped")
+      //println("needed more but we still pumped")
     }
 
     // don't have to re-read, let it push what it has
     if (depth == -1) {
-      println("pumping misc")
+      //println("pumping misc")
       var r = pumpMisc()
       // keep going if there are more events to process and are still in misc
       while(!feeder.needMoreInput && r(el = E => false, empty = true, eof = false)) {
@@ -158,7 +158,7 @@ abstract class AsyncParser(implicit xmlVersion : XmlVersion) extends CloseOnNeed
 
       if (num == END_DOCUMENT) {
 	// EOF - let the iter deal -- should not occur here though, only when depth == -1
-	println("closing in pump")
+	//println("closing in pump")
 	closeResource
 	//Some(EOF[T])
 	EOF[PullType]
@@ -178,22 +178,22 @@ abstract class AsyncParser(implicit xmlVersion : XmlVersion) extends CloseOnNeed
   // keep going until we get needs more input
   protected def nextStream(): EphemeralStream[PullType] = {
     if (isClosed || feeder.needMoreInput) { // keep num around?
-      println("got to nextStream and empty")
+    //  println("got to nextStream and empty")
       EphemeralStream.empty
     } else {
 	// push one more off
       val pumped = pump
       pumped(
 	el = e => {
-	  println("got some "+e)
+//	  println("got some "+e)
 	  EphemeralStream.cons[PullType](e, nextStream())
 	},
 	empty = {
-	  println("pumped all we have")
+//	  println("pumped all we have")
 	  EphemeralStream.empty
 	},
 	eof = {
-	  println("eof from pump but returned empty")
+//	  println("eof from pump but returned empty")
 	  EphemeralStream.empty // next run will pick it up
 	}
       ) // 
@@ -213,12 +213,12 @@ abstract class AsyncParser(implicit xmlVersion : XmlVersion) extends CloseOnNeed
     //println("called nextInput")
 
     if (d.isEmpty) {
-      println("fed empty")
+      //println("fed empty")
       IterV.Empty[EphemeralStream[PullType]]
     } else 
       if (isClosed || d.isEOF) {
 	if (d.isEOF) {
-	  println("Data was eof")
+	  //println("Data was eof")
 	  closeResource
 	}
 	IterV.EOF[EphemeralStream[PullType]]      
@@ -227,14 +227,15 @@ abstract class AsyncParser(implicit xmlVersion : XmlVersion) extends CloseOnNeed
 	  error("The stream from the previous call to nextInput was not evaluated ")
 	}
 
-	println("pushing "+d)
+	//println("pushing "+d)
 	feeder.feedInput(d.array, d.offset, d.length)
 
 	val res = nextStream()
 
-	if (res.isEmpty) // let the enumerator deal with it
+	if (res.isEmpty) { // let the enumerator deal with it
+	  //println("empty after feeding")
 	  IterV.Empty[EphemeralStream[PullType]]
-	else // it may have empty after the call
+	} else // it may have empty after the call
 	  IterV.El[EphemeralStream[PullType]](res)
 	
     }
@@ -251,7 +252,7 @@ object AsyncParser {
     def EOF: ResumableIter[DataChunk, EphemeralStream[PullType]] = {
       parser.closeResource
 
-      println("closing against EOF from parse")
+      //println("closing against EOF from parse")
       Done((EphemeralStream.empty, 
 	  Cont(
 	    error("Called the continuation on a closed parser")
@@ -262,17 +263,17 @@ object AsyncParser {
 
     def step(s: Input[DataChunk]): ResumableIter[DataChunk, EphemeralStream[PullType]] = 
       s(el = e => {
-	  println("Did get a large chunk "+e)
+	  //println("Did get a large chunk "+e)
 	  val r = parser.nextInput(e)
 	  r( el = es => {
-		println("got el with es " + es.isEmpty + " feeder " + parser.feeder.needMoreInput)
+		//println("got el with es " + es.isEmpty + " feeder " + parser.feeder.needMoreInput)
 	      Done((es,
 		    Cont(
 		      step
 		      )), IterV.Empty[DataChunk])
 	      },
 	      empty = {
-		println("empty from input")
+		//println("empty from input")
 		//emptyness
 		Cont(step)
 	      },
@@ -280,7 +281,7 @@ object AsyncParser {
 	  )
 	},
 	empty = {
-	  println("empty input")
+	  //println("empty input")
 	  //emptyness
 	  //Done((EphemeralStream.empty, Cont(step)), IterV.Empty[DataChunk]) // nothing that can be done on empty
 	  Cont(step)

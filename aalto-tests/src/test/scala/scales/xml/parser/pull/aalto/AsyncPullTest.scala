@@ -49,7 +49,7 @@ class AsyncPullTest extends junit.framework.TestCase {
    * The serializer will be returned automatically to the pool by calling closer
    * 
    * doc functions are only evaluated upon the first elem / last elem
-   */
+   */ 
   def serializeIter( output : XmlOutput, serializer : Serializer, closer : () => Unit, doc : DocLike = EmptyDoc()) : SerialIterT = {
 
     var empties = 0
@@ -134,6 +134,15 @@ class AsyncPullTest extends junit.framework.TestCase {
     (closer, iter)
   }
 
+  /**
+   * This version of enumToMany returns Done((None, cont), Empty) when the toMany iteratee cannot supply anything else than Empty for an Empty input.
+   */ 
+  def enumToManyAsync[E, A, R]( dest: ResumableIter[A,R])( toMany: ResumableIter[E, EphemeralStream[A]]): ResumableIter[E, io.AsyncOption[R]] = 
+    enumToManyAsyncOption[E, A, R, io.AsyncOption[R]](
+      identity, // keep the option
+      true // should send us the option
+      )(dest)(toMany)
+  
 
   /**
    * Defaults to continuing when Empty is returned by toMany for an Empty input.
@@ -282,16 +291,19 @@ class AsyncPullTest extends junit.framework.TestCase {
 			    if (doneOnEmptyForEmpty && e1.isEmpty && IterV.Empty.unapply[E](y1)) {
 			      // the toMany has indicated it can't do anything more
 			      // don't loop but drop out
-			      //println("drop out")
+			      println("drop out")
 			      Done((converter(io.NeedsMoreData), 
 				    next(k(IterV.Empty[A]), empty, nextCont)), IterV.Empty[E])
 			    }
 			    else {
-			      //println("couldn't drop out ")
+			      println("couldn't drop out ")
 			      next(k(IterV.Empty[A]), () => e1, nextCont)
 			    }   
 			  },
-			  cont = kn => next(k(IterV.Empty[A]), empty, res)
+			  cont = kn => {
+			    println("cont on cont")
+			    next(k(IterV.Empty[A]), empty, res)
+			  }
 			)
 		      }
 		    )
@@ -328,14 +340,12 @@ class AsyncPullTest extends junit.framework.TestCase {
       }
     }
   }
-
-
-
+   
 
   /**
    * ensure that the enumerator doesn't break basic assumptions when it can get
    * all the data
-   */ 
+   *
   def testFlatMapMultipleDones = {
     val url = sresource(this, "/data/BaseXmlTest.xml")
 
@@ -410,7 +420,7 @@ class AsyncPullTest extends junit.framework.TestCase {
       val (HasResult(e),cont) = enumeratee(wrapped).run
       e
     }
-/*
+
   // Just using the parser
   def testRandomAmountsDirectParser = {
     val url = sresource(this, "/data/BaseXmlTest.xml")
@@ -454,9 +464,8 @@ class AsyncPullTest extends junit.framework.TestCase {
     val s = asString(res.iterator : Iterator[PullType])
     assertEquals(s, str)
 
-    assertEquals(randomChannel.zeroed + 1, nexted)
+    assertTrue("we should have more nexted then zeroed - due to boundaries on the available data", randomChannel.zeroed + 1 < nexted)
   }
-*/
 
   // using the parser and the parse iteratee
   def testRandomAmountsParse = {
@@ -529,7 +538,7 @@ class AsyncPullTest extends junit.framework.TestCase {
     assertTrue("Cont should have been eof", isEOF(c))
     assertTrue("Parser should have been closed", parser.isClosed)
   }
- 
+*/ 
 
   /**
    * Hideously spams with various sizes of data, and more than a few 0 lengths.
@@ -555,6 +564,7 @@ class AsyncPullTest extends junit.framework.TestCase {
     val wrapped = new ReadableByteChannelWrapper(randomChannel, true, tinyBuffers)
     val cstable = enumeratee(wrapped).eval
     var c = cstable
+    println("eval - already donE?? " + isDone(c))
     
     type cType = cstable.type
 
@@ -565,14 +575,14 @@ class AsyncPullTest extends junit.framework.TestCase {
     while((extract(c) == FEEDME) || (!isDone(c))) {
       c = extractCont(c)(wrapped).eval
       count += 1
-      //println("evals")
+      println("!!!!!!!!!!! evals "+(extract(c) == FEEDME))
     }
 //    println("eval'd "+ count +" times ") 
 //    println("got a zero len "+ randomChannel.zeroed+" times ")
 
 //    assertEquals("eval "+count+" zero "+randomChannel.zeroed, count, randomChannel.zeroed)
 
-//    println("is " + c.fold( done = (a, i) => i, cont = k => ""))
+    println("is " + c.fold( done = (a, i) => i, cont = k => ""))
     
 //    println("Got a "+extract(c))
 //    println("was " + strout.toString)
@@ -663,6 +673,5 @@ class AsyncPullTest extends junit.framework.TestCase {
 
     assertEquals("{urn:default}Default", e.right.get.name.qualifiedName)
     assertTrue("The parser should have been closed", parser.isClosed)
-  }
-*/
+  }*/
 }
