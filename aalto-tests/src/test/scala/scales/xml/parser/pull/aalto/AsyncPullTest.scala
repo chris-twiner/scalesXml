@@ -184,6 +184,7 @@ class AsyncPullTest extends junit.framework.TestCase {
       (c, () => cs)
     }
 
+//    @scala.annotation.tailrec
     def next( i: ResumableIter[A,R], s: () => EphemeralStream[A], toMany: ResumableIter[E, EphemeralStream[A]] ): ResumableIter[E, T] =
       i.fold(
 	done = (a, y) => {
@@ -302,7 +303,14 @@ class AsyncPullTest extends junit.framework.TestCase {
 			  },
 			  cont = kn => {
 			    println("cont on cont")
-			    next(k(IterV.Empty[A]), empty, res)
+			    if (doneOnEmptyForEmpty) {
+			      // the toMany has indicated it can't do anything more
+			      // don't loop but drop out
+			      println("cont on cont violence")
+			      Done((converter(io.NeedsMoreData), 
+				    next(k(IterV.Empty[A]), empty, res)), IterV.Empty[E])
+			    } else 
+			      next(k(IterV.Empty[A]), empty, res)
 			  }
 			)
 		      }
@@ -326,17 +334,17 @@ class AsyncPullTest extends junit.framework.TestCase {
 	case Done(acc, input) => i
 	case Cont(k) =>
 	  val realChunk = wrapped.nextChunk
-	val nextChunk = realChunk.asInstanceOf[E]
-	apply(wrapped,
-	      if (realChunk.isEOF) {
-		println("actual data was EOF !!!")
-		k(IterV.EOF[E])
-	      } else
-		if (realChunk.isEmpty)
-		  k(IterV.Empty[E])
-		else
-		  k(El(nextChunk))
-	    )
+	  val nextChunk = realChunk.asInstanceOf[E]
+	  apply(wrapped,
+		if (realChunk.isEOF) {
+		  println("actual data was EOF !!!")
+		  k(IterV.EOF[E])
+		} else
+		  if (realChunk.isEmpty)
+		    k(IterV.Empty[E])
+		  else
+		    k(El(nextChunk))
+	      )
       }
     }
   }
