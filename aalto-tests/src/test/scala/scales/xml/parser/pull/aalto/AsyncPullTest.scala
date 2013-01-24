@@ -278,7 +278,9 @@ class AsyncPullTest extends junit.framework.TestCase {
 		},
 		  empty = {
 		    println("here MOFO")
-		    toMany.fold (
+			    next(k(IterV.Empty[A]), empty, toMany)
+
+/*		    toMany.fold (
 		      done = (a, y) => {
 			error("shouldn't be done ever, unless it was done to start with")
 		      },
@@ -292,9 +294,10 @@ class AsyncPullTest extends junit.framework.TestCase {
 			    if (doneOnEmptyForEmpty && e1.isEmpty && IterV.Empty.unapply[E](y1)) {
 			      // the toMany has indicated it can't do anything more
 			      // don't loop but drop out
-			      println("drop out")
-			      Done((converter(io.NeedsMoreData), 
-				    next(k(IterV.Empty[A]), empty, nextCont)), IterV.Empty[E])
+			      println("would have dropped out")
+			      //Done((converter(io.NeedsMoreData), 
+				//    next(k(IterV.Empty[A]), empty, nextCont)), IterV.Empty[E])
+			      next(k(IterV.Empty[A]), () => e1, nextCont)
 			    }
 			    else {
 			      println("couldn't drop out ")
@@ -302,19 +305,12 @@ class AsyncPullTest extends junit.framework.TestCase {
 			    }   
 			  },
 			  cont = kn => {
-			    println("cont on cont")
-			    if (doneOnEmptyForEmpty) {
-			      // the toMany has indicated it can't do anything more
-			      // don't loop but drop out
-			      println("cont on cont violence")
-			      Done((converter(io.NeedsMoreData), 
-				    next(k(IterV.Empty[A]), empty, res)), IterV.Empty[E])
-			    } else 
-			      next(k(IterV.Empty[A]), empty, res)
+			    println("cont on empty cont")
+			    next(k(IterV.Empty[A]), empty, res)
 			  }
 			)
 		      }
-		    )
+		    )*/
 		  },
 		  eof = {
 		    println("we be fucked eof on the data with the cont")
@@ -348,12 +344,54 @@ class AsyncPullTest extends junit.framework.TestCase {
       }
     }
   }
+  
+  /**
+   * Creates an Enumerator with a given count for Empty -> Cont applications.
+   *
+   * When the count is met it returns the Cont for the next Enumeration step.
+   *
+   * Note: Call via eval only.
+   */
+  def asyncReadableByteChannelEnumerator( contOnCont: Int ): Enumerator[ReadableByteChannelWrapper] = new Enumerator[ReadableByteChannelWrapper] {
+    def apply[E,A](wrapped: ReadableByteChannelWrapper[E], i: IterV[E,A]): IterV[E, A] = {
+ 
+      def apply(wrapped: ReadableByteChannelWrapper[E], i: IterV[E,A], count: Int): IterV[E, A] = {
+	i match {
+	  case _ if !wrapped.channel.isOpen || wrapped.isClosed => i
+	  case Done(acc, input) => i
+	  case Cont(k) =>
+	    val realChunk = wrapped.nextChunk
+	    val nextChunk = realChunk.asInstanceOf[E]
+	    val nextI = 
+	      if (realChunk.isEOF) {
+		  println("actual data was EOF !!!")
+		  k(IterV.EOF[E])
+		} else
+		  if (realChunk.isEmpty)
+		    k(IterV.Empty[E])
+		  else
+		    k(El(nextChunk))
+	    val nc = 
+	      if (realChunk.isEmpty && !isDone(nextI)) {
+		count + 1
+	      } else 0
+	    if (nc > contOnCont) {
+	      println("had cont on cont count, returning")
+	      nextI
+	    } else
+	      apply(wrapped, nextI, nc)
+	}
+      }
+
+      apply(wrapped, i, 0)
+    }
+  }
    
 
   /**
    * ensure that the enumerator doesn't break basic assumptions when it can get
    * all the data
-   *
+   */
   def testFlatMapMultipleDones = {
     val url = sresource(this, "/data/BaseXmlTest.xml")
 
@@ -428,6 +466,7 @@ class AsyncPullTest extends junit.framework.TestCase {
       val (HasResult(e),cont) = enumeratee(wrapped).run
       e
     }
+// here
 
   // Just using the parser
   def testRandomAmountsDirectParser = {
@@ -546,8 +585,30 @@ class AsyncPullTest extends junit.framework.TestCase {
     assertTrue("Cont should have been eof", isEOF(c))
     assertTrue("Parser should have been closed", parser.isClosed)
   }
-*/ 
 
+
+
+/**
+ * Evals once, the developer must check its Done, equivalent to a .run but
+ * doesn't lose the continuation - no "Diverging Iteratee"
+ */ 
+trait Eval[WHAT,RETURN] {
+  
+  val orig : IterV[WHAT, RETURN]
+
+  def evalw : IterV[WHAT, RETURN] = {
+    orig.fold(done = (x, y) => Done(x,y),
+	 cont = k => {
+	   println("eof what now?")
+	   orig//Cont(k)//k(IterV.Empty[WHAT])
+	 })
+  }
+}
+
+ implicit def toEvalw[WHAT, RETURN]( i : IterV[WHAT, RETURN] ) = new Eval[WHAT, RETURN] {
+    lazy val orig = i
+  }
+ 
   /**
    * Hideously spams with various sizes of data, and more than a few 0 lengths.
    *
@@ -570,7 +631,14 @@ class AsyncPullTest extends junit.framework.TestCase {
 
     val enumeratee = enumToManyAsync(iter)(AsyncParser.parse(parser))
     val wrapped = new ReadableByteChannelWrapper(randomChannel, true, tinyBuffers)
-    val cstable = enumeratee(wrapped).eval
+    
+    /*
+     * the random channel does every 10, every 6 forces it back but allows
+     * a fair chunk of Empty -> Conts followed by data
+     */ 
+    implicit val readableByteChannelEnumerator = asyncReadableByteChannelEnumerator( 6 )
+
+    val cstable = enumeratee(wrapped).evalw
     var c = cstable
     println("eval - already donE?? " + isDone(c))
     
@@ -581,7 +649,7 @@ class AsyncPullTest extends junit.framework.TestCase {
 //    var c = iter(parser).eval
     var count = 0
     while((extract(c) == FEEDME) || (!isDone(c))) {
-      c = extractCont(c)(wrapped).eval
+      c = c(wrapped).evalw//extractCont(c)(wrapped).evalw
       count += 1
       println("!!!!!!!!!!! evals "+(extract(c) == FEEDME))
     }
@@ -613,7 +681,6 @@ class AsyncPullTest extends junit.framework.TestCase {
     assertTrue("should have been EOF", isEOF(c))
   }
 
-/*
   def testSimpleLoadSerializingMisc = {
     val url = sresource(this, "/data/MiscTests.xml")
 
@@ -681,5 +748,5 @@ class AsyncPullTest extends junit.framework.TestCase {
 
     assertEquals("{urn:default}Default", e.right.get.name.qualifiedName)
     assertTrue("The parser should have been closed", parser.isClosed)
-  }*/
+  }
 }
