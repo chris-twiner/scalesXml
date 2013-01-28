@@ -110,7 +110,7 @@ object ScalesXmlRoot extends Build {
 */
 //    organization := "org.scalesxml",
     offline := true,
-    version := "0.4.4",
+    version := "0.4.5",
     scalaVersion := "2.10.0",
     crossScalaVersions := Seq("2.8.1", "2.8.2", "2.9.1", "2.9.2", "2.10.0"),
     //publishSetting,

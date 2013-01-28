@@ -135,18 +135,18 @@ class JaxenBaseFunctionalityTest extends BaseFunctionalityTest {
   def testNonRootContext = {
     val sub = path \*(2)
     val expected = one( "DontRedeclare"l : QName)
-    assertCompare(expected, fromPathX("/*/*[2]", sub.one.head)) {elem(_).name}
+    assertCompare(expected, fromPathX("./*[2]", sub.one.head)) {elem(_).name}
   }
 
   def testNonRootContextDoc = {
     val sub = path \*(2)
     val expected = one( "NoNamespace"l : QName)
-    assertCompare(expected, fromPathX("/*[1]/..", sub.one.head)) {elem(_).name}
+    assertCompare(expected, fromPathX("./*[1]/..", sub.one.head)) {elem(_).name}
   }
 
   def testNonRootContextDocsParentShouldBeEmpty = {
     val sub = path \*(2)
-    val res = fromPathX("/*[1]/../..", sub.one.head)
+    val res = fromPathX("./*[1]/../../../..", sub.one.head)
     assertTrue("Should have been empty, doc doesn't have a root: " + res, res.isEmpty)
   }
 
@@ -221,6 +221,70 @@ class JaxenBaseFunctionalityTest extends BaseFunctionalityTest {
       //p(nested .\\).
 	nested.\\.|>(p).*.map(pqName(_)) 
       ) {identity}
+  }
+
+  import org.xml.sax.XMLReader
+  import org.xml.sax.helpers.XMLReaderFactory
+
+  /**
+   * Aalto and others don't support getting the xml version, if your parser doesn't you could use loadXmlReader with this pool directly.
+   */ 
+  object NoVersionXmlReaderFactoryPool extends SimpleUnboundedPool[XMLReader] with DefaultSaxSupport {
+    
+    // doesn't support xml version retrieval
+    override def getXmlVersion( reader : XMLReader ) : AnyRef =
+      null
+
+    def create = 
+      XMLReaderFactory.createXMLReader()
+    
+  }
+
+  // #22
+  def testRelativeAndImplicitChildNode : Unit = { 
+    
+    def xpathExpr(expr: String) =
+      ScalesXPath(expr).withNameConversion(ScalesXPath.localOnly)
+
+    val xmlText = """
+    <level1>
+      <level2 attrib="value">
+	<level3>contents of level 3</level3>
+	<shouldHideChildren>
+	  <level3>should not see</level3>
+	</shouldHideChildren>
+      </level2>
+    </level1>      
+    """
+
+    val doc = loadXmlReader(new java.io.StringReader(xmlText), parsers = NoVersionXmlReaderFactoryPool)
+    val root = top(doc)
+
+    val level2 = xpathExpr("/level1/level2").xmlPaths(root).head
+    //   println("found level2: " + string(level2))
+
+    val relative = xpathExpr("./level3").xmlPaths(level2).head
+    assertEquals("relative should be level3", "level3", localName(relative))
+
+    val current = xpathExpr(".").xmlPaths(level2).head
+    assertEquals("current should be level2", "level2", localName(current))
+
+    val parent = xpathExpr("..").xmlPaths(level2).head
+    assertEquals("parent should be level1", "level1", localName(parent))
+
+    val parent2 = xpathExpr("./..").xmlPaths(level2).head
+    assertEquals("parent2 should be level1", "level1", localName(parent2))
+
+    // not sure where this implicit child context comes from specwise but it seems to be standard behaviour for jaxen
+    val directName = xpathExpr("level3").xmlPaths(level2).head
+    assertEquals("directname should be level3", "level3", localName(directName))
+
+    val directText = xpathExpr("text()").xmlPaths(relative).head
+    assertTrue("should be text", directText.isItem && (directText.item.isInstanceOf[Text] ))
+    assertEquals("text should be - contents of level 3", "contents of level 3", text(directText))
+
+    val attrib = xpathExpr("./@attrib").attributePaths(level2).head
+    assertEquals("should have been value", "value", text(attrib))
   }
 
 }

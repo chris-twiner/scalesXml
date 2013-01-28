@@ -1,0 +1,18 @@
+
+This is a bug fix release ([issue #22](https://github.com/chris-twiner/scalesXml/issues/22)).
+
+The current site (0.4.4) can be found [here](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.4.4/index.html) and uses the new 2.10 scaladoc.
+
+### How To Use
+
+Scales 0.4.4 supports for 2.8.1, 2.8.2, 2.9.1, 2.9.2, 2.10.  As such add:
+
+    libraryDependencies ++= Seq(
+      // just for the core library
+      "org.scalesxml" %% "scales-xml" % "0.4.5"
+      // and additionally use these for String based XPaths
+      "org.scalesxml" %% "scales-jaxen" % "0.4.5" intransitive(),
+      "jaxen" % "jaxen" % "1.1.3" intransitive()
+    )
+
+to your xsbt builds or use scales-xml_2.9.2 as the id when using Maven.

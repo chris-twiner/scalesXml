@@ -122,6 +122,7 @@ class ScalesXPath(val xpath : String, val nsMap : Map[String,String] = Map(), va
 	    case x @ DocsUp(a : AttributePath, p) => Left(a)
 	    case x @ DocsUp(xp : XmlPath, p) => Right(xp)
 	    case DocumentRoot(r) => Right(r)
+	    case x : XmlPath => Right(x)
 	  })
       }
     else
@@ -129,6 +130,7 @@ class ScalesXPath(val xpath : String, val nsMap : Map[String,String] = Map(), va
 	case x @ DocsUp(a : AttributePath, p) => (Left(a), a.parent)
 	case x @ DocsUp(xp : XmlPath, p) => (Right(xp), xp)
 	case DocumentRoot(r) => (Right(r), r)
+	case x : XmlPath => (Right(x), x)
 	}).map{x => x._1})(eitherAOrXEqual)
   }
 
@@ -237,23 +239,32 @@ class ScalesNavigator(val nameConversion : QName => QName) extends DefaultNaviga
     ctx match {
       case dr @ DocumentRoot(r) => one(DocsUp(r,dr)).iterator
       case DocsUp(x : XmlPath,d) => x.map(DocsUp(_,d)).iterator
-      case _ => error("couldn't get childaxis")
+      case x : XmlPath => // relative paths ./stuff, . triggers this
+	val root = DocumentRoot(rootPath(x))
+	x.map(DocsUp(_, root)).iterator
+      case _ => error("couldn't get childaxis "+ctx)
     }
 
   override def getParentAxisIterator( ctx : AnyRef ) =
     one(getParentNode(ctx)).iterator
 
-  override def getAttributeAxisIterator( ctx : AnyRef ) =
+  override def getAttributeAxisIterator( ctx : AnyRef ) = {
+    def attribs(d : DocsUp[XmlPath]) = 
+      d.what.tree.section.
+	attributes.map(a => DocsUp(
+	  AttributePath(a, d.what), 
+	  d.docroot)).iterator
+
     ctx match {
-      case DocsUp(x : XmlPath, r) if (!x.isItem) => 
-	use(ctx, (d : DocsUp[XmlPath]) => 
-	  d.what.tree.section.
-	    attributes.map(a => DocsUp(
-	      AttributePath(a, ctx), 
-	      d.docroot)).iterator)
+      case d @ DocsUp(x : XmlPath, r) if (!x.isItem) => 
+	attribs(d.asInstanceOf[DocsUp[XmlPath]])
+      case x : XmlPath if (!x.isItem) => // relative paths ./stuff, . triggers this
+	val root = DocumentRoot(rootPath(x))
+	attribs(DocsUp(x, root))
       case _ => Nil.iterator
     }
-  
+  }
+
   override def getParentNode( ctx : AnyRef ) =
     ctx match {
       case DocsUp(AttributePath(a, x), d) => DocsUp(x,d)
@@ -263,6 +274,13 @@ class ScalesNavigator(val nameConversion : QName => QName) extends DefaultNaviga
 	else
 	  DocsUp(x.zipUp,d)
       case DocumentRoot(x) => null
+      case x : XmlPath => // relative paths ../stuff, .. triggers this
+	val root = DocumentRoot(rootPath(x))
+	if (x eq root.xmlPath)
+	  root
+	else
+	  DocsUp(x.zipUp, root)
+      case x => error("got x instead " + x)
     }
 
   def parseXPath( xpath : String ) = new ScalesXPath(xpath)
@@ -365,7 +383,7 @@ class ScalesNavigator(val nameConversion : QName => QName) extends DefaultNaviga
   override def getDocument( uri : String ) = error("don't do doc lookups at all man")
 
   override def getDocumentNode( ctx : AnyRef ) =
-    DocumentRoot(ctx.asInstanceOf[XmlPath])
+    DocumentRoot(rootPath(ctx.asInstanceOf[XmlPath]))
 
 /*  override def getNodeType( node : AnyRef ) = {
     val p : XmlPath = node
