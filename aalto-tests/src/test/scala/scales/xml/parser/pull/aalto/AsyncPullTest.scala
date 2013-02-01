@@ -133,25 +133,16 @@ class AsyncPullTest extends junit.framework.TestCase {
     (closer, iter)
   }
 
-  /**
-   * This version of enumToMany returns Done((None, cont), Empty) when the toMany iteratee cannot supply anything else than Empty for an Empty input.
-   */ 
-  def enumToManyAsync[E, A, R]( dest: ResumableIter[A,R])( toMany: ResumableIter[E, EphemeralStream[A]]): ResumableIter[E, io.AsyncOption[R]] = 
-    enumToManyAsyncOption[E, A, R, io.AsyncOption[R]](
-      identity, // keep the option
-      true // should send us the option
-      )(dest)(toMany)
-  
 
   /**
    * Defaults to continuing when Empty is returned by toMany for an Empty input.
-   */ 
+   *
   def enumToMany[E, A, R]( dest: ResumableIter[A,R])( toMany: ResumableIter[E, EphemeralStream[A]]): ResumableIter[E, R] = 
     enumToManyAsyncOption[E, A, R, R](
       _.getOrElse(error("No Asynchnronous Behaviour Expected But the toMany still recieved an Empty and returned a Done Empty")), // throw if async somehow got returned
       false // use cont instead
       )(dest)(toMany)
-  
+  */
   /**
    * Takes a function f that turns input into an Input[EphemeralStream] of a different type A.  The function f may return El(EphemeralStream.empty) which is treated as Empty.
    * This function must return an ResumableIter in order to capture early Done's without losing intermediate chunks,
@@ -159,7 +150,7 @@ class AsyncPullTest extends junit.framework.TestCase {
    *
    * The AsyncOption is required in the return to handle the case of empty -> empty infinite loops.  For asynchronous parsing, for example, we should be able to return an empty result but with Empty as the input type.
    */ 
-  def enumToManyAsyncOption[E, A, R, T](converter: io.AsyncOption[R] => T, doneOnEmptyForEmpty: Boolean)( dest: ResumableIter[A,R])( toMany: ResumableIter[E, EphemeralStream[A]]): ResumableIter[E, T] = {
+  def enumToMany[E, A, R]( dest: ResumableIter[A,R])( toMany: ResumableIter[E, EphemeralStream[A]]): ResumableIter[E, R] = {
     val empty = () => EphemeralStream.empty
 
     def loop( i: ResumableIter[A,R], s: () => EphemeralStream[A] ):
@@ -184,17 +175,15 @@ class AsyncPullTest extends junit.framework.TestCase {
     }
 
 //    @scala.annotation.tailrec
-    def next( i: ResumableIter[A,R], s: () => EphemeralStream[A], toMany: ResumableIter[E, EphemeralStream[A]] ): ResumableIter[E, T] =
+    def next( i: ResumableIter[A,R], s: () => EphemeralStream[A], toMany: ResumableIter[E, EphemeralStream[A]] ): ResumableIter[E, R] =
       i.fold(
 	done = (a, y) => {
 //	  println(" y is "+y) 
 
-	  val (rawRes, nextCont) = a
-//	  println(" rawRes is "+rawRes) 
-	  val res = converter(io.HasResult(rawRes))
-//	  println("converted "+res)
+	  val (res, nextCont) = a
+//	  println("res is "+ res) 
 
-	  val returnThis : ResumableIter[E, T] = 
+	  val returnThis : ResumableIter[E, R] = 
 	  if ((isDone(nextCont) && isEOF(nextCont)) ||
 	      (isDone(toMany) && isEOF(toMany))     || // either eof then its not restartable
 	      (EOF.unapply(y)) // or the source is out of elements
@@ -427,8 +416,8 @@ class AsyncPullTest extends junit.framework.TestCase {
     // should have collected all anyway
     doSimpleLoadAndFold{
       (p, iter, wrapped) => 
-      val enumeratee = enumToManyAsync(iter)(AsyncParser.parse(p))
-      val (HasResult(e),cont) = enumeratee(wrapped).run
+      val enumeratee = enumToMany(iter)(AsyncParser.parse(p))
+      val (e,cont) = enumeratee(wrapped).run
       e
     }
 // here
@@ -593,7 +582,7 @@ trait EvalW[WHAT,RETURN] {
     val strout = new java.io.StringWriter()
     val (closer, iter) = pushXmlIter( strout , doc )
 
-    val enumeratee = enumToManyAsync(iter)(AsyncParser.parse(parser))
+    val enumeratee = enumToMany(iter)(AsyncParser.parse(parser))
     val wrapped = new ReadableByteChannelWrapper(randomChannel, true, tinyBuffers)
     
     /*
@@ -622,7 +611,7 @@ trait EvalW[WHAT,RETURN] {
 
     c.fold[Unit](
       done = (a,i) => {
-	val (HasResult((out, thrown)), cont) = a
+	val ((out, thrown), cont) = a
 	assertFalse( "shouldn't have thrown", thrown.isDefined)
 	//println(" iter was " + strout.toString)
 	assertTrue("should have been auto closed", closer.isClosed)
