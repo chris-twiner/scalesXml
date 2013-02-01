@@ -38,7 +38,7 @@ abstract class BaseRandomChannelWrapper(bufSize: Int) extends java.nio.channels.
 	next0 = zeros.next
 	cur0 = 0
 	count0 = 0
-	println("********* zeroed 10 times")
+	//println("********* zeroed 10 times")
       }
       0
     } else {

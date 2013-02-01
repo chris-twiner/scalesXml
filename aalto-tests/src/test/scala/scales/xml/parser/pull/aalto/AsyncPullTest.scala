@@ -57,7 +57,7 @@ class AsyncPullTest extends junit.framework.TestCase {
     def done( status : StreamStatus ) : SerialIterT = {
       // give it back
       closer()
-      println("empties was !!! "+empties)
+      //println("empties was !!! "+empties)
       Done((status.output, status.thrown), EOF[PullType])
     }
 
@@ -103,7 +103,6 @@ class AsyncPullTest extends junit.framework.TestCase {
 	  Cont(first(status, serializer))
 	},
         eof = {
-	  println("wtf !!!!! eof from nowhere")
 	  Done((status.output, Some(NoDataInStream())), EOF[PullType])
 	})
 
@@ -169,7 +168,7 @@ class AsyncPullTest extends junit.framework.TestCase {
       var cs: EphemeralStream[A] = s() // need it now
 //println("loopy")
       while(!isDone(c) && !cs.isEmpty) {
-	println("doing a loop")
+//	println("doing a loop")
 	val (nc, ncs): (ResumableIter[A,R], EphemeralStream[A]) = c.fold(
 	  done = (a, y) => (c, s()),// send it back, shouldn't be possible to get here anyway due to while test
 	  cont = 
@@ -188,12 +187,12 @@ class AsyncPullTest extends junit.framework.TestCase {
     def next( i: ResumableIter[A,R], s: () => EphemeralStream[A], toMany: ResumableIter[E, EphemeralStream[A]] ): ResumableIter[E, T] =
       i.fold(
 	done = (a, y) => {
-	  println(" y is "+y) 
+//	  println(" y is "+y) 
 
 	  val (rawRes, nextCont) = a
-	  println(" rawRes is "+rawRes) 
+//	  println(" rawRes is "+rawRes) 
 	  val res = converter(io.HasResult(rawRes))
-	  println("converted "+res)
+//	  println("converted "+res)
 
 	  val returnThis : ResumableIter[E, T] = 
 	  if ((isDone(nextCont) && isEOF(nextCont)) ||
@@ -225,15 +224,15 @@ class AsyncPullTest extends junit.framework.TestCase {
 	  },
 	cont = 
 	  k => {
-	    println("Fucksake")
+//	    println("Fucksake")
 	    if (!s().isEmpty) {
-	      println("empty against the s")
+//	      println("empty against the s")
 	      val (ni, ns) = loop(i, s)
 	      next(ni, ns, toMany)
 	    } else
 	      Cont((x: Input[E]) => 
 		x( el = e => {
-		  println("got a cont x el e "+e)
+//		  println("got a cont x el e "+e)
 		  toMany.fold (
 		    done = (a, y) => {
 		      val (e1, nextContR) = a
@@ -241,12 +240,13 @@ class AsyncPullTest extends junit.framework.TestCase {
 		      error("Unexpected State for enumToMany - Cont but toMany is done")		     	
 		    },
 		    cont = y => {
-		      println("and then I was here "+
+/*		      println("and then I was here "+
 			      x(el = e => e.toString, 
 				   empty = "I'm empty ",
 				   eof = "I'm eof"))
+*/
 		      val afterNewCall = y(x)
-		      println("and then " + afterNewCall)
+//		      println("and then " + afterNewCall)
 
 /*
  * So the first chunk is the only chunk, we have the first cont - should be done onthe cont?
@@ -254,7 +254,7 @@ class AsyncPullTest extends junit.framework.TestCase {
 
 		      afterNewCall.fold(
 			done = (nextContPair, rest) => {
-			  println("was done wern't it")
+//			  println("was done wern't it")
 			  val (e1, nextCont) = nextContPair
 			  val nextContR = nextCont.asInstanceOf[ResumableIter[E,scalaz.EphemeralStream[A]]]
 			  if (isEOF(afterNewCall)) {
@@ -269,7 +269,7 @@ class AsyncPullTest extends junit.framework.TestCase {
 			  }
 			},
 			cont = k1 => {
-			  println("conted after here")
+//			  println("conted after here")
 			  next(k(IterV.Empty[A]), empty, afterNewCall)
 			}
 			)
@@ -277,43 +277,9 @@ class AsyncPullTest extends junit.framework.TestCase {
 		  )
 		},
 		  empty = {
-		    println("here MOFO")
-			    next(k(IterV.Empty[A]), empty, toMany)
-
-/*		    toMany.fold (
-		      done = (a, y) => {
-			error("shouldn't be done ever, unless it was done to start with")
-		      },
-		      cont = y => {
-			println("looping back again, the to many can't do anything with empty")
-			// push it through
-			val res = y(x)
-			res.fold (
-			  done = (a1, y1) => {
-			    val (e1 : EphemeralStream[A], nextCont : ResumableIter[E,EphemeralStream[A]]) = a1.asInstanceOf[(EphemeralStream[A], ResumableIter[E,EphemeralStream[A]])]
-			    if (doneOnEmptyForEmpty && e1.isEmpty && IterV.Empty.unapply[E](y1)) {
-			      // the toMany has indicated it can't do anything more
-			      // don't loop but drop out
-			      println("would have dropped out")
-			      //Done((converter(io.NeedsMoreData), 
-				//    next(k(IterV.Empty[A]), empty, nextCont)), IterV.Empty[E])
-			      next(k(IterV.Empty[A]), () => e1, nextCont)
-			    }
-			    else {
-			      println("couldn't drop out ")
-			      next(k(IterV.Empty[A]), () => e1, nextCont)
-			    }   
-			  },
-			  cont = kn => {
-			    println("cont on empty cont")
-			    next(k(IterV.Empty[A]), empty, res)
-			  }
-			)
-		      }
-		    )*/
+		    next(k(IterV.Empty[A]), empty, toMany)
 		  },
 		  eof = {
-		    println("we be fucked eof on the data with the cont")
 		    next(k(IterV.EOF[A]), empty, toMany)
 		  }
 		))
@@ -333,7 +299,6 @@ class AsyncPullTest extends junit.framework.TestCase {
 	  val nextChunk = realChunk.asInstanceOf[E]
 	  apply(wrapped,
 		if (realChunk.isEOF) {
-		  println("actual data was EOF !!!")
 		  k(IterV.EOF[E])
 		} else
 		  if (realChunk.isEmpty)
@@ -364,7 +329,7 @@ class AsyncPullTest extends junit.framework.TestCase {
 	    val nextChunk = realChunk.asInstanceOf[E]
 	    val nextI = 
 	      if (realChunk.isEOF) {
-		  println("actual data was EOF !!!")
+		 // println("actual data was EOF !!!")
 		  k(IterV.EOF[E])
 		} else
 		  if (realChunk.isEmpty)
@@ -376,7 +341,7 @@ class AsyncPullTest extends junit.framework.TestCase {
 		count + 1
 	      } else 0
 	    if (nc > contOnCont) {
-	      println("had cont on cont count, returning")
+	      //println("had cont on cont count, returning")
 	      nextI
 	    } else
 	      apply(wrapped, nextI, nc)
@@ -507,7 +472,7 @@ class AsyncPullTest extends junit.framework.TestCase {
       )
     }
     
-    println("got a zero len "+randomChannel.zeroed+" times. Nexted "+nexted+" - headed "+headed)
+//    println("got a zero len "+randomChannel.zeroed+" times. Nexted "+nexted+" - headed "+headed)
     val s = asString(res.iterator : Iterator[PullType])
     assertEquals(s, str)
 
@@ -592,20 +557,19 @@ class AsyncPullTest extends junit.framework.TestCase {
  * Evals once, the developer must check its Done, equivalent to a .run but
  * doesn't lose the continuation - no "Diverging Iteratee"
  */ 
-trait Eval[WHAT,RETURN] {
+trait EvalW[WHAT,RETURN] {
   
   val orig : IterV[WHAT, RETURN]
 
   def evalw : IterV[WHAT, RETURN] = {
     orig.fold(done = (x, y) => Done(x,y),
 	 cont = k => {
-	   println("eof what now?")
-	   orig//Cont(k)//k(IterV.Empty[WHAT])
+	   orig
 	 })
   }
 }
 
- implicit def toEvalw[WHAT, RETURN]( i : IterV[WHAT, RETURN] ) = new Eval[WHAT, RETURN] {
+ implicit def toEvalw[WHAT, RETURN]( i : IterV[WHAT, RETURN] ) = new EvalW[WHAT, RETURN] {
     lazy val orig = i
   }
  
@@ -640,28 +604,21 @@ trait Eval[WHAT,RETURN] {
 
     val cstable = enumeratee(wrapped).evalw
     var c = cstable
-    println("eval - already donE?? " + isDone(c))
+//    println("eval - already donE?? " + isDone(c))
     
     type cType = cstable.type
 
-    val FEEDME : Option[AsyncOption[(XmlOutput, Option[Throwable])]] = Some(NeedsMoreData)
-
-//    var c = iter(parser).eval
     var count = 0
-    while((extract(c) == FEEDME) || (!isDone(c))) {
+    while(!isDone(c)) {
       c = c(wrapped).evalw//extractCont(c)(wrapped).evalw
       count += 1
-      println("!!!!!!!!!!! evals "+(extract(c) == FEEDME))
     }
-//    println("eval'd "+ count +" times ") 
+//    println("evalw'd "+ count +" times ") 
 //    println("got a zero len "+ randomChannel.zeroed+" times ")
 
-//    assertEquals("eval "+count+" zero "+randomChannel.zeroed, count, randomChannel.zeroed)
-
-    println("is " + c.fold( done = (a, i) => i, cont = k => ""))
-    
-//    println("Got a "+extract(c))
-//    println("was " + strout.toString)
+    if (randomChannel.zeroed > 0) {
+      assertTrue("There were "+randomChannel.zeroed+" zeros fed but it never left the evalw", count > 0)
+    }
 
     c.fold[Unit](
       done = (a,i) => {
@@ -671,7 +628,7 @@ trait Eval[WHAT,RETURN] {
 	assertTrue("should have been auto closed", closer.isClosed)
 	assertEquals(str, strout.toString)
       },
-      cont = f => error("Should have been done")
+      cont = f => fail("Should have been done")
     )
     
     assertTrue("Parser should have been closed ", parser.isClosed)
