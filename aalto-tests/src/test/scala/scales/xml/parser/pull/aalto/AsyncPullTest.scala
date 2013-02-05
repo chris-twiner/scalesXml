@@ -278,35 +278,22 @@ class AsyncPullTest extends junit.framework.TestCase {
     next(dest, empty, toMany)
   }
 
-  implicit val readableByteChannelEnumerator: Enumerator[ReadableByteChannelWrapper] = new Enumerator[ReadableByteChannelWrapper] {
-    def apply[E,A](wrapped: ReadableByteChannelWrapper[E], i: IterV[E,A]): IterV[E,A] = {	  
-      i match {
-	case _ if !wrapped.channel.isOpen || wrapped.isClosed => i
-	case Done(acc, input) => i
-	case Cont(k) =>
-	  val realChunk = wrapped.nextChunk
-	  val nextChunk = realChunk.asInstanceOf[E]
-	  apply(wrapped,
-		if (realChunk.isEOF) {
-		  k(IterV.EOF[E])
-		} else
-		  if (realChunk.isEmpty)
-		    k(IterV.Empty[E])
-		  else
-		    k(El(nextChunk))
-	      )
-      }
-    }
-  }
-  
+  implicit val readableByteChannelEnumerator: Enumerator[ReadableByteChannelWrapper] = asyncReadableByteChannelEnumerator( )
+
+  /**
+   * Use in a call to asyncReadableByteChannelEnumerator to turn it into a synchronous enumerator (constantly trying to get new chunks of data)
+   */
+  val INFINITE_RETRIES = -1
+
   /**
    * Creates an Enumerator with a given count for Empty -> Cont applications.
    *
    * When the count is met it returns the Cont for the next Enumeration step.
    *
    * Note: Call via eval only.
+   * @param contOnCont INFINITE_RETRIES (-1) for keep on trying, the default is 5 (as exposed by the implicit enumerator readableByteChannelEnumerator)
    */
-  def asyncReadableByteChannelEnumerator( contOnCont: Int ): Enumerator[ReadableByteChannelWrapper] = new Enumerator[ReadableByteChannelWrapper] {
+  def asyncReadableByteChannelEnumerator( contOnCont: Int = 5 ): Enumerator[ReadableByteChannelWrapper] = new Enumerator[ReadableByteChannelWrapper] {
     def apply[E,A](wrapped: ReadableByteChannelWrapper[E], i: IterV[E,A]): IterV[E, A] = {
  
       def apply(wrapped: ReadableByteChannelWrapper[E], i: IterV[E,A], count: Int): IterV[E, A] = {
@@ -329,7 +316,8 @@ class AsyncPullTest extends junit.framework.TestCase {
 	      if (realChunk.isEmpty && !isDone(nextI)) {
 		count + 1
 	      } else 0
-	    if (nc > contOnCont) {
+
+	    if ((contOnCont != INFINITE_RETRIES) && (nc > contOnCont)) {
 	      //println("had cont on cont count, returning")
 	      nextI
 	    } else
