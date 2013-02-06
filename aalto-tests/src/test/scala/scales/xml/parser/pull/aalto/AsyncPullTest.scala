@@ -190,6 +190,10 @@ class AsyncPullTest extends junit.framework.TestCase {
 	      ) { 
 	    Done((res, Done(res, IterV.EOF[E])), IterV.EOF[E])
 	  } else {
+
+	    println("non recursive call")
+
+
 	    Done((res, 
 	      {
 		val n = next(nextCont.asInstanceOf[ResumableIter[A,R]], s, toMany)
