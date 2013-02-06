@@ -325,6 +325,23 @@ class DslBuildersTest extends junit.framework.TestCase {
     assertEquals(ns("SubChild"),name(subchildi.head.tree))
   }
 
+  // issue #23, root replacement should not cause AddedBeforeOrAfterRoot
+  def testRootReplace = {
+    val withAttrib = builder /@ ("id" -> "abc")
+
+    val folded = foldPositions(one(top(withAttrib)))(
+      x=>Replace(x.tree /@ ("id" -> "123")))
+    
+    assertTrue("Should have been left", folded.isLeft)
+    val newRoot = folded.left.get
+
+    val attr = newRoot.\@("id")
+    
+    assertTrue("Could not find an id attr", attr.size == 1)
+    
+    assertEquals("123",value(attr))
+  }
+
   def testNestedReplace = {
     val parentis = fredi.\^.\\.*
     assertTrue("Did not get 3 nodes, should be child, fred and sub ", parentis.size == 2)
