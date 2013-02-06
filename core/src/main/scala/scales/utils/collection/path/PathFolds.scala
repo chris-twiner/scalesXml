@@ -12,12 +12,14 @@ import scales.utils.{PathFoldR, FoldR, LeftLike, deepestLast, top, ItemOrTree, T
  */ 
 sealed trait FoldOperation[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]] {
 
+  protected def rootChangeAllowed = false
+
   def perform(path: Path[Item, Section, CC]): FoldR[Item, Section, CC]
 
-  def add(path: Path[Item, Section, CC], direction: Int, newPath: Iterable[ItemOrTree[Item, Section, CC]])(implicit cbf : TreeCBF[Item, Section, CC]) : FoldR[Item, Section, CC] = {
+  protected def add(path: Path[Item, Section, CC], direction: Int, newPath: Iterable[ItemOrTree[Item, Section, CC]])(implicit cbf : TreeCBF[Item, Section, CC]) : FoldR[Item, Section, CC] = {
     // need to go up to replace
     val parent = path.zipUp
-    if (path.top.isLeft)
+    if (path.top.isLeft && !rootChangeAllowed)
       Right(AddedBeforeOrAfterRoot)
     else
       Left(parent.
@@ -71,6 +73,7 @@ object Replace {
  * Allows replacing one path with many, may be easier to use the * version however
  */
 case class Replace[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]](replaceWith: Iterable[ItemOrTree[Item, Section, CC]])(implicit cbf : TreeCBF[Item, Section, CC]) extends FoldOperation[Item, Section, CC] {
+  override def rootChangeAllowed = true
 
   def perform(path: Path[Item, Section, CC]): FoldR[Item, Section, CC] = {
     // modify with tail
