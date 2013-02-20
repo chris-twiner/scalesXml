@@ -45,6 +45,26 @@ class AsyncPullTest extends junit.framework.TestCase {
   import scales.utils.{io, resources}
   import resources._ 
 
+/**
+ * returns the cont and drops the input parameter or returns Done
+ */ 
+trait EvalW[WHAT,RETURN] {
+  
+  val orig : IterV[WHAT, RETURN]
+
+  def evalw : IterV[WHAT, RETURN] = {
+    orig.fold(done = (x, y) => Done(x,y),
+	 cont = k => {
+	   orig
+	 })
+  }
+}
+
+ implicit def toEvalw[WHAT, RETURN]( i : IterV[WHAT, RETURN] ) = new EvalW[WHAT, RETURN] {
+    lazy val orig = i
+  }
+
+
   /**
    * The serializer will be returned automatically to the pool by calling closer
    * 
@@ -314,7 +334,6 @@ println("iz here")
      */ 
 
 
-/*
   implicit val readableByteChannelEnumerator: Enumerator[ReadableByteChannelWrapper] = asyncReadableByteChannelEnumerator( )
 
   /**
@@ -365,7 +384,6 @@ println("iz here")
       apply(wrapped, i, 0)
     }
   }
-   
 
   /**
    * ensure that the enumerator doesn't break basic assumptions when it can get
@@ -566,7 +584,6 @@ println("iz here")
   }
 
 
-
  
   /**
    * Hideously spams with various sizes of data, and more than a few 0 lengths.
@@ -702,7 +719,7 @@ println("iz here")
     assertTrue("The parser should have been closed", parser.isClosed)
   }
 
-  def testSimpleEnumerateeMap = {
+/*  def testSimpleEnumerateeMap = {
     
     val i = List("1","2","3","4").iterator
 
@@ -798,61 +815,74 @@ println("iz here")
     assertEquals(25000050001L, res)
     assertFalse("should not have been done", isDone(cont))
 
-    val (res2, cont2) = (cont.asInstanceOf[ResumableIter[Long, Long]]).run
+    println("cont is " + cont)
+
+    val canRestart = (cont.asInstanceOf[ResumableIter[Long, Long]]).run //(i).run
+
+    println("after eval is " + canRestart)
+    val (res2, cont2) = canRestart//(extract(canRestart).get, canRestart)
     assertEquals(25000250000L, res2)
     assertTrue("should have been done", isDone(cont2))
   }
-*/
 
-  /**
-   * Wraps an enumerator over E delegating to it when new input is needed
-  def enumToManyEnumerator[E](implicit enum: Enumerator[E]): Enumerator[EnumToMany] = new Enumerator[EnumToMany] {
-    def apply[E,A](wrapped: EnumToMany[E], i: IterV[EnumToMany[E],A]): IterV[E, A] = {
- 
-      def apply(wrapped: ReadableByteChannelWrapper[E], i: IterV[E,A], count: Int): IterV[E, A] = {
-	i match {
-	  case _ if !wrapped.channel.isOpen || wrapped.isClosed => i
-	  case Done(acc, input) => i
-	  case Cont(k) =>
-	    val realChunk = wrapped.nextChunk
-	    val nextChunk = realChunk.asInstanceOf[E]
-	    val nextI = 
-	      if (realChunk.isEOF) {
-		 // println("actual data was EOF !!!")
-		  k(IterV.EOF[E])
-		} else
-		  if (realChunk.isEmpty)
-		    k(IterV.Empty[E])
-		  else
-		    k(El(nextChunk))
-	    val nc = 
-	      if (realChunk.isEmpty && !isDone(nextI)) {
-		count + 1
-	      } else 0
 
-	    if ((contOnCont != INFINITE_RETRIES) && (nc > contOnCont)) {
-	      //println("had cont on cont count, returning")
-	      nextI
-	    } else
-	      apply(wrapped, nextI, nc)
-	}
-      }
+  def testEveryItem = {
+    val source = List[Long](1,4,7,10,13).iterator
 
-      apply(wrapped, i, 0)
+    // force a restart every entry
+    val echo: ResumableIter[Long,Long] = {
+      def step( s : Input[Long] ) : ResumableIter[Long, Long] =
+	s( el = e => {
+//	  println("got "+e)
+	    //if (e > 2) {
+	      Done((e, Cont(step)), IterV.Empty[Long])
+	    //} else Cont(step)
+	    //
+	  },
+	  empty = Cont(step),
+	  eof = Done((0, Done(0, IterV.EOF[Long])), IterV.EOF[Long])
+	)
+
+      Cont(step)
     }
-  }
- */ 
-  
-  /**
-   * Force the use of another enumerator
-   */ 
-  case class EnumToMany[E](item: E)
 
-   /*
- enumerator for filling out the rest, pass the rest as state,
- *
-  1->many->many, fake iterv, pushes back into this one!! enumerator forces next in cached results but not full eval 
+    val (origres, origcont) = enumToMany[Long, Long, Long](echo)( mapTo{ (x:Long) => println("evaled to "+x);El(lTo(x, x + 2L)) })(source).run
+
+    var res = origres
+    var iter : ResumableIter[Long, Long] = origcont.asInstanceOf[ResumableIter[Long, Long]]
+
+    var count = 1 // already run once
+
+    for( i <- 1 to 15 ) {
+//      println("loop !!!! "+i)
+      assertEquals(i, res)
+      val cres : ResumableIter[Long, Long] = iter.eval
+      if (isDone(cres)){
+	res = extract(cres).get
+	iter = extractCont(cres)
+      } else {
+//	println(">>><<<<>>>>><<<<")
+	count += 1
+	// run on the source - as we need more data
+	val (nres, ncont) = cres(source).run
+	res = nres
+	iter = ncont.asInstanceOf[ResumableIter[Long, Long]]
+
+	if (count == 6) {
+	  assertEquals("should have pushed the eof", 15, i)
+	}
+      }      
+    }
+
+    assertEquals(0, res)
+    assertTrue("should have been done", isDone(iter))
+    assertTrue("should have been eof", isEOF(iter))
+    assertFalse("source should be empty", source.hasNext)
+    assertEquals("should have reset 6 times - once for start and once for EOF ", 6, count)
+  }
+
   */ 
+
   def enumToMany[E, A, R]( dest: ResumableIter[A,R])( toMany: ResumableIter[E, EphemeralStream[A]]): ResumableIter[E, R] = {
     val empty = () => EphemeralStream.empty
 
@@ -860,14 +890,14 @@ println("iz here")
       (ResumableIter[A,R], () => EphemeralStream[A]) = {
       var c: ResumableIter[A,R] = i
       var cs: EphemeralStream[A] = s() // need it now
-//println("loopy")
+//println("loopy "+ isDone(c)+ " " +cs.isEmpty)
       while(!isDone(c) && !cs.isEmpty) {
-	println("doing a loop "+c)
+//	println("doing a loop "+c)
 	val (nc, ncs): (ResumableIter[A,R], EphemeralStream[A]) = c.fold(
 	  done = (a, y) => (c, s()),// send it back, shouldn't be possible to get here anyway due to while test
 	  cont = 
 	    k => {
-	      println("got cont")
+//	      println("got cont")
 	      val head = cs.head() // if used in El it captures the byname not the value
 	      (k(IterV.El(head)), cs.tail())
 	    }
@@ -883,7 +913,7 @@ println("iz here")
     def contk( k: scalaz.Input[A] => ResumableIter[A,R],  i: ResumableIter[A,R], s: () => EphemeralStream[A], toMany: ResumableIter[E, EphemeralStream[A]] ): ResumableIter[E, R] = {
       if (!s().isEmpty) {
 	val (ni, ns) = loop(i, s)
-	println("empty against the s "+ni + " " + ns)
+	println("empty against the s "+ni + " " + ns().isEmpty)
 	//if (isDone(ni)) 
 	next(ni, ns, toMany) // bad - should let a done exit early
       } else
@@ -947,9 +977,11 @@ Done((el.head(), next(k(IterV.El(e1.head())), e1.tail, nextContR)), IterV.Empty[
 	    )
 	  },
 	    empty = {
+	      println("empty <--<--<--")
 	      next(k(IterV.Empty[A]), empty, toMany)
 	    },
 	    eof = {
+	      println("eof <--<--<--")
 	      next(k(IterV.EOF[A]), empty, toMany)
 	    }
 	  ))
@@ -978,10 +1010,11 @@ Done((el.head(), next(k(IterV.El(e1.head())), e1.tail, nextContR)), IterV.Empty[
 	  println("iz here")
 	  Done((res, 
 		{
+		  val cont = () => next(nextCont.asInstanceOf[ResumableIter[A,R]], s, toMany, true)
 		  // really don't want to eval this now, lazy ftw
 		  val n = Cont( (i: Input[E]) => {
-		    println("about to next from up in here")
-		    next(nextCont.asInstanceOf[ResumableIter[A,R]], s, toMany, true)
+		    println("about to next from up in here "+ s().isEmpty)
+		    cont()
 		  })
 		  
 		  //n
@@ -994,12 +1027,12 @@ Done((el.head(), next(k(IterV.El(e1.head())), e1.tail, nextContR)), IterV.Empty[
 		  } else {
 		    println("non - empty")
 		    // still data to process
-		    n
+		    cont()
 		  }
 		}), IterV.Empty[E])
 	}
 
-      if (EOF.unapply(y)) {
+      if (EOF.unapply(y) && !internalEOF) {
 	// signal the end here to toMany, don't care about result
 	toMany.fold(done= (a1, y1) => false,
 		    cont = k => {
@@ -1020,8 +1053,8 @@ Done((el.head(), next(k(IterV.El(e1.head())), e1.tail, nextContR)), IterV.Empty[
 	  a.asInstanceOf[(R, ResumableIter[A, R])], y, i, s, toMany, internalEOF),
 	cont = 
 	  k => {
+	    println("Fucksake")
 	    contk(k, i, s, toMany)
-//	    println("Fucksake")
 	  }
       )
 
@@ -1034,85 +1067,5 @@ Done((el.head(), next(k(IterV.El(e1.head())), e1.tail, nextContR)), IterV.Empty[
 
   def iTo(lower: Int, upper: Int): EphemeralStream[Int] =
     if (lower > upper) EphemeralStream.empty else EphemeralStream.cons(lower, iTo(lower + 1, upper))
-
-/**
- * Evals once, the developer must check its Done, equivalent to a .run but
- * doesn't lose the continuation - no "Diverging Iteratee"
- */ 
-trait EvalW[WHAT,RETURN] {
-  
-  val orig : IterV[WHAT, RETURN]
-
-  def evalw : IterV[WHAT, RETURN] = {
-    orig.fold(done = (x, y) => Done(x,y),
-	 cont = k => {
-	   orig
-	 })
-  }
-}
-
- implicit def toEvalw[WHAT, RETURN]( i : IterV[WHAT, RETURN] ) = new EvalW[WHAT, RETURN] {
-    lazy val orig = i
-  }
-
-  def testEveryItem = {
-    val i = List[Long](1,4,7,10,13).iterator
-
-    // force a restart every entry
-    val echo: ResumableIter[Long,Long] = {
-      def step( s : Input[Long] ) : ResumableIter[Long, Long] =
-	s( el = e => {
-	  println("got "+e)
-	    //if (e > 2) {
-	      Done((e, Cont(step)), IterV.Empty[Long])
-	    //} else Cont(step)
-	    //
-	  },
-	  empty = Cont(step),
-	  eof = Done((0, Done(0, IterV.EOF[Long])), IterV.EOF[Long])
-	)
-
-      Cont(step)
-    }
-
-    val (origres, origcont) = enumToMany[Long, Long, Long](echo)( mapTo{ (x:Long) => println("evaled to "+x);El(lTo(x, x + 2L)) })(i).run
-
-    var res = origres
-    var iter : ResumableIter[Long, Long] = origcont.asInstanceOf[ResumableIter[Long, Long]]
-
-    for( i <- 1 to 15 ) {
-      println("loop !!!! "+i)
-      assertEquals(i, res)
-      val cres : ResumableIter[Long, Long] = iter.eval
-      assertTrue("Should have been done", isDone(cres))
-/*	if (isDone(iter)) {
-	  // has processed one of the inputs
-	  /*println("pushing the cont")
-	  val r = extractCont(iter).eval // k => EOF
-	  r.fold[Int]( 
-	    done = (x, i2) => {println("x "+x+" i2 "+i2);1}, 
-	    cont = f => 0 )
-
-	  println("pushing the pushed "+ r)	  
-	  val r2 = r.eval // unpacker
-	  println("evaled is "+r2)
-	  r2*/
-	  extractCont(iter).eval
-	} else {
-	  // 
-	  //	val (cres, ccont) = extractcont
-	  //    }
-	  //      assertFalse("should not have been done "+i, isDone(cont))
-	  // get the next one - could also be non-done of course
-	  println("gonna eval !!!!")
-	  iter.eval
-	}*/
-      res = extract(cres).get
-      iter = extractCont(cres)
-    }
-
-    assertEquals(0, res)
-    assertTrue("should have been done", isDone(iter))
-  }
 
 }
