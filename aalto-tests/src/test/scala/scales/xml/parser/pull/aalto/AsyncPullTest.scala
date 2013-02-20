@@ -143,14 +143,16 @@ class AsyncPullTest extends junit.framework.TestCase {
       false // use cont instead
       )(dest)(toMany)
   */
+
   /**
    * Takes a function f that turns input into an Input[EphemeralStream] of a different type A.  The function f may return El(EphemeralStream.empty) which is treated as Empty.
    * This function must return an ResumableIter in order to capture early Done's without losing intermediate chunks,
    * the destination iter having the same requirements.
    *
    * The AsyncOption is required in the return to handle the case of empty -> empty infinite loops.  For asynchronous parsing, for example, we should be able to return an empty result but with Empty as the input type.
-   */ 
-  def enumToMany[E, A, R]( dest: ResumableIter[A,R])( toMany: ResumableIter[E, EphemeralStream[A]]): ResumableIter[E, R] = {
+  
+
+def enumToMany[E, A, R]( dest: ResumableIter[A,R])( toMany: ResumableIter[E, EphemeralStream[A]]): ResumableIter[E, R] = {
     val empty = () => EphemeralStream.empty
 
     def loop( i: ResumableIter[A,R], s: () => EphemeralStream[A] ):
@@ -159,11 +161,12 @@ class AsyncPullTest extends junit.framework.TestCase {
       var cs: EphemeralStream[A] = s() // need it now
 //println("loopy")
       while(!isDone(c) && !cs.isEmpty) {
-//	println("doing a loop")
+	println("doing a loop "+c)
 	val (nc, ncs): (ResumableIter[A,R], EphemeralStream[A]) = c.fold(
 	  done = (a, y) => (c, s()),// send it back, shouldn't be possible to get here anyway due to while test
 	  cont = 
 	    k => {
+	      println("got cont")
 	      val head = cs.head() // if used in El it captures the byname not the value
 	      (k(IterV.El(head)), cs.tail())
 	    }
@@ -174,14 +177,84 @@ class AsyncPullTest extends junit.framework.TestCase {
       (c, () => cs)
     }
 
-//    @scala.annotation.tailrec
+//    class BounceIt() extends 
+
+    def contk( k: scalaz.Input[A] => ResumableIter[A,R],  i: ResumableIter[A,R], s: () => EphemeralStream[A], toMany: ResumableIter[E, EphemeralStream[A]] ): ResumableIter[E, R] = {
+      	    if (!s().isEmpty) {
+	      val (ni, ns) = loop(i, s)
+	      println("empty against the s "+ni + " " + ns)
+	      //if (isDone(ni)) 
+	      next(ni, ns, toMany) // bad - should let a done exit early
+	    } else
+	      Cont((x: Input[E]) => 
+		x( el = e => {
+		  println("got a cont x el e "+e)
+		  toMany.fold (
+		    done = (a, y) => {
+		      val (e1, nextContR) = a
+		      val nextCont = nextContR.asInstanceOf[ResumableIter[E,scalaz.EphemeralStream[A]]]
+		      error("Unexpected State for enumToMany - Cont but toMany is done")		     	
+		    },
+		    cont = y => {
+/**/		      println("and then I was here "+
+			      x(el = e => e.toString, 
+				   empty = "I'm empty ",
+				   eof = "I'm eof"))
+
+		      val afterNewCall = y(x)
+		      println("and then " + afterNewCall)
+
+/*
+ * So the first chunk is the only chunk, we have the first cont - should be done onthe cont?
+ */ 
+
+		      afterNewCall.fold(
+			done = (nextContPair, rest) => {
+			  println("was done wern't it")
+			  val (e1, nextCont) = nextContPair
+			  val nextContR = nextCont.asInstanceOf[ResumableIter[E,scalaz.EphemeralStream[A]]]
+			  if (isEOF(afterNewCall)) {
+			    println("after is eof")
+			    next(k(IterV.EOF[A]), empty, nextContR)
+			  } else {
+			    if (e1.isEmpty) {
+			      println("empty on nextcontr")
+			      next(k(IterV.Empty[A]), empty, nextContR)
+			    }
+			    else {
+			      println("some data after all")
+			      next(k(IterV.El(e1.head())), e1.tail, nextContR)
+			    }
+			  }
+			},
+			cont = k1 => {
+			  println("conted after here")
+			  next(k(IterV.Empty[A]), empty, afterNewCall)
+			}
+			)
+		    }
+		  )
+		},
+		  empty = {
+		    next(k(IterV.Empty[A]), empty, toMany)
+		  },
+		  eof = {
+		    next(k(IterV.EOF[A]), empty, toMany)
+		  }
+		))
+
+    }
+
+      
+//    @scala.annotation.tailrec 
     def next( i: ResumableIter[A,R], s: () => EphemeralStream[A], toMany: ResumableIter[E, EphemeralStream[A]] ): ResumableIter[E, R] =
-      i.fold(
+      
+	i.fold(
 	done = (a, y) => {
 //	  println(" y is "+y) 
 
 	  val (res, nextCont) = a
-//	  println("res is "+ res) 
+	  println("res is "+ res) 
 
 	  val returnThis : ResumableIter[E, R] = 
 	  if ((isDone(nextCont) && isEOF(nextCont)) ||
@@ -190,18 +263,31 @@ class AsyncPullTest extends junit.framework.TestCase {
 	      ) { 
 	    Done((res, Done(res, IterV.EOF[E])), IterV.EOF[E])
 	  } else {
-
-	    println("non recursive call")
-
-
+	    // there is a value to pass back out
+println("iz here")
 	    Done((res, 
 	      {
+	      Cont((x: Input[E]) => 
+		x( el = e => {
+
+		  // we don't actually want to call next but we can't defer it
+		  // as we have to consume the current data - no Cont without an
+		  // input === no way to have 1->X transformations and stop for every transformation.  the cont would have to cache inputs <-- not very smart for a constant space op.
+
 		val n = next(nextCont.asInstanceOf[ResumableIter[A,R]], s, toMany)
-	      
-		if (s().isEmpty)
+		
+		n
+/*		if (s().isEmpty) {
+		  println("got here with s().empty")
+//		  new RuntimeException("Da fuck?!!").printStackTrace()
+
+		  // there is no more data saved up
 		  Done((res, n), IterV.Empty[E])
-		else
+		} else {
+		  println("non - empty")
+		  // still data to process
 		  n
+		}*/
 	      }), IterV.Empty[E])
 	  }
 
@@ -217,71 +303,18 @@ class AsyncPullTest extends junit.framework.TestCase {
 	  },
 	cont = 
 	  k => {
+	    contk(k, i, s, toMany)
 //	    println("Fucksake")
-	    if (!s().isEmpty) {
-//	      println("empty against the s")
-	      val (ni, ns) = loop(i, s)
-	      next(ni, ns, toMany)
-	    } else
-	      Cont((x: Input[E]) => 
-		x( el = e => {
-//		  println("got a cont x el e "+e)
-		  toMany.fold (
-		    done = (a, y) => {
-		      val (e1, nextContR) = a
-		      val nextCont = nextContR.asInstanceOf[ResumableIter[E,scalaz.EphemeralStream[A]]]
-		      error("Unexpected State for enumToMany - Cont but toMany is done")		     	
-		    },
-		    cont = y => {
-/*		      println("and then I was here "+
-			      x(el = e => e.toString, 
-				   empty = "I'm empty ",
-				   eof = "I'm eof"))
-*/
-		      val afterNewCall = y(x)
-//		      println("and then " + afterNewCall)
-
-/*
- * So the first chunk is the only chunk, we have the first cont - should be done onthe cont?
- */ 
-
-		      afterNewCall.fold(
-			done = (nextContPair, rest) => {
-//			  println("was done wern't it")
-			  val (e1, nextCont) = nextContPair
-			  val nextContR = nextCont.asInstanceOf[ResumableIter[E,scalaz.EphemeralStream[A]]]
-			  if (isEOF(afterNewCall)) {
-			    next(k(IterV.EOF[A]), empty, nextContR)
-			  } else {
-			    if (e1.isEmpty) {
-			      //println("empty on nextcontr")
-			      next(k(IterV.Empty[A]), empty, nextContR)
-			    }
-			    else
-			      next(k(IterV.El(e1.head())), e1.tail, nextContR)
-			  }
-			},
-			cont = k1 => {
-//			  println("conted after here")
-			  next(k(IterV.Empty[A]), empty, afterNewCall)
-			}
-			)
-		    }
-		  )
-		},
-		  empty = {
-		    next(k(IterV.Empty[A]), empty, toMany)
-		  },
-		  eof = {
-		    next(k(IterV.EOF[A]), empty, toMany)
-		  }
-		))
 	  }
       )
 
     next(dest, empty, toMany)
   }
 
+     */ 
+
+
+/*
   implicit val readableByteChannelEnumerator: Enumerator[ReadableByteChannelWrapper] = asyncReadableByteChannelEnumerator( )
 
   /**
@@ -534,25 +567,6 @@ class AsyncPullTest extends junit.framework.TestCase {
 
 
 
-/**
- * Evals once, the developer must check its Done, equivalent to a .run but
- * doesn't lose the continuation - no "Diverging Iteratee"
- */ 
-trait EvalW[WHAT,RETURN] {
-  
-  val orig : IterV[WHAT, RETURN]
-
-  def evalw : IterV[WHAT, RETURN] = {
-    orig.fold(done = (x, y) => Done(x,y),
-	 cont = k => {
-	   orig
-	 })
-  }
-}
-
- implicit def toEvalw[WHAT, RETURN]( i : IterV[WHAT, RETURN] ) = new EvalW[WHAT, RETURN] {
-    lazy val orig = i
-  }
  
   /**
    * Hideously spams with various sizes of data, and more than a few 0 lengths.
@@ -687,4 +701,418 @@ trait EvalW[WHAT,RETURN] {
     assertEquals("{urn:default}Default", e.right.get.name.qualifiedName)
     assertTrue("The parser should have been closed", parser.isClosed)
   }
+
+  def testSimpleEnumerateeMap = {
+    
+    val i = List("1","2","3","4").iterator
+
+    val res = enumerateeMap(sum[Int])( (s : String) => s.toInt )(i).run
+    assertEquals(10, res)
+  }
+  
+  def testEnumToManyExhaustState = {
+    
+    val l = List(1,2,3,4)
+
+    def f(i: Int): ResumableIter[Int, EphemeralStream[Int]] = {
+      def step(i: Int)(s: Input[Int]): ResumableIter[Int, EphemeralStream[Int]] = 
+	s( el = e => {
+	    //println("i "+i+" e "+e)
+	    Done((iTo(i, e), Cont(step(i + 1))), IterV.Empty[Int])
+	  },
+	  empty = Cont(step(i)),
+	  eof = Done((EphemeralStream.empty, Cont(error("Shouldn't call cont on eof"))), IterV.EOF[Int])
+	)
+
+      Cont(step(i))
+    }
+
+    val enum = (i: Int) => enumToMany(sum[Int])(f(i))
+
+    // 1, 2, 3, 4 only, the to is ignored
+    val (res, cont) = enum(1)(l.iterator).run
+    assertEquals(10, res)
+    assertTrue("should have been done", isDone(cont))
+
+    // -1->1 0, 0->2 3, 1->3 6, 2->4 9 
+    val (res2, cont2) = enum(-1)(l.iterator).run
+    assertEquals(18, res2)
+    assertTrue("2 should have been done", isDone(cont2))
+
+  }
+
+  def testEnumToManyExhaust = {
+    
+    val i = List(1,2,3,4).iterator
+
+    val (res, cont) = enumToMany(sum[Int])( mapTo( (i: Int) => El(iTo(1, i)) ) )(i).run
+    assertEquals(20, res)
+    assertTrue("should have been done", isDone(cont))
+  }
+
+  def testEnumToManyEOFFromMap = {
+    
+    val i = List(1,2,3,4).iterator
+
+    val (res, cont) = enumToMany(sum[Int])( mapTo( (i: Int) => EOF[EphemeralStream[Int]] ) )(i).run
+    assertEquals(0, res)
+    assertTrue("should have been done", isDone(cont))
+
+    val rest = i.take(4).toSeq
+    //println(rest)
+    assertEquals("Should still have had items in the list", 9, rest.sum)
+  }
+
+  /**
+   * Make sure it doesn't soe in the loop
+   */ 
+  def testEnumToManySOE = {
+    val i = List[Long](1,2,3,4,5).iterator
+    
+    val (res, cont) = enumToMany(sum[Long])( mapTo( (_:Long) => El(lTo(1L, 100000L)) ) )(i).run
+    assertEquals(25000250000L, res)
+    assertTrue("should have been done", isDone(cont))
+  }
+
+  def testEventsNotLostOneToMany = {
+    val i = List[Long](1,2,3,4,5).iterator
+
+    // force a restart at magic number 1
+    val sum: ResumableIter[Long,Long] = {
+      def step(acc: Long)( s : Input[Long] ) : ResumableIter[Long, Long] =
+	s( el = e => {
+	    val nacc = acc + e
+	    if (nacc == 25000050001L)
+	      Done((nacc, Cont(step(nacc))), IterV.Empty[Long])
+	    else
+	      Cont(step(nacc))
+	  },
+	  empty = Cont(step(acc)),
+	  eof = Done((acc, Done(acc, IterV.EOF[Long])), IterV.EOF[Long])
+	)
+
+      Cont(step(0))
+    }
+
+    val (res, cont) = enumToMany[Long, Long, Long](sum)( mapTo( (_:Long) => El(lTo(1L, 100000L)) ) )(i).run
+    assertEquals(25000050001L, res)
+    assertFalse("should not have been done", isDone(cont))
+
+    val (res2, cont2) = (cont.asInstanceOf[ResumableIter[Long, Long]]).run
+    assertEquals(25000250000L, res2)
+    assertTrue("should have been done", isDone(cont2))
+  }
+*/
+
+  /**
+   * Wraps an enumerator over E delegating to it when new input is needed
+  def enumToManyEnumerator[E](implicit enum: Enumerator[E]): Enumerator[EnumToMany] = new Enumerator[EnumToMany] {
+    def apply[E,A](wrapped: EnumToMany[E], i: IterV[EnumToMany[E],A]): IterV[E, A] = {
+ 
+      def apply(wrapped: ReadableByteChannelWrapper[E], i: IterV[E,A], count: Int): IterV[E, A] = {
+	i match {
+	  case _ if !wrapped.channel.isOpen || wrapped.isClosed => i
+	  case Done(acc, input) => i
+	  case Cont(k) =>
+	    val realChunk = wrapped.nextChunk
+	    val nextChunk = realChunk.asInstanceOf[E]
+	    val nextI = 
+	      if (realChunk.isEOF) {
+		 // println("actual data was EOF !!!")
+		  k(IterV.EOF[E])
+		} else
+		  if (realChunk.isEmpty)
+		    k(IterV.Empty[E])
+		  else
+		    k(El(nextChunk))
+	    val nc = 
+	      if (realChunk.isEmpty && !isDone(nextI)) {
+		count + 1
+	      } else 0
+
+	    if ((contOnCont != INFINITE_RETRIES) && (nc > contOnCont)) {
+	      //println("had cont on cont count, returning")
+	      nextI
+	    } else
+	      apply(wrapped, nextI, nc)
+	}
+      }
+
+      apply(wrapped, i, 0)
+    }
+  }
+ */ 
+  
+  /**
+   * Force the use of another enumerator
+   */ 
+  case class EnumToMany[E](item: E)
+
+   /*
+ enumerator for filling out the rest, pass the rest as state,
+ *
+  1->many->many, fake iterv, pushes back into this one!! enumerator forces next in cached results but not full eval 
+  */ 
+  def enumToMany[E, A, R]( dest: ResumableIter[A,R])( toMany: ResumableIter[E, EphemeralStream[A]]): ResumableIter[E, R] = {
+    val empty = () => EphemeralStream.empty
+
+    def loop( i: ResumableIter[A,R], s: () => EphemeralStream[A] ):
+      (ResumableIter[A,R], () => EphemeralStream[A]) = {
+      var c: ResumableIter[A,R] = i
+      var cs: EphemeralStream[A] = s() // need it now
+//println("loopy")
+      while(!isDone(c) && !cs.isEmpty) {
+	println("doing a loop "+c)
+	val (nc, ncs): (ResumableIter[A,R], EphemeralStream[A]) = c.fold(
+	  done = (a, y) => (c, s()),// send it back, shouldn't be possible to get here anyway due to while test
+	  cont = 
+	    k => {
+	      println("got cont")
+	      val head = cs.head() // if used in El it captures the byname not the value
+	      (k(IterV.El(head)), cs.tail())
+	    }
+	    )
+	c = nc
+	cs = ncs
+      }
+      (c, () => cs)
+    }
+
+//    class BounceIt() extends 
+
+    def contk( k: scalaz.Input[A] => ResumableIter[A,R],  i: ResumableIter[A,R], s: () => EphemeralStream[A], toMany: ResumableIter[E, EphemeralStream[A]] ): ResumableIter[E, R] = {
+      if (!s().isEmpty) {
+	val (ni, ns) = loop(i, s)
+	println("empty against the s "+ni + " " + ns)
+	//if (isDone(ni)) 
+	next(ni, ns, toMany) // bad - should let a done exit early
+      } else
+	Cont((x: Input[E]) => 
+	  x( el = e => {
+	    println("got a cont x el e "+e)
+	    toMany.fold (
+	      done = (a, y) => {
+		val (e1, nextContR) = a
+		val nextCont = nextContR.asInstanceOf[ResumableIter[E,scalaz.EphemeralStream[A]]]
+		error("Unexpected State for enumToMany - Cont but toMany is done")		     	
+	      },
+	      cont = y => {
+
+		/**/		      
+		println("and then I was here "+
+			x(el = e => e.toString, 
+			  empty = "I'm empty ",
+			  eof = "I'm eof"))
+
+		val afterNewCall = y(x)
+		println("and then " + afterNewCall)
+
+		/*
+		 * So the first chunk is the only chunk, we have the first cont - should be done onthe cont?
+		 */ 
+
+		afterNewCall.fold(
+		  done = (nextContPair, rest) => {
+		    println("was done wern't it")
+		    val (e1, nextCont) = nextContPair
+		    val nextContR = nextCont.asInstanceOf[ResumableIter[E,scalaz.EphemeralStream[A]]]
+		    if (isEOF(afterNewCall)) {
+		      println("after is eof")
+		      next(k(IterV.EOF[A]), empty, nextContR)
+		    } else {
+		      if (e1.isEmpty) {
+			println("empty on nextcontr")
+			next(k(IterV.Empty[A]), empty, nextContR)
+		      }
+		      else {
+			val h = e1.head()
+			println("some data after all "+h)
+			// should feed that back
+
+			next(k(IterV.El(h)), e1.tail, nextContR)
+
+			/*			      val r = k(IterV.El(e1.head()))
+			 if (isDone(r))
+
+Done((el.head(), next(k(IterV.El(e1.head())), e1.tail, nextContR)), IterV.Empty[E])*/
+		      }
+		    }
+		  },
+		  cont = k1 => {
+		    println("conted after here")
+		    next(k(IterV.Empty[A]), empty, afterNewCall)
+		  }
+		)
+	      }
+	    )
+	  },
+	    empty = {
+	      next(k(IterV.Empty[A]), empty, toMany)
+	    },
+	    eof = {
+	      next(k(IterV.EOF[A]), empty, toMany)
+	    }
+	  ))
+
+    }
+
+    def doneWith(a: (R, ResumableIter[A,R]), y: Input[A], i: ResumableIter[A,R], s: () => EphemeralStream[A], toMany: ResumableIter[E, EphemeralStream[A]], internalEOF: Boolean ): ResumableIter[E, R] = {
+
+      // println(" y is "+y) 
+
+      val (res, nextCont) = a
+      println("res is "+ res) 
+
+      val returnThis : ResumableIter[E, R] = 
+	if ((isDone(nextCont) && isEOF(nextCont)) ||
+	    (isDone(toMany) && isEOF(toMany))     || // either eof then its not restartable
+	    (EOF.unapply(y) && !internalEOF )  // or the source is out of elements
+	  ) { 
+	  if (EOF.unapply(y)) {
+	    println("it was eof from the run weren't it "+internalEOF)
+	  }
+
+	  Done((res, Done(res, IterV.EOF[E])), IterV.EOF[E])
+	} else {
+	  // there is a value to pass back out
+	  println("iz here")
+	  Done((res, 
+		{
+		  // really don't want to eval this now, lazy ftw
+		  val n = Cont( (i: Input[E]) => {
+		    println("about to next from up in here")
+		    next(nextCont.asInstanceOf[ResumableIter[A,R]], s, toMany, true)
+		  })
+		  
+		  //n
+		  if (s().isEmpty) {
+		    println("got here with s().empty")
+		    //new RuntimeException("Da fuck?!!").printStackTrace()
+
+		    // there is no more data saved up
+		    n//Done((res, n), IterV.Empty[E])
+		  } else {
+		    println("non - empty")
+		    // still data to process
+		    n
+		  }
+		}), IterV.Empty[E])
+	}
+
+      if (EOF.unapply(y)) {
+	// signal the end here to toMany, don't care about result
+	toMany.fold(done= (a1, y1) => false,
+		    cont = k => {
+		      k(IterV.EOF[E]); false
+		    })
+      }
+      
+      returnThis
+      
+    }
+      
+//    @scala.annotation.tailrec
+    def next( i: ResumableIter[A,R], s: () => EphemeralStream[A], toMany: ResumableIter[E, EphemeralStream[A]], internalEOF: Boolean = false ): ResumableIter[E, R] =
+      
+	i.fold(
+	done = (a, y) => doneWith(
+	  // oh for recursive types
+	  a.asInstanceOf[(R, ResumableIter[A, R])], y, i, s, toMany, internalEOF),
+	cont = 
+	  k => {
+	    contk(k, i, s, toMany)
+//	    println("Fucksake")
+	  }
+      )
+
+    next(dest, empty, toMany)
+  }
+
+
+  def lTo(lower: Long, upper: Long): EphemeralStream[Long] =
+    if (lower > upper) EphemeralStream.empty else EphemeralStream.cons(lower, lTo(lower + 1, upper))
+
+  def iTo(lower: Int, upper: Int): EphemeralStream[Int] =
+    if (lower > upper) EphemeralStream.empty else EphemeralStream.cons(lower, iTo(lower + 1, upper))
+
+/**
+ * Evals once, the developer must check its Done, equivalent to a .run but
+ * doesn't lose the continuation - no "Diverging Iteratee"
+ */ 
+trait EvalW[WHAT,RETURN] {
+  
+  val orig : IterV[WHAT, RETURN]
+
+  def evalw : IterV[WHAT, RETURN] = {
+    orig.fold(done = (x, y) => Done(x,y),
+	 cont = k => {
+	   orig
+	 })
+  }
+}
+
+ implicit def toEvalw[WHAT, RETURN]( i : IterV[WHAT, RETURN] ) = new EvalW[WHAT, RETURN] {
+    lazy val orig = i
+  }
+
+  def testEveryItem = {
+    val i = List[Long](1,4,7,10,13).iterator
+
+    // force a restart every entry
+    val echo: ResumableIter[Long,Long] = {
+      def step( s : Input[Long] ) : ResumableIter[Long, Long] =
+	s( el = e => {
+	  println("got "+e)
+	    //if (e > 2) {
+	      Done((e, Cont(step)), IterV.Empty[Long])
+	    //} else Cont(step)
+	    //
+	  },
+	  empty = Cont(step),
+	  eof = Done((0, Done(0, IterV.EOF[Long])), IterV.EOF[Long])
+	)
+
+      Cont(step)
+    }
+
+    val (origres, origcont) = enumToMany[Long, Long, Long](echo)( mapTo{ (x:Long) => println("evaled to "+x);El(lTo(x, x + 2L)) })(i).run
+
+    var res = origres
+    var iter : ResumableIter[Long, Long] = origcont.asInstanceOf[ResumableIter[Long, Long]]
+
+    for( i <- 1 to 15 ) {
+      println("loop !!!! "+i)
+      assertEquals(i, res)
+      val cres : ResumableIter[Long, Long] = iter.eval
+      assertTrue("Should have been done", isDone(cres))
+/*	if (isDone(iter)) {
+	  // has processed one of the inputs
+	  /*println("pushing the cont")
+	  val r = extractCont(iter).eval // k => EOF
+	  r.fold[Int]( 
+	    done = (x, i2) => {println("x "+x+" i2 "+i2);1}, 
+	    cont = f => 0 )
+
+	  println("pushing the pushed "+ r)	  
+	  val r2 = r.eval // unpacker
+	  println("evaled is "+r2)
+	  r2*/
+	  extractCont(iter).eval
+	} else {
+	  // 
+	  //	val (cres, ccont) = extractcont
+	  //    }
+	  //      assertFalse("should not have been done "+i, isDone(cont))
+	  // get the next one - could also be non-done of course
+	  println("gonna eval !!!!")
+	  iter.eval
+	}*/
+      res = extract(cres).get
+      iter = extractCont(cres)
+    }
+
+    assertEquals(0, res)
+    assertTrue("should have been done", isDone(iter))
+  }
+
 }
