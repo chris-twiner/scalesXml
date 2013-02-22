@@ -410,46 +410,31 @@ trait Iteratees {
 
     next(initAcc, initIter)
   }
-
-  /**
-   * This version of enumToMany returns Done((None, cont), Empty) when the toMany iteratee cannot supply anything else than Empty for an Empty input.
-   */ 
-  def enumToManyAsync[E, A, R]( dest: ResumableIter[A,R])( toMany: ResumableIter[E, EphemeralStream[A]]): ResumableIter[E, io.AsyncOption[R]] = 
-    enumToManyAsyncOption[E, A, R, io.AsyncOption[R]](
-      identity, // keep the option
-      true // should send us the option
-      )(dest)(toMany)
   
   /**
-   * Defaults to continuing when Empty is returned by toMany for an Empty input.
+   * Takes Input[E] converts via toMany to an EphemeralStream[A].  This in turn is fed to the destination iteratee.
+   * The inputs can be 1 -> Many, Many -> 1, or indeed 1 -> 1.
+   * 
+   * The callers must take care of what kind of continnuation Iteratee is returned in a Done.
    */ 
-  def enumToMany[E, A, R]( dest: ResumableIter[A,R])( toMany: ResumableIter[E, EphemeralStream[A]]): ResumableIter[E, R] = 
-    enumToManyAsyncOption[E, A, R, R](
-      _.getOrElse(error("No Asynchnronous Behaviour Expected But the toMany still recieved an Empty and returned a Done Empty")), // throw if async somehow got returned
-      false // use cont instead
-      )(dest)(toMany)
-  
-  /**
-   * Takes a function f that turns input into an Input[EphemeralStream] of a different type A.  The function f may return El(EphemeralStream.empty) which is treated as Empty.
-   * This function must return an ResumableIter in order to capture early Done's without losing intermediate chunks,
-   * the destination iter having the same requirements.
-   *
-   * The AsyncOption is required in the return to handle the case of empty -> empty infinite loops.  For asynchronous parsing, for example, we should be able to return an empty result but with Empty as the input type.
-   */ 
-  def enumToManyAsyncOption[E, A, R, T](converter: io.AsyncOption[R] => T, doneOnEmptyForEmpty: Boolean)( dest: ResumableIter[A,R])( toMany: ResumableIter[E, EphemeralStream[A]]): ResumableIter[E, T] = {
+  def enumToMany[E, A, R]( dest: ResumableIter[A,R])( toMany: ResumableIter[E, EphemeralStream[A]]): ResumableIter[E, R] = {
     val empty = () => EphemeralStream.empty
 
+    /**
+     * Pumps data from the toMany through to the destination, when the destination has consumed as much as possible it returns.
+     */ 
     def loop( i: ResumableIter[A,R], s: () => EphemeralStream[A] ):
       (ResumableIter[A,R], () => EphemeralStream[A]) = {
       var c: ResumableIter[A,R] = i
       var cs: EphemeralStream[A] = s() // need it now
-//println("loopy")
+	//println("loopy "+ isDone(c)+ " " +cs.isEmpty)
       while(!isDone(c) && !cs.isEmpty) {
-//	println("doing a loop")
+	// println("doing a loop "+c)
 	val (nc, ncs): (ResumableIter[A,R], EphemeralStream[A]) = c.fold(
 	  done = (a, y) => (c, s()),// send it back, shouldn't be possible to get here anyway due to while test
 	  cont = 
 	    k => {
+	      // println("got cont")
 	      val head = cs.head() // if used in El it captures the byname not the value
 	      (k(IterV.El(head)), cs.tail())
 	    }
@@ -460,113 +445,135 @@ trait Iteratees {
       (c, () => cs)
     }
 
-    def next( i: ResumableIter[A,R], s: () => EphemeralStream[A], toMany: ResumableIter[E, EphemeralStream[A]] ): ResumableIter[E, T] =
-      i.fold(
-	done = (a, y) => {
-//	  println(" y is "+y) 
+    /**
+     * For Cont handling we must loop when there is more data left on the stream,
+     * when not verify if the toMany has returned more data to process.
+     */ 
+    def contk( k: scalaz.Input[A] => ResumableIter[A,R],  i: ResumableIter[A,R], s: () => EphemeralStream[A], toMany: ResumableIter[E, EphemeralStream[A]] ): ResumableIter[E, R] = {
+      if (!s().isEmpty) {
+	val (ni, ns) = loop(i, s)
+	//println("empty against the s "+ni + " " + ns().isEmpty)
+	//if (isDone(ni)) 
+	next(ni, ns, toMany) // bad - should let a done exit early
+      } else
+	Cont((x: Input[E]) => 
+	  x( el = e => {
+	    //println("got a cont x el e "+e)
+	    toMany.fold (
+	      done = (a, y) => {
+		val (e1, nextContR) = a
+		val nextCont = nextContR.asInstanceOf[ResumableIter[E,scalaz.EphemeralStream[A]]]
+		error("Unexpected State for enumToMany - Cont but toMany is done")		     	
+	      },
+	      cont = y => {
 
-	  val (rawRes, nextCont) = a
-	  val res = converter(io.HasResult(rawRes))
+		/*		      
+		println("and then I was here "+
+			x(el = e => e.toString, 
+			  empty = "I'm empty ",
+			  eof = "I'm eof"))
+			  */
+		val afterNewCall = y(x)
+		//println("and then " + afterNewCall)
 
-	  val returnThis : ResumableIter[E, T] = 
-	  if ((isDone(nextCont) && isEOF(nextCont)) ||
-	      (isDone(toMany) && isEOF(toMany))     || // either eof then its not restartable
-	      (EOF.unapply(y)) // or the source is out of elements
-	      ) { 
-	    Done((res, Done(res, IterV.EOF[E])), IterV.EOF[E])
-	  } else {
-	    Done((res, 
-	      {
-		val n = next(nextCont.asInstanceOf[ResumableIter[A,R]], s, toMany)
-	      
-		if (s().isEmpty)
-		  Done((res, n), IterV.Empty[E])
-		else
-		  n
-	      }), IterV.Empty[E])
-	  }
-
-	  if (EOF.unapply(y)) {
-	    // signal the end here to toMany, don't care about result
-	    toMany.fold(done= (a1, y1) => false,
-			cont = k => {
-			  k(IterV.EOF[E]); false
-			})
-	  }
-	  
-	  returnThis
+		afterNewCall.fold(
+		  done = (nextContPair, rest) => {
+		    //println("was done wern't it")
+		    val (e1, nextCont) = nextContPair
+		    val nextContR = nextCont.asInstanceOf[ResumableIter[E,scalaz.EphemeralStream[A]]]
+		    if (isEOF(afterNewCall)) {
+		      //println("after is eof")
+		      next(k(IterV.EOF[A]), empty, nextContR)
+		    } else {
+		      if (e1.isEmpty) {
+			//println("empty on nextcontr")
+			next(k(IterV.Empty[A]), empty, nextContR)
+		      }
+		      else {
+			val h = e1.head()
+			// println("some data after all "+h)
+			next(k(IterV.El(h)), e1.tail, nextContR)
+		      }
+		    }
+		  },
+		  cont = k1 => {
+		    //println("conted after here")
+		    next(k(IterV.Empty[A]), empty, afterNewCall)
+		  }
+		)
+	      }
+	    )
 	  },
+	    empty = {
+	      next(k(IterV.Empty[A]), empty, toMany)
+	    },
+	    eof = {
+	      next(k(IterV.EOF[A]), empty, toMany)
+	    }
+	  ))
+
+    }
+
+    /**
+     * Handle closed states in either dest or toMany, feed data back out when
+     * dest signals it is Done.  .run triggers EOFs but in the case
+     * of continuations the data is fake - triggered by doneWith itself.
+     * internalEOF caters for this case.
+     */ 
+    def doneWith(a: (R, ResumableIter[A,R]), y: Input[A], i: ResumableIter[A,R], s: () => EphemeralStream[A], toMany: ResumableIter[E, EphemeralStream[A]], internalEOF: Boolean ): ResumableIter[E, R] = {
+
+      val (res, nextCont) = a
+      // println("res is "+ res) 
+
+      val returnThis : ResumableIter[E, R] = 
+	if ((isDone(nextCont) && isEOF(nextCont)) ||
+	    (isDone(toMany) && isEOF(toMany))     || // either eof then its not restartable
+	    (EOF.unapply(y) && !internalEOF )  // or the source is out of elements
+	  ) {
+
+	  Done((res, Done(res, IterV.EOF[E])), IterV.EOF[E])
+
+	} else {
+	  // there is a value to pass back out
+	  Done((res, 
+	    {
+	      val cont = () => next(nextCont.asInstanceOf[ResumableIter[A,R]], s, toMany, true)
+	      val n = Cont( (i: Input[E]) => {
+		cont()
+	      })
+	      
+	      if (s().isEmpty) {
+		// need to process this res but force another to be
+		// calculated before it is returned to the enumerator
+		n 
+	      } else {
+		// still data to process
+		cont()
+	      }
+	    }), IterV.Empty[E])
+	}
+
+      if (EOF.unapply(y) && !internalEOF) {
+	// signal the end here to toMany, don't care about result
+	toMany.fold(done= (a1, y1) => false,
+		    cont = k => {
+		      k(IterV.EOF[E]); false
+		    })
+      }
+      
+      returnThis
+      
+    }
+      
+    def next( i: ResumableIter[A,R], s: () => EphemeralStream[A], toMany: ResumableIter[E, EphemeralStream[A]], internalEOF: Boolean = false ): ResumableIter[E, R] =
+      
+      i.fold(
+	done = (a, y) => doneWith(
+	  // oh for recursive types
+	  a.asInstanceOf[(R, ResumableIter[A, R])], y, i, s, toMany, internalEOF),
 	cont = 
 	  k => {
-	    if (!s().isEmpty) {
-	      val (ni, ns) = loop(i, s)
-	      next(ni, ns, toMany)
-	    } else
-	      Cont((x: Input[E]) => 
-		x( el = e => {
-		  //println("got a "+e)
-		  toMany.fold (
-		    done = (a, y) => {
-		      val (e1, nextContR) = a
-		      val nextCont = nextContR.asInstanceOf[ResumableIter[E,scalaz.EphemeralStream[A]]]
-		      error("Unexpected State for enumToMany - Cont but toMany is done")		     	
-		    },
-		    cont = y => {
-		      val afterNewCall = y(x)
-		      afterNewCall.fold(
-			done = (nextContPair, rest) => {
-			  val (e1, nextCont) = nextContPair
-			  val nextContR = nextCont.asInstanceOf[ResumableIter[E,scalaz.EphemeralStream[A]]]
-			  if (isEOF(afterNewCall)) {
-			    next(k(IterV.EOF[A]), empty, nextContR)
-			  } else {
-			    if (e1.isEmpty) {
-			      //println("empty on nextcontr")
-			      next(k(IterV.Empty[A]), empty, nextContR)
-			    }
-			    else
-			      next(k(IterV.El(e1.head())), e1.tail, nextContR)
-			  }
-			},
-			cont = k1 => {
-			  next(k(IterV.Empty[A]), empty, afterNewCall)
-			}
-			)
-		    }
-		  )
-		},
-		  empty = {
-		    //println("empty on cont")
-		    toMany.fold (
-		      done = (a, y) => {
-			error("shouldn't be done ever, unless it was done to start with")
-		      },
-		      cont = y => {
-			//println("looping back again, the to many can't do anything with empty")
-			// push it through
-			val res = y(x)
-			res.fold (
-			  done = (a1, y1) => {
-			    val (e1 : EphemeralStream[A], nextCont : ResumableIter[E,EphemeralStream[A]]) = a1.asInstanceOf[(EphemeralStream[A], ResumableIter[E,EphemeralStream[A]])]
-			    if (doneOnEmptyForEmpty && e1.isEmpty && IterV.Empty.unapply[E](y1)) {
-			      // the toMany has indicated it can't do anything more
-			      // don't loop but drop out
-			      //println("drop out")
-			      Done((converter(io.NeedsMoreData), 
-				    next(k(IterV.Empty[A]), empty, nextCont)), IterV.Empty[E])	
-			    }
-			    else {
-			      //println("couldn't drop out ")
-			      next(k(IterV.Empty[A]), () => e1, nextCont)
-			    }   
-			  },
-			  cont = kn => next(k(IterV.Empty[A]), empty, res)
-			)
-		      }
-		    )
-		  },
-		  eof = next(k(IterV.EOF[A]), empty, toMany)
-		))
+	    contk(k, i, s, toMany)
 	  }
       )
 

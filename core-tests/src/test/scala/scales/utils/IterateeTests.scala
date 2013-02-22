@@ -109,11 +109,66 @@ class IterateeTest extends junit.framework.TestCase {
 
     val (res, cont) = enumToMany[Long, Long, Long](sum)( mapTo( (_:Long) => El(lTo(1L, 100000L)) ) )(i).run
     assertEquals(25000050001L, res)
-    assertTrue("should not have been done", !isDone(cont))
+    assertFalse("should not have been done", isDone(cont))
 
     val (res2, cont2) = (cont.asInstanceOf[ResumableIter[Long, Long]]).run
     assertEquals(25000250000L, res2)
     assertTrue("should have been done", isDone(cont2))
+  }
+
+  def testEveryItem = {
+    val source = List[Long](1,4,7,10,13).iterator
+
+    // force a restart every entry
+    val echo: ResumableIter[Long,Long] = {
+      def step( s : Input[Long] ) : ResumableIter[Long, Long] =
+	s( el = e => {
+//	  println("got "+e)
+	    //if (e > 2) {
+	      Done((e, Cont(step)), IterV.Empty[Long])
+	    //} else Cont(step)
+	    //
+	  },
+	  empty = Cont(step),
+	  eof = Done((0, Done(0, IterV.EOF[Long])), IterV.EOF[Long])
+	)
+
+      Cont(step)
+    }
+
+    val (origres, origcont) = enumToMany[Long, Long, Long](echo)( mapTo{ (x:Long) => println("evaled to "+x);El(lTo(x, x + 2L)) })(source).run
+
+    var res = origres
+    var iter : ResumableIter[Long, Long] = origcont.asInstanceOf[ResumableIter[Long, Long]]
+
+    var count = 1 // already run once
+
+    for( i <- 1 to 15 ) {
+//      println("loop !!!! "+i)
+      assertEquals(i, res)
+      val cres : ResumableIter[Long, Long] = iter.eval
+      if (isDone(cres)){
+	res = extract(cres).get
+	iter = extractCont(cres)
+      } else {
+//	println(">>><<<<>>>>><<<<")
+	count += 1
+	// run on the source - as we need more data
+	val (nres, ncont) = cres(source).run
+	res = nres
+	iter = ncont.asInstanceOf[ResumableIter[Long, Long]]
+
+	if (count == 6) {
+	  assertEquals("should have pushed the eof", 15, i)
+	}
+      }      
+    }
+
+    assertEquals(0, res)
+    assertTrue("should have been done", isDone(iter))
+    assertTrue("should have been eof", isEOF(iter))
+    assertFalse("source should be empty", source.hasNext)
+    assertEquals("should have reset 6 times - once for start and once for EOF ", 6, count)
   }
 
 }
