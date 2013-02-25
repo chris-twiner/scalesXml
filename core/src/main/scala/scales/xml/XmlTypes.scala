@@ -86,6 +86,19 @@ sealed trait Elem extends XmlEvent {
     hs    
   }
 
+  override def toString(): String = {
+    var sb = new java.lang.StringBuilder()
+    sb.append("Elem(").
+       append(name)
+    if (emptyAttributes ne attributes)
+      sb.append(", ").
+	append(attributes)
+    if (emptyNamespaces ne namespaces)
+      sb.append(", ").
+	append(namespaces)
+
+    sb.append(")").toString()
+  }
 }
 
 object Elem {

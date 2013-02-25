@@ -92,7 +92,7 @@ abstract class AsyncParser(implicit xmlVersion : XmlVersion) extends CloseOnNeed
   /**
    * Pushes through Misc items in either prolog or the epilog
    */
-  protected def pumpMisc() : Option[PullType] = {
+  protected def pumpMisc() : Input[PullType] = {
 
     val (event, num, odepth, oprolog) = PullUtils.pumpEvent(parser, strategy, token, prolog, depth)(eventHandler)
 
@@ -102,17 +102,19 @@ abstract class AsyncParser(implicit xmlVersion : XmlVersion) extends CloseOnNeed
       // doc start
       copyProlog( oprolog ) 
     }
-    
+    // FUCKING MISC MUST RETURN EMPTY FOR ALL - OPTION SHIT!!!
     if (num == END_DOCUMENT) {
       // EOF - let the iter deal 
-      println("closing")
+      //println("closing")
       closeResource
       //Some(EOF[T])
-      None
+      EOF[PullType]
     } else if (num == EVENT_INCOMPLETE) {
-      None//pumpInMisc
+      //println("event incomplete ")
+      IterV.Empty[PullType]//None//pumpInMisc
     } else if (odepth == -1) {
       // still misc
+      //println("didn't get out of misc , none??")
       
       if (event.isLeft && (event.left.get eq PullUtils.dtdDummy)) {
 	copyProlog( prolog.copy(dtd = Some(
@@ -125,22 +127,29 @@ abstract class AsyncParser(implicit xmlVersion : XmlVersion) extends CloseOnNeed
 	  addEndMisc(event)	      
       }
 
-      None
+      IterV.Empty[PullType]//None
     } else {
+      //println("actually started with first event")
       started = true
       // pump actual first event - yay !!, next depth -1 is endmisc
-      Some(event)
+      El(event)
     }
   }
 
-  protected def pump() : Option[PullType] = {
+  protected def pump() : Input[PullType] = {
     if (feeder.needMoreInput) {
-      println("needed more but we still pumped")
+      //println("needed more but we still pumped")
     }
 
     // don't have to re-read, let it push what it has
     if (depth == -1) {
-      pumpMisc()
+      //println("pumping misc")
+      var r = pumpMisc()
+      // keep going if there are more events to process and are still in misc
+      while(!feeder.needMoreInput && r(el = E => false, empty = true, eof = false)) {
+	r = pumpMisc()
+      }
+      r
     } else {
       // 2nd > events
       val (event, num, odepth, oprolog) = PullUtils.pumpEvent(parser, strategy, token, prolog, depth)(eventHandler)
@@ -149,35 +158,47 @@ abstract class AsyncParser(implicit xmlVersion : XmlVersion) extends CloseOnNeed
 
       if (num == END_DOCUMENT) {
 	// EOF - let the iter deal -- should not occur here though, only when depth == -1
-	println("closing in pump")
+	//println("closing in pump")
 	closeResource
 	//Some(EOF[T])
-	None
+	EOF[PullType]
       } else if (num == EVENT_INCOMPLETE) {
 	// let the iter attempt to deal
 	//empties += 1
 	//Some(IterV.Empty[T])
-	None
+	IterV.Empty[PullType]
       } else {
 	// actual data present, odepth -1 is looked at for the next iter
 	//Some(El(event))
-	Some(event)
+	El(event)
       }
     }
   }
 
   // keep going until we get needs more input
-  protected def nextStream(): EphemeralStream[PullType] =
-    if (isClosed || feeder.needMoreInput) // keep num around?
+  protected def nextStream(): EphemeralStream[PullType] = {
+    if (isClosed || feeder.needMoreInput) { // keep num around?
+    //  println("got to nextStream and empty")
       EphemeralStream.empty
-    else {
+    } else {
 	// push one more off
-      pump.map{ p =>
-	EphemeralStream.cons[PullType](p, nextStream())
-	     }.
-      getOrElse(nextStream()) // 
+      val pumped = pump
+      pumped(
+	el = e => {
+//	  println("got some "+e)
+	  EphemeralStream.cons[PullType](e, nextStream())
+	},
+	empty = {
+//	  println("pumped all we have")
+	  EphemeralStream.empty
+	},
+	eof = {
+//	  println("eof from pump but returned empty")
+	  EphemeralStream.empty // next run will pick it up
+	}
+      ) // 
     }
-
+  }
   /**
    * Given a DataChunk will return the next available data stream.
    * Returns EOF when the Parser is closed, Empty when more DataChunks are needed.
@@ -191,15 +212,32 @@ abstract class AsyncParser(implicit xmlVersion : XmlVersion) extends CloseOnNeed
   def nextInput(d: DataChunk): Input[EphemeralStream[PullType]] = {
     //println("called nextInput")
 
-    if (isClosed) {
-      IterV.EOF[EphemeralStream[PullType]]      
-    } else {
-      feeder.feedInput(d.array, d.offset, d.length)
+    if (d.isEmpty) {
+      //println("fed empty")
+      IterV.Empty[EphemeralStream[PullType]]
+    } else 
+      if (isClosed || d.isEOF) {
+	if (d.isEOF) {
+	  //println("Data was eof")
+	  closeResource
+	}
+	IterV.EOF[EphemeralStream[PullType]]      
+      } else {
+	if (!feeder.needMoreInput) {
+	  error("The stream from the previous call to nextInput was not evaluated ")
+	}
 
-      if (feeder.needMoreInput) // let the enumerator deal with it
-	IterV.Empty[EphemeralStream[PullType]]
-      else // it may have empty after the call
-	IterV.El[EphemeralStream[PullType]](nextStream())
+	//println("pushing "+d)
+	feeder.feedInput(d.array, d.offset, d.length)
+
+	val res = nextStream()
+
+	if (res.isEmpty) { // let the enumerator deal with it
+	  //println("empty after feeding")
+	  IterV.Empty[EphemeralStream[PullType]]
+	} else // it may have empty after the call
+	  IterV.El[EphemeralStream[PullType]](res)
+	
     }
   }
   
@@ -214,6 +252,7 @@ object AsyncParser {
     def EOF: ResumableIter[DataChunk, EphemeralStream[PullType]] = {
       parser.closeResource
 
+      //println("closing against EOF from parse")
       Done((EphemeralStream.empty, 
 	  Cont(
 	    error("Called the continuation on a closed parser")
@@ -224,25 +263,28 @@ object AsyncParser {
 
     def step(s: Input[DataChunk]): ResumableIter[DataChunk, EphemeralStream[PullType]] = 
       s(el = e => {
+	  //println("Did get a large chunk "+e)
 	  val r = parser.nextInput(e)
 	  r( el = es => {
-		//println("got el")
+		//println("got el with es " + es.isEmpty + " feeder " + parser.feeder.needMoreInput)
 	      Done((es,
 		    Cont(
 		      step
 		      )), IterV.Empty[DataChunk])
 	      },
 	      empty = {
-		//println("empty from done")
-		emptyness//Cont(step)
+		//println("empty from input")
+		//emptyness
+		Cont(step)
 	      },
 	      eof = EOF
 	  )
 	},
 	empty = {
-	  //println("doneage on empty")
-	  emptyness
+	  //println("empty input")
+	  //emptyness
 	  //Done((EphemeralStream.empty, Cont(step)), IterV.Empty[DataChunk]) // nothing that can be done on empty
+	  Cont(step)
 	},
 	eof = EOF
       )

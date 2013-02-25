@@ -37,10 +37,36 @@ class AsyncPullTest extends junit.framework.TestCase {
 
   import serializers._
 
+
+  type SerialIterT = IterV[PullType, (XmlOutput, Option[Throwable])] 
+
+  import java.nio.charset.Charset
+  import scales.utils.{io, resources}
+  import resources._ 
+
+/**
+ * returns the cont and drops the input parameter or returns Done
+ */ 
+trait EvalW[WHAT,RETURN] {
+  
+  val orig : IterV[WHAT, RETURN]
+
+  def evalw : IterV[WHAT, RETURN] = {
+    orig.fold(done = (x, y) => Done(x,y),
+	 cont = k => {
+	   orig
+	 })
+  }
+}
+
+ implicit def toEvalw[WHAT, RETURN]( i : IterV[WHAT, RETURN] ) = new EvalW[WHAT, RETURN] {
+    lazy val orig = i
+  }
+
   /**
    * ensure that the enumerator doesn't break basic assumptions when it can get
    * all the data
-   */ 
+   */
   def testFlatMapMultipleDones = {
     val url = sresource(this, "/data/BaseXmlTest.xml")
 
@@ -111,10 +137,11 @@ class AsyncPullTest extends junit.framework.TestCase {
     // should have collected all anyway
     doSimpleLoadAndFold{
       (p, iter, wrapped) => 
-      val enumeratee = enumToManyAsync(iter)(AsyncParser.parse(p))
-      val (HasResult(e),cont) = enumeratee(wrapped).run
+      val enumeratee = enumToMany(iter)(AsyncParser.parse(p))
+      val (e,cont) = enumeratee(wrapped).run
       e
     }
+// here
 
   // Just using the parser
   def testRandomAmountsDirectParser = {
@@ -155,11 +182,11 @@ class AsyncPullTest extends junit.framework.TestCase {
       )
     }
     
-    //println("got a zero len "+randomChannel.zeroed+" times. Nexted "+nexted+" - headed "+headed)
+//    println("got a zero len "+randomChannel.zeroed+" times. Nexted "+nexted+" - headed "+headed)
     val s = asString(res.iterator : Iterator[PullType])
     assertEquals(s, str)
 
-    assertEquals(randomChannel.zeroed + 1, nexted)
+    assertTrue("we should have more nexted then zeroed - due to boundaries on the available data", randomChannel.zeroed + 1 < nexted)
   }
 
   // using the parser and the parse iteratee
@@ -197,7 +224,7 @@ class AsyncPullTest extends junit.framework.TestCase {
       
       def nextC = 
 	c.fold (
-	  done = (a, y) => { 
+	  done = (a, y) => { // if eof
 	    val (e, cont) = a
 	    headed += 1
 	    //println("got here "+ headed)
@@ -207,29 +234,35 @@ class AsyncPullTest extends junit.framework.TestCase {
 	      res = res :+ h
 	      st = st.tail()
 	    }
+	    // is
+	    //println(" -> "+res)
 	    cont.asInstanceOf[ResumableIter[DataChunk, EphemeralStream[PullType]]]
 	  },
 	  cont = k => {
 	    nexted += 1
+	    //println( "nexted " + nexted )
+	    // need to push the next chunk
 	    k(input)
 	  }
 	)
 
-      c = nextC 
-
-      if (isDone(c)) {
+      // if its done we have to pump
+      if (!randomChannel.isClosed && !isDone(c))
 	b = randomChannel.nextChunk
-	if (b == EOFData) {
-	  //do it one last time
-	  c = nextC
-	}
-      }
+
+      //println("next chunked " + b)
+      c = nextC
     }
     
     val s = asString(res.iterator : Iterator[PullType])
     assertEquals(s, str)
+
+    assertTrue("Cont should have been eof", isEOF(c))
+    assertTrue("Parser should have been closed", parser.isClosed)
   }
 
+
+ 
   /**
    * Hideously spams with various sizes of data, and more than a few 0 lengths.
    *
@@ -250,41 +283,42 @@ class AsyncPullTest extends junit.framework.TestCase {
     val strout = new java.io.StringWriter()
     val (closer, iter) = pushXmlIter( strout , doc )
 
-    val enumeratee = enumToManyAsync(iter)(AsyncParser.parse(parser))
+    val enumeratee = enumToMany(iter)(AsyncParser.parse(parser))
     val wrapped = new ReadableByteChannelWrapper(randomChannel, true, tinyBuffers)
-    val cstable = enumeratee(wrapped).eval
+    
+    /*
+     * the random channel does every 10, every 6 forces it back but allows
+     * a fair chunk of Empty -> Conts followed by data
+     */ 
+    implicit val readableByteChannelEnumerator = asyncReadableByteChannelEnumerator( 6 )
+
+    val cstable = enumeratee(wrapped).evalw
     var c = cstable
+//    println("eval - already donE?? " + isDone(c))
     
     type cType = cstable.type
 
-    val FEEDME : Option[AsyncOption[(XmlOutput, Option[Throwable])]] = Some(NeedsMoreData)
-
-//    var c = iter(parser).eval
     var count = 0
-    while((extract(c) == FEEDME) || (!isDone(c))) {
-      c = extractCont(c)(wrapped).eval
+    while(!isDone(c)) {
+      c = c(wrapped).evalw//extractCont(c)(wrapped).evalw
       count += 1
-      //println("evals")
     }
-//    println("eval'd "+ count +" times ") 
+//    println("evalw'd "+ count +" times ") 
 //    println("got a zero len "+ randomChannel.zeroed+" times ")
 
-    assertEquals("eval "+count+" zero "+randomChannel.zeroed, count, randomChannel.zeroed)
-
-//    println("is " + c.fold( done = (a, i) => i, cont = k => ""))
-    
-//    println("Got a "+extract(c))
-//    println("was " + strout.toString)
+    if (randomChannel.zeroed > 0) {
+      assertTrue("There were "+randomChannel.zeroed+" zeros fed but it never left the evalw", count > 0)
+    }
 
     c.fold[Unit](
       done = (a,i) => {
-	val (HasResult((out, thrown)), cont) = a
+	val ((out, thrown), cont) = a
 	assertFalse( "shouldn't have thrown", thrown.isDefined)
 	//println(" iter was " + strout.toString)
 	assertTrue("should have been auto closed", closer.isClosed)
 	assertEquals(str, strout.toString)
       },
-      cont = f => error("Should have been done")
+      cont = f => fail("Should have been done")
     )
     
     assertTrue("Parser should have been closed ", parser.isClosed)
@@ -362,5 +396,6 @@ class AsyncPullTest extends junit.framework.TestCase {
     assertEquals("{urn:default}Default", e.right.get.name.qualifiedName)
     assertTrue("The parser should have been closed", parser.isClosed)
   }
-  
+
+
 }
