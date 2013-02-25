@@ -415,7 +415,7 @@ trait Iteratees {
    * Takes Input[E] converts via toMany to an EphemeralStream[A].  This in turn is fed to the destination iteratee.
    * The inputs can be 1 -> Many, Many -> 1, or indeed 1 -> 1.
    * 
-   * The callers must take care of what kind of continnuation Iteratee is returned in a Done.
+   * The callers must take care of what kind of continnuation Iteratee is returned in a Done..
    */ 
   def enumToMany[E, A, R]( dest: ResumableIter[A,R])( toMany: ResumableIter[E, EphemeralStream[A]]): ResumableIter[E, R] = {
     val empty = () => EphemeralStream.empty
@@ -446,6 +446,47 @@ trait Iteratees {
     }
 
     /**
+     * Call the toMany continuation function
+     */ 
+    def pumpNext(x: Input[E], toMany: scalaz.Input[E] => ResumableIter[E,EphemeralStream[A]], k: scalaz.Input[A] => ResumableIter[A,R] ): ResumableIter[E, R] = {
+      
+      /*		      
+       println("and then I was here "+
+         x(el = e => e.toString, 
+         empty = "I'm empty ",
+         eof = "I'm eof"))
+       */
+      val afterNewCall = toMany(x)
+      //println("and then " + afterNewCall)
+
+      afterNewCall.fold(
+	done = (nextContPair, rest) => {
+	  //println("was done wern't it")
+	  val (e1, nextCont) = nextContPair
+	  val nextContR = nextCont.asInstanceOf[ResumableIter[E,scalaz.EphemeralStream[A]]]
+	  if (isEOF(afterNewCall)) {
+	    //println("after is eof")
+	    next(k(IterV.EOF[A]), empty, nextContR)
+	  } else {
+	    if (e1.isEmpty) {
+	      //println("empty on nextcontr")
+	      next(k(IterV.Empty[A]), empty, nextContR)
+	    }
+	    else {
+	      val h = e1.head()
+	      // println("some data after all "+h)
+	      next(k(IterV.El(h)), e1.tail, nextContR)
+	    }
+	  }
+	},
+	cont = k1 => {
+	  //println("conted after here")
+	  next(k(IterV.Empty[A]), empty, afterNewCall)
+	}
+      )
+    }
+
+    /**
      * For Cont handling we must loop when there is more data left on the stream,
      * when not verify if the toMany has returned more data to process.
      */ 
@@ -465,42 +506,8 @@ trait Iteratees {
 		val nextCont = nextContR.asInstanceOf[ResumableIter[E,scalaz.EphemeralStream[A]]]
 		error("Unexpected State for enumToMany - Cont but toMany is done")		     	
 	      },
-	      cont = y => {
-
-		/*		      
-		println("and then I was here "+
-			x(el = e => e.toString, 
-			  empty = "I'm empty ",
-			  eof = "I'm eof"))
-			  */
-		val afterNewCall = y(x)
-		//println("and then " + afterNewCall)
-
-		afterNewCall.fold(
-		  done = (nextContPair, rest) => {
-		    //println("was done wern't it")
-		    val (e1, nextCont) = nextContPair
-		    val nextContR = nextCont.asInstanceOf[ResumableIter[E,scalaz.EphemeralStream[A]]]
-		    if (isEOF(afterNewCall)) {
-		      //println("after is eof")
-		      next(k(IterV.EOF[A]), empty, nextContR)
-		    } else {
-		      if (e1.isEmpty) {
-			//println("empty on nextcontr")
-			next(k(IterV.Empty[A]), empty, nextContR)
-		      }
-		      else {
-			val h = e1.head()
-			// println("some data after all "+h)
-			next(k(IterV.El(h)), e1.tail, nextContR)
-		      }
-		    }
-		  },
-		  cont = k1 => {
-		    //println("conted after here")
-		    next(k(IterV.Empty[A]), empty, afterNewCall)
-		  }
-		)
+	      cont = toManyCont => {
+		pumpNext(x, toManyCont, k)
 	      }
 	    )
 	  },
