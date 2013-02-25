@@ -136,7 +136,11 @@ class IterateeTest extends junit.framework.TestCase {
       Cont(step)
     }
 
-    val (origres, origcont) = enumToMany[Long, Long, Long](echo)( mapTo{ (x:Long) => println("evaled to "+x);El(lTo(x, x + 2L)) })(source).run
+    val (origres, origcont) = enumToMany[Long, Long, Long](echo)( mapTo{
+      (x:Long) =>
+	//println("evaled to "+x);
+	El(lTo(x, x + 2L)) 
+    })(source).run
 
     var res = origres
     var iter : ResumableIter[Long, Long] = origcont.asInstanceOf[ResumableIter[Long, Long]]
