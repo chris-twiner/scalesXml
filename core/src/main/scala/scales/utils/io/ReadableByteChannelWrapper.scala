@@ -21,14 +21,26 @@ object DataChunkEvidence {
 }
 
 /**
- * Wraps a ReadableByteChannel to provide DataChunks, optionally closes the channel (defaults to closing)
+ * Wraps a ReadableByteChannel to provide DataChunks, optionally closes the channel (defaults to closing).
+ *
+ * @directBufferArrayPool is used when there is a direct ByteBuffer only.
  */ 
-class ReadableByteChannelWrapper[T](val channel: ReadableByteChannel, private val closeChannel: Boolean = true, private val bytePool: Pool[ByteBuffer] = DefaultBufferPool)(implicit ev: DataChunkEvidence[T]) extends CloseOnNeed {
+class ReadableByteChannelWrapper[T](val channel: ReadableByteChannel, private val closeChannel: Boolean = true, private val bytePool: Pool[ByteBuffer] = DefaultBufferPool, private val directBufferArrayPool: Pool[Array[Byte]] = DefaultByteArrayPool )(implicit ev: DataChunkEvidence[T]) extends CloseOnNeed {
 
-  val buffer = bytePool.grab
-
+  protected val buffer = bytePool.grab
+  
+  protected val to: Array[Byte] = 
+    if (buffer.hasArray)
+      null
+    else
+      directBufferArrayPool.grab
+      
   protected def doClose = {
+    if (!buffer.hasArray) {
+      directBufferArrayPool.giveBack(to)
+    }
     bytePool.giveBack(buffer)
+    
     if (closeChannel) {
       channel.close()
     }
@@ -47,31 +59,67 @@ class ReadableByteChannelWrapper[T](val channel: ReadableByteChannel, private va
     }
   }
 
-  protected def direct(to : Array[Byte]) : DataChunk = {
-    buffer.clear()
-    val read = channel.read(buffer)
-    read match {
-      case -1 => {
-	closeResource
-	EOFData
+  var leftInBuffer = 0
+
+  protected def direct() : DataChunk = {
+    // limit is rem when its not read anything
+    if (leftInBuffer > 0) {
+      // println("remains "+leftInBuffer)
+      val used = math.min(leftInBuffer, to.length)
+      if (leftInBuffer >= used) {
+	// still got some left to push
+	leftInBuffer = leftInBuffer - used
+      } else {
+	leftInBuffer = 0
       }
-      case 0 => EmptyData
-      case _ => 
-	buffer.get(to)
-      Chunk(to, 0, read)
+      // if there is still data read it out in a chunk
+      buffer.get(to, 0, used)
+      Chunk(to, 0, used)
+    } else {
+
+      buffer.clear()
+      
+      val read = channel.read(buffer)
+      // println("read this "+read)
+      val rem = buffer.remaining
+      read match {
+	case -1 => 
+	  closeResource
+	EOFData
+	
+	case 0 => EmptyData
+	
+	case _ => 
+
+	  val used = math.min(math.min(rem, read), to.length)
+	  if (read > used) {
+	    leftInBuffer = read - used
+	  }
+
+	  buffer.rewind()
+	  // println("calling get with "+used)
+	  try{
+	    buffer.get(to, 0, used)
+	    //println("read "+ new String(to, 0, used, "UTF-8"))
+	  } catch {
+	    case t: Throwable => 
+	      // println("threw "+t.getMessage)
+	      t.printStackTrace
+	      throw t
+	  }
+	  Chunk(to, 0, used)
+      }
     }
   }
 
-  protected val bytes: () => DataChunk =
+  /**
+   * Receives the next chunk from the underlying 
+   */ 
+  def nextChunk: DataChunk = 
     if (buffer.hasArray)
-      () => jbytes()
-    else {
-      // perfectly valid for a mem mapped to be huge, in which case, we would have grief ?
-      var ar = Array.ofDim[Byte](buffer.capacity)
-      () => direct(ar)
-    }
-
-  def nextChunk: DataChunk = bytes()
+      jbytes()
+    else
+      direct()
 
 }
 

@@ -28,7 +28,23 @@ class DirectBufferPool( val bufferSize : Int = 8192, override val reduceSize : I
 }
 
 /**
+ * Pools byte arrays
+ */ 
+class ByteArrayPool( val byteArraySize: Int ) extends SimpleUnboundedPool[Array[Byte]]{
+
+  def create = 
+    Array.ofDim[Byte](byteArraySize)
+
+}
+
+/**
  * Default buffer pool backed by byte arrays
  */ 
 object DefaultBufferPool extends JVMBufferPool {
+}
+
+/**
+ * Default Byte Array pool with 8k chunks
+ */ 
+object DefaultByteArrayPool extends ByteArrayPool(8192) {
 }

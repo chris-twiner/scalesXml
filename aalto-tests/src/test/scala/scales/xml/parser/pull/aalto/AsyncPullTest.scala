@@ -43,7 +43,7 @@ class AsyncPullTest extends junit.framework.TestCase {
   import java.nio.charset.Charset
   import scales.utils.{io, resources}
   import resources._ 
-
+/*
 /**
  * returns the cont and drops the input parameter or returns Done
  */ 
@@ -354,31 +354,6 @@ trait EvalW[WHAT,RETURN] {
     assertEquals(str, strout.toString)
   }
 
-  def testSimpleLoadSerializing = {
-    val url = sresource(this, "/data/BaseXmlTest.xml")
-
-    val doc = loadXmlReader(url, parsers = NoVersionXmlReaderFactoryPool)
-    val str = asString(doc)
-
-//    println("asString is " + str)
-    val channel = Channels.newChannel(url.openStream())
-
-    val parser = AsyncParser()
-
-    val strout = new java.io.StringWriter()
-    val (closer, iter) = pushXmlIter( strout , doc )
-
-    val enumeratee = enumToMany(iter)(AsyncParser.parse(parser))
-    val ((out, thrown), cont) = enumeratee(channel: ReadableByteChannelWrapper[DataChunk]).run
-
-    // we can swallow the lot
-//    val (out, thrown) = iter(parser).run
-    assertFalse( "shouldn't have thrown", thrown.isDefined)
-//    println(" iter was " + strout.toString)
-    assertTrue("should have been auto closed", closer.isClosed)
-    assertEquals(str, strout.toString)
-  }
-
   def testSimpleLoad = {
     val url = sresource(this, "/data/BaseXmlTest.xml")
 
@@ -397,5 +372,55 @@ trait EvalW[WHAT,RETURN] {
     assertTrue("The parser should have been closed", parser.isClosed)
   }
 
+
+
+   */
+
+  def testSimpleLoadSerializing =
+    doSimpleLoadSerializing(Channels.newChannel(_))
+
+  def doSimpleLoadSerializing(streamToChannel: java.io.InputStream => ReadableByteChannelWrapper[DataChunk]) = {
+    val url = sresource(this, "/data/BaseXmlTest.xml")
+
+    val doc = loadXmlReader(url, parsers = NoVersionXmlReaderFactoryPool)
+    val str = asString(doc)
+
+//    println("asString is " + str)
+    val channel = streamToChannel(url.openStream())
+
+    val parser = AsyncParser()
+
+    val strout = new java.io.StringWriter()
+    val (closer, iter) = pushXmlIter( strout , doc )
+
+    val enumeratee = enumToMany(iter)(AsyncParser.parse(parser))
+    val ((out, thrown), cont) = enumeratee(channel).run
+
+    // we can swallow the lot
+//    val (out, thrown) = iter(parser).run
+    assertFalse( "shouldn't have thrown", thrown.isDefined)
+//    println(" iter was " + strout.toString)
+    assertTrue("should have been auto closed", closer.isClosed)
+    assertEquals(str, strout.toString)
+  }
+
+  def testSimpleLoadSerializingDirect = {
+    doSimpleLoadSerializing( s => new ReadableByteChannelWrapper(Channels.newChannel(s), bytePool = new DirectBufferPool()))
+  }
+
+  def testSimpleLoadSerializingDirectSmallArrays = 
+    doSimpleLoadSerializing{ s => 
+      new ReadableByteChannelWrapper(Channels.newChannel(s), bytePool = new DirectBufferPool(), directBufferArrayPool = new ByteArrayPool(50))
+    }
+
+  def testSimpleLoadSerializingSmallDirectLargerArrays = 
+    doSimpleLoadSerializing{ s => 
+      new ReadableByteChannelWrapper(Channels.newChannel(s), bytePool = new DirectBufferPool(50)) 
+    }
+
+  def testSimpleLoadSerializingSmallDirectSmallArrays = 
+    doSimpleLoadSerializing{ s => 
+      new ReadableByteChannelWrapper(Channels.newChannel(s), bytePool = new DirectBufferPool(50), directBufferArrayPool = new ByteArrayPool(50))
+    }
 
 }
