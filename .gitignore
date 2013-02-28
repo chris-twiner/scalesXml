@@ -26,3 +26,6 @@ project/plugins/project/
 
 # herald uses the directory name, this is a symlink
 ScalesXml/
+
+# idea project files
+.idea*

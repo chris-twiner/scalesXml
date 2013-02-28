@@ -5,9 +5,9 @@ import java.util.jar.Attributes.Name._
 import Defaults._
 
 import scales.sbtplugins._
-import SiteKeys.{siteCSS, siteResourceDir, 
+import SiteKeys.{siteCSS, siteResourceDir,
 		 siteMarkupDocs,
-		 siteMarkupDocHeaders, 
+		 siteMarkupDocHeaders,
 		 menuBarTitle}
 
 //import de.johoop.jacoco4sbt._
@@ -63,17 +63,14 @@ object ScalesXmlRoot extends Build {
   } */
 
   lazy val fullDocsAndSxr = FullDocs.fullDocsNSources(
-    projects = Seq(core, jaxen, aalto), projectId = "site",
-    projectRoot = file("site"), 
+    projects = Seq(core, jaxen), projectId = "site",
+    projectRoot = file("site"),
     sxrVersionMap = {
-      case v : String if v.startsWith("2.8") =>
-	"org.scala-tools.sxr" % "sxr_2.8.0" % "0.2.7"
       case v : String if v.startsWith("2.9") =>
-	"org.scala-tools.sxr" % "sxr_2.9.0" % "0.2.7"      
-    }, 
-    rootProjectId = "scales-xml-root", 
-    projectDependencies = Seq(core, jaxen, aalto),
-    standardSettings = standardSettings ++ Utils.resourceSettings ++ 
+	"org.scala-tools.sxr" % "sxr_2.9.0" % "0.2.7"
+    },
+    rootProjectId = "scales-xml-root", projectDependencies = Seq(core, jaxen),
+    standardSettings = standardSettings ++ Utils.resourceSettings ++
       SiteSettings.settings(core) ++ Seq(
 	siteCSS <<= siteResourceDir apply { _ / "scales_xml.css" },
 	siteMarkupDocs := List("ScalesXmlIntro.mw","MemoryOptimisation.mw"),
@@ -82,10 +79,10 @@ object ScalesXmlRoot extends Build {
       )
   )
 
-  lazy val dontBuildIn28 = 
+  lazy val dontBuildIn28 =
     Seq(
-      skip <<= scalaVersion map { v => v startsWith "2.8." }, 
-      skip in (Compile, update) <<= scalaVersion map { v => v startsWith "2.8." }, 
+      skip <<= scalaVersion map { v => v startsWith "2.8." },
+      skip in (Compile, update) <<= scalaVersion map { v => v startsWith "2.8." },
       skip in (Test, update) <<= scalaVersion map { v => v startsWith "2.8." })
 
   lazy val dontPublishSettings = Seq(
@@ -119,11 +116,11 @@ object ScalesXmlRoot extends Build {
     version := "0.5.0-M1",
     scalaVersion := "2.10.0",
 //    scalaVersion := "2.10.0-M7",
-    crossScalaVersions := Seq("2.8.1", "2.8.2", "2.9.1", "2.9.2","2.10.0"),
+    crossScalaVersions := Seq("2.9.2","2.10.0"),
     //publishSetting,
 //    parallelExecution in Test := false,
 //    scalacOptions ++= Seq("-optimise"),
-//    scalacOptions ++= Seq("-encoding", "UTF-8", "-deprecation", "-unchecked"),
+    scalacOptions ++= Seq("-encoding", "UTF-8", "-deprecation", "-unchecked"),
     packageOptions ++= Seq[PackageOption](ManifestAttributes(
       (IMPLEMENTATION_TITLE, "Scales"),
       (IMPLEMENTATION_URL, "https://github.com/chris-twiner/scalesXml"),
@@ -135,15 +132,15 @@ object ScalesXmlRoot extends Build {
       -Ddot_exe=%dot_exe%
       * against - no spaces
       set dot_exe=c:/PROGRA~2/GRAPHV~1.28/bin/dot.exe
-     */ 
-    scalacOptions in (Compile, doc) <++= (scalaVersion).map{(v: String) => 
+     */
+    scalacOptions in (Compile, doc) <++= (scalaVersion).map{(v: String) =>
       if (v.startsWith("2.10"))
 	Seq("-diagrams")
       else
 	Seq()
     },
     autoCompilerPlugins := false,
-    fork in run := true, 
+    fork in run := true,
     parallelExecution in runSecurely := false,
     scalaBinaryVersion <<= scalaVersion(sV => if (CrossVersion.isStable(sV)) CrossVersion.binaryScalaVersion(sV) else sV)
 //,
@@ -182,7 +179,7 @@ object ScalesXmlRoot extends Build {
   /**
    * Due to #1's SecurityException this runs the given task through a security manager,
    * delegating to SBTs (to catch exit etc) that allows configurable security checks.  After the test run it then swaps the security manager back to just sbts.
-   */ 
+   */
   val runSecurely = TaskKey[Unit]("run-securely")
   val runItSecurely = TaskKey[Unit]("run-it-securely")
 
@@ -190,17 +187,17 @@ object ScalesXmlRoot extends Build {
 
   val semaphore = new java.util.concurrent.Semaphore(1, true)
 
-  def crazyness : Seq[sbt.Project.Setting[_]] = Seq(    
-    setSM <<= streams map 
+  def crazyness : Seq[sbt.Project.Setting[_]] = Seq(
+    setSM <<= streams map
       { (s: TaskStreams) =>
 	s.log.info("Setting the security manager")
         //semaphore.acquire
         s
       },
-    runItSecurely <<= (setSM, (test in Runtime).task) flatMap { 
+    runItSecurely <<= (setSM, (test in Runtime).task) flatMap {
 	(s, testt) => s.log.info("Running the tests")
 	testt },
-    runSecurely <<= streams map 
+    runSecurely <<= streams map
       { (s: TaskStreams) =>
 	s.log.info("Resetting the security manager")
 	//semaphore.release
