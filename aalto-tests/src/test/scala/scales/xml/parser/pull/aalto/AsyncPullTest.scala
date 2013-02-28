@@ -43,23 +43,23 @@ class AsyncPullTest extends junit.framework.TestCase {
   import java.nio.charset.Charset
   import scales.utils.{io, resources}
   import resources._ 
-/*
-/**
- * returns the cont and drops the input parameter or returns Done
- */ 
-trait EvalW[WHAT,RETURN] {
-  
-  val orig : IterV[WHAT, RETURN]
 
-  def evalw : IterV[WHAT, RETURN] = {
-    orig.fold(done = (x, y) => Done(x,y),
-	 cont = k => {
-	   orig
-	 })
+  /**
+   * returns the cont and drops the input parameter or returns Done
+   */ 
+  trait EvalW[WHAT,RETURN] {
+    
+    val orig : IterV[WHAT, RETURN]
+
+    def evalw : IterV[WHAT, RETURN] = {
+      orig.fold(done = (x, y) => Done(x,y),
+		cont = k => {
+		  orig
+		})
+    }
   }
-}
 
- implicit def toEvalw[WHAT, RETURN]( i : IterV[WHAT, RETURN] ) = new EvalW[WHAT, RETURN] {
+  implicit def toEvalw[WHAT, RETURN]( i : IterV[WHAT, RETURN] ) = new EvalW[WHAT, RETURN] {
     lazy val orig = i
   }
 
@@ -82,7 +82,6 @@ trait EvalW[WHAT,RETURN] {
 	_ <- peek[PullType]
 	_ <- peek[PullType]
 	i <- evalWith((p : PullType) => {
-//	  println("first is " + p)
 	  p} )
 	j <- dropWhile((p : PullType) => {
 	   p.fold( x => !x.isInstanceOf[Elem] , y => false)
@@ -125,7 +124,6 @@ trait EvalW[WHAT,RETURN] {
     val wrapped = new ReadableByteChannelWrapper(channel)
     val e = test(parser, iter, wrapped)
 
-    //println(" e is " + e)
     assertEquals(2, e.size)
     e match {
       case List("DontRedeclare", "DontRedeclare") => ()
@@ -152,7 +150,8 @@ trait EvalW[WHAT,RETURN] {
 
     val stream = url.openStream()
     
-    val randomChannel = new RandomChannelStreamWrapper(stream, smallBufSize)
+    val randomChannelOrig = new RandomChannelStreamWrapper(stream, smallBufSize)
+    val randomChannel = randomChannelOrig.wrapped    
 
     val parser = AsyncParser()
 
@@ -182,11 +181,10 @@ trait EvalW[WHAT,RETURN] {
       )
     }
     
-//    println("got a zero len "+randomChannel.zeroed+" times. Nexted "+nexted+" - headed "+headed)
     val s = asString(res.iterator : Iterator[PullType])
     assertEquals(s, str)
 
-    assertTrue("we should have more nexted then zeroed - due to boundaries on the available data", randomChannel.zeroed + 1 < nexted)
+    assertTrue("we should have more nexted then zeroed - due to boundaries on the available data", randomChannelOrig.zeroed + 1 < nexted)
   }
 
   // using the parser and the parse iteratee
@@ -198,7 +196,7 @@ trait EvalW[WHAT,RETURN] {
 
     val stream = url.openStream()
 
-    val randomChannel = new RandomChannelStreamWrapper(stream, smallBufSize)
+    val randomChannel = new RandomChannelStreamWrapper(stream, smallBufSize).wrapped
 
     val parser = AsyncParser()
 
@@ -227,7 +225,7 @@ trait EvalW[WHAT,RETURN] {
 	  done = (a, y) => { // if eof
 	    val (e, cont) = a
 	    headed += 1
-	    //println("got here "+ headed)
+
 	    var st = e
 	    while(!st.isEmpty) {
 	      val h = st.head()
@@ -235,12 +233,10 @@ trait EvalW[WHAT,RETURN] {
 	      st = st.tail()
 	    }
 	    // is
-	    //println(" -> "+res)
 	    cont.asInstanceOf[ResumableIter[DataChunk, EphemeralStream[PullType]]]
 	  },
 	  cont = k => {
 	    nexted += 1
-	    //println( "nexted " + nexted )
 	    // need to push the next chunk
 	    k(input)
 	  }
@@ -250,7 +246,6 @@ trait EvalW[WHAT,RETURN] {
       if (!randomChannel.isClosed && !isDone(c))
 	b = randomChannel.nextChunk
 
-      //println("next chunked " + b)
       c = nextC
     }
     
@@ -290,21 +285,18 @@ trait EvalW[WHAT,RETURN] {
      * the random channel does every 10, every 6 forces it back but allows
      * a fair chunk of Empty -> Conts followed by data
      */ 
-    implicit val readableByteChannelEnumerator = asyncReadableByteChannelEnumerator( 6 )
+    implicit val readableByteChannelEnumerator = new AsyncDataChunkerEnumerator( 6 )
 
     val cstable = enumeratee(wrapped).evalw
     var c = cstable
-//    println("eval - already donE?? " + isDone(c))
     
     type cType = cstable.type
 
     var count = 0
     while(!isDone(c)) {
-      c = c(wrapped).evalw//extractCont(c)(wrapped).evalw
+      c = c(wrapped).evalw
       count += 1
     }
-//    println("evalw'd "+ count +" times ") 
-//    println("got a zero len "+ randomChannel.zeroed+" times ")
 
     if (randomChannel.zeroed > 0) {
       assertTrue("There were "+randomChannel.zeroed+" zeros fed but it never left the evalw", count > 0)
@@ -314,7 +306,7 @@ trait EvalW[WHAT,RETURN] {
       done = (a,i) => {
 	val ((out, thrown), cont) = a
 	assertFalse( "shouldn't have thrown", thrown.isDefined)
-	//println(" iter was " + strout.toString)
+
 	assertTrue("should have been auto closed", closer.isClosed)
 	assertEquals(str, strout.toString)
       },
@@ -332,11 +324,9 @@ trait EvalW[WHAT,RETURN] {
     val url = sresource(this, "/data/MiscTests.xml")
 
     val doc = loadXmlReader(url, parsers = NoVersionXmlReaderFactoryPool)
-//    println("doc miscs p "+doc.prolog.misc+ " e "+ doc.end.misc)
     val str = asString(doc) // especially needed here as we may have whitespace which isn't collected.
 
-//    println("asString is " + str)
-    val channel = Channels.newChannel(url.openStream())
+    val channel = Channels.newChannel(url.openStream()).wrapped
 
     val parser = AsyncParser()
 
@@ -344,12 +334,11 @@ trait EvalW[WHAT,RETURN] {
     val (closer, iter) = pushXmlIter( strout , doc )
 
     val enumeratee = enumToMany(iter)(AsyncParser.parse(parser))
-    val ((out, thrown), cont) = enumeratee(channel: ReadableByteChannelWrapper[DataChunk]).runEval
+    val ((out, thrown), cont) = enumeratee(channel).runEval
 
     // we can swallow the lot, but endmiscs don't know there is more until the main loop, which needs evaling
-//    val (out, thrown) = iter(parser).runEval
     assertFalse( "shouldn't have thrown", thrown.isDefined)
-//    println(" iter was " + strout.toString)
+
     assertTrue("should have been auto closed", closer.isClosed)
     assertEquals(str, strout.toString)
   }
@@ -366,26 +355,21 @@ trait EvalW[WHAT,RETURN] {
     val parser = AsyncParser()
     
     val enumeratee = enumToMany(iter)(AsyncParser.parse(parser))
-    val (e, cont) = enumeratee(channel: ReadableByteChannelWrapper[DataChunk]).run
+    val (e, cont) = enumeratee(channel.wrapped).run
 
     assertEquals("{urn:default}Default", e.right.get.name.qualifiedName)
     assertTrue("The parser should have been closed", parser.isClosed)
   }
 
-
-
-   */
-
   def testSimpleLoadSerializing =
-    doSimpleLoadSerializing(Channels.newChannel(_))
+    doSimpleLoadSerializing(Channels.newChannel(_).wrapped)
 
-  def doSimpleLoadSerializing(streamToChannel: java.io.InputStream => ReadableByteChannelWrapper[DataChunk]) = {
+  def doSimpleLoadSerializing(streamToChannel: java.io.InputStream => DataChunker[DataChunk]) = {
     val url = sresource(this, "/data/BaseXmlTest.xml")
 
     val doc = loadXmlReader(url, parsers = NoVersionXmlReaderFactoryPool)
     val str = asString(doc)
 
-//    println("asString is " + str)
     val channel = streamToChannel(url.openStream())
 
     val parser = AsyncParser()
@@ -397,16 +381,14 @@ trait EvalW[WHAT,RETURN] {
     val ((out, thrown), cont) = enumeratee(channel).run
 
     // we can swallow the lot
-//    val (out, thrown) = iter(parser).run
     assertFalse( "shouldn't have thrown", thrown.isDefined)
-//    println(" iter was " + strout.toString)
+
     assertTrue("should have been auto closed", closer.isClosed)
     assertEquals(str, strout.toString)
   }
 
-  def testSimpleLoadSerializingDirect = {
+  def testSimpleLoadSerializingDirect =
     doSimpleLoadSerializing( s => new ReadableByteChannelWrapper(Channels.newChannel(s), bytePool = new DirectBufferPool()))
-  }
 
   def testSimpleLoadSerializingDirectSmallArrays = 
     doSimpleLoadSerializing{ s => 

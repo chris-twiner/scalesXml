@@ -20,32 +20,55 @@ object DataChunkEvidence {
     new DataChunkEvidence[DataChunk]{}
 }
 
+object ReadableByteChannelWrapper {
+  val emptyBytes = Array.ofDim[ Byte ](0)
+}
+
 /**
  * Wraps a ReadableByteChannel to provide DataChunks, optionally closes the channel (defaults to closing).
  *
  * @directBufferArrayPool is used when there is a direct ByteBuffer only.
  */ 
-class ReadableByteChannelWrapper[T](val channel: ReadableByteChannel, private val closeChannel: Boolean = true, private val bytePool: Pool[ByteBuffer] = DefaultBufferPool, private val directBufferArrayPool: Pool[Array[Byte]] = DefaultByteArrayPool )(implicit ev: DataChunkEvidence[T]) extends CloseOnNeed {
+trait DataChunker[T] extends CloseOnNeed {
 
-  protected val buffer = bytePool.grab
-  
-  protected val to: Array[Byte] = 
-    if (buffer.hasArray)
-      null
-    else
-      directBufferArrayPool.grab
+  /**
+   * Is the underlying resource closed - if true the dataChunkEnumerator will
+   * return the Iteratee passed to it, stopping evaluation
+   */ 
+  def underlyingClosed = false
+
+  protected implicit val ev: DataChunkEvidence[T]
+
+  /**
+   * Receives the next chunk from the underlying 
+   */ 
+  def nextChunk: DataChunk
+}
+
+
+/**
+ * Wraps a ReadableByteChannel to provide DataChunks, optionally closes the channel (defaults to closing).
+ *
+ * @directBufferArrayPool is used when there is a direct ByteBuffer only.
+ */ 
+class ReadableByteChannelWrapperBase[T](val channel: ReadableByteChannel, protected val buffer: ByteBuffer, val closeChannel: Boolean = true )(implicit val ev: DataChunkEvidence[T]) extends DataChunker[T] with CloseOnNeed {
+
+  override def underlyingClosed = !channel.isOpen
       
+  protected val backingArray: Array[Byte] = ReadableByteChannelWrapper.emptyBytes
+
+  /**
+   * Closes the channel when closeChannel is true - ensure to call from derived classes
+   */ 
   protected def doClose = {
-    if (!buffer.hasArray) {
-      directBufferArrayPool.giveBack(to)
-    }
-    bytePool.giveBack(buffer)
-    
     if (closeChannel) {
       channel.close()
     }
   }
 
+  /**
+   * Called when processing array backed buffers
+   */ 
   protected def jbytes() : DataChunk = {
     buffer.clear()
     val read = channel.read(buffer)
@@ -59,13 +82,16 @@ class ReadableByteChannelWrapper[T](val channel: ReadableByteChannel, private va
     }
   }
 
-  var leftInBuffer = 0
-
+  private var leftInBuffer = 0
+  
+  /**
+   * Called when processing via Direct Buffers
+   */ 
   protected def direct() : DataChunk = {
     // limit is rem when its not read anything
     if (leftInBuffer > 0) {
       // println("remains "+leftInBuffer)
-      val used = math.min(leftInBuffer, to.length)
+      val used = math.min(leftInBuffer, backingArray.length)
       if (leftInBuffer >= used) {
 	// still got some left to push
 	leftInBuffer = leftInBuffer - used
@@ -73,8 +99,8 @@ class ReadableByteChannelWrapper[T](val channel: ReadableByteChannel, private va
 	leftInBuffer = 0
       }
       // if there is still data read it out in a chunk
-      buffer.get(to, 0, used)
-      Chunk(to, 0, used)
+      buffer.get(backingArray, 0, used)
+      Chunk(backingArray, 0, used)
     } else {
 
       buffer.clear()
@@ -91,23 +117,23 @@ class ReadableByteChannelWrapper[T](val channel: ReadableByteChannel, private va
 	
 	case _ => 
 
-	  val used = math.min(math.min(rem, read), to.length)
+	  val used = math.min(math.min(rem, read), backingArray.length)
 	  if (read > used) {
 	    leftInBuffer = read - used
 	  }
 
 	  buffer.rewind()
 	  // println("calling get with "+used)
-	  try{
-	    buffer.get(to, 0, used)
+	  //try{
+	    buffer.get(backingArray, 0, used)
 	    //println("read "+ new String(to, 0, used, "UTF-8"))
-	  } catch {
-	    case t: Throwable => 
+	  //} catch {
+	  //  case t: Throwable => 
 	      // println("threw "+t.getMessage)
-	      t.printStackTrace
-	      throw t
-	  }
-	  Chunk(to, 0, used)
+	  //    t.printStackTrace
+	  //    throw t
+	  //}
+	  Chunk(backingArray, 0, used)
       }
     }
   }
@@ -115,7 +141,7 @@ class ReadableByteChannelWrapper[T](val channel: ReadableByteChannel, private va
   /**
    * Receives the next chunk from the underlying 
    */ 
-  def nextChunk: DataChunk = 
+  final def nextChunk: DataChunk = 
     if (buffer.hasArray)
       jbytes()
     else
@@ -123,12 +149,46 @@ class ReadableByteChannelWrapper[T](val channel: ReadableByteChannel, private va
 
 }
 
+/**
+ * Wraps a ReadableByteChannel to provide DataChunks, optionally closes the channel (defaults to closing).
+ *
+ * @directBufferArrayPool is used when there is a direct ByteBuffer only.
+ */ 
+class ReadableByteChannelWrapper[T](channel: ReadableByteChannel, closeChannel: Boolean = true, private val bytePool: Pool[ByteBuffer] = DefaultBufferPool, private val directBufferArrayPool: Pool[Array[Byte]] = DefaultByteArrayPool )(implicit ev: DataChunkEvidence[T]) extends 
+  ReadableByteChannelWrapperBase[T](channel, bytePool.grab, closeChannel) {
+
+  override protected val backingArray: Array[Byte] = 
+    if (buffer.hasArray)
+      ReadableByteChannelWrapper.emptyBytes
+    else
+      directBufferArrayPool.grab
+      
+  override protected def doClose = {
+    if (!buffer.hasArray) {
+      directBufferArrayPool.giveBack(backingArray)
+    }
+    bytePool.giveBack(buffer)
+    super.doClose
+  }
+
+}
+
+/**
+ * Convenience function for wrapping a channel
+ */ 
+class RBCImplicitWrapper(channel: ReadableByteChannel)(implicit ev: DataChunkEvidence[DataChunk]){
+  def wrapped: DataChunker[DataChunk] = new ReadableByteChannelWrapper(channel)
+}
+
 trait ReadableByteChannelWrapperImplicits {
 
-  implicit def toRBCWrapper(channel: ReadableByteChannel)(implicit ev: DataChunkEvidence[DataChunk]): ReadableByteChannelWrapper[DataChunk] = new ReadableByteChannelWrapper(channel)
+  implicit def toRBCWrapper(channel: ReadableByteChannel)(implicit ev: DataChunkEvidence[DataChunk]): RBCImplicitWrapper = new RBCImplicitWrapper(channel)
 
 
-  implicit val readableByteChannelEnumerator: Enumerator[ReadableByteChannelWrapper] = asyncReadableByteChannelEnumerator( )
+//  implicit val dataChunkerEnumerator: Enumerator[DataChunker] = new AsyncDataChunkerEnumerator()
+  
+  implicit def dataChunkerEnumerator[T[_] <: DataChunker[_]]: Enumerator[T] =
+    new AsyncDataChunkerEnumerator[T]()
 
   /**
    * Use in a call to asyncReadableByteChannelEnumerator to turn it into a synchronous enumerator (constantly trying to get new chunks of data)
@@ -143,15 +203,15 @@ trait ReadableByteChannelWrapperImplicits {
    * Note: Call via eval only.
    * @param contOnCont INFINITE_RETRIES (-1) for keep on trying, the default is 5 (as exposed by the implicit enumerator readableByteChannelEnumerator)
    */
-  def asyncReadableByteChannelEnumerator( contOnCont: Int = 5 ): Enumerator[ReadableByteChannelWrapper] = new Enumerator[ReadableByteChannelWrapper] {
-    def apply[E,A](wrapped: ReadableByteChannelWrapper[E], i: IterV[E,A]): IterV[E, A] = {
+  class AsyncDataChunkerEnumerator[T[_] <: DataChunker[_]]( contOnCont: Int = 5 ) extends Enumerator[T] {
+    def apply[E,A](chunker: T[E], i: IterV[E,A]): IterV[E, A] = {
  
-      def apply(wrapped: ReadableByteChannelWrapper[E], i: IterV[E,A], count: Int): IterV[E, A] = {
+      def apply(chunker: T[E], i: IterV[E,A], count: Int): IterV[E, A] = {
 	i match {
-	  case _ if !wrapped.channel.isOpen || wrapped.isClosed => i
+	  case _ if chunker.underlyingClosed || chunker.isClosed => i
 	  case Done(acc, input) => i
 	  case Cont(k) =>
-	    val realChunk = wrapped.nextChunk
+	    val realChunk = chunker.nextChunk
 	    val nextChunk = realChunk.asInstanceOf[E]
 	    val nextI = 
 	      if (realChunk.isEOF) {
@@ -171,11 +231,11 @@ trait ReadableByteChannelWrapperImplicits {
 	      //println("had cont on cont count, returning")
 	      nextI
 	    } else
-	      apply(wrapped, nextI, nc)
+	      apply(chunker, nextI, nc)
 	}
       }
 
-      apply(wrapped, i, 0)
+      apply(chunker, i, 0)
     }
   }
 
