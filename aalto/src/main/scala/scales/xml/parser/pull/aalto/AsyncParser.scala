@@ -240,13 +240,22 @@ abstract class AsyncParser(implicit xmlVersion : XmlVersion) extends CloseOnNeed
 	
     }
   }
+
+  /**
+   * Provides a ResumableIter that converts DataChunks via a parser into a stream of PullTypes.  Returns Done when there are results from the pushed chunks.
+   *
+   * Calls AsyncParser parse
+   */  
+  def iteratee: ResumableIter[DataChunk, EphemeralStream[PullType]] =
+    AsyncParser.parse(this)
   
 }
 
 object AsyncParser {
+
   /**
-   * Pumps a DataChunk into a parser
-   */ 
+   * Provides a ResumableIter that converts DataChunks via a parser into a stream of PullTypes.  Returns Done when there are results from the pushed chunks.
+   */
   def parse(parser: AsyncParser): ResumableIter[DataChunk, EphemeralStream[PullType]] = {
 
     def EOF: ResumableIter[DataChunk, EphemeralStream[PullType]] = {

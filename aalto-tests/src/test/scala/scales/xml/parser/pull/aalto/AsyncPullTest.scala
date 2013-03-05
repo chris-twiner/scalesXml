@@ -377,7 +377,7 @@ class AsyncPullTest extends junit.framework.TestCase {
     val strout = new java.io.StringWriter()
     val (closer, iter) = pushXmlIter( strout , doc )
 
-    val enumeratee = enumToMany(iter)(AsyncParser.parse(parser))
+    val enumeratee = enumToMany(iter)(parser.iteratee)
     val ((out, thrown), cont) = enumeratee(channel).run
 
     // we can swallow the lot
@@ -385,6 +385,8 @@ class AsyncPullTest extends junit.framework.TestCase {
 
     assertTrue("should have been auto closed", closer.isClosed)
     assertEquals(str, strout.toString)
+
+    assertTrue("Channel itself should have been auto closed", channel.isClosed)
   }
 
   def testSimpleLoadSerializingDirect =
