@@ -25,10 +25,8 @@ object ReadableByteChannelWrapper {
 }
 
 /**
- * Wraps a ReadableByteChannel to provide DataChunks, optionally closes the channel (defaults to closing).
- *
- * @directBufferArrayPool is used when there is a direct ByteBuffer only.
- */ 
+ * An abstraction over a stream that provides DataChunks
+ */
 trait DataChunker[T] extends CloseOnNeed {
 
   /**
@@ -49,14 +47,20 @@ trait DataChunker[T] extends CloseOnNeed {
 /**
  * Wraps a ReadableByteChannel to provide DataChunks, optionally closes the channel (defaults to closing).
  *
- * @directBufferArrayPool is used when there is a direct ByteBuffer only.
+ * This base implementation should only be used against already provided buffers, prefer using ReadableByteChannelWrapper directly instead.
+ *
+ * @constructor Direct buffers also require a backing array to be specified.
  */ 
-class ReadableByteChannelWrapperBase[T](val channel: ReadableByteChannel, protected val buffer: ByteBuffer, val closeChannel: Boolean = true )(implicit val ev: DataChunkEvidence[T]) extends DataChunker[T] with CloseOnNeed {
+class ReadableByteChannelWrapperBase[T](val channel: ReadableByteChannel, protected val buffer: ByteBuffer, val closeChannel: Boolean = true, protected val backingArray: Array[Byte] = ReadableByteChannelWrapper.emptyBytes )(implicit val ev: DataChunkEvidence[T]) extends DataChunker[T] with CloseOnNeed {
+
+  if (!buffer.hasArray) {
+    require(
+      backingArray.length > 0,
+      "A ReadableByteChannelWrapper with a Direct buffer must be created with a non empty backingArray")
+  }
 
   override def underlyingClosed = !channel.isOpen
       
-  protected val backingArray: Array[Byte] = ReadableByteChannelWrapper.emptyBytes
-
   /**
    * Closes the channel when closeChannel is true - ensure to call from derived classes
    */ 
@@ -152,17 +156,24 @@ class ReadableByteChannelWrapperBase[T](val channel: ReadableByteChannel, protec
 /**
  * Wraps a ReadableByteChannel to provide DataChunks, optionally closes the channel (defaults to closing).
  *
- * @directBufferArrayPool is used when there is a direct ByteBuffer only.
+ * Can work with either direct or heap based buffers and uses pools to re-use the allocated buffers.
+ * 
+ * @param directBufferArrayPool is used when there is a direct ByteBuffer only.
  */ 
-class ReadableByteChannelWrapper[T](channel: ReadableByteChannel, closeChannel: Boolean = true, private val bytePool: Pool[ByteBuffer] = DefaultBufferPool, private val directBufferArrayPool: Pool[Array[Byte]] = DefaultByteArrayPool )(implicit ev: DataChunkEvidence[T]) extends 
-  ReadableByteChannelWrapperBase[T](channel, bytePool.grab, closeChannel) {
+class ReadableByteChannelWrapper[T](channel: ReadableByteChannel, closeChannel: Boolean = true, private val bytePool: Pool[ByteBuffer] = DefaultBufferPool, private val directBufferArrayPool: Pool[Array[Byte]] = DefaultByteArrayPool )(implicit ev: DataChunkEvidence[T]) extends {
 
-  override protected val backingArray: Array[Byte] = 
+  override protected val buffer: ByteBuffer = bytePool.grab
+
+  override protected val backingArray: Array[Byte] =
     if (buffer.hasArray)
       ReadableByteChannelWrapper.emptyBytes
     else
       directBufferArrayPool.grab
-      
+
+} with 
+  ReadableByteChannelWrapperBase[T](
+    channel, buffer, closeChannel, backingArray ) {
+   
   override protected def doClose = {
     if (!buffer.hasArray) {
       directBufferArrayPool.giveBack(backingArray)
@@ -184,9 +195,6 @@ trait ReadableByteChannelWrapperImplicits {
 
   implicit def toRBCWrapper(channel: ReadableByteChannel)(implicit ev: DataChunkEvidence[DataChunk]): RBCImplicitWrapper = new RBCImplicitWrapper(channel)
 
-
-//  implicit val dataChunkerEnumerator: Enumerator[DataChunker] = new AsyncDataChunkerEnumerator()
-  
   implicit def dataChunkerEnumerator[T[_] <: DataChunker[_]]: Enumerator[T] =
     new AsyncDataChunkerEnumerator[T]()
 
