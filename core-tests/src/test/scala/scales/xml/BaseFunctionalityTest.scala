@@ -1,4 +1,4 @@
-package scales.xml.test // to get around package overloads
+package scales.xml.test // to get around package overloads
 
 import scales.xml._
 import scales.xml.parser.strategies._
@@ -647,12 +647,19 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
     implicit val qn : QName = pre("local")
 
     val has = hasNamespace[QName](preNS : Namespace)
-    assertTrue(has(qn))
+    assertTrue(has(qn)) 
     val hass = hasNamespace[QName](preNS.uri)
     assertTrue(hass(qn))
     assertEquals(preNS.uri, namespaceUri[QName]) // really looks bad this.
 
     
+  }
+
+  /**
+   * #24 - string(..) with cdata doesn't work pre 0.5
+   */ 
+  def testStringCDATA()  {
+    assertEquals( "string on cd wasn't correct ", "should not have to be & < escaped @ all \"\"&", string( path.\+.cdata ) )
   }
 
 }
