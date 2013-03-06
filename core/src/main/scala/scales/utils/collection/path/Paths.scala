@@ -167,7 +167,7 @@ case class Path[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] 
 
   /**
    * Replaces this paths focus returning the path for the returned node.
-   * @param
+   * @param newFocus transforming function on the ItemOrTree.
    */
   def modify(newFocus: (ItemOrTree[Item, Section, CC]) => ItemOrTree[Item, Section, CC]) =
     Path(top, Node(node.index,
@@ -175,7 +175,7 @@ case class Path[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] 
 
   /**
    * Removes this node, returning the parent path or None if its top
-   * @return
+   * 
    */
   def removeAndUp(): Option[Path[Item, Section, CC]] =
     if (top.isLeft) None

@@ -87,7 +87,7 @@ trait XmlUtils {
   /**
    * Tests if a given tree is nil, but does not check if children are present.
    *
-   * @returns true if there is a xsi:nil="true" value (or 1)
+   * @return true if there is a xsi:nil="true" value (or 1)
    */ 
   def isNil(tree: XmlTree): Boolean = {
     import ScalesXml._

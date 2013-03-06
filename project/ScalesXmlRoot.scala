@@ -63,7 +63,7 @@ object ScalesXmlRoot extends Build {
   } */
 
   lazy val fullDocsAndSxr = FullDocs.fullDocsNSources(
-    projects = Seq(core, jaxen), projectId = "site",
+    projects = Seq(core, jaxen, aalto), projectId = "site",
     projectRoot = file("site"), 
     sxrVersionMap = {
       case v : String if v.startsWith("2.8") =>
@@ -71,7 +71,8 @@ object ScalesXmlRoot extends Build {
       case v : String if v.startsWith("2.9") =>
 	"org.scala-tools.sxr" % "sxr_2.9.0" % "0.2.7"      
     }, 
-    rootProjectId = "scales-xml-root", projectDependencies = Seq(core, jaxen),
+    rootProjectId = "scales-xml-root", 
+    projectDependencies = Seq(core, jaxen, aalto),
     standardSettings = standardSettings ++ Utils.resourceSettings ++ 
       SiteSettings.settings(core) ++ Seq(
 	siteCSS <<= siteResourceDir apply { _ / "scales_xml.css" },
