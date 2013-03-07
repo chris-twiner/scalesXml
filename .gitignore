@@ -21,5 +21,8 @@ project/plugins/project/
 # Scala-IDE specific
 .scala_dependencies
 
+# Idea project files
+.idea*
+
 # herald uses the directory name, this is a symlink
 ScalesXml/
