@@ -1,5 +1,7 @@
 # Scales Xml
 
+[![Build Status](https://travis-ci.org/chris-twiner/scalesXml.png)](https://travis-ci.org/chris-twiner/scalesXml)
+
 Scales Xml provides both a more flexible approach to XML handling and a simplified way of interacting with XML.  
 
 It fits nicely with the Java APIs you know, TrAX and javax.xml.validation for example, allowing you to run XSLTs and convert to and from Scales XML and other DOMs.
