@@ -415,7 +415,9 @@ trait Iteratees {
    * Takes Input[E] converts via toMany to an EphemeralStream[A].  This in turn is fed to the destination iteratee.
    * The inputs can be 1 -> Many, Many -> 1, or indeed 1 -> 1.
    * 
-   * The callers must take care of what kind of continnuation Iteratee is returned in a Done..
+   * The callers must take care of what kind of continnuation Iteratee is returned in a Done.
+   *
+   * If the dest returns EOF, the toMany is in turn called with EOF for any needed resource control processing.
    */ 
   def enumToMany[E, A, R]( dest: ResumableIter[A,R])( toMany: ResumableIter[E, EphemeralStream[A]]): ResumableIter[E, R] = {
     val empty = () => EphemeralStream.empty
