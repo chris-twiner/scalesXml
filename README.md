@@ -10,7 +10,9 @@ A number of the pain points of Scala XML are also simply removed, want to change
 
 A very flexible XML stream handling approach is based upon StAX and Iteratees (courtesy of Scalaz) which uses the same model as the tree based, no separate event hierarchy needed.
 
-The current stable release is 0.4.4 ([site](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.4.4/index.html)).
+The current stable release is 0.4.5 ([site](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.4.4/index.html)).
+
+The upcoming 0.5 release has a milestone out 0.5.0-M1 ([site](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.10/0.5.0-M1/index.html)).
 
 The artifacts are now on Maven Central under the group org.scales.xml.
 
@@ -20,14 +22,14 @@ Currently 2.8.1, 2.8.2, 2.9.1, 2.9.2 and 2.10 are built against.
 
 So for sbt its:
 
-    val scalesXml = "org.scalesxml" %% "scales-xml" % "0.4.4"
+    val scalesXml = "org.scalesxml" %% "scales-xml" % "0.4.5"
 
 xsbt 0.10+ its:
 
     libraryDependencies ++= Seq(
-      "org.scalesxml" %% "scales-xml" % "0.4.4",
+      "org.scalesxml" %% "scales-xml" % "0.4.5",
       // and additionally use these for String based XPaths
-      "org.scalesxml" %% "scales-jaxen" % "0.4.4" intransitive(), 
+      "org.scalesxml" %% "scales-jaxen" % "0.4.5" intransitive(), 
       "jaxen" % "jaxen" % "1.1.3" intransitive()
       )
 
@@ -37,7 +39,7 @@ Maven repos should therefore use org.scalesxml scales-xml_2.9.2 as the dependenc
 
     resolvers += "Scales Repo" at "http://scala-scales.googlecode.com/svn/repo"
 
-[The 0.4.4 documentation site is here](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.4.4/index.html) and zip of the site documentation is available at [scales-xml.zip](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.4.4/org.scalesxml-scales-xml-0.4.4-site.zip).
+[The 0.4.5 documentation site is here](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.4.4/index.html) and zip of the site documentation is available at [scales-xml.zip](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.4.4/org.scalesxml-scales-xml-0.4.4-site.zip).
 
 _Warning_ local file based offline sites may not fully work in Chrome, use Firefox or IE as needed.
 
