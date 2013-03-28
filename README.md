@@ -1,6 +1,6 @@
 # Scales Xml
 
-[![Build Status](https://travis-ci.org/rickeyvisinski-kanban/scalesXml.png)](https://travis-ci.org/rickeyvisinski-kanban/scalesXml)
+[![Build Status](https://travis-ci.org/chris-twiner/scalesXml.png)](https://travis-ci.org/chris-twiner/scalesXml)
 
 Scales Xml provides both a more flexible approach to XML handling and a simplified way of interacting with XML.  
 

@@ -3,7 +3,7 @@
 Scales Xml, in addition to immutability, aims to focus on these separate concerns:
 
 ; '''Correctness'''
-;* XmlItems such as Text, Comments, PIs and CData are not containing nodes, they statically cannot have children and they cannot contain invalid characters 
+;* XmlItems such as Text, Comments, PIs and CData are not containing nodes, they cannot have children and they cannot contain invalid characters 
 ;* QNames are a fundamental piece of XML and are treated as first class citizens
 ;* Elements are a QName, the attributes they contain, the namespaces they declare and also do not directly have children
 ;* Attributes are combinations of either a PrefixedQName or NoNamespaceQName and a value
@@ -32,6 +32,7 @@ Scales Xml, in addition to immutability, aims to focus on these separate concern
 ;** Immutable transformations on streams
 ;* Provides an Iteratee to process XPath like locations via a ${cscala}<nowiki>List[QName]</nowiki>${cend}
 ;* Provides a combinator (onDone) to iterate over ResumableIters allowing simplified XML parsing
+;* Non blocking IO based parsing via Aalto
 ;* Scales adds the concept of resumable iteration:
 
 ${cscala}

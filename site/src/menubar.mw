@@ -89,6 +89,9 @@
 ;*** [RepeatedSections.html#Repeating_Nested Repeating Nested]
 ;*** [RepeatedSections.html#Sectioned_Grouped_Repeated Sectioned Grouped Repeating]
 ;** [RepeatedSections.html#Pull_Parsing_ResumableIter.27atees Pull Parsing ResumableIter'atees]
+;* [AsyncPull.html Async Pull]
+;** [AsyncPull.html#Integrating_With_Enumeratees_-_enumToMany Integrating With Enumeratees - enumToMany]
+;** [AsyncPull.html#Async_Pull_with_enumToMany Asyc Pull with enumToMany]
 
 ; '''Serializing & Transforming XML'''
 ;* [SerializingIntro.html Serializing]

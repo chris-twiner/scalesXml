@@ -13,6 +13,9 @@ sealed trait DataChunk {
   def isEmpty: Boolean = false
 }
 
+/**
+ * Represents the end of a stream, no more Bytes are available
+ */ 
 object EOFData extends DataChunk {
   val array = Array.empty[Byte]
   val offset = 0
@@ -21,6 +24,9 @@ object EOFData extends DataChunk {
   override val isEOF = true
 }
 
+/**
+ * Represents a data stream with no immediate data to return.
+ */ 
 object EmptyData extends DataChunk {
   val array = Array.empty[Byte]
   val offset = 0
@@ -29,10 +35,16 @@ object EmptyData extends DataChunk {
   override val isEmpty = true
 }
 
+/**
+ * Represents the full array
+ */ 
 final case class FullChunk( array: Array[Byte] ) extends DataChunk {
   def offset = 0
   def length = array.length
 }
 
+/**
+ * A section of a Byte array
+ */ 
 final case class Chunk( array: Array[Byte], offset: Int, length: Int) extends DataChunk
 
