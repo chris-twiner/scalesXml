@@ -1,5 +1,12 @@
 package scales
 
+/**
+ * The [[scales.utils]] packages provide the basis functionality for [[scales.xml]].
+ *
+ * The Tree an Path collections that underpin the XML model, as well as the iteratee functionality are located in the relevant sub-packages.
+ *
+ * The package object itself pulls in the main utility functions for tree, path and iteratee handling.  Import the [[scales.utils.ScalesUtils]] object implicit members to provide the path & and | extension functions, the iteratorEnumerator and the +:+ lazy appender for [[scalaz.EphemeralStream]]. 
+ */
 package object utils extends collection.IterableUtils 
   with AsBooleanTrait
   with collection.StackUtils
