@@ -1,7 +1,7 @@
 
 This milestone provides the basis for the 0.5.0 release.
 
-Although a milestone, this release is intended as the RC starting point, as such a kind request gos out to all users to give the milestone a spin.  The earlier feedback is given the earlier we have a chance to refine the design before going RC.  Many thanks in advance.
+Although a milestone, this release is intended as the RC starting point, as such a kind request goes out to all users to give the milestone a spin.  The earlier feedback is given the earlier we have a chance to refine the design before going RC.  Many thanks in advance.
 
 Scales Xml 0.5.0 fixes two bugs:
 

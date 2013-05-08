@@ -73,7 +73,7 @@ sealed trait QName {
     } else false   
 
   /** 
-   * Will match namespace and local with other but not prefix === also does prefix
+   * Will match namespace and local with other but not prefix ==== also does prefix
    */
   def =:=( other : QName) = 
     (other eq this) ||
