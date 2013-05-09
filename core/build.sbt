@@ -8,9 +8,9 @@ libraryDependencies ++= Seq(
 )
 
 libraryDependencies <++= scalaVersion{ v=>
-      Seq("org.scalaz" %% "scalaz-core" % "7.0.0-M9",
-      "org.scalaz" %% "scalaz-iteratee" % "7.0.0-M9",
-      "org.scalaz" %% "scalaz-iterv" % "7.0.0-M9" )
+      Seq("org.scalaz" %% "scalaz-core" % "7.0.0",
+//      "org.scalaz" %% "scalaz-iteratee" % "7.0.0",
+      "org.scalaz" %% "scalaz-iterv" % "7.0.0" )
 }
 
 excludeFilter in unmanagedSources <<= scalaVersion{ v =>
