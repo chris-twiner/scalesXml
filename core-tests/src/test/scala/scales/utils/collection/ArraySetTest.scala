@@ -6,7 +6,7 @@ class ArraySetTest extends junit.framework.TestCase {
   import junit.framework.Assert._
 
   object StringS {
-    implicit val equal = scalaz.Scalaz.equal { (a: String, b: String) => a == b }
+    implicit val equal = scalaz.Equal.equal { (a: String, b: String) => a == b }
     def arrM = implicitly[ClassManifest[String]]
   }
 
@@ -258,7 +258,7 @@ class ArraySetTest extends junit.framework.TestCase {
   def testUpToFiveApplyIntEquiv: Unit = {
     import setHolder._
 
-    implicit val intEq = scalaz.Scalaz.equal { (a: Int, b: Int) => a == b }
+    implicit val intEq = scalaz.Equal.equal { (a: Int, b: Int) => a == b }
     implicit val intEquiv = new scales.utils.Equiv[Int]
     implicit val intToStr = (i: Int) => i.toString
     implicit val aToInt = (i: A) => i.toInt

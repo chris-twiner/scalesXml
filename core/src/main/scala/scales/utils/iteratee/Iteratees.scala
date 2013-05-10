@@ -362,11 +362,11 @@ trait Iteratees {
 		  Done(e1, IterV.Empty[E])
 		},
 	      empty = Cont(step),
-	      eof = Done(EphemeralStream.empty, IterV.EOF[E])
+	      eof = Done(EphemeralStream.emptyEphemeralStream, IterV.EOF[E])
 	    )
 	  },
 	empty = Cont(step),
-	eof = Done(EphemeralStream.empty, IterV.EOF[E])
+	eof = Done(EphemeralStream.emptyEphemeralStream, IterV.EOF[E])
       )
 
     Cont(step)
@@ -419,7 +419,7 @@ trait Iteratees {
    * If the dest returns EOF, the toMany is in turn called with EOF for any needed resource control processing.
    */ 
   def enumToMany[E, A, R]( dest: ResumableIter[A,R])( toMany: ResumableIter[E, EphemeralStream[A]]): ResumableIter[E, R] = {
-    val empty = () => EphemeralStream.empty
+    val empty = () => EphemeralStream.emptyEphemeralStream[A]
 
     /**
      * Pumps data from the toMany through to the destination, when the destination has consumed as much as possible it returns.

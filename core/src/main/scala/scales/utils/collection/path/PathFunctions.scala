@@ -185,7 +185,7 @@ trait Paths {
 
 
   import scalaz.Equal
-  import scalaz.Scalaz.equal
+  import scalaz.Equal.equal
 
   /**
    * Provides an instance of the Equal type class for positional Equality

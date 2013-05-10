@@ -14,7 +14,7 @@ import java.nio.channels.ReadableByteChannel
 import scales.xml.parser.pull.PullUtils
 
 import scalaz.{IterV, Enumerator, Input, EphemeralStream}
-import EphemeralStream.{empty => emptyEphemeralStream}
+import EphemeralStream.emptyEphemeralStream
 import scalaz.IterV._
 
 import scales.xml.parser.strategies.{MemoryOptimisationStrategy, OptimisationToken}
