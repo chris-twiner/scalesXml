@@ -28,9 +28,8 @@ trait PullIteratees {
 
   // enumerators and iteratees follow
 
-  import scalaz._
-  import Scalaz._
-  import IterV._
+  import scalaz.{IterV, Enumerator, Input, EphemeralStream}
+  import scalaz.IterV._
 
   type QNamesMatch = (List[QName], Option[XmlPath])
 
