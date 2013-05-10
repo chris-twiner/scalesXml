@@ -24,6 +24,7 @@ class AsyncPullTest extends junit.framework.TestCase {
   import scalaz._
   import Scalaz._
   import scalaz.IterV._
+  import EphemeralStream.emptyEphemeralStream
 
   import scales.utils.{resource => sresource}
 
@@ -155,7 +156,7 @@ class AsyncPullTest extends junit.framework.TestCase {
 
     val parser = AsyncParser()
 
-    val empty = () => EphemeralStream.empty
+    val empty = () => emptyEphemeralStream
 
     var nexted = 0
     var headed = 0
@@ -200,7 +201,7 @@ class AsyncPullTest extends junit.framework.TestCase {
 
     val parser = AsyncParser()
 
-    val empty = () => EphemeralStream.empty
+    val empty = () => emptyEphemeralStream
 
     var nexted = 0
     var headed = 0

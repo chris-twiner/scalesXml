@@ -226,7 +226,7 @@ class EqualsNormalImportsTest extends junit.framework.TestCase {
   }
 
   def testXmlEqualsPrefixRelevant : Unit = {
-    implicit val qnameEqual = equal { (a: QName, b: QName) => a ==== b }
+    implicit val qnameEqual = Equal.equal { (a: QName, b: QName) => a ==== b }
 
     val attrs1 = Attribs("a1" -> "v1", "a2" -> "v2")
     val attrs2 = Attribs("a1" -> "v1", "a2" -> "v2")
@@ -248,7 +248,7 @@ class EqualsNormalImportsTest extends junit.framework.TestCase {
   }
 
   def testXmlEqualsAttrsPrefixRelevant : Unit = {
-    val prefixQNameEqual = equal { (a: QName, b: QName) => a ==== b }
+    val prefixQNameEqual = Equal.equal { (a: QName, b: QName) => a ==== b }
     implicit val defaultAttributeComparison : XmlComparison[Attribute] = new AttributeComparison()(prefixQNameEqual, defaultQNameTokenComparison)
 
     val pod = no.prefixed("po2")

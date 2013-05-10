@@ -19,6 +19,8 @@ class EqualsPullTest extends EqualsNormalImportsTest {
   import scales.utils._
   import ScalesUtils._
 
+  implicit val seqEq = Equal.equalA[Seq[Misc]]
+  
   def pull( doc : Doc ) =
    pullXml(new StringReader(asString(doc)))
 

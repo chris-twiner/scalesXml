@@ -20,6 +20,7 @@ import scala.collection.JavaConversions._
 //TODO - get a type class in here, looks like doclike usage from the serializers, smells like re-use to me
 
 object Implicits {
+  import scalaz.Equal._
   import scalaz._
   import Scalaz._
 

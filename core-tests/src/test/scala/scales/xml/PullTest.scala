@@ -17,10 +17,10 @@ class PullTest extends junit.framework.TestCase {
   val Default = Namespace("urn:default")
   val DefaultRoot = Default("Default")
 
-  import scalaz._
-  import Scalaz._
+  import scalaz.{IterV, Enumerator, Input, EphemeralStream}
   import scalaz.IterV._
 
+  
   import scales.utils.{resource => sresource}
  
   /*
