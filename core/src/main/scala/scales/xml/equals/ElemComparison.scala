@@ -6,6 +6,7 @@ import impl.EqualsHelpers
 
 import XmlEquals._
 
+import scalaz.Equal._
 import scalaz._
 import Scalaz._
 

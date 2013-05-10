@@ -8,8 +8,7 @@ import scales.xml._
 
 import java.io.Writer
 
-import scalaz._
-import Scalaz._
+import scalaz.{IterV, Enumerator, Input, EphemeralStream}
 import scalaz.IterV._
 
 /**

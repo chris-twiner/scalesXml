@@ -1,5 +1,6 @@
 package scales.xml.impl
 
+import scalaz.Equal._
 import scalaz._
 import Scalaz._
 

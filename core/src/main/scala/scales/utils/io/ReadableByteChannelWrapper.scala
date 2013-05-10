@@ -4,8 +4,7 @@ import scales.utils._
 
 import resources._
 
-import scalaz._
-import Scalaz._
+import scalaz.{IterV, Enumerator, Input}
 import scalaz.IterV._
 
 import java.io._
