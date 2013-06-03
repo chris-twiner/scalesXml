@@ -25,7 +25,7 @@ trait XmlComparison[-T] {
 }
 
 trait DefaultQNameEquals {
-  implicit val qnameEqual = equal { (a: QName, b: QName) => a =:= b }
+  implicit val qnameEqual : Equal[QName] = equal { (a: QName, b: QName) => a =:= b }
 }
 
 /**
