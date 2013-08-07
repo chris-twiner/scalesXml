@@ -1,5 +1,7 @@
 package scales.xml.parser.pull
 
+import scalaz.Equal, scalaz.Equal._, scalaz.syntax.equal._
+
 import scales.utils._
 
 import scales.xml.{
@@ -40,7 +42,7 @@ trait PullIteratees {
    * would return an iteratee that returned every <ofInterest> content </ofInterest>
    * as a path (each parent node containing only one child node).
    */
-  def onQNames(qnames: List[QName]): ResumableIter[PullType, QNamesMatch] = {
+  def onQNames(qnames: List[QName])(implicit qe: Equal[QName]): ResumableIter[PullType, QNamesMatch] = {
 
     /*
      * The pairs allow the depth of each element to be followed.  In particular this stops both descent and ascent problems in the
@@ -55,15 +57,15 @@ trait PullIteratees {
         e match {
 
           case Left(elem@Elem(q, a, n)) => {
-            val nfocus = if (q == focus._1) (focus._1, focus._2 + 1)
+            val nfocus = if (q === focus._1) (focus._1, focus._2 + 1)
             else focus
             val npath = addAndFocus(path, elem)
 
-            val shouldCollect = collecting || (toGo.isEmpty && q == focus._1)
+            val shouldCollect = collecting || (toGo.isEmpty && q === focus._1)
 
             Cont(
               // is it our head?
-              if ((!toGo.isEmpty) && q == focus._1)
+              if ((!toGo.isEmpty) && q === focus._1)
                 // move down
                 step(before :+ focus, toGo.head, toGo.tail, npath, false)
               else
@@ -79,7 +81,7 @@ trait PullIteratees {
 
           case Right(EndElem(q, n)) =>
 
-            if (q == focus._1) {
+            if (q === focus._1) {
               val ncfocus = (focus._1, focus._2 - 1)
 
               if (toGo.isEmpty && ncfocus._2 == 0) // we are popping to the selected level
@@ -187,22 +189,22 @@ trait PullIteratees {
   /**
    * Wraps XmlPull
    */
-  def iterate(path: List[QName], xml: XmlPull): FlatMapIterator[XmlPath] = iterate(path, xml.it)
+  def iterate(path: List[QName], xml: XmlPull)(implicit qe: Equal[QName]): FlatMapIterator[XmlPath] = iterate(path, xml.it)(qe)
 
   /**
    * A wrapping around withIter(onDone(List(onQNames(path))))(enumXml(xml, _))
    * it unwraps the data providing an Iterator[XPath]
    */
-  def iterate(path: List[QName], xml: Iterator[PullType]): FlatMapIterator[XmlPath] =
-    new Iterate(path, xml)
+  def iterate(path: List[QName], xml: Iterator[PullType])(implicit qe: Equal[QName]): FlatMapIterator[XmlPath] =
+    new Iterate(path, xml)(qe)
 
 }
 
 /**
  * Iterates over a path of QNames producing XPaths for a given Iterator[PullType]
  */
-class Iterate(path: List[QName], xml: Iterator[PullType]) extends FlatMapIterator[XmlPath] {
-  import ScalesXml._
+class Iterate(path: List[QName], xml: Iterator[PullType])(implicit qe:Equal[QName]) extends FlatMapIterator[XmlPath] {
+  import ScalesXml.{qnameEqual => _, _}
   import ScalesUtils._
   import ximpl.TreeProxies
   val qnames = path
@@ -250,16 +252,16 @@ class Iterate(path: List[QName], xml: Iterator[PullType]) extends FlatMapIterato
 
 	case Left(elem@Elem(q, a, n)) => {
 	  val nfocus =
-	    if (q == focus._1) (focus._1, focus._2 + 1)
+	    if (q === focus._1) (focus._1, focus._2 + 1)
 	    else focus
 
 	  proxies.beginSub(elem, XmlBuilder())
 	  //val npath = addAndFocus(path, elem)
 
-	  val shouldCollect = collecting || (toGo.isEmpty && q == focus._1)
+	  val shouldCollect = collecting || (toGo.isEmpty && q === focus._1)
 
 	  // is it our head?
-	  if ((!toGo.isEmpty) && q == focus._1)
+	  if ((!toGo.isEmpty) && q === focus._1)
 	    // move down
 	    set(before :+ focus, toGo.head, toGo.tail, proxies, false)
 	  else
@@ -278,7 +280,7 @@ class Iterate(path: List[QName], xml: Iterator[PullType]) extends FlatMapIterato
 
 	case Right(EndElem(q, n)) =>
 
-	  if (q == focus._1) {
+	  if (q === focus._1) {
 	    val ncfocus = (focus._1, focus._2 - 1)
 
 	      if (toGo.isEmpty && ncfocus._2 == 0) { // we are popping to the selected level
