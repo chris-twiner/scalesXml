@@ -5,7 +5,7 @@ import scalaz.EphemeralStream
 /**
  * Prior to 0.4.4 iterate was based on onQNames, the PullTest qnames test covered this, and although the implementation is pretty much identical, these test from the iterate function directly.
  */ 
-/*class PullIterateTest extends junit.framework.TestCase {
+class PullIterateTest extends junit.framework.TestCase {
 
   import junit.framework.Assert._
   import java.io._
@@ -71,7 +71,7 @@ import scalaz.EphemeralStream
     }
     
   }
-
+/*
   def testOnQNamesRepeatedQNames = {
     
     val ourMax = maxIterations / 10 // full takes too long but does work in constant space
@@ -89,7 +89,26 @@ import scalaz.EphemeralStream
       assertEquals(1, x.zipUp.children.size)
     }
     
+  }*/
+
+  def testOnQNameEqualImplicit : Unit = {
+    
+    import scalaz.Equal._
+
+    val ourMax = maxIterations / 10 // full takes too long but does work in constant space
+
+    val iter = events(ourMax).iterator
+
+    implicit val qnameEqual = equal { (a: QName, b: QName) =>
+      a.local.equalsIgnoreCase(b.local)
+    }
+    
+    val QNames = List("root"l, "CHILD"l, "interESTING"l)
+    
+    val itr = iterate(QNames, iter)
+
+    assertFalse("failed to match nodes", itr.isEmpty)
+
   }
 
 }
-*/
