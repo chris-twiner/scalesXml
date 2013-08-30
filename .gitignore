@@ -29,3 +29,9 @@ ScalesXml/
 
 # idea project files
 .idea*
+
+# eclipse
+.classpath
+.project
+.settings
+.cache

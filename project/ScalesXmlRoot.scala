@@ -113,13 +113,13 @@ object ScalesXmlRoot extends Build {
 */
 //    organization := "org.scalesxml",
     offline := true,
-    version := "0.6.0-M1",
-    scalaVersion := "2.10.0",
-//    scalaVersion := "2.10.0-M7",
-    crossScalaVersions := Seq("2.9.3","2.10.0","2.10.1"),
+    version := "0.6.0-RC1",
+    scalaVersion := "2.10.2-RC2",
+//    scalaVersion := "2.10.0-M7", 
+    crossScalaVersions := Seq("2.9.3","2.10.2-RC2"),
     //publishSetting,
 //    parallelExecution in Test := false,
-//    scalacOptions ++= Seq("-optimise"),
+//    scalacOptions ++= Seq("-optimise"), 2.10.2-RC2 
     scalacOptions ++= Seq("-encoding", "UTF-8", "-deprecation", "-unchecked"),
     packageOptions ++= Seq[PackageOption](ManifestAttributes(
       (IMPLEMENTATION_TITLE, "Scales"),
@@ -135,7 +135,7 @@ object ScalesXmlRoot extends Build {
      */
     scalacOptions in (Compile, doc) <++= (scalaVersion).map{(v: String) =>
       if (v.startsWith("2.10"))
-	Seq("-diagrams")
+	Seq("-diagrams", "-diagrams-debug")
       else
 	Seq()
     },
