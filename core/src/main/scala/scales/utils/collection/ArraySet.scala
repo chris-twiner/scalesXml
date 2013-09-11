@@ -19,26 +19,91 @@ object ArraySet {
 */
 
 /**
- * This mechanism exists to drop the outer pointer, boilerplatey :<
+ * This mechanism exists to drop the outer pointer and class manifest instance.  Creates instances of ArraySet of varying size.
  */ 
-trait ArraySetFactoryFunctions[A] {
+trait ArraySetsFactory[A] {
   /**
    * @returns the equality Equal type class instance used
    */ 
-  def equal: Equal[A]
+  protected def equal: Equal[A]
+
+  protected implicit def arrayManifest: ClassManifest[A]
 
   def emptySet: ArraySet[A]
 
-  def one(a: A): ArraySet[A]
+  protected def one(a: A): ArraySet[A]
 
-  def two(a: A, b: A): ArraySet[A]
+  protected def two(a: A, b: A): ArraySet[A]
+
+  protected def three(a: A, b: A, c: A): ArraySet[A]
+
+  protected def four(a: A, b: A, c: A, d: A): ArraySet[A]
+
+  protected def five(a: A, b: A, c: A, d: A, e: A): ArraySet[A]
+
+  def more(allTheAs: Array[A]): ArraySet[A]
+}
+
+object ArraySet {
+  /**
+   * Default implementation of the ArraySetFactoryFunctions.  Use to create a single instance.
+   */ 
+  def factory[A](implicit equalI: Equal[A], arrayManifestI: ClassManifest[A]): ArraySetsFactory[A] = {
+    
+    trait ASF extends ArraySetsFactory[A] {
+      /**
+       * @returns the equality Equal type class instance used
+       */ 
+      def equal: Equal[A] = equalI
+
+      implicit def arrayManifest: ClassManifest[A] = arrayManifestI
+
+      def emptySet: ArraySet[A] = new EmptyArraySet[A] with ASF
+
+      def one(a: A): ArraySet[A] = new ArraySetOne[A] with ASF {
+	val one = a
+      }
+
+      def two(a: A, b: A): ArraySet[A] = new ArraySetTwo[A] with ASF {
+	val one = a
+	val two = b
+      }
+
+      def three(a: A, b: A, c: A): ArraySet[A] = new ArraySetThree[A] with ASF {
+	val one = a
+	val two = b
+	val three = c
+      }
+
+      def four(a: A, b: A, c: A, d: A): ArraySet[A] = new ArraySetFour[A] with ASF {
+	val one = a
+	val two = b
+	val three = c
+	val four = d
+      }
+
+      def five(a: A, b: A, c: A, d: A, e: A): ArraySet[A] = new ArraySetFive[A] with ASF {
+	val one = a
+	val two = b
+	val three = c
+	val four = d
+	val five = e
+      }
+
+      def more(allTheAs: Array[A]): ArraySet[A] = new ArraySetArray[A] with ASF {
+	val ar = allTheAs
+      }
+    }
+    class ASFI extends ASF
+    new ASFI()
+  }
 }
 
 /**
  * ArraySet is an array backed set, with both the space savings and hit on performance.
  * The data is compared on the basis of the Equal type class instance provided only (no hashCodes etc). 
  */ 
-trait ArraySet[A] {
+trait ArraySet[A] extends Iterable[A] {
 
   /**
    * Uses the Equal instance to add extra elements
@@ -82,5 +147,5 @@ trait ArraySet[A] {
 
   def empty: Boolean
 
-  def size: Integer
+  def size: Int
 }
