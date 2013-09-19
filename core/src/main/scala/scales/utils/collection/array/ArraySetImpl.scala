@@ -16,7 +16,7 @@ trait EmptyArraySet[A] extends ArraySet[A] with ArraySetsFactory[A] {
   def contains[B,C]( b : B )(implicit equiv: Equiv[C], viewA: A => C, viewB: B => C): Boolean = false
   def apply[B,C]( b : B )(implicit equiv: Equiv[C], viewA: A => C, viewB: B => C): Option[A] = None
 
-  def + (elem: A): ArraySet[A] = one(elem)//new ArraySetOne(elem)
+  def + (elem: A): ArraySet[A] = one(elem)
   def - (elem: A): ArraySet[A] = this
 
   def -[B,C]( b : B )(implicit equiv: Equiv[C], viewA: A => C, viewB: B => C) : ArraySet[A] = this
@@ -27,19 +27,20 @@ trait EmptyArraySet[A] extends ArraySet[A] with ArraySetsFactory[A] {
 trait ArraySetOne[A] extends EmptyArraySet[A] {
   val one: A
 
-  protected def thisElem = one
-  
   /**
    * used for iterator
    */ 
   protected def ups: List[A] = List(one)
 
-  override def iterator = ups.iterator
+  final override def iterator = ups.iterator
 
   final override def empty = false
   override def size = minusOps.size
-  override def contains[B,C]( b : B )(implicit equiv: Equiv[C], viewA: A => C, viewB: B => C): Boolean = equiv(b, thisElem) || super.contains(b)
-  override def apply[B,C]( b : B )(implicit equiv: Equiv[C], viewA: A => C, viewB: B => C): Option[A] = if (equiv(b, thisElem)) Some(thisElem) else super.apply(b)
+  final override def contains[B,C]( b : B )(implicit equiv: Equiv[C], viewA: A => C, viewB: B => C): Boolean =
+    apply( b ).isDefined
+    
+  final override def apply[B,C]( b : B )(implicit equiv: Equiv[C], viewA: A => C, viewB: B => C): Option[A] =
+    ups.find( equiv(b, _) )
 
   override def + (elem: A): ArraySet[A] = {
     val addp = add
@@ -48,8 +49,6 @@ trait ArraySetOne[A] extends EmptyArraySet[A] {
 	addp._2(elem) // new arrayset instance
       )(equal.equal(_,_))(elem)
   }
-//    if (equal.equal(one, elem)) one(elem)
-//    else two(one, elem)
 
   protected def add: (List[(A, A => ArraySet[A])], A => ArraySet[A]) =
     (List(
@@ -58,7 +57,7 @@ trait ArraySetOne[A] extends EmptyArraySet[A] {
 
   def findMap[I,R](actions: List[(A, I => R)])(fallback: => R)(pred: (A, I) => Boolean)(in: I) : R =
     actions.find( a => pred(a._1, in)). // existing element
-      map{ a => println("got one?");a._2(in) }.getOrElse{println("fallback");fallback} // call the action or return this 
+      map{ a => a._2(in) }.getOrElse{fallback} // call the action or return this 
 
   protected def minusOps: List[(A, Any => ArraySet[A])] = 
     List(
@@ -81,15 +80,13 @@ trait ArraySetOne[A] extends EmptyArraySet[A] {
 trait ArraySetTwo[A] extends ArraySetOne[A] {
   val two: A
 
-  override def thisElem = two  
   override protected def ups: List[A] = two :: super.ups
 
   override protected def add: (List[(A, A => ArraySet[A])], A => ArraySet[A]) = {
-    println("Two add was called")
     (List(
 	(two, i => two(one, i)),
 	(one, i => two(i, two))
-      ), a => {println("two fallback called");three(one, two, a)})
+      ), a => three(one, two, a))
   }
 
   override def minusOps = 
@@ -103,7 +100,6 @@ trait ArraySetTwo[A] extends ArraySetOne[A] {
 trait ArraySetThree[A] extends ArraySetTwo[A] {
   val three: A
 
-  override def thisElem = three
   override protected def ups: List[A] = three :: super.ups
 
   override protected def add: (List[(A, A => ArraySet[A])], A => ArraySet[A]) =
@@ -125,7 +121,6 @@ trait ArraySetThree[A] extends ArraySetTwo[A] {
 trait ArraySetFour[A] extends ArraySetThree[A] {
   val four: A
 
-  override def thisElem = four
   override protected def ups: List[A] = four :: super.ups
 
   override protected def add: (List[(A, A => ArraySet[A])], A => ArraySet[A]) =
@@ -149,7 +144,6 @@ trait ArraySetFour[A] extends ArraySetThree[A] {
 trait ArraySetFive[A] extends ArraySetFour[A] {
   val five: A
 
-  override def thisElem = five
   override protected def ups: List[A] = five :: super.ups
 
   override protected def add: (List[(A, A => ArraySet[A])], A => ArraySet[A]) = {
@@ -160,8 +154,9 @@ trait ArraySetFive[A] extends ArraySetFour[A] {
 	(three, i => five(one, two, i, four, five)),
 	(two, i => five(one, i, three, four, five)),
 	(one, i => five(i, two, three, four, five))
-      ), a => more(Array(one, two, three, four, five, a
-			 ))) // give max in same alignment
+      ), 
+     a => more(Array(one, two, three, four, five, a ))
+    )
   }
 
   override def minusOps = 
@@ -269,107 +264,3 @@ trait ArraySetArray[A] extends ArraySet[A] with ArraySetsFactory[A] {
     minusOp[C](equiv(_,_), b)
 
 }
-
-/*
-
-/**
- * Grows by 0.5 when needed, and shrinks back to one -> five where possible.
- * Instances must override size
- */ 
-trait ArraySetArray[A] extends ArraySet[A] with ArraySetsFactory[A] {
-  
-  val ar: Array[A]
-
-  def iterator = ar.take(size).iterator
-
-  def empty = size != 0
-  // impl lets it grow def size = ar.length
-  def contains[B,C]( b : B )(implicit equiv: Equiv[C], viewA: A => C, viewB: B => C): Boolean = indexOf(b)(equiv(_,_)) != -1
-  def apply[B,C]( b : B )(implicit equiv: Equiv[C], viewA: A => C, viewB: B => C): Option[A] = {
-    val i = indexOf(b)(equiv(_,_))
-    if (i == -1)
-      None
-    else
-      Some(ar(i))
-  }
-
-  protected def indexOf[I](in: I)(pred: (A, I) => Boolean): Int = {
-    var i = 0
-    var found = false
-    val sized = size
-    while( i < sized && !found ){
-      if (pred(ar(i), in))
-	found = true
-      else 
-	i += 1
-    }
-    if (found)
-      i
-    else
-      -1
-  }
-
-  protected def newArray(grow: Boolean) = {
-    val na = Array.ofDim[A](
-      (if (grow) 
-	ar.length * 0.5
-      else
-	ar.length).toInt
-    )
-    Array.copy(ar, 0, na, 0, size)
-    na
-  }
-
-  def + (elem: A): ArraySet[A] = {
-    val mi = indexOf(elem)(equal.equal(_,_))
-
-    if (mi == -1) {
-      // grow by 0.5 and add at the end if no space
-      val newarray = 
-	if (mi == (ar.length -1))
-	  newArray(true) // grow on add 
-	else
-	  ar.clone
-      newarray.update(size, elem)
-      more(newarray, size + 1)
-    } else {
-      // copy array replace at mi
-      val na = newArray(false)
-      na.update(mi, elem)
-      more(na, size)
-    }
-  }
-
-  protected def minusOp[I](pred: (I, A) => Boolean, elem: I) = {
-    val mi = indexOf(elem)((a, i) => pred(i, a))
-
-    if (mi == -1)
-      this
-    else {
-      if (size == 6)
-	mi match {
-	  case 0 => five(ar(1), ar(2), ar(3), ar(4), ar(5))
-	  case 1 => five(ar(0), ar(2), ar(3), ar(4), ar(5))
-	  case 2 => five(ar(0), ar(1), ar(3), ar(4), ar(5))
-	  case 3 => five(ar(0), ar(1), ar(2), ar(4), ar(5))
-	  case 4 => five(ar(0), ar(1), ar(2), ar(3), ar(5))
-	  case 5 => five(ar(0), ar(1), ar(2), ar(3), ar(4))
-	}
-      else {
-	val na = ar.clone
-	Array.copy(ar, mi + 1, na, mi, size - mi -1)
-	more(na, size -1)
-      }
-    }
-  }
-
-  def - (elem: A): ArraySet[A] =
-    minusOp[A](equal.equal(_,_), elem)
-
-  def -[B,C]( b : B )(implicit equiv: Equiv[C], viewA: A => C, viewB: B => C) : ArraySet[A] = 
-    minusOp[C](equiv(_,_), b)
-
-}
-
-
-*/
