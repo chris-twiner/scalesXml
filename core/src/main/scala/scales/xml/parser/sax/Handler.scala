@@ -43,6 +43,20 @@ class Handler[Token <: OptimisationToken](strategy : PathOptimisationStrategy[To
   def getProlog = prolog
   def getEnd = end
 
+  /**
+   * cached attribute array
+   */ 
+  private[this] var attrs: Array[Attribute] = Array.ofDim(20)
+
+  /**
+   * resizes the cached attribute array by 50% if needed
+   */ 
+  private[this] final def resizeAttrs(size: Int) {
+    if (size > attrs.length) {
+      attrs = Array.ofDim((size * 1.5).toInt)
+    }
+  }
+
   private[this] var locator : Locator = _
   
   // used for judging PI or Comments
@@ -88,17 +102,21 @@ class Handler[Token <: OptimisationToken](strategy : PathOptimisationStrategy[To
 
     var i = 0
     val length = attributes.getLength
-    var attribs = emptyAttributes
+    resizeAttrs(length)
 
     while (i < length) {
       val qname = aqn(attributes.getURI(i), attributes.getLocalName(i), attributes.getQName(i), strategy, token)
-      attribs = attribs unsafePlus 
-      strategy.attribute(qname, 
+      attrs.update(i,
+		   strategy.attribute(qname, 
 			 attributes.getValue(i), 
 			 token)
+		 )
 
       i += 1
     }
+
+    // copy the created attribs
+    val attribs = scales.xml.impl.AttributeSet.unsafe(attrs, length)
     
     // use the current nsMap
     val elem = strategy.elem(

@@ -41,7 +41,7 @@ trait ArraySetsFactory[A] {
 
   protected def five(a: A, b: A, c: A, d: A, e: A): ArraySet[A]
 
-  def more(allTheAs: Array[A]): ArraySet[A]
+  protected def more(allTheAs: Array[A]): ArraySet[A]
 }
 
 object ArraySet {
