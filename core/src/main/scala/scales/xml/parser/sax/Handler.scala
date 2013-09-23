@@ -43,20 +43,6 @@ class Handler[Token <: OptimisationToken](strategy : PathOptimisationStrategy[To
   def getProlog = prolog
   def getEnd = end
 
-  /**
-   * cached attribute array
-   */ 
-  private[this] var attrs: Array[Attribute] = Array.ofDim(20)
-
-  /**
-   * resizes the cached attribute array by 50% if needed
-   */ 
-  private[this] final def resizeAttrs(size: Int) {
-    if (size > attrs.length) {
-      attrs = Array.ofDim((size * 1.5).toInt)
-    }
-  }
-
   private[this] var locator : Locator = _
   
   // used for judging PI or Comments
@@ -102,7 +88,7 @@ class Handler[Token <: OptimisationToken](strategy : PathOptimisationStrategy[To
 
     var i = 0
     val length = attributes.getLength
-    resizeAttrs(length)
+    val attrs = strategy.attributeArray(length)
 
     while (i < length) {
       val qname = aqn(attributes.getURI(i), attributes.getLocalName(i), attributes.getQName(i), strategy, token)

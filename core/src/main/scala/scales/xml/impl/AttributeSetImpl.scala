@@ -61,11 +61,8 @@ object AttributeSet extends AttributesImpl {
 
   /**
    * Creates an ArraySet based on the input array and size but does so without checking set membership.
-   *
-   * When an underlying array must be used the input array is copied unless own is true and len is equal to ar.length
-   * 
    */
-  def unsafe(ar: Array[Attribute], len: Int, own: Boolean = false): ArraySet[Attribute] =
+  def unsafe(ar: Array[Attribute], len: Int): ArraySet[Attribute] =
     len match {
       case 1 => one(ar(0))
       case 2 => two(ar(0), ar(1))
@@ -74,14 +71,10 @@ object AttributeSet extends AttributesImpl {
       case 5 => five(ar(0), ar(1), ar(2), ar(3), ar(4))
       case _ if (len <= 0) => empty
       case _ => 
-	if (own && (ar.length == len)) {
-	  more(ar)
-	} else {
-	  // take the hit
-	  val na = Array.ofDim(len)
-          Array.copy(ar, 0, na, 0, len)
-	  more(na)
-	}
+	// take the hit
+	val na = Array.ofDim(len)
+	Array.copy(ar, 0, na, 0, len)
+	more(na)    
     }
 
 }

@@ -34,6 +34,33 @@ trait MemoryOptimisationStrategy[Token <: OptimisationToken] {
   def createToken(implicit ver : XmlVersion, fromParser : FromParser) : Token
 
   /**
+   * cached attribute array
+   */
+  private[this] var attrs: Array[Attribute] = Array.ofDim(20)
+
+  /**
+   * resizes the cached attribute array by 50% if needed
+   */ 
+  private[this] final def resizeAttrs(size: Int) {
+    if (size > attrs.length) {
+      attrs = Array.ofDim((size * 1.5).toInt)
+    }
+  }
+
+  /**
+   * During parsing provides a backing array for attribute storage.  The expected new size 
+   * must be passed in, failure to give a size large enough will lead to OOB exceptions.
+   *
+   * Implementations are advised to use the array for parsing performance reasons.
+   *
+   * The default implementataion expands the size by 50% of the backed array.  The array ownership should remain with the strategy instance
+   */
+  def attributeArray(newSize: Int): Array[Attribute] = {
+    resizeAttrs(newSize)
+    attrs
+  }
+
+  /**
    * It is expected that certain attributes have fixed values, ie. booleans or based on schema enums etc, this function allows such optimisations.
    *
    * The qname will have been obtained via a call to either noNamespaceQName, unprefixedQName or prefixedQName, so any optimisations provided by them can be leveraged.

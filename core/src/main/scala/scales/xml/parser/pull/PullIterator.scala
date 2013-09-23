@@ -150,7 +150,7 @@ object PullUtils {
 
     val count = parser.getAttributeCount()
 
-    val ar: Array[scales.xml.Attribute] = Array.ofDim(count)
+    val ar = strategy.attributeArray(count)
     var i = 0
     //var map = emptyAttributes
     while (i < count) {
@@ -172,8 +172,7 @@ object PullUtils {
 		)
       i += 1
     }
-    // take the bits out or own the array, the array could be folded into strategy itself!!!
-    scales.xml.impl.AttributeSet.unsafe(ar, count, true)
+    scales.xml.impl.AttributeSet.unsafe(ar, count)
   }
 
   def getNamespaces[Token <: OptimisationToken]( parser: XMLStreamReader, strategy : MemoryOptimisationStrategy[Token], token : Token ): Map[String, String] = {
