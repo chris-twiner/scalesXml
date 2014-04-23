@@ -31,15 +31,15 @@ object ScalesXmlRoot extends Build {
 
   lazy val coreTests = Project("scales-xml-tests", file("core-tests"), settings = standardSettings ++ dontPublishSettings) dependsOn(core)
 
-  lazy val saxonTests = Project("saxon-tests", file("saxon-tests"), settings = standardSettings ++ dontPublishSettings ++ dontBuildIn28) dependsOn(coreTests % "test->test")
+  lazy val saxonTests = Project("saxon-tests", file("saxon-tests"), settings = standardSettings ++ dontPublishSettings) dependsOn(coreTests % "test->test")
 
   lazy val jaxen = Project("scales-jaxen", file("jaxen"), settings = standardSettings ++ deployOrg) dependsOn(core)
 
-  lazy val jaxenTests = Project("jaxen-tests", file("jaxen-tests"), settings = standardSettings ++ dontPublishSettings ++ dontBuildIn28) dependsOn(jaxen % "compile->test", coreTests % "test->test") //  % "compile->compile;test->test"
+  lazy val jaxenTests = Project("jaxen-tests", file("jaxen-tests"), settings = standardSettings ++ dontPublishSettings) dependsOn(jaxen % "compile->test", coreTests % "test->test") //  % "compile->compile;test->test"
 
   lazy val aalto = Project("scales-aalto", file("aalto"), settings = standardSettings ++ deployOrg) dependsOn(core)
 
-  lazy val aaltoTests = Project("aalto-tests", file("aalto-tests"), settings = standardSettings ++ dontPublishSettings ++ dontBuildIn28) dependsOn(aalto % "compile->test", coreTests % "test->test")
+  lazy val aaltoTests = Project("aalto-tests", file("aalto-tests"), settings = standardSettings ++ dontPublishSettings) dependsOn(aalto % "compile->test", coreTests % "test->test")
 
   /* project that sucks in the others like fullDocsAndSxr for the purpose of coverage tests
   lazy val coverageProject = {
@@ -79,12 +79,6 @@ object ScalesXmlRoot extends Build {
       )
   )
 
-  lazy val dontBuildIn28 =
-    Seq(
-      skip <<= scalaVersion map { v => v startsWith "2.8." },
-      skip in (Compile, update) <<= scalaVersion map { v => v startsWith "2.8." },
-      skip in (Test, update) <<= scalaVersion map { v => v startsWith "2.8." })
-
   lazy val dontPublishSettings = Seq(
     publishArtifact in Compile := false,
     publishArtifact in Test := false,
@@ -114,9 +108,9 @@ object ScalesXmlRoot extends Build {
 //    organization := "org.scalesxml",
     offline := true,
     version := "0.6.0-M2",
-    scalaVersion := "2.10.3",
+    scalaVersion := "2.10.4",
 //    scalaVersion := "2.10.0-M7",
-    crossScalaVersions := Seq("2.9.3","2.10.1","2.10.3"),
+    crossScalaVersions := Seq("2.9.3","2.11.0","2.10.4"),
     //publishSetting,
 //    parallelExecution in Test := false,
 //    scalacOptions ++= Seq("-optimise"),

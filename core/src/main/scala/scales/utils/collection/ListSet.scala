@@ -26,8 +26,8 @@ object ListSet {
  *  @author <- corrupted by Chris Twiner with a number of PaulPs fixes
  *  @version 1.0, 30/12/2010
  */
-@serializable
-class ListSet[A : Equal](val plusFast : Boolean = false) extends Iterable[A]{ self =>
+//@serializable
+class ListSet[A : Equal](val plusFast : Boolean = false) extends Iterable[A] with Serializable { self =>
 
   val equal = implicitly[Equal[A]]
 
@@ -112,8 +112,8 @@ class ListSet[A : Equal](val plusFast : Boolean = false) extends Iterable[A]{ se
 
   /** Represents an entry in the `ListSet`.
    */
-  @serializable
-  protected class Node(override protected val elem: A) extends ListSet[A] {
+  //@serializable
+  protected class Node(override protected val elem: A) extends ListSet[A] with Serializable {
 
     override private[ListSet] def unchecked_outer = self
 
