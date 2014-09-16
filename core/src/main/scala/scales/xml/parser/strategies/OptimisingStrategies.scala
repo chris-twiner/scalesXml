@@ -17,6 +17,20 @@ trait OptimisingStrategiesImplicits {
 trait OptimisationToken {
   implicit val ver : XmlVersion
   implicit val fromParser : FromParser
+
+  /**
+   * cached attribute array
+   */
+  private[strategies] var attrs: Array[Attribute] = Array.ofDim(20)  
+
+  /**
+   * resizes the cached attribute array by 50% if needed
+   */ 
+  private[strategies] final def resizeAttrs(size: Int) {
+    if (size > attrs.length) {
+      attrs = Array.ofDim((size * 1.5).toInt)
+    }
+  }
 }
 
 class BaseToken(implicit val ver : XmlVersion, val fromParser : FromParser) extends OptimisationToken
@@ -34,20 +48,6 @@ trait MemoryOptimisationStrategy[Token <: OptimisationToken] {
   def createToken(implicit ver : XmlVersion, fromParser : FromParser) : Token
 
   /**
-   * cached attribute array
-   */
-  private[this] var attrs: Array[Attribute] = Array.ofDim(20)
-
-  /**
-   * resizes the cached attribute array by 50% if needed
-   */ 
-  private[this] final def resizeAttrs(size: Int) {
-    if (size > attrs.length) {
-      attrs = Array.ofDim((size * 1.5).toInt)
-    }
-  }
-
-  /**
    * During parsing provides a backing array for attribute storage.  The expected new size 
    * must be passed in, failure to give a size large enough will lead to OOB exceptions.
    *
@@ -55,9 +55,9 @@ trait MemoryOptimisationStrategy[Token <: OptimisationToken] {
    *
    * The default implementataion expands the size by 50% of the backed array.  The array ownership should remain with the strategy instance
    */
-  def attributeArray(newSize: Int): Array[Attribute] = {
-    resizeAttrs(newSize)
-    attrs
+  def attributeArray(newSize: Int, token: Token): Array[Attribute] = {
+    token.resizeAttrs(newSize)
+    token.attrs
   }
 
   /**

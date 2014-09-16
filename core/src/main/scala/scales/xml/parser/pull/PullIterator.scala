@@ -150,7 +150,7 @@ object PullUtils {
 
     val count = parser.getAttributeCount()
 
-    val ar = strategy.attributeArray(count)
+    val ar = strategy.attributeArray(count, token)
     var i = 0
     //var map = emptyAttributes
     while (i < count) {

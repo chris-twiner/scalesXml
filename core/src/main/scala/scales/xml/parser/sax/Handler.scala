@@ -88,7 +88,7 @@ class Handler[Token <: OptimisationToken](strategy : PathOptimisationStrategy[To
 
     var i = 0
     val length = attributes.getLength
-    val attrs = strategy.attributeArray(length)
+    val attrs = strategy.attributeArray(length, token)
 
     while (i < length) {
       val qname = aqn(attributes.getURI(i), attributes.getLocalName(i), attributes.getQName(i), strategy, token)
