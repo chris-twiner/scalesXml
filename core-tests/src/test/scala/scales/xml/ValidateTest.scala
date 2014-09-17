@@ -20,7 +20,7 @@ class ValidateTest extends junit.framework.TestCase {
   import ScalesXml._
   import Functions._
 
-  def schemaFactory = scales.xml.impl.DefaultXSDSchemaFactoryPool
+  def schemaFactory: resources.Loaner[javax.xml.validation.SchemaFactory] = scales.xml.impl.DefaultXSDSchemaFactoryPool
  
   def doLoadXml[Token <: OptimisationToken](in : InputSource, strategy : PathOptimisationStrategy[Token] = defaultPathOptimisation) = {
     loadXml(in, strategy = strategy)

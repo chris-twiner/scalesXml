@@ -22,6 +22,6 @@ object SaxonSchemaFactoryPool extends SimpleUnboundedPool[SchemaFactory] { pool 
 class SaxonValidateTest extends ValidateTest {
  
   // #34 - the schema factory is setting attributes that aren't usable by Saxon on openjdk6 
-  def schemaFactory = SaxonXSDSchemaFactoryPool
+  override def schemaFactory = SaxonSchemaFactoryPool
  
 }
