@@ -19,8 +19,6 @@ class ValidateTest extends junit.framework.TestCase {
   import org.xml.sax.InputSource
   import ScalesXml._
   import Functions._
-
-  def schemaFactory: resources.Loaner[javax.xml.validation.SchemaFactory] = scales.xml.impl.DefaultXSDSchemaFactoryPool
  
   def doLoadXml[Token <: OptimisationToken](in : InputSource, strategy : PathOptimisationStrategy[Token] = defaultPathOptimisation) = {
     loadXml(in, strategy = strategy)
@@ -28,10 +26,12 @@ class ValidateTest extends junit.framework.TestCase {
 
   def testSimpleValidation = {
     val xsd = doLoadXml(resource(this,"/data/personal.xsd"))
-    val schema = newSchema(xsd, schemaFactory)
+    val schema = newSchema(xsd)
 
     val doc = doLoadXml(resource(this, "/data/personal-schema.xml"))
-    schema.newValidator.validate(doc)
+    doValidate(doc, schema)
   }
 
+  def doValidate(doc: Doc, schema: javax.xml.validation.Schema) = 
+    schema.newValidator.validate(doc)
 }

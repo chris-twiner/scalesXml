@@ -177,7 +177,9 @@ object Versions {
       import javax.xml.transform._
 
       val t = TransformerFactory.newInstance.newTransformer
-      t.getClass.getName == "org.apache.xalan.transformer.TransformerIdentityImpl"
+      val cn = t.getClass.getName
+      println("The transformeridentity is "+cn)
+      cn == "org.apache.xalan.transformer.TransformerIdentityImpl"
     }
   }
 
