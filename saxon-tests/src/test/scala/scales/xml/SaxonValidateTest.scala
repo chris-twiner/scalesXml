@@ -14,6 +14,6 @@ class SaxonValidateTest extends ValidateTest {
    * check isn't being hit for openjdk6 the rest of it behaves, just not this wierd corner. 
    */
   override def doValidate(doc: scales.xml.Doc, schema: javax.xml.validation.Schema) = 
-    schema.newValidator.validate(asStreamSource(doc))
+    schema.newValidator.validate(asStreamSource(doc)) // #35 - the workaround
  
 }

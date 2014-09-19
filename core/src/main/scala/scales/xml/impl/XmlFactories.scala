@@ -178,7 +178,6 @@ object Versions {
 
       val t = TransformerFactory.newInstance.newTransformer
       val cn = t.getClass.getName
-      println("The transformeridentity is "+cn)
       cn == "org.apache.xalan.transformer.TransformerIdentityImpl"
     }
   }
