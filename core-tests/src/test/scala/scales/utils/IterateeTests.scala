@@ -5,15 +5,17 @@ class IterateeTest extends junit.framework.TestCase {
   
   import junit.framework.Assert._
 
-  import scalaz._
-  import Scalaz._
+  import scalaz.{IterV, Enumerator, Input, EphemeralStream}
+  import EphemeralStream.emptyEphemeralStream
   import scalaz.IterV._
   
+  import scales.utils.{sum => usum}
+
   def testSimpleEnumerateeMap = {
     
     val i = List("1","2","3","4").iterator
 
-    val res = enumerateeMap(sum[Int])( (s : String) => s.toInt )(i).run
+    val res = enumerateeMap(usum[Int])( (s : String) => s.toInt )(i).run
     assertEquals(10, res)
   }
   
@@ -28,13 +30,13 @@ class IterateeTest extends junit.framework.TestCase {
 	    Done((iTo(i, e), Cont(step(i + 1))), IterV.Empty[Int])
 	  },
 	  empty = Cont(step(i)),
-	  eof = Done((EphemeralStream.empty, Cont(error("Shouldn't call cont on eof"))), IterV.EOF[Int])
+	  eof = Done((emptyEphemeralStream, Cont(error("Shouldn't call cont on eof"))), IterV.EOF[Int])
 	)
 
       Cont(step(i))
     }
 
-    val enum = (i: Int) => enumToMany(sum[Int])(f(i))
+    val enum = (i: Int) => enumToMany(usum[Int])(f(i))
 
     // 1, 2, 3, 4 only, the to is ignored
     val (res, cont) = enum(1)(l.iterator).run
@@ -52,7 +54,7 @@ class IterateeTest extends junit.framework.TestCase {
     
     val i = List(1,2,3,4).iterator
 
-    val (res, cont) = enumToMany(sum[Int])( mapTo( (i: Int) => El(iTo(1, i)) ) )(i).run
+    val (res, cont) = enumToMany(usum[Int])( mapTo( (i: Int) => El(iTo(1, i)) ) )(i).run
     assertEquals(20, res)
     assertTrue("should have been done", isDone(cont))
   }
@@ -61,7 +63,7 @@ class IterateeTest extends junit.framework.TestCase {
     
     val i = List(1,2,3,4).iterator
 
-    val (res, cont) = enumToMany(sum[Int])( mapTo( (i: Int) => EOF[EphemeralStream[Int]] ) )(i).run
+    val (res, cont) = enumToMany(usum[Int])( mapTo( (i: Int) => EOF[EphemeralStream[Int]] ) )(i).run
     assertEquals(0, res)
     assertTrue("should have been done", isDone(cont))
 
@@ -76,16 +78,16 @@ class IterateeTest extends junit.framework.TestCase {
   def testEnumToManySOE = {
     val i = List[Long](1,2,3,4,5).iterator
     
-    val (res, cont) = enumToMany(sum[Long])( mapTo( (_:Long) => El(lTo(1L, 100000L)) ) )(i).run
+    val (res, cont) = enumToMany(usum[Long])( mapTo( (_:Long) => El(lTo(1L, 100000L)) ) )(i).run
     assertEquals(25000250000L, res)
     assertTrue("should have been done", isDone(cont))
   }
 
   def lTo(lower: Long, upper: Long): EphemeralStream[Long] =
-    if (lower > upper) EphemeralStream.empty else EphemeralStream.cons(lower, lTo(lower + 1, upper))
+    if (lower > upper) emptyEphemeralStream else EphemeralStream.cons(lower, lTo(lower + 1, upper))
 
   def iTo(lower: Int, upper: Int): EphemeralStream[Int] =
-    if (lower > upper) EphemeralStream.empty else EphemeralStream.cons(lower, iTo(lower + 1, upper))
+    if (lower > upper) emptyEphemeralStream else EphemeralStream.cons(lower, iTo(lower + 1, upper))
 
   def testEventsNotLostOneToMany = {
     val i = List[Long](1,2,3,4,5).iterator

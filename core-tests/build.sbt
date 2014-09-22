@@ -3,22 +3,23 @@ import scales.sbtplugins.Utils._
 resolvers += "Sonatype OSS Repo" at "http://oss.sonatype.org/content/repositories/snapshots"
 
 libraryDependencies ++= Seq(
-  "org.slf4j" % "slf4j-log4j12" % "1.6.1" % "test",	
+  "org.slf4j" % "slf4j-log4j12" % "1.6.1" % "test",
   "com.novocode" % "junit-interface" % "0.8" % "test",
   "com.google.code.java-allocation-instrumenter" %
     "java-allocation-instrumenter" % "2.0" % "test",
-  // needs to be overriden  
+  // needs to be overriden
   "com.google.code.gson" % "gson" % "1.7.2" % "test",
   "com.google.caliper" % "caliper" % "0.5-rc1" % "test",
   "nu.validator.htmlparser" % "htmlparser" % "1.4",
   "org.ccil.cowan.tagsoup" % "tagsoup" % "1.2.1"
 )
 
-excludeFilter in unmanagedSources <<= scalaVersion{ v => 
-  if (v.startsWith("2.8")) 
+excludeFilter in unmanagedSources <<= scalaVersion{ v =>
+  if (v.startsWith("2.8"))
      "*_2.9.scala"
-   else 
-     "*_2.8.scala"}
+  else
+     "*_2.8.scala"
+}
 
 caliperRunTask(reconPerf, Test, "scales.xml.ParsingPerformanceRecon", "-JmaxMem=-Xmx256M") // 256
 
@@ -59,7 +60,7 @@ javaOptions in runPullCollectLimited += "-Xmx45M"
 fullRunInputTask(runHighMemoryFile, Test, "scales.xml.RunMemoryOptimisedFile")
 
 
-  
+
 fullRunInputTask(runParseMemory, Test, "scales.xml.RunParseMemory")
 
 fork in runParseMemory := true

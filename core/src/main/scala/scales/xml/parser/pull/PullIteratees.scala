@@ -23,13 +23,12 @@ import collection.FlatMapIterator
 
 /**
  * Iteratees related to pull parsing
- */ 
+ */
 trait PullIteratees {
 
   // enumerators and iteratees follow
 
-  import scalaz._
-  import Scalaz._
+  import scalaz.{IterV, Enumerator, Input, EphemeralStream}
   import scalaz.IterV._
 
   type QNamesMatch = (List[QName], Option[XmlPath])
@@ -52,7 +51,7 @@ trait PullIteratees {
     lazy val starter = Cont(step(Nil, (qnames.head, 0), qnames.tail.map((_, 0)), noXmlPath, false))
 
     def step(before: List[(QName, Int)], focus: (QName, Int), toGo: List[(QName, Int)], path: XmlPath, collecting: Boolean)(s: Input[PullType]): ResumableIter[PullType, QNamesMatch] =
-      s(el = { e => //println(e +" "+before+" "+focus+" " + toGo); 
+      s(el = { e => //println(e +" "+before+" "+focus+" " + toGo);
         e match {
 
           case Left(elem@Elem(q, a, n)) => {
@@ -90,17 +89,17 @@ trait PullIteratees {
                     path.removeAndUp.getOrElse(noXmlPath), false))), IterV.Empty[PullType])
               else {
                 if (before.isEmpty)
-                  starter // only when the root is asked for, could just refuse that of course?		
+                  starter // only when the root is asked for, could just refuse that of course?
                 else {
                   if (collecting)
                     // we are collecting but we still have more than 0 repeated qnames deep
                     Cont(step(before, ncfocus, toGo, path.zipUp, true))
                   else {
-                    // we aren't collecting but we are moving up, we just have repeated names 
+                    // we aren't collecting but we are moving up, we just have repeated names
                     val nfocus = before.last
                     val nbefore = before.dropRight(1)
                     Cont(step(nbefore, nfocus, focus :: toGo,
-                      path.removeAndUp.getOrElse(noXmlPath), false // we have NOT been collecting	
+                      path.removeAndUp.getOrElse(noXmlPath), false // we have NOT been collecting
                       ))
                   }
                 }
@@ -187,7 +186,7 @@ trait PullIteratees {
 
   /**
    * Wraps XmlPull
-   */ 
+   */
   def iterate(path: List[QName], xml: XmlPull): FlatMapIterator[XmlPath] = iterate(path, xml.it)
 
   /**
@@ -201,7 +200,7 @@ trait PullIteratees {
 
 /**
  * Iterates over a path of QNames producing XPaths for a given Iterator[PullType]
- */ 
+ */
 class Iterate(path: List[QName], xml: Iterator[PullType]) extends FlatMapIterator[XmlPath] {
   import ScalesXml._
   import ScalesUtils._
@@ -209,7 +208,7 @@ class Iterate(path: List[QName], xml: Iterator[PullType]) extends FlatMapIterato
   val qnames = path
 
   if (qnames.isEmpty) error("QNames is empty")
-  
+
   /* see onQName for implementation basis */
 
   var before: List[(QName, Int)] = _
@@ -219,7 +218,7 @@ class Iterate(path: List[QName], xml: Iterator[PullType]) extends FlatMapIterato
   var collecting: Boolean = _
 
   def reset {
-    set(Nil, (qnames.head, 0), qnames.tail.map((_,0)), 
+    set(Nil, (qnames.head, 0), qnames.tail.map((_,0)),
 	proxies.reuse, false)
   }
 
@@ -242,18 +241,18 @@ class Iterate(path: List[QName], xml: Iterator[PullType]) extends FlatMapIterato
     cur = getNext
     t
   }
-  
+
   def step : XmlPath = {
     var res : XmlPath = null.asInstanceOf[XmlPath]
-    while(xml.hasNext && res == null) { 
+    while(xml.hasNext && res == null) {
       val e = xml.next
       e match {
 
 	case Left(elem@Elem(q, a, n)) => {
-	  val nfocus = 
+	  val nfocus =
 	    if (q == focus._1) (focus._1, focus._2 + 1)
 	    else focus
-	  
+
 	  proxies.beginSub(elem, XmlBuilder())
 	  //val npath = addAndFocus(path, elem)
 
@@ -269,7 +268,7 @@ class Iterate(path: List[QName], xml: Iterator[PullType]) extends FlatMapIterato
 	}
 
 	case Left(x: XmlItem) =>
-	  if (collecting) {// collect 
+	  if (collecting) {// collect
 	    //addChild(path, x)
 	    proxies.addChild(x)
 	    set(before, focus, toGo, proxies, true)
@@ -290,7 +289,7 @@ class Iterate(path: List[QName], xml: Iterator[PullType]) extends FlatMapIterato
 	      }
 	      else {
 		if (before.isEmpty)
-		  reset // only when the root is asked for, could just refuse that of course?		
+		  reset // only when the root is asked for, could just refuse that of course?
 		else {
 		  if (collecting) {
 		    // we are collecting but we still have more than 0 repeated qnames deep
@@ -298,11 +297,11 @@ class Iterate(path: List[QName], xml: Iterator[PullType]) extends FlatMapIterato
 		    set(before, ncfocus, toGo, proxies, true)
 		  }
 		  else {
-		    // we aren't collecting but we are moving up, we just have repeated names 
+		    // we aren't collecting but we are moving up, we just have repeated names
 		    val nfocus = before.last
 		    val nbefore = before.dropRight(1)
 		    set(nbefore, nfocus, focus :: toGo, // removeand
-			proxies.proxyRemoveAndUp(), false // we have NOT been collecting	
+			proxies.proxyRemoveAndUp(), false // we have NOT been collecting
 		      )
 		  }
 		}

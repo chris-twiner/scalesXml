@@ -13,7 +13,8 @@ import java.nio.channels.ReadableByteChannel
 
 import scales.xml.parser.pull.PullUtils
 
-import scalaz._
+import scalaz.{IterV, Enumerator, Input, EphemeralStream}
+import EphemeralStream.emptyEphemeralStream
 import scalaz.IterV._
 
 import scales.xml.parser.strategies.{MemoryOptimisationStrategy, OptimisationToken}
@@ -179,7 +180,7 @@ abstract class AsyncParser(implicit xmlVersion : XmlVersion) extends CloseOnNeed
   protected def nextStream(): EphemeralStream[PullType] = {
     if (isClosed || feeder.needMoreInput) { // keep num around?
     //  println("got to nextStream and empty")
-      EphemeralStream.empty
+      emptyEphemeralStream
     } else {
 	// push one more off
       val pumped = pump
@@ -190,11 +191,11 @@ abstract class AsyncParser(implicit xmlVersion : XmlVersion) extends CloseOnNeed
 	},
 	empty = {
 //	  println("pumped all we have")
-	  EphemeralStream.empty
+	  emptyEphemeralStream
 	},
 	eof = {
 //	  println("eof from pump but returned empty")
-	  EphemeralStream.empty // next run will pick it up
+	  emptyEphemeralStream // next run will pick it up
 	}
       ) // 
     }
@@ -262,13 +263,13 @@ object AsyncParser {
       parser.closeResource
 
       //println("closing against EOF from parse")
-      Done((EphemeralStream.empty, 
+      Done((emptyEphemeralStream, 
 	  Cont(
 	    error("Called the continuation on a closed parser")
 	  )), IterV.EOF[DataChunk])
     }
 
-    def emptyness : ResumableIter[DataChunk, EphemeralStream[PullType]] = Done((EphemeralStream.empty, Cont(step)), IterV.Empty[DataChunk])
+    def emptyness : ResumableIter[DataChunk, EphemeralStream[PullType]] = Done((emptyEphemeralStream, Cont(step)), IterV.Empty[DataChunk])
 
     def step(s: Input[DataChunk]): ResumableIter[DataChunk, EphemeralStream[PullType]] = 
       s(el = e => {

@@ -25,6 +25,8 @@ class EqualsPullTest extends EqualsNormalImportsTest {
 
   import org.xml.sax.{InputSource, XMLReader}
 
+  implicit val seqEq = Equal.equalA[Seq[Misc]]
+  
   override def doLoadXml[Token <: OptimisationToken](in : InputSource, strategy : PathOptimisationStrategy[Token] = defaultPathOptimisation) = {
     loadXmlReader(in, parsers = NoVersionXmlReaderFactoryPool, strategy = strategy)
   }

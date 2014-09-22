@@ -71,13 +71,15 @@ trait XmlTypes {
   /**
    * An alias for am immutable ListSet of Attribute 
    */ 
-  type Attributes = ListSet[Attribute]
+  //type Attributes = ListSet[Attribute]
+  type Attributes = scales.utils.collection.ArraySet[Attribute]
 
   /** An empty collection of Misc */ 
   val emptyMiscs: Miscs = List[Misc]()
 
   /** An empty collection of Attribute */
-  val emptyAttributes: Attributes = ListSet.empty[Attribute]
+//  val emptyAttributes: Attributes = ListSet.empty[Attribute]
+  val emptyAttributes: Attributes = AttributeSet.empty//ListSet.empty[Attribute]
   /** An empty Map of String -> String representing prefix -> namespace */ 
   val emptyNamespaces: Map[String, String] = Map[String, String]()
 
