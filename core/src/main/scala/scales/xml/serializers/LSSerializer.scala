@@ -123,7 +123,7 @@ trait LSSerializerConcurrentCacheFactoryXHTML extends LSSerializerConcurrentCach
 
 
 /**
- * Default implmementation of serialization
+ * Default implementation of serialization
  */ 
 object LSSerializerFactory extends LSSerializerConcurrentCacheFactory {
 }
