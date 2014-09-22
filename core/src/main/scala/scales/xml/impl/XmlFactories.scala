@@ -197,13 +197,19 @@ object Versions {
       p.toBoolean
     else {
       val fac = SchemaFactory.newInstance(javax.xml.XMLConstants.W3C_XML_SCHEMA_NS_URI)
-      val ver = fac.getClass.getPackage.getImplementationVersion
-      val pre = ver.substring(0,3)
+      val pack = fac.getClass.getPackage
+      val ver = pack.getImplementationVersion
+      
+      if (ver eq null)
+        false // not jaxp default impl, needs further guesswork which should go here
+      else {
+	val pre = ver.substring(0,3)
 
-      if (pre == "1.5" || pre == "1.6") 
-	true
-      else
-	false
+	if (pre == "1.5" || pre == "1.6") 
+	  true
+	else
+	  false
+      }
     }
   }
 }
