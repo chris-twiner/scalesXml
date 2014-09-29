@@ -2,9 +2,9 @@ import sbt._
 import Keys._
 import sbt.Package._
 import java.util.jar.Attributes.Name._
-import Defaults._
-
+import Path.{flatRebase => flatR}
 import scales.sbtplugins._
+import scala.language.implicitConversions
 
 object FullDocs {
   
@@ -37,10 +37,10 @@ object FullDocs {
       // Include a root folder in the generated archive.
       val newBase = "scalaz_%s-%s".format(scalaVersion, version)
 
-      val jarsAndPomMappings = artifacts.flatMap(_.values) x flatRebase(newBase)
-      val etcMappings = ((rootBaseDir / "etc" ** "*") +++ Seq(rootBaseDir / "README")) x rebase(rootBaseDir, newBase)
-      val fullDocMappings = (fullDocDir ** "*") x rebase(fullDocDir.getParentFile, newBase)
-      val sxrDocMappings = (sxrDocDirectory ** "*") x rebase(sxrDocDirectory.getParentFile, newBase)
+      val jarsAndPomMappings = (artifacts.flatMap( x => x.values): PathFinder ) pair flatR(newBase)
+      val etcMappings = ((rootBaseDir / "etc" ** "*") +++ Seq(rootBaseDir / "README")) pair rebase(rootBaseDir, newBase)
+      val fullDocMappings = (fullDocDir ** "*") pair rebase(fullDocDir.getParentFile, newBase)
+      val sxrDocMappings = (sxrDocDirectory ** "*") pair rebase(sxrDocDirectory.getParentFile, newBase)
       jarsAndPomMappings ++ etcMappings ++ fullDocMappings ++ sxrDocMappings
     }
 
@@ -114,7 +114,7 @@ object FullDocs {
         // Use `LocalProject("scalaz")` rather than `scalaz` to avoid a circular reference.
         (mappings in packageBin in Compile) <<= (
                 baseDirectory in LocalProject(rootProjectId), baseDirectory, scalaVersion, version,
-                docDirectory in Compile, allPackagedArtifacts) map artifactMappings
+                target in Compile in doc, allPackagedArtifacts) map artifactMappings
       )
     )
   }

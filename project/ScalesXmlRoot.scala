@@ -10,8 +10,8 @@ import SiteKeys.{siteCSS, siteResourceDir,
 		 siteMarkupDocHeaders,
 		 menuBarTitle}
 
-//import de.johoop.jacoco4sbt._
-//import JacocoPlugin._
+import de.johoop.jacoco4sbt._
+import JacocoPlugin._
 
 object ScalesXmlRoot extends Build {
 
@@ -67,8 +67,8 @@ object ScalesXmlRoot extends Build {
     projects = Seq(core, jaxen), projectId = "site",
     projectRoot = file("site"),
     sxrVersionMap = {
-      case v : String if v.startsWith("2.9") =>
-	"org.scala-tools.sxr" % "sxr_2.9.0" % "0.2.7"
+      case v : String if v.startsWith("2.10") =>
+	"org.scala-sbt.sxr" %% "sxr" % "0.3.0"
     },
     rootProjectId = "scales-xml-root", projectDependencies = Seq(core, jaxen),
     standardSettings = standardSettings ++ Utils.resourceSettings ++
@@ -108,6 +108,8 @@ object ScalesXmlRoot extends Build {
   }*/
 
   lazy val standardSettings = Defaults.defaultSettings ++ Seq(
+    resolvers += Resolver.url("Typesafe Releases", url("http://repo.typesafe.com/typesafe/ivy-releases"))(Resolver.ivyStylePatterns),
+
 /*    shellPrompt := { state =>
  "sbt (%s)$$$-".format(Project.extract(state).currentProject.id)
 },
@@ -129,10 +131,7 @@ object ScalesXmlRoot extends Build {
       //,(SEALED, "true")
       )
     ),
-    /* requires many other command line options and installations for windows:
-      -Ddot_exe=%dot_exe%
-      * against - no spaces
-      set dot_exe=c:/PROGRA~2/GRAPHV~1.28/bin/dot.exe
+    /* only works in windows when dot.exe is on the windows PATH
      */
     scalacOptions in (Compile, doc) <++= (scalaVersion).map{(v: String) =>
       if (v.startsWith("2.10"))
@@ -146,7 +145,7 @@ object ScalesXmlRoot extends Build {
     scalaBinaryVersion <<= scalaVersion(sV => if (CrossVersion.isStable(sV)) CrossVersion.binaryScalaVersion(sV) else sV)
 //,
 //    parallelExecution in jacoco.Config := false
-  ) ++ sonatype.settings// ++ jacoco.settings
+  ) ++ sonatype.settings ++ jacoco.settings
 // ++ crazyness
 
   val reconPerf = TaskKey[Unit]("recon-perf")
