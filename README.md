@@ -12,22 +12,22 @@ A number of the pain points of Scala XML are also simply removed, want to change
 
 A very flexible XML stream handling approach is based upon StAX and Iteratees (courtesy of Scalaz) which uses the same model as the tree based, no separate event hierarchy needed.
 
-Currently the stable 0.4.5 release [site](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.3/index.html) improves on 0.2.1's fast parsing and low memory usage (which, of course, are coupled) and adds ScalesXPath - a string based XPath 1.0 evaluator, a full compliment of useful axe in the internal XPath syntax, an equality framework (2.9.x only) and general improvements in usability.
+Currently the stable 0.6.0-M1 release [site](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.3/index.html) improves on 0.2.1's fast parsing and low memory usage (which, of course, are coupled) and adds ScalesXPath - a string based XPath 1.0 evaluator, a full compliment of useful axe in the internal XPath syntax, an equality framework (2.9.x only) and general improvements in usability.
 
 The artifacts are now on Maven Central under the group org.scales.xml.
 
 # How To Use
 
-Currently 2.8.1, 2.8.2, 2.9.1, 2.9.2 and 2.10.0-M6 are built against.
+Currently 2.9.2, 2.10.4 and 2.11.0 are built against.
 
 So for sbt its:
 
-    val scalesXml = "org.scalesxml" %% "scales-xml" % "0.4.5"
+    val scalesXml = "org.scalesxml" %% "scales-xml" % "0.6.0-M1"
 
 xsbt 0.10+ its:
 
     libraryDependencies ++= Seq(
-      "org.scalesxml" %% "scales-xml" % "0.4.5",
+      "org.scalesxml" %% "scales-xml" % "0.6.0-M1",
       //"org.scalesxml" %% "scales-jaxen" % "0.5.1" // optional for string based xpaths
       )
 
