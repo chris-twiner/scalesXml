@@ -6,7 +6,7 @@ class IterateeTest extends junit.framework.TestCase {
   import junit.framework.Assert._
 
   import scalaz.{IterV, Enumerator, Input, EphemeralStream}
-  import EphemeralStream.emptyEphemeralStream
+  import EphemeralStream.{empty => emptyEphemeralStream}
   import scalaz.IterV._
   
   import scales.utils.{sum => usum}
