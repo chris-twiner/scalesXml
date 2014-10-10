@@ -93,7 +93,7 @@ class PullIterateTest extends junit.framework.TestCase {
 
   def testOnQNameEqualImplicit : Unit = {
     
-    import scalaz.Equal._
+    import scalaz.Equal._, scalaz._, scalaz.Scalaz._
 
     val ourMax = maxIterations / 10 // full takes too long but does work in constant space
 

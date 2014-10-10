@@ -8,8 +8,8 @@ libraryDependencies ++= Seq(
 )
 
 libraryDependencies <+= scalaVersion{ v=>
-    if (v.startsWith("2.8")) // stick to 2.8.1
-      "org.scalaz" % "scalaz-core_2.8.1" % "6.0.4"
+    if (v.startsWith("2.9")) // stick to 2.8.1
+      "org.scalaz" % "scalaz-core_2.9.2" % "6.0.4"
     else
       "org.scalaz" %% "scalaz-core" % "6.0.4" 
 }

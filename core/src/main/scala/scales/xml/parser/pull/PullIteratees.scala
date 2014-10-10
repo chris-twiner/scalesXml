@@ -1,6 +1,6 @@
 package scales.xml.parser.pull
 
-import scalaz.Equal, scalaz.Equal._, scalaz.syntax.equal._
+import scalaz.Equal, scalaz.Equal._, scalaz.Scalaz._
 
 import scales.utils._
 
