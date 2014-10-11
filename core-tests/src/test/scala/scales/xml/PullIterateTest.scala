@@ -105,7 +105,7 @@ class PullIterateTest extends junit.framework.TestCase {
     
     val QNames = List("root"l, "CHILD"l, "interESTING"l)
     
-    val itr = iterate(QNames, iter)
+    val itr = iterateI(QNames, iter)
 
     assertFalse("failed to match nodes", itr.isEmpty)
 
