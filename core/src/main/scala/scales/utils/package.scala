@@ -1,13 +1,20 @@
 package scales
 
-package object utils extends IterableUtils 
+/**
+ * The [[scales.utils]] packages provide the basis functionality for [[scales.xml]].
+ *
+ * The Tree an Path collections that underpin the XML model, as well as the iteratee functionality are located in the relevant sub-packages.
+ *
+ * The package object itself pulls in the main utility functions for tree, path and iteratee handling.  Import the [[scales.utils.ScalesUtils]] object implicit members to provide the path & and | extension functions, the iteratorEnumerator and the +:+ lazy appender for [[scalaz.EphemeralStream]]. 
+ */
+package object utils extends collection.IterableUtils 
   with AsBooleanTrait
-  with StackUtils
-  with Iteratees
-  with Trees
-  with Paths
-  with ConcurrentMapUtils
-  with LocalisedFunctions
+  with collection.StackUtils
+  with iteratee.Iteratees
+  with EquivFunctions
+  with collection.Trees
+  with collection.path.Paths
+  with collection.ConcurrentMapUtils
 {
   def error(str : String) = Predef.error(str)
 
@@ -15,6 +22,8 @@ package object utils extends IterableUtils
 
   import scala.collection.IndexedSeqLike
   import scala.collection.generic.CanBuildFrom
+  
+  import collection.Tree
 
   @inline final def item[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]](item: Item): ItemOrTree[Item, Section, CC] = item
 
@@ -24,13 +33,18 @@ package object utils extends IterableUtils
       i :: Nil
 
   /**
-   * Are these two parameters (convertable to a C) equal for a given Equiv[C] instance
-   */ 
-  def equivalent[A, B, C]( a : A, b : B)(implicit equiv: Equiv[C], viewA: A => C, viewB: B => C) = equiv(a, b)
-
-  /**
    * Simple grabber of resources
    */ 
   def resource(a : AnyRef, path : String) =
     a.getClass.getResource(path)
+
+  import java.nio.charset.Charset
+  val UTF_8 = Charset.forName("UTF-8")
+  val US_ASCII = Charset.forName("US-ASCII")
+
+  /**
+   * A usable default of UTF8 NOT the vm's Charset.defaultCharset based on its locale, use vmDefaultCharset for that
+   */
+  val defaultCharset = UTF_8
+
 }

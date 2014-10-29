@@ -1,27 +1,34 @@
 package scales.xml.equalsTest // different to keep default xml._ out
 
 // why the hell can't scala resolve just xml.XmlTypes ??
-import scales.xml.{ XmlTypes ,
-    XmlParser, 
-    XmlPaths,
-    XPathMatcher, 
-    XmlPrinter ,
-    Whitespace, 
-    XmlPulls ,
-    XmlFactories ,
-    TraxSourceConversions,
-    XmlUtils,
-    PullIteratees, 
-    QNameImplicits, 
-    DefaultXmlVersion ,
-    XmlTypesImplicits,
-    XmlPrinterImplicits,
-    DslImplicits,
-    XmlPathImplicits,
-    XmlParserImplicits,
+import scales.xml.{
+    impl, parser, trax, xpath, serializers, dsl}
+
+import impl.{XmlFactories, QNameImplicits, DefaultXmlVersion, 
+	     XmlUtils, Whitespace, XmlTypes ,
+	     XmlTypesImplicits
+	     }
+
+import dsl.{XPathMatcher, 
+	     DslImplicits}
+
+import trax.{
+    TraxSourceConversions, 
     PullTypeConversionImplicits}
 
-import scales.xml.{Elem, Attribs, Attributes, Attribute, XmlItem, Text, PI, CData, Comment, <, Namespace}
+import serializers.{
+    XmlPrinter ,
+    XmlPrinterImplicits,
+    SerializeableXml}
+
+import parser.sax.{XmlParserImplicits, XmlParser}
+
+import parser.pull.{XmlPulls ,
+    PullIteratees}
+
+import xpath.{XmlPaths, XmlPathImplicits}
+    
+import scales.xml.{Elem, Attribs, Attributes, Attribute, XmlItem, Text, PI, CData, Comment, <, Namespace, qualifiedName}
 
 class EqualsTest extends junit.framework.TestCase {
 
@@ -58,8 +65,8 @@ class EqualsTest extends junit.framework.TestCase {
     with FromEqualsImplicit {
 
     /** PullType is different for the compiler here */
-    implicit val myStreamSerializeable: KeepEmSeperate.SerializeableXml[Iterator[KeepEmSeperate.PullType]] = 
-      streamSerializeable.asInstanceOf[KeepEmSeperate.SerializeableXml[Iterator[KeepEmSeperate.PullType]]]
+    implicit val myStreamSerializeable: SerializeableXml[Iterator[KeepEmSeperate.PullType]] = 
+      streamSerializeable.asInstanceOf[SerializeableXml[Iterator[KeepEmSeperate.PullType]]]
 
   }
 
@@ -477,7 +484,7 @@ class EqualsTest extends junit.framework.TestCase {
   def testXmlEqualsPrefixRelevant : Unit = {
     import ExactXmlEquals._
     import scales.xml.QName
-    implicit val qnameEqual = equal { (a: QName, b: QName) => a ==== b }
+    implicit val qnameEqual = Equal.equal { (a: QName, b: QName) => a ==== b }
 
     val attrs1 = Attribs("a1" -> "v1", "a2" -> "v2")
     val attrs2 = Attribs("a1" -> "v1", "a2" -> "v2")

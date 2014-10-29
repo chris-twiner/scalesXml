@@ -1,5 +1,7 @@
 # Scales Xml
 
+[![Build Status](https://travis-ci.org/chris-twiner/scalesXml.png)](https://travis-ci.org/chris-twiner/scalesXml)
+
 Scales Xml provides both a more flexible approach to XML handling and a simplified way of interacting with XML.  
 
 It fits nicely with the Java APIs you know, TrAX and javax.xml.validation for example, allowing you to run XSLTs and convert to and from Scales XML and other DOMs.
@@ -10,9 +12,7 @@ A number of the pain points of Scala XML are also simply removed, want to change
 
 A very flexible XML stream handling approach is based upon StAX and Iteratees (courtesy of Scalaz) which uses the same model as the tree based, no separate event hierarchy needed.
 
-The current stable release is 0.4.5 ([site](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.4.4/index.html)).
-
-The upcoming 0.5 release has a milestone out 0.5.0-M1 ([site](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.10/0.5.0-M1/index.html)).
+Currently the stable 0.4.5 release [site](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.3/index.html) improves on 0.2.1's fast parsing and low memory usage (which, of course, are coupled) and adds ScalesXPath - a string based XPath 1.0 evaluator, a full compliment of useful axe in the internal XPath syntax, an equality framework (2.9.x only) and general improvements in usability.
 
 The artifacts are now on Maven Central under the group org.scales.xml.
 
@@ -28,9 +28,7 @@ xsbt 0.10+ its:
 
     libraryDependencies ++= Seq(
       "org.scalesxml" %% "scales-xml" % "0.4.5",
-      // and additionally use these for String based XPaths
-      "org.scalesxml" %% "scales-jaxen" % "0.4.5" intransitive(), 
-      "jaxen" % "jaxen" % "1.1.3" intransitive()
+      //"org.scalesxml" %% "scales-jaxen" % "0.5.1" // optional for string based xpaths
       )
 
 intransitive() is required because the Jaxen pom cannot be fully used.

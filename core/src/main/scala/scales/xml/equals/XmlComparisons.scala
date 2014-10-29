@@ -1,9 +1,12 @@
 package scales.xml.equals
 
-import scales.xml.{QName, Elem, Attribs, Attributes, Attribute, XmlItem, Text, PI, CData, Comment, PullType, EqualsHelpers, EndElem, Misc, Miscs, DocLike}
+import scales.xml.{QName, Elem, Attribs, Attributes, Attribute, XmlItem, Text, PI, CData, Comment, PullType, EndElem, Misc, Miscs, DocLike, impl}
+
+import impl.EqualsHelpers
 
 import XmlEquals._
 
+import scalaz.Equal._
 import scalaz._
 import Scalaz._
 
@@ -22,7 +25,7 @@ trait XmlComparison[-T] {
 }
 
 trait DefaultQNameEquals {
-  implicit val qnameEqual = equal { (a: QName, b: QName) => a =:= b }
+  implicit val qnameEqual : Equal[QName] = equal { (a: QName, b: QName) => a =:= b }
 }
 
 /**

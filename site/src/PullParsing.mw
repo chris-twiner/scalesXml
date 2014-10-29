@@ -45,7 +45,7 @@ ${cend}
 
 == Resource Management ==
 
-The above example has a serious potential flaw, if anything in the while loop throws the resource cannot be closed.  To allow greater control of the resource Scales provides the following interface (full api details present [./doc/scales/utils/CloseOnNeed.html here]):
+The above example has a serious potential flaw, if anything in the while loop throws the resource cannot be closed.  To allow greater control of the resource Scales provides the following interface (full api details present [./doc/scales/utils/resources/CloseOnNeed.html here]):
 
 ${cscala}
   trait CloseOnNeed {

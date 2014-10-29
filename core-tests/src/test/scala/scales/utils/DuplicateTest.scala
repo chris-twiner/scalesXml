@@ -1,7 +1,12 @@
 package scales.utils
 import ScalesUtils._
 
+import collection.DuplicateFilter
+
 class DuplicateTest extends junit.framework.TestCase {
+
+  import scalaz._
+  import Scalaz._
   
   import junit.framework.Assert._
   
@@ -25,10 +30,7 @@ class DuplicateTest extends junit.framework.TestCase {
 
   case class StringHolder( str : String )
 
-  import scalaz._
-  import Scalaz._
-
-  implicit val she = equal[StringHolder] { (a, b) => a == b }
+  implicit val she = Equal.equal[StringHolder] { (a, b) => a == b }
   
   def testSimpleCases = {
     val b = StringHolder("b")

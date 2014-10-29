@@ -8,6 +8,8 @@ class DslBuildersTest29 extends junit.framework.TestCase {
   import scales.utils._
   import ScalesUtils._
 
+  import collection.path._
+
   import ScalesXml._
 
   import Functions._

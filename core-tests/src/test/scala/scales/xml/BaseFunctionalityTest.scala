@@ -1,6 +1,7 @@
-package scales.xml
+package scales.xml.test // to get around package overloads
 
-import strategies._
+import scales.xml._
+import scales.xml.parser.strategies._
 
 class BaseFunctionalityTest extends junit.framework.TestCase {
   import junit.framework.Assert._
@@ -11,15 +12,18 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
 
   import Functions._
 
-  import strategies.TextNodeJoiner
+//  import strategies.TextNodeJoiner
 
   import BaseTestConstants._
 
   val xmlFile = resource(this, "/data/BaseXmlTest.xml")
 
-  val testXml = loadXml(xmlFile)
+  lazy val testXml = doLoadXml(xmlFile)
   val path = top(testXml)
 
+  def doLoadXml[Token <: OptimisationToken](in : java.net.URL, strategy : PathOptimisationStrategy[Token] = defaultPathOptimisation) = {
+    loadXml(in, strategy = strategy)
+  }
 
   def testElemConstruction : Unit = {
     val q = pre("local")
@@ -232,7 +236,7 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
    * //a:ShouldRedeclare/../text()[4]     
    */ 
   def testParentTextNodesRepeats = { // /preceding-sibling::text()[1]
-    val testXml = loadXml(resource(this, "/data/BaseXmlTestRepeats.xml"))
+    val testXml = doLoadXml(resource(this, "/data/BaseXmlTestRepeats.xml"))
     val path = top(testXml)
     
     val expected = List("start mix mode","start mix mode")
@@ -307,7 +311,7 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
     // or indeed mixed in.
     //new MutableVectorLikeStrategy with ElemQNameOptimisationT with TextNodeJoiner {}
     // join up the text nodes
-    val testXml2 = loadXml(xmlFile, strategy = tnj)
+    val testXml2 = doLoadXml(xmlFile, strategy = tnj)
     val path = top(testXml2)
 
     // we have two nodes before so 3 whitespaces.  Of course we actually should be getting path as well I think...
@@ -323,7 +327,7 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
     // we have two nodes before so 3 whitespaces.  Of course we actually should be getting path as well I think...
 
     val tnj = new TextNodeJoiner[QNameToken] with QNameTokenF {} 
-    val testXml2 = loadXml(xmlFile, strategy = tnj)
+    val testXml2 = doLoadXml(xmlFile, strategy = tnj)
     val path = top(testXml2)
 
     val expected = List("", "", "", "", "", "start mix mode", "prefixed text", "end mix mode",
@@ -415,7 +419,7 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
   }
 
   val nestedXmlFile = resource(this, "/data/Nested.xml")
-  val nestedXml = loadXml(nestedXmlFile)
+  val nestedXml = doLoadXml(nestedXmlFile)
   val nested = top(nestedXml)
 
   def descendantTextNested : XmlPaths = {
@@ -642,13 +646,20 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
   def testNamespaceFunctions = {
     implicit val qn : QName = pre("local")
 
-    val has = hasNamespace[QName](preNS)
-    assertTrue(has(qn))
+    val has = hasNamespace[QName](preNS : Namespace)
+    assertTrue(has(qn)) 
     val hass = hasNamespace[QName](preNS.uri)
     assertTrue(hass(qn))
     assertEquals(preNS.uri, namespaceUri[QName]) // really looks bad this.
 
     
+  }
+
+  /**
+   * #24 - string(..) with cdata doesn't work pre 0.5
+   */ 
+  def testStringCDATA()  {
+    assertEquals( "string on cd wasn't correct ", "should not have to be & < escaped @ all \"\"&", string( path.\+.cdata ) )
   }
 
 }

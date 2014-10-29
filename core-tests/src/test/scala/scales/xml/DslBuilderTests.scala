@@ -5,8 +5,13 @@ class DslBuildersTest extends junit.framework.TestCase {
   import junit.framework.Assert._
   import java.io._
 
+  import dsl.FoldErrorException
+
   import scales.utils._
   import ScalesUtils._
+
+  import collection.path._
+  import collection.ImmutableArrayProxy.{one => IAOne}
 
   import ScalesXml._
 
@@ -320,6 +325,23 @@ class DslBuildersTest extends junit.framework.TestCase {
     assertEquals(ns("SubChild"),name(subchildi.head.tree))
   }
 
+  // issue #23, root replacement should not cause AddedBeforeOrAfterRoot
+  def testRootReplace = {
+    val withAttrib = builder /@ ("id" -> "abc")
+
+    val folded = foldPositions(one(top(withAttrib)))(
+      x=>Replace(x.tree /@ ("id" -> "123")))
+    
+    assertTrue("Should have been left", folded.isLeft)
+    val newRoot = folded.left.get
+
+    val attr = newRoot.\@("id")
+    
+    assertTrue("Could not find an id attr", attr.size == 1)
+    
+    assertEquals("123",value(attr))
+  }
+
   def testNestedReplace = {
     val parentis = fredi.\^.\\.*
     assertTrue("Did not get 3 nodes, should be child, fred and sub ", parentis.size == 2)
@@ -542,7 +564,7 @@ class DslBuildersTest extends junit.framework.TestCase {
 
   def testSimpleConvert = {
     val orig = <root><child/></root>
-    val converted = orig.asScales
+    val converted = orig.asScales()
     assertEquals("root", localName(converted.rootElem))
   }
 
@@ -604,9 +626,10 @@ class DslBuildersTest extends junit.framework.TestCase {
       case e : Throwable => fail("Not expecting this exception " + e)
     }
   }
+  
+  import parser.strategies._
 
   def testBuilderWithCustomTree : Unit = {
-    import strategies._
 
     val x = <("Alocal"l) /( LazyOptimisedTree(Elem("another"l), IAOne("value")) )
 
@@ -619,15 +642,20 @@ class DslBuildersTest extends junit.framework.TestCase {
     assertTrue("Should have remained a NameValue", (top(x2).\*(1)).head.tree.isInstanceOf[NameValue])
   }
 
+  import org.xml.sax.{InputSource, XMLReader}
+
+  def doLoadXml[Token <: OptimisationToken](in : InputSource, strategy : PathOptimisationStrategy[Token] = defaultPathOptimisation) = {
+    loadXml(in, strategy = strategy)
+  }
+
   def testWriteBackWithStrategies : Unit = {
-    import strategies._
 
     val x = <("Alocal"l) /( <("another"l) ~> "value" )
 
     val xml = """<?xml version="1.0" encoding="UTF-8"?><Alocal><another>value</another></Alocal>"""
     assertEquals(xml, asString(x))
 
-    val p = loadXml(new java.io.StringReader(asString(x)), strategy = QNameTreeOptimisation)
+    val p = doLoadXml(new java.io.StringReader(asString(x)), strategy = QNameTreeOptimisation)
 
     val t = (top(p).\*(1)).head.tree
     assertTrue("Should have parsed as a NameValue", t.isInstanceOf[NameValue])
@@ -639,7 +667,7 @@ class DslBuildersTest extends junit.framework.TestCase {
 
     assertEquals(xml2, asString(x2))
     
-    val p2 = loadXml(new java.io.StringReader(asString(x2)), strategy = QNameElemTreeOptimisation)
+    val p2 = doLoadXml(new java.io.StringReader(asString(x2)), strategy = QNameElemTreeOptimisation)
 
     val pa = top(p2).\*(1)
     val t2 = pa.head.tree
@@ -652,12 +680,104 @@ class DslBuildersTest extends junit.framework.TestCase {
     val xml3 = """<?xml version="1.0" encoding="UTF-8"?><Alocal><another><!--a comment--></another></Alocal>"""
     assertEquals(xml3, asString(x3))
 
-    val p3 = loadXml(new java.io.StringReader(asString(x3)), strategy = QNameTreeOptimisation)
+    val p3 = doLoadXml(new java.io.StringReader(asString(x3)), strategy = QNameTreeOptimisation)
 
     val t3 = (top(p3).\*(1)).head.tree
     assertTrue("Should have parsed as a Tree", !(
       t3.isInstanceOf[NameValue] || t3.isInstanceOf[ElemValue] ))
     
+  }
+
+  def testOptionalAdd: Unit = {
+    val x = <("Alocal"l) /( ?<("another"l) ?~> "value" )
+    val x2 = <("Alocal"l) /( ?<("another"l).setNonOptionalValue( "value" ) )
+
+    val xml = """<?xml version="1.0" encoding="UTF-8"?><Alocal><another>value</another></Alocal>"""
+    assertEquals(xml, asString(x))
+    assertEquals(xml, asString(x2))
+
+    val xSome = <("Alocal"l) /( ?<("another"l) ?~> Some("value") )
+    assertEquals(xml, asString(xSome))
+
+    val nones = <("Alocal"l) /( ?<("another"l).setOptionalValue( None ) )
+
+    val justRoot = """<?xml version="1.0" encoding="UTF-8"?><Alocal/>"""
+    assertEquals(justRoot, asString(nones))
+    
+    val deepNones = 
+      <("Alocal"l).addOptionals( 
+	?<("another"l) ?/( 
+	  ("lowerstill"l) ?~> None ),
+	?<("yetan"l) ?~> None
+      )
+    assertEquals(justRoot, asString(deepNones))
+  }
+
+  def testOptionalDslAdds: Unit = {
+    val x = ?<("Alocal"l).addOptionalChild( 
+	?<("another"l) ?~> "value" )
+    val x2 = ?<("Alocal"l).addOptionalChild(
+	?<("another"l).setNonOptionalValue( "value" ) )
+    val x3 = ?<("Alocal"l).addOptionalChildren(
+	?<("another"l).setNonOptionalValue( "value" ) )
+    val x4 = ?<("Alocal"l).addNonEmpty(
+	<("another"l).setValue( "value" ) )
+    val x5 = ?<("Alocal"l).addOptionalChildren(
+	?<("another"l).addNonEmpty( Text("value") ) )
+
+    val xml = """<?xml version="1.0" encoding="UTF-8"?><Alocal><another>value</another></Alocal>"""
+    assertEquals("x", xml, asString(x.toOptionalTree.get))
+    assertEquals("x2", xml, asString(x2.toOptionalTree.get))
+    assertEquals("x3", xml, asString(x3.toOptionalTree.get))
+    assertEquals("x4", xml, asString(x4.toOptionalTree.get))
+    assertEquals("x5", xml, asString(x5.toOptionalTree.get))
+    
+    val deepNones = 
+      ?<("Alocal"l).?/( 
+	?<("another"l) ?/( 
+	  ("lowerstill"l) ?~> None ),
+	?<("yetan"l) ?~> None
+      ).addNonEmpty(one[XmlTree](("ShouldNotGetAdded"l))).
+      addNonEmpty(("ShouldNotGetAdded"l)).
+      ?/(one(?<("optfunc"l))).
+      addOptionalChildren(?<("another"l) ?/( 
+	  ("lowerstill"l) ?~> None ),
+	?<("yetan"l) ?~> None).
+      addOptionalChildren(one(?<("optfunc"l)))
+    assertTrue("should have been empty", deepNones.toOptionalTree.isEmpty)
+  }
+
+  def testOptionalAttribute: Unit = {
+    val qn = "A.local"l
+    val none = qn ?-> None
+    assertTrue("should not have been defined", none.isEmpty)
+
+    val some = qn ?-> Some("value")
+    assertTrue("should have been defined", some.isDefined)
+
+    val someDirect = qn ?-> "value"
+
+    assertEquals(some, someDirect)
+
+    val xnone = ?<("Alocal"l) ?/@ none
+    assertTrue("should be none", xnone.toOptionalTree.isEmpty)
+
+    val xsome = ?<("Alocal"l) ?/@ some
+    assertTrue("should have some", xsome.toOptionalTree.isDefined)
+
+    val xsomeDirect = ?<("Alocal"l) ?/@ someDirect
+    assertTrue("should have someDirect", xsomeDirect.toOptionalTree.isDefined)
+
+    val xEmpty = ?<("Alocal"l).?/@(List()).addOptionalAttributes(List())
+    assertTrue("empty iterable should be none", xEmpty.toOptionalTree.isEmpty)
+
+    val xAdded = ?<("Alocal"l).?/@(List[Attribute]("a" -> "a1")).
+	addOptionalAttributes(List[Attribute]("b" -> "b1"))
+    assertTrue("added should be defined", xAdded.toOptionalTree.isDefined)
+
+    val xAddedStr = asString(xAdded.toOptionalTree.get)
+    assertEquals("should have a and b", 
+      """<?xml version="1.0" encoding="UTF-8"?><Alocal b="b1" a="a1"/>""", xAddedStr)
   }
 
 }

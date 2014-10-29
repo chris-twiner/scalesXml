@@ -1,6 +1,6 @@
 package scales.xml
 
-import strategies._
+import parser.strategies._
 
 class XmlReaderTest29 extends junit.framework.TestCase {
   import junit.framework.Assert._

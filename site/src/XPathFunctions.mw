@@ -36,16 +36,6 @@ The boolean family of type class instances:
 and of course
 * Boolean
 
-== Using ==
-
-Simply add:
-
-${cscala}
-  import Functions._
-${cend}
-
-after all the normal Scales imports and the typeclasses are available.  They are not available by default due to previous deprecated implementations sharing the names.  A future version of Scales will import these functions with the package object.
-
 == QName Functions ==
 
 The full list of functions is available [doc/scales/xml/xpath/NameFunctions.html here].

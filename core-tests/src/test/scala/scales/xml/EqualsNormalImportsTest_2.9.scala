@@ -3,6 +3,7 @@ package scales.xml.equalsTest // different to keep default xml._ out
 import scales.xml._
 import ScalesXml._
 import Functions._
+import parser.strategies._
 
 import scales.xml.equals._
 
@@ -16,9 +17,17 @@ class EqualsNormalImportsTest extends junit.framework.TestCase {
   import scales.utils._
   import ScalesUtils._
 
-  val xmlFile = loadXml(scales.utils.resource(this, "/data/BaseXmlTest.xml"))
+  import collection.path._
+
+  import org.xml.sax.{InputSource, XMLReader}
+
+  def doLoadXml[Token <: OptimisationToken](in : InputSource, strategy : PathOptimisationStrategy[Token] = defaultPathOptimisation) = {
+    loadXml(in, strategy = strategy)
+  }
+
+  val xmlFile = doLoadXml(scales.utils.resource(this, "/data/BaseXmlTest.xml"))
   val xml = xmlFile.rootElem
-  val xmlFile2 = loadXml(scales.utils.resource(this, "/data/BaseXmlTest.xml"))
+  val xmlFile2 = doLoadXml(scales.utils.resource(this, "/data/BaseXmlTest.xml"))
   val xml2 = xmlFile2.rootElem
 
   val ns = Namespace("urn:default")
@@ -217,7 +226,7 @@ class EqualsNormalImportsTest extends junit.framework.TestCase {
   }
 
   def testXmlEqualsPrefixRelevant : Unit = {
-    implicit val qnameEqual = equal { (a: QName, b: QName) => a ==== b }
+    implicit val qnameEqual = Equal.equal { (a: QName, b: QName) => a ==== b }
 
     val attrs1 = Attribs("a1" -> "v1", "a2" -> "v2")
     val attrs2 = Attribs("a1" -> "v1", "a2" -> "v2")
@@ -239,7 +248,7 @@ class EqualsNormalImportsTest extends junit.framework.TestCase {
   }
 
   def testXmlEqualsAttrsPrefixRelevant : Unit = {
-    val prefixQNameEqual = equal { (a: QName, b: QName) => a ==== b }
+    val prefixQNameEqual = Equal.equal { (a: QName, b: QName) => a ==== b }
     implicit val defaultAttributeComparison : XmlComparison[Attribute] = new AttributeComparison()(prefixQNameEqual, defaultQNameTokenComparison)
 
     val pod = no.prefixed("po2")
@@ -253,6 +262,8 @@ class EqualsNormalImportsTest extends junit.framework.TestCase {
 
     val attr1 : Attribute = qn -> "v1"
     val attr2 : Attribute = qnd -> "v1"
+
+    import scales.xml.impl.EqualsHelpers
 
     assertFalse(".equal toQName", prefixQNameEqual.equal(EqualsHelpers.toQName(attr1.name), EqualsHelpers.toQName(attr2.name)))
     
@@ -700,7 +711,7 @@ class EqualsNormalImportsTest extends junit.framework.TestCase {
    * Utility function, but very useful
    */ 
   def testDifferenceAsStream : Unit = {
-    val x = loadXml(scales.utils.resource(this, "/data/Nested.xml")).rootElem
+    val x = doLoadXml(scales.utils.resource(this, "/data/Nested.xml")).rootElem
 
     val y = x.fold_!( _.\*.\*("urn:default"::"ShouldRedeclare") )(_ => Remove())
 

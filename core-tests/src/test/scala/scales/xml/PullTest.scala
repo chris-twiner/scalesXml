@@ -6,18 +6,21 @@ class PullTest extends junit.framework.TestCase {
   import java.io._
 
   import scales.utils._
+  import io._
   import ScalesUtils._
   import ScalesXml._
+
+  import resources._
 
   import Functions._
 
   val Default = Namespace("urn:default")
   val DefaultRoot = Default("Default")
 
-  import scalaz._
-  import Scalaz._
+  import scalaz.{IterV, Enumerator, Input, EphemeralStream}
   import scalaz.IterV._
 
+  
   import scales.utils.{resource => sresource}
  
   /*

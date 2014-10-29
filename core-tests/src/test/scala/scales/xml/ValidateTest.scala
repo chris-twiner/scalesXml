@@ -14,12 +14,24 @@ class ValidateTest extends junit.framework.TestCase {
 
   import ScalesXml._
 
-  def testSimpleValidation = {
-    val xsd = loadXml(resource(this,"/data/personal.xsd"))
-    val schema = newSchema(xsd)
+  import parser.strategies._
 
-    val doc = loadXml(resource(this, "/data/personal-schema.xml"))
-    schema.newValidator.validate(doc)
+  import org.xml.sax.InputSource
+  import ScalesXml._
+  import Functions._
+ 
+  def doLoadXml[Token <: OptimisationToken](in : InputSource, strategy : PathOptimisationStrategy[Token] = defaultPathOptimisation) = {
+    loadXml(in, strategy = strategy)
   }
 
+  def testSimpleValidation = {
+    val xsd = doLoadXml(resource(this,"/data/personal.xsd"))
+    val schema = newSchema(xsd)
+
+    val doc = doLoadXml(resource(this, "/data/personal-schema.xml"))
+    doValidate(doc, schema)
+  }
+
+  def doValidate(doc: Doc, schema: javax.xml.validation.Schema) = 
+    schema.newValidator.validate(doc)
 }

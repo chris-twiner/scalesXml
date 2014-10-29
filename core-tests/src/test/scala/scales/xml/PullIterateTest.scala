@@ -91,4 +91,24 @@ class PullIterateTest extends junit.framework.TestCase {
     
   }
 
+  def testOnQNameEqualImplicit : Unit = {
+    
+    import scalaz.Equal._, scalaz._, scalaz.Scalaz._
+
+    val ourMax = maxIterations / 10 // full takes too long but does work in constant space
+
+    val iter = events(ourMax).iterator
+
+    implicit val qnameEqual = equal { (a: QName, b: QName) =>
+      a.local.equalsIgnoreCase(b.local)
+    }
+    
+    val QNames = List("root"l, "CHILD"l, "interESTING"l)
+    
+    val itr = iterateI(QNames, iter)
+
+    assertFalse("failed to match nodes", itr.isEmpty)
+
+  }
+
 }

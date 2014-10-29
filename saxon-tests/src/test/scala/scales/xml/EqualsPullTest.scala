@@ -19,8 +19,10 @@ class EqualsPullTest extends EqualsNormalImportsTest {
   import scales.utils._
   import ScalesUtils._
 
+  implicit val seqEq = Equal.equalA[Seq[Misc]]
+  
   def pull( doc : Doc ) =
-    pullXml(new StringReader(asString(doc)))
+   pullXml(new StringReader(asString(doc)))
 
   def testPullDocHandling : Unit = {
     // we have to pull everything each time we want to compare

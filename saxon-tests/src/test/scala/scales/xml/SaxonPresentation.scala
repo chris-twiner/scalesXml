@@ -5,6 +5,8 @@ import ScalesUtils._
 import scales.xml._
 import ScalesXml._
 
+import collection.path.Replace
+
 /**
  * Code used in the intro presentation.  Variables aren't re-used as the functions
  * are meant to standalone as piccies in the pressy.
@@ -124,7 +126,7 @@ object SaxonPresentation {
     println("trax")
     println("source only " + wr.toString)
     
-    val sr = ScalesResult()
+    val sr = scales.xml.trax.ScalesResult()
     trax.transform(doc, sr)
     
     println("roundtrip " + asString(sr.doc))
@@ -140,8 +142,6 @@ object SaxonPresentation {
 
     val builder = <("root"l) /( bits(0).take(6) )
     println("transformations "+ asString(builder))
-    
-    import Elements.Functions.normalizeSpace
 
     val subnodes = top(builder).\\.*("subnode"l)
     val folded = foldPositions( subnodes )( p => 
@@ -171,8 +171,6 @@ object SaxonPresentation {
   }
 
   def iterateEg {
-    import Attributes.Functions.text
-    import TextFunctions.value
     val pull = pullXml(new java.io.
 		  FileReader("./src/test/data/svnLogIteratorEg.xml"))
 
@@ -196,8 +194,6 @@ object SaxonPresentation {
   }
 
   def foldNames {
-    import Attributes.Functions.text
-    import TextFunctions.value
     val pull = pullXml(new java.io.
 		  FileReader("./src/test/data/svnLogIteratorEg.xml"))
 
