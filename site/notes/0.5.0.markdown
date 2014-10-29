@@ -8,7 +8,7 @@ Scales Xml 0.5.0 fixes two bugs:
 
 and brings the following new features and improvements:
 
-1. [issue #19](https://github.com/chris-twiner/scalesXml/issues/19) - Add empty and isNi functions
+1. [issue #19](https://github.com/chris-twiner/scalesXml/issues/19) - Add empty and isNil functions
 2. [issue #18](https://github.com/chris-twiner/scalesXml/issues/18) - Optional trees in DSL
 3. [issue #16](https://github.com/chris-twiner/scalesXml/issues/16) - Smaller packages
 4. [issue #15](https://github.com/chris-twiner/scalesXml/issues/15) - Async Xml Pull
