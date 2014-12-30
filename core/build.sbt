@@ -7,11 +7,10 @@ libraryDependencies ++= Seq(
   //"commons-jxpath" % "commons-jxpath" % "1.3"
 )
 
-libraryDependencies <+= scalaVersion{ v=>
-    if (v.startsWith("2.9")) // stick to 2.8.1
-      "org.scalaz" % "scalaz-core_2.9.2" % "6.0.4"
-    else
-      "org.scalaz" %% "scalaz-core" % "6.0.4" 
+libraryDependencies <++= scalaVersion{ v =>
+      Seq("org.scalaz" %% "scalaz-core" % "7.0.6",
+//      "org.scalaz" %% "scalaz-iteratee" % "7.0.6",
+      "org.scalaz" %% "scalaz-iterv" % "7.0.6" )
 }
 
 excludeFilter in unmanagedSources <<= scalaVersion{ v => 

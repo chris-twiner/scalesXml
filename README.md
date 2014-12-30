@@ -18,22 +18,22 @@ The artifacts are now on Maven Central under the group org.scales.xml.
 
 # How To Use
 
-Scales 0.5.0 is built against 2.9.3 and 2.10.
+Scales 0.6.0 is built against 2.9.3, 2.10 and 2.11.
 
 So for sbt its:
 
-    val scalesXml = "org.scalesxml" %% "scales-xml" % "0.5.0"
+    val scalesXml = "org.scalesxml" %% "scales-xml" % "0.6.0"
 
 xsbt 0.10+ its:
 
     libraryDependencies ++= Seq(
       // just for the core library
-      "org.scalesxml" %% "scales-xml" % "0.5.0",
+      "org.scalesxml" %% "scales-xml" % "0.6.0",
       // and additionally use these for String based XPaths
-      "org.scalesxml" %% "scales-jaxen" % "0.5.0" intransitive(),
+      "org.scalesxml" %% "scales-jaxen" % "0.6.0" intransitive(),
       "jaxen" % "jaxen" % "1.1.3" intransitive(),
       // to use Aalto based parsing
-      "org.scalesxml" %% "scales-aalto" % "0.5.0"
+      "org.scalesxml" %% "scales-aalto" % "0.6.0"
     )
 
 intransitive() is required because the Jaxen pom cannot be fully used.
