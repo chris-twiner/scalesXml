@@ -88,17 +88,21 @@ class Handler[Token <: OptimisationToken](strategy : PathOptimisationStrategy[To
 
     var i = 0
     val length = attributes.getLength
-    var attribs = emptyAttributes
+    val attrs = strategy.attributeArray(length, token)
 
     while (i < length) {
       val qname = aqn(attributes.getURI(i), attributes.getLocalName(i), attributes.getQName(i), strategy, token)
-      attribs = attribs unsafePlus 
-      strategy.attribute(qname, 
+      attrs.update(i,
+		   strategy.attribute(qname, 
 			 attributes.getValue(i), 
 			 token)
+		 )
 
       i += 1
     }
+
+    // copy the created attribs
+    val attribs = scales.xml.impl.AttributeSet.unsafe(attrs, length)
     
     // use the current nsMap
     val elem = strategy.elem(

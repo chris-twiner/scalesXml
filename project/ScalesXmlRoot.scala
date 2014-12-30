@@ -10,8 +10,8 @@ import SiteKeys.{siteCSS, siteResourceDir,
 		 siteMarkupDocHeaders,
 		 menuBarTitle}
 
-//import de.johoop.jacoco4sbt._
-//import JacocoPlugin._
+import de.johoop.jacoco4sbt._
+import JacocoPlugin._
 
 object ScalesXmlRoot extends Build {
 
@@ -24,14 +24,15 @@ object ScalesXmlRoot extends Build {
     // Override more to taste
   }
 
-  lazy val root = Project("scales-xml-root", file("."), settings = standardSettings ++ dontPublishSettings) aggregate(core, coreTests, jaxen, saxonTests, jaxenTests
-, aalto, aaltoTests)
+  lazy val root = Project("scales-xml-root", file("."), settings = standardSettings ++ dontPublishSettings) aggregate(core, coreTests, jaxen, saxonTests, xercesTests, jaxenTests, aalto, aaltoTests)
 
   lazy val core = Project("scales-xml", file("core"), settings = standardSettings ++ deployOrg)
 
   lazy val coreTests = Project("scales-xml-tests", file("core-tests"), settings = standardSettings ++ dontPublishSettings) dependsOn(core)
 
   lazy val saxonTests = Project("saxon-tests", file("saxon-tests"), settings = standardSettings ++ dontPublishSettings ++ dontBuildIn28) dependsOn(coreTests % "test->test")
+
+  lazy val xercesTests = Project("xerces-tests", file("xerces-tests"), settings = standardSettings ++ dontPublishSettings ++ dontBuildIn28) dependsOn(coreTests % "test->test")
 
   lazy val jaxen = Project("scales-jaxen", file("jaxen"), settings = standardSettings ++ deployOrg) dependsOn(core)
 
@@ -66,8 +67,8 @@ object ScalesXmlRoot extends Build {
     projects = Seq(core, jaxen), projectId = "site",
     projectRoot = file("site"),
     sxrVersionMap = {
-      case v : String if v.startsWith("2.9") =>
-	"org.scala-tools.sxr" % "sxr_2.9.0" % "0.2.7"
+      case v : String if v.startsWith("2.10") =>
+	"org.scala-sbt.sxr" %% "sxr" % "0.3.0"
     },
     rootProjectId = "scales-xml-root", projectDependencies = Seq(core, jaxen),
     standardSettings = standardSettings ++ Utils.resourceSettings ++
@@ -107,19 +108,21 @@ object ScalesXmlRoot extends Build {
   }*/
 
   lazy val standardSettings = Defaults.defaultSettings ++ Seq(
+    resolvers += Resolver.url("Typesafe Releases", url("http://repo.typesafe.com/typesafe/ivy-releases"))(Resolver.ivyStylePatterns),
+
 /*    shellPrompt := { state =>
  "sbt (%s)$$$-".format(Project.extract(state).currentProject.id)
 },
 */
 //    organization := "org.scalesxml",
     offline := true,
-    version := "0.6.0-M1",
-    scalaVersion := "2.10.0",
-//    scalaVersion := "2.10.0-M7",
-    crossScalaVersions := Seq("2.9.3","2.10.0","2.10.1"),
+    version := "0.5.0",
+    scalaVersion := "2.10.4",
+//    scalaVersion := "2.10.0-M7", 
+    crossScalaVersions := Seq("2.9.3","2.10.4"),
     //publishSetting,
 //    parallelExecution in Test := false,
-//    scalacOptions ++= Seq("-optimise"),
+//    scalacOptions ++= Seq("-optimise"), 2.10.2-RC2 
     scalacOptions ++= Seq("-encoding", "UTF-8", "-deprecation", "-unchecked"),
     packageOptions ++= Seq[PackageOption](ManifestAttributes(
       (IMPLEMENTATION_TITLE, "Scales"),
@@ -128,14 +131,11 @@ object ScalesXmlRoot extends Build {
       //,(SEALED, "true")
       )
     ),
-    /* requires many other command line options and installations for windows:
-      -Ddot_exe=%dot_exe%
-      * against - no spaces
-      set dot_exe=c:/PROGRA~2/GRAPHV~1.28/bin/dot.exe
+    /* only works in windows when dot.exe is on the windows PATH
      */
     scalacOptions in (Compile, doc) <++= (scalaVersion).map{(v: String) =>
       if (v.startsWith("2.10"))
-	Seq("-diagrams")
+	Seq("-diagrams", "-diagrams-debug")
       else
 	Seq()
     },
@@ -145,7 +145,7 @@ object ScalesXmlRoot extends Build {
     scalaBinaryVersion <<= scalaVersion(sV => if (CrossVersion.isStable(sV)) CrossVersion.binaryScalaVersion(sV) else sV)
 //,
 //    parallelExecution in jacoco.Config := false
-  ) ++ sonatype.settings// ++ jacoco.settings
+  ) ++ sonatype.settings ++ jacoco.settings
 // ++ crazyness
 
   val reconPerf = TaskKey[Unit]("recon-perf")

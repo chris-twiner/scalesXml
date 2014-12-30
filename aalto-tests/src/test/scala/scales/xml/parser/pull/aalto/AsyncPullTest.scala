@@ -24,7 +24,7 @@ class AsyncPullTest extends junit.framework.TestCase {
   import scalaz._
   import Scalaz._
   import scalaz.IterV._
-  import EphemeralStream.emptyEphemeralStream
+  import EphemeralStream.{empty => emptyEphemeralStream}
 
   import scales.utils.{resource => sresource}
 

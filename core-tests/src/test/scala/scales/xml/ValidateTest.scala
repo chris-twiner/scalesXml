@@ -29,7 +29,9 @@ class ValidateTest extends junit.framework.TestCase {
     val schema = newSchema(xsd)
 
     val doc = doLoadXml(resource(this, "/data/personal-schema.xml"))
-    schema.newValidator.validate(doc)
+    doValidate(doc, schema)
   }
 
+  def doValidate(doc: Doc, schema: javax.xml.validation.Schema) = 
+    schema.newValidator.validate(doc)
 }

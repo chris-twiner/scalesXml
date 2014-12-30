@@ -9,7 +9,6 @@ import Defaults._
 import java.io.File
 
 import IO._
-import Path._
 
 object Utils {
 
@@ -24,7 +23,8 @@ object Utils {
 
 	new ForkRun( 
 	  ForkOptions
-	  (scalaJars = si.jars, javaHome = javaHomeDir, outputStrategy = strategy, 
+	  (bootJars = si.jars, 
+	   javaHome = javaHomeDir, outputStrategy = strategy, 
 	   runJVMOptions = options ++ cp, 
 	   workingDirectory = Some(base)) )
       } else
@@ -34,16 +34,14 @@ object Utils {
   /**
    * Runner that can run caliper tasks or any others requiring the classpath be specified on the forked app
    */ 
-  def caliperRunTask(scoped: ScopedTask[Unit], config: sbt.Configuration, arguments: String*): Setting[Task[Unit]] =
-    scoped <<= ( initScoped(scoped.scopedKey, cpRunnerInit(config)) zipWith (fullClasspath in config, streams).identityMap ) { case (rTask, t) =>
-      (t :^: rTask :^: KNil) map { case (cp, s) :+: r :+: HNil =>
-	sbt.toError(r.run( "com.google.caliper.Runner", Build.data(cp), 
-	  arguments, s.log))
+  def caliperRunTask(task: TaskKey[Unit], config: sbt.Configuration, arguments: String*): Setting[Task[Unit]] = 
+    task := 
+      {
+        val scoped = initScoped(Scoped.taskScopedToKey(task), cpRunnerInit(config)).value
+        val cp = (fullClasspath in config).value
+        sbt.toError(scoped.run( "com.google.caliper.Runner", Attributed.data(cp), 
+	  arguments, streams.value.log))
       }
-    }
-
-// provided by IO now
-//  lazy val utf8 = java.nio.charset.Charset.forName("UTF-8")
 
   /**
    * I don't find the orElse helps with reading ~> seems to indicate flow more
@@ -73,7 +71,7 @@ object Utils {
     try {
       t
     } catch {
-      case e => log.error("Could not perform io because of " + e.getMessage)
+      case e: Throwable => log.error("Could not perform io because of " + e.getMessage)
 	Some(e.getMessage)
     } 
   }
@@ -82,7 +80,7 @@ object Utils {
     try {
       Right(t)
     } catch {
-      case e => log.error("Could not perform io because of " + e.getMessage)
+      case e: Throwable => log.error("Could not perform io because of " + e.getMessage)
 	Left(e.getMessage)
     } 
   }
@@ -335,13 +333,13 @@ object Utils {
     try{
       Some(new java.io.FileInputStream(f))
     } catch {
-      case e => None
+      case _: Throwable => None
     }
 
   def getOStream( f : File ) : Option[java.io.FileOutputStream] = 
     try{
       Some(new java.io.FileOutputStream(f))
     } catch {
-      case e => None
+      case _: Throwable => None
     }
 }

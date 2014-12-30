@@ -10,34 +10,41 @@ It also provides a far more XPath like experience than the normal Scala XML, Pat
 
 A number of the pain points of Scala XML are also simply removed, want to change an attribute?  Just do it on the Element.  Want to match against a namespace, why not?? All name access is fully qualified.  Want to transform all children matching a condition via a Path, that works too.  If sorting the attributes on serializing is of interest to you, plugin a Serializer.
 
-A very flexible XML stream handling approach is based upon StAX and Iteratees (courtesy of Scalaz) which uses the same model as the tree based, no separate event hierarchy needed.
+A very flexible XML stream handling approach is based upon StAX and Iteratees (courtesy of Scalaz) which uses the same model as the tree based, no separate event hierarchy needed.  New in 0.5.0 is also support for asynchronous pull parsing - no more blocking on streams.
 
-Currently the stable 0.4.5 release [site](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.3/index.html) improves on 0.2.1's fast parsing and low memory usage (which, of course, are coupled) and adds ScalesXPath - a string based XPath 1.0 evaluator, a full compliment of useful axe in the internal XPath syntax, an equality framework (2.9.x only) and general improvements in usability.
+The current stable 0.5.0 release [site](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.10/0.5.0/index.html) improves again on Scales's fast parsing and low memory usage (which, of course, are coupled) and adds optional trees to a number of other usability improvements.
 
 The artifacts are now on Maven Central under the group org.scales.xml.
 
 # How To Use
 
-Currently 2.8.1, 2.8.2, 2.9.1, 2.9.2 and 2.10.0-M6 are built against.
+Scales 0.5.0 is built against 2.9.3 and 2.10.
 
 So for sbt its:
 
-    val scalesXml = "org.scalesxml" %% "scales-xml" % "0.4.5"
+    val scalesXml = "org.scalesxml" %% "scales-xml" % "0.5.0"
 
 xsbt 0.10+ its:
 
     libraryDependencies ++= Seq(
-      "org.scalesxml" %% "scales-xml" % "0.4.5",
-      //"org.scalesxml" %% "scales-jaxen" % "0.5.1" // optional for string based xpaths
-      )
+      // just for the core library
+      "org.scalesxml" %% "scales-xml" % "0.5.0",
+      // and additionally use these for String based XPaths
+      "org.scalesxml" %% "scales-jaxen" % "0.5.0" intransitive(),
+      "jaxen" % "jaxen" % "1.1.3" intransitive(),
+      // to use Aalto based parsing
+      "org.scalesxml" %% "scales-aalto" % "0.5.0"
+    )
 
-Maven repos should therefore use org.scalesxml scales-xml_2.9.2 as the dependency.   Also note that Jaxen 1.1.4 (tested against 0.3.1) isn't yet present via Maven, so if you use String XPath evaluation and you'd like to use the latest version you must add the folowing to the build:
+intransitive() is required because the Jaxen pom cannot be fully used.
+
+Maven repos should therefore use org.scalesxml scales-xml_2.10 as the dependency.   Also note that Jaxen 1.1.4 isn't yet present via Maven, so if you use String XPath evaluation and you'd like to use the latest version you must add the folowing to the build:
 
     resolvers += "Scales Repo" at "http://scala-scales.googlecode.com/svn/repo"
 
-[The 0.3.1 documentation site is here](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.3/index.html) and zip of the site documentation is available at [scales-xml.zip](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.3/org.scalesxml-scales-xml-0.3-site.zip).
+[The 0.5.0 documentation site is here](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.10/0.5.0/index.html) and zip of the site documentation is available at [scales-xml.zip](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.10/0.5.0/org.scalesxml-scales-xml-0.5.0-site.zip).
 
-_Warning_ local file based sites do not fully work in Chrome, use Firefox or IE in preference.
+_Warning_ local file based offline sites may not fully work in Chrome, use Firefox or IE as needed.
 
 # Mailing List
 

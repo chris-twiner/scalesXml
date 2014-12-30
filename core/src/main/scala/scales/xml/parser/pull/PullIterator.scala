@@ -149,8 +149,10 @@ object PullUtils {
     import ScalesXml.toQName
 
     val count = parser.getAttributeCount()
+
+    val ar = strategy.attributeArray(count, token)
     var i = 0
-    var map = emptyAttributes
+    //var map = emptyAttributes
     while (i < count) {
       val jqname = parser.getAttributeName(i)
       val pre = jqname.getPrefix
@@ -163,13 +165,14 @@ object PullUtils {
         else
           strategy.prefixedQName(local, jqname.getNamespaceURI, pre, token) // Left )
 
-      map = map unsafePlus 
+      //map = map unsafePlus 
+      ar.update(i,
 	strategy.attribute(aqname, 
 		       parser.getAttributeValue(i), token)
-
+		)
       i += 1
     }
-    map
+    scales.xml.impl.AttributeSet.unsafe(ar, count)
   }
 
   def getNamespaces[Token <: OptimisationToken]( parser: XMLStreamReader, strategy : MemoryOptimisationStrategy[Token], token : Token ): Map[String, String] = {

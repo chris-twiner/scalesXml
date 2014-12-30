@@ -341,6 +341,7 @@ case class EndElem(name: QName, namespaces: Map[String, String] = Map[String, St
 object Attribs {
   def apply( attribs : Attribute * ) : Attributes = {
     import EqualsHelpers._
-    ListSet[Attribute](attribs :_*)
+    //ListSet[Attribute](attribs :_*)
+    emptyAttributes ++ attribs
   }
 }

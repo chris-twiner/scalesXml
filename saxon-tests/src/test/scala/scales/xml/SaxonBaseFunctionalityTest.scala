@@ -48,10 +48,9 @@ class SaxonBaseFunctionalityTest extends test.BaseFunctionalityTest {
     // we have two nodes before so 3 whitespaces.  Of course we actually should be getting path as well I think...
     val expected = List("", "", "", "", "", "start mix mode", "prefixed text", "end mix mode",
       "\"\n\t" + utf8,
-      //"should not have to be & < escaped @ all \"\"&",
-      //"mix it up some more",
+      "should not have to be & < escaped @ all \"\"&",
+      "mix it up some more",
       "", "")
-    // Saxon can't see the two above nodes, which sucks, we and Jaxen can
     assertCompare(expected, nodeSet("//text()", 
 			      xmlFile
 //			      dom //  both stream and dom are incorrect :<
