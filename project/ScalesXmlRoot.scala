@@ -24,7 +24,7 @@ object ScalesXmlRoot extends Build {
     // Override more to taste
   }
 
-  lazy val root = Project("scales-xml-root", file("."), settings = standardSettings ++ dontPublishSettings) aggregate(core, coreTests, jaxen, saxonTests, xercesTests, jaxenTests, aalto, aaltoTests)
+  lazy val root = Project("scales-xml-root", file("."), settings = standardSettings ++ dontPublishSettings) aggregate(core, coreTests, jaxen, saxonTests, xercesTests, jaxenTests, aalto, aaltoTests, iterV, iterVTests)
 
   lazy val core = Project("scales-xml", file("core"), settings = standardSettings ++ deployOrg)
 
@@ -33,6 +33,10 @@ object ScalesXmlRoot extends Build {
   lazy val saxonTests = Project("saxon-tests", file("saxon-tests"), settings = standardSettings ++ dontPublishSettings) dependsOn(coreTests % "test->test")
 
   lazy val xercesTests = Project("xerces-tests", file("xerces-tests"), settings = standardSettings ++ dontPublishSettings) dependsOn(coreTests % "test->test")
+
+  lazy val iterV = Project("scales-iterv", file("iterv"), settings = standardSettings ++ deployOrg) dependsOn(core)
+
+  lazy val iterVTests = Project("iterv-tests", file("iterv-tests"), settings = standardSettings ++ dontPublishSettings) dependsOn(iterV % "compile->test", coreTests % "test->test") //  % "compile->compile;test->test"
 
   lazy val jaxen = Project("scales-jaxen", file("jaxen"), settings = standardSettings ++ deployOrg) dependsOn(core)
 
@@ -110,7 +114,7 @@ object ScalesXmlRoot extends Build {
 */
 //    organization := "org.scalesxml",
     offline := true,
-    version := "0.6.0-M2",
+    version := "0.6.0-M3",
     scalaVersion := "2.11.4",
 //    scalaVersion := "2.10.0-M7",
     crossScalaVersions := Seq("2.9.3","2.11.4","2.10.4"),
