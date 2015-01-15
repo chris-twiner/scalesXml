@@ -4,9 +4,6 @@ import scales.utils._
 
 import resources._
 
-import scalaz.{IterV, Enumerator, Input}
-import scalaz.IterV._
-
 import java.io._
 import java.nio.channels._
 
@@ -193,57 +190,5 @@ class RBCImplicitWrapper(channel: ReadableByteChannel)(implicit ev: DataChunkEvi
 trait ReadableByteChannelWrapperImplicits {
 
   implicit def toRBCWrapper(channel: ReadableByteChannel)(implicit ev: DataChunkEvidence[DataChunk]): RBCImplicitWrapper = new RBCImplicitWrapper(channel)
-
-  implicit def dataChunkerEnumerator[T[_] <: DataChunker[_]]: Enumerator[T] =
-    new AsyncDataChunkerEnumerator[T]()
-
-  /**
-   * Use in a call to asyncReadableByteChannelEnumerator to turn it into a synchronous enumerator (constantly trying to get new chunks of data)
-   */
-  val INFINITE_RETRIES = -1
-
-  /**
-   * Creates an Enumerator with a given count for Empty -> Cont applications.
-   *
-   * When the count is met it returns the Cont for the next Enumeration step.
-   *
-   * Note: Call via eval only.
-   * @param contOnCont INFINITE_RETRIES (-1) for keep on trying, the default is 5 (as exposed by the implicit enumerator readableByteChannelEnumerator)
-   */
-  class AsyncDataChunkerEnumerator[T[_] <: DataChunker[_]]( contOnCont: Int = 5 ) extends Enumerator[T] {
-    def apply[E,A](chunker: T[E], i: IterV[E,A]): IterV[E, A] = {
- 
-      def apply(chunker: T[E], i: IterV[E,A], count: Int): IterV[E, A] = {
-	i match {
-	  case _ if chunker.underlyingClosed || chunker.isClosed => i
-	  case Done(acc, input) => i
-	  case Cont(k) =>
-	    val realChunk = chunker.nextChunk
-	    val nextChunk = realChunk.asInstanceOf[E]
-	    val nextI = 
-	      if (realChunk.isEOF) {
-		 // println("actual data was EOF !!!")
-		  k(IterV.EOF[E])
-		} else
-		  if (realChunk.isEmpty)
-		    k(IterV.Empty[E])
-		  else
-		    k(El(nextChunk))
-	    val nc = 
-	      if (realChunk.isEmpty && !isDone(nextI)) {
-		count + 1
-	      } else 0
-
-	    if ((contOnCont != INFINITE_RETRIES) && (nc > contOnCont)) {
-	      //println("had cont on cont count, returning")
-	      nextI
-	    } else
-	      apply(chunker, nextI, nc)
-	}
-      }
-
-      apply(chunker, i, 0)
-    }
-  }
 
 }

@@ -7,10 +7,8 @@ package object xml extends dsl.XPathMatcher
   with impl.XmlUtils
   with parser.sax.XmlParser 
   with parser.pull.XmlPulls 
-  with parser.pull.PullIteratees
   with trax.TraxSourceConversions
   with serializers.XmlPrinter 
-  with serializers.SerializingIter
   with equals.XmlEquals
   with xpath.XmlPaths
   with xpath.Functions {

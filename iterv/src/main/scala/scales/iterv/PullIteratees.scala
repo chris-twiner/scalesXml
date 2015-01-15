@@ -1,4 +1,4 @@
-package scales.xml.parser.pull
+package scales.iterv
 
 import scalaz.Equal, scalaz.Equal._, scalaz.Scalaz._
 
@@ -15,6 +15,7 @@ import scales.xml.{
   addAndFocus,
   addChild,
   XmlBuilder,
+  XmlPull,
   parser,
   impl => ximpl
   }

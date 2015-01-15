@@ -1,14 +1,14 @@
-package scales.utils.iteratee
+package scales.iterv
 
 import scales.utils._
-  
+ 
 import scalaz.Enumerator
 
 /**
  * Iterates for every Done from a given resumable iteratee
  */ 
 final class ResumableIterIterator[E,A,F[_]]( it : F[E])(init : ResumableIter[E,A])(implicit e : Enumerator[F]) extends Iterator[A] {
-  import ScalesUtils._
+  import ScalesIterV._
   
   var cur = init(it).eval
   var isdone = isDone(cur)
