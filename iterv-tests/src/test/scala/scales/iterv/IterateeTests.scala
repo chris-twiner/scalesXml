@@ -1,5 +1,5 @@
-package scales.utils
-import ScalesUtils._
+package scales.iterv
+import ScalesIterV._
 
 class IterateeTest extends junit.framework.TestCase {
   
@@ -9,7 +9,7 @@ class IterateeTest extends junit.framework.TestCase {
   import EphemeralStream.emptyEphemeralStream
   import scalaz.IterV._
   
-  import scales.utils.{sum => usum}
+  import scales.iterv.{sum => usum}
 
   def testSimpleEnumerateeMap = {
     

@@ -1,4 +1,4 @@
-package scales.xml.parser.pull.aalto
+package scales.aalto.parser.pull
 
 import com.fasterxml.aalto._
 import com.fasterxml.aalto.stax.InputFactoryImpl

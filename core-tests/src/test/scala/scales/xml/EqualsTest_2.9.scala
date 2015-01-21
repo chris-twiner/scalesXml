@@ -23,8 +23,8 @@ import serializers.{
 
 import parser.sax.{XmlParserImplicits, XmlParser}
 
-import parser.pull.{XmlPulls ,
-    PullIteratees}
+import parser.pull.{XmlPulls}// ,
+//    PullIteratees}
 
 import xpath.{XmlPaths, XmlPathImplicits}
     
@@ -46,8 +46,8 @@ class EqualsTest extends junit.framework.TestCase {
     with XmlPulls 
     with XmlFactories 
     with TraxSourceConversions
-    with XmlUtils
-    with PullIteratees {
+    with XmlUtils {
+//    with PullIteratees {
 
   }
 

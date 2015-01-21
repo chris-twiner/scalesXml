@@ -1,7 +1,7 @@
-package scales.xml.parser.pull
+package scales.aalto.parser
 
 /**
  * This package provides asynchronous parsing via the aalto library.
  */ 
-package object aalto {
+package object pull {
 }

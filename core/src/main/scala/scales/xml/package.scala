@@ -6,7 +6,8 @@ package object xml extends dsl.XPathMatcher
   with impl.XmlFactories 
   with impl.XmlUtils
   with parser.sax.XmlParser 
-  with parser.pull.XmlPulls 
+  with parser.pull.XmlPulls
+  with parser.pull.IterateFunctions
   with trax.TraxSourceConversions
   with serializers.XmlPrinter 
   with equals.XmlEquals
