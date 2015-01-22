@@ -212,7 +212,7 @@ class AsyncPullTest extends junit.framework.TestCase {
 
     var res = Vector.empty[PullType]
 
-    var c = AsyncParser.parse(parser)
+    var c = AsyncParserIterV.parse(parser)
     
     var b : DataChunk = EmptyData
     while(b != EOFData) {
@@ -283,7 +283,7 @@ class AsyncPullTest extends junit.framework.TestCase {
     val strout = new java.io.StringWriter()
     val (closer, iter) = pushXmlIter( strout , doc )
 
-    val enumeratee = enumToMany(iter)(AsyncParser.parse(parser))
+    val enumeratee = enumToMany(iter)(AsyncParserIterV.parse(parser))
     val wrapped = new ReadableByteChannelWrapper(randomChannel, true, tinyBuffers)
     
     /*
@@ -338,7 +338,7 @@ class AsyncPullTest extends junit.framework.TestCase {
     val strout = new java.io.StringWriter()
     val (closer, iter) = pushXmlIter( strout , doc )
 
-    val enumeratee = enumToMany(iter)(AsyncParser.parse(parser))
+    val enumeratee = enumToMany(iter)(AsyncParserIterV.parse(parser))
     val ((out, thrown), cont) = enumeratee(channel).runEval
 
     // we can swallow the lot, but endmiscs don't know there is more until the main loop, which needs evaling
@@ -359,7 +359,7 @@ class AsyncPullTest extends junit.framework.TestCase {
 
     val parser = AsyncParser()
     
-    val enumeratee = enumToMany(iter)(AsyncParser.parse(parser))
+    val enumeratee = enumToMany(iter)(AsyncParserIterV.parse(parser))
     val (e, cont) = enumeratee(channel.wrapped).run
 
     assertEquals("{urn:default}Default", e.right.get.name.qualifiedName)

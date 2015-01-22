@@ -48,7 +48,7 @@ object ScalesXmlRoot extends Build {
 
   lazy val aaltoTests = Project("aalto-tests", file("aalto-tests"), settings = standardSettings ++ dontPublishSettings) dependsOn(aalto % "compile->test", coreTests % "test->test")
 
-  lazy val aaltoIterVTests = Project("aalto-iterv-tests", file("aalto-iterv-tests"), settings = standardSettings ++ dontPublishSettings) dependsOn(aaltoIterv % "compile->test", coreTests % "test->test")
+  lazy val aaltoIterVTests = Project("aalto-iterv-tests", file("aalto-iterv-tests"), settings = standardSettings ++ dontPublishSettings) dependsOn(aaltoIterv % "compile->test", aaltoTests % "test->test")
 
   /* project that sucks in the others like fullDocsAndSxr for the purpose of coverage tests
   lazy val coverageProject = {

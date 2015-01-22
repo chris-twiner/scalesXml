@@ -192,7 +192,7 @@ object XercesPresentation {
     bits drop 40 take 2 foreach println
     pull.close // we haven't read it all
   }
-
+/*
   def foldNames {
     val pull = pullXml(new java.io.
 		  FileReader("./src/test/data/svnLogIteratorEg.xml"))
@@ -229,7 +229,7 @@ object XercesPresentation {
     
     allAuthorsAndFiles._2 take 2 foreach println
   }
-
+*/
   def main(args: Array[String]) {
     separation
     qNames
@@ -240,7 +240,7 @@ object XercesPresentation {
     transformations
     directPullParsing
     iterateEg
-    println("foldNames")
-    foldNames
+//    println("foldNames")
+//    foldNames
   }
 }
