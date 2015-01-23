@@ -14,26 +14,42 @@ A very flexible XML stream handling approach is based upon StAX and Iteratees (c
 
 The current stable 0.5.0 release [site](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.10/0.5.0/index.html) improves again on Scales's fast parsing and low memory usage (which, of course, are coupled) and adds optional trees to a number of other usability improvements.
 
+The current development release 0.6.0 deprecates the iteratee interfaces with the aim of replacing it with Scalaz Streams.  The use of iteratees has provided a usefull functional way to compose operations on XML streams, however the key missing design of the interface - resumable calculations - causes Scales to subvert the model.  As such Scales IterV usage has not simply been migrated to Scalaz Iteratee.
+
+As part of this deprecation the IterV usage has been split out into several modules:
+
+* scales-iterv - The base iteratee interfaces
+* scales-aalto-iterv - The asynchronous iteratees and enumerators based on Aalto XML
+
+As such the following imports are now required to obtain the same functionality:
+
+    import scales.iterv._ // the IterV based iteratee functions and enhancements
+    import ScalesIterV._ // the Eval implicit conversion and Iterator Enumerator
+
+    import scales.aalto.parser.pull._ // The aalto pull parsing parser (moved package)
+    import scales.aalto.parser.pull.iterv._ // The new package containing the AsyncParserIterV object
+    // You can then use AsyncParserIterV.parse to provide a ResumableIter from an AsyncParser.
+
 The artifacts are now on Maven Central under the group org.scales.xml.
 
 # How To Use
 
-Scales 0.6.0 is built against 2.9.3, 2.10 and 2.11.
+Scales 0.6.0-M3 is built against 2.9.3, 2.10 and 2.11.
 
-So for sbt its:
-
-    val scalesXml = "org.scalesxml" %% "scales-xml" % "0.6.0"
-
-xsbt 0.10+ its:
+xsbt 0.10+ dependencies:
 
     libraryDependencies ++= Seq(
       // just for the core library
-      "org.scalesxml" %% "scales-xml" % "0.6.0",
+      "org.scalesxml" %% "scales-xml" % "0.6.0-M3",
       // and additionally use these for String based XPaths
-      "org.scalesxml" %% "scales-jaxen" % "0.6.0" intransitive(),
+      "org.scalesxml" %% "scales-jaxen" % "0.6.0-M3" intransitive(),
       "jaxen" % "jaxen" % "1.1.3" intransitive(),
       // to use Aalto based parsing
-      "org.scalesxml" %% "scales-aalto" % "0.6.0"
+      "org.scalesxml" %% "scales-aalto" % "0.6.0-M3",
+      // to use IterV Iteratee based pull parsing
+      "org.scalesxml" %% "scales-iterv" % "0.6.0-M3",
+      // to use Aalto based IterV Iteratee pull parsing
+      "org.scalesxml" %% "scales-aalto-iterv" % "0.6.0-M3"      
     )
 
 intransitive() is required because the Jaxen pom cannot be fully used.
