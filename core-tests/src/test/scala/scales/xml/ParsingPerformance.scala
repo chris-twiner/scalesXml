@@ -294,7 +294,6 @@ class ParsingPerformanceRecon extends SimpleScalaBenchmark {
 */
   /**
    * How long for pull based, low memory onqnames action
-   */ 
   def timePullCollect(reps: Int) = repeat(reps) {
     import Recon._
 
@@ -324,6 +323,7 @@ class ParsingPerformanceRecon extends SimpleScalaBenchmark {
     
     }
   }
+   */ 
 /*
   def processFullParseCollect = {
     import Recon._
@@ -577,7 +577,7 @@ object RunHighPerf extends ReconTest {
   var res : AnyRef = _
 
   def doTest {
-    res = p.timePullCollect(5)
+//    res = p.timePullCollect(5)
 //    doc = p.timeScalesXml(5)//5
 //    doc = p.timeScalesXml(100)
     //doc = p.timeScalesXmlTreeOp(5)

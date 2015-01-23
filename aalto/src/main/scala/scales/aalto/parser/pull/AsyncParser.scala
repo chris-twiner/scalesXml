@@ -1,4 +1,4 @@
-package scales.xml.parser.pull.aalto
+package scales.aalto.parser.pull
 
 import scales.xml._
 import scales.utils._
@@ -13,11 +13,54 @@ import java.nio.channels.ReadableByteChannel
 
 import scales.xml.parser.pull.PullUtils
 
-import scalaz.{IterV, Enumerator, Input, EphemeralStream}
+import scalaz.EphemeralStream
 import EphemeralStream.emptyEphemeralStream
-import scalaz.IterV._
 
 import scales.xml.parser.strategies.{MemoryOptimisationStrategy, OptimisationToken}
+
+/**
+ * Carbon copy of IterV Input, its really quite useful thanks!
+ */ 
+sealed trait Input[E] {
+  def apply[Z](empty: => Z, el: (=> E) => Z, eof: => Z): Z
+}
+
+/** Input that has a value available */
+object Empty {
+  def apply[E] : Input[E] = new Input[E] {
+    def apply[Z](empty: => Z, el: (=> E) => Z, eof: => Z): Z = empty
+  }
+  def unapply[E](r: Input[E]): Boolean =
+    r.apply[Either[Input[E], Boolean]](
+      empty = Right(true),
+      el = e => Left(El(e)),
+      eof = Left(EOF[E])).fold(x => false, x => x)
+}
+
+/** Input that has no values available  */
+object El {
+  def apply[E](e0: => E): Input[E] = new Input[E] {
+    def apply[Z](empty: => Z, el: (=> E) => Z, eof: => Z): Z = el(e0)
+  }
+  def unapply[E](r: Input[E]): Option[E] =
+    r.apply[Either[Input[E], (E)]](
+      empty = Left(Empty[E]),
+      el = e => Right(e),
+      eof = Left(EOF[E])).right.toOption
+}
+
+/** Input that is exhausted */
+object EOF {
+  def apply[E] : Input[E] = new Input[E] {
+    def apply[Z](empty: => Z, el: (=> E) => Z, eof: => Z): Z = eof
+  }
+  def unapply[E](r: Input[E]): Boolean =
+    r.apply[Either[Input[E], Boolean]](
+      empty = Left(Empty[E]),
+      el = e => Left(El(e)),
+      eof = Right(true)).fold(x => false, x => x)
+}
+
 
 /**
  * An AynscParser, a DataChunk is fed in via nextInput which, in turn, returns an Input[EphmeralStream[PullType]] of events.
@@ -112,7 +155,7 @@ abstract class AsyncParser(implicit xmlVersion : XmlVersion) extends CloseOnNeed
       EOF[PullType]
     } else if (num == EVENT_INCOMPLETE) {
       //println("event incomplete ")
-      IterV.Empty[PullType]//None//pumpInMisc
+      Empty[PullType]//None//pumpInMisc
     } else if (odepth == -1) {
       // still misc
       //println("didn't get out of misc , none??")
@@ -128,7 +171,7 @@ abstract class AsyncParser(implicit xmlVersion : XmlVersion) extends CloseOnNeed
 	  addEndMisc(event)	      
       }
 
-      IterV.Empty[PullType]//None
+      Empty[PullType]//None
     } else {
       //println("actually started with first event")
       started = true
@@ -167,7 +210,7 @@ abstract class AsyncParser(implicit xmlVersion : XmlVersion) extends CloseOnNeed
 	// let the iter attempt to deal
 	//empties += 1
 	//Some(IterV.Empty[T])
-	IterV.Empty[PullType]
+	Empty[PullType]
       } else {
 	// actual data present, odepth -1 is looked at for the next iter
 	//Some(El(event))
@@ -215,14 +258,14 @@ abstract class AsyncParser(implicit xmlVersion : XmlVersion) extends CloseOnNeed
 
     if (d.isEmpty) {
       //println("fed empty")
-      IterV.Empty[EphemeralStream[PullType]]
+      Empty[EphemeralStream[PullType]]
     } else 
       if (isClosed || d.isEOF) {
 	if (d.isEOF) {
 	  //println("Data was eof")
 	  closeResource
 	}
-	IterV.EOF[EphemeralStream[PullType]]      
+	EOF[EphemeralStream[PullType]]      
       } else {
 	if (!feeder.needMoreInput) {
 	  error("The stream from the previous call to nextInput was not evaluated ")
@@ -235,73 +278,16 @@ abstract class AsyncParser(implicit xmlVersion : XmlVersion) extends CloseOnNeed
 
 	if (res.isEmpty) { // let the enumerator deal with it
 	  //println("empty after feeding")
-	  IterV.Empty[EphemeralStream[PullType]]
+	  Empty[EphemeralStream[PullType]]
 	} else // it may have empty after the call
-	  IterV.El[EphemeralStream[PullType]](res)
+	  El[EphemeralStream[PullType]](res)
 	
     }
   }
-
-  /**
-   * Provides a ResumableIter that converts DataChunks via a parser into a stream of PullTypes.  Returns Done when there are results from the pushed chunks.
-   *
-   * Calls AsyncParser parse
-   */  
-  def iteratee: ResumableIter[DataChunk, EphemeralStream[PullType]] =
-    AsyncParser.parse(this)
   
 }
 
 object AsyncParser {
-
-  /**
-   * Provides a ResumableIter that converts DataChunks via a parser into a stream of PullTypes.  Returns Done when there are results from the pushed chunks.
-   */
-  def parse(parser: AsyncParser): ResumableIter[DataChunk, EphemeralStream[PullType]] = {
-
-    def EOF: ResumableIter[DataChunk, EphemeralStream[PullType]] = {
-      parser.closeResource
-
-      //println("closing against EOF from parse")
-      Done((emptyEphemeralStream, 
-	  Cont(
-	    error("Called the continuation on a closed parser")
-	  )), IterV.EOF[DataChunk])
-    }
-
-    def emptyness : ResumableIter[DataChunk, EphemeralStream[PullType]] = Done((emptyEphemeralStream, Cont(step)), IterV.Empty[DataChunk])
-
-    def step(s: Input[DataChunk]): ResumableIter[DataChunk, EphemeralStream[PullType]] = 
-      s(el = e => {
-	  //println("Did get a large chunk "+e)
-	  val r = parser.nextInput(e)
-	  r( el = es => {
-		//println("got el with es " + es.isEmpty + " feeder " + parser.feeder.needMoreInput)
-	      Done((es,
-		    Cont(
-		      step
-		      )), IterV.Empty[DataChunk])
-	      },
-	      empty = {
-		//println("empty from input")
-		//emptyness
-		Cont(step)
-	      },
-	      eof = EOF
-	  )
-	},
-	empty = {
-	  //println("empty input")
-	  //emptyness
-	  //Done((EphemeralStream.empty, Cont(step)), IterV.Empty[DataChunk]) // nothing that can be done on empty
-	  Cont(step)
-	},
-	eof = EOF
-      )
-
-    Cont(step)
-  }
-
 
   /**
    * Creates a parser based on the input channel provided

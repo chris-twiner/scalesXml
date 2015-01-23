@@ -3,6 +3,9 @@ package scales.utils
 import scalaz.{IterV, Enumerator, Input, EphemeralStream}
 import scalaz.IterV._
 
+import scales.iterv._
+import ScalesIterV._
+
 import scales.utils.{resource => sresource}
 
 /**

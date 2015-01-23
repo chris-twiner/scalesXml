@@ -1,9 +1,8 @@
-package scales.utils.iteratee
+package scales.iterv
 
 import scalaz.{IterV, Enumerator, Input, EphemeralStream}
 import scalaz.IterV._
 
-import scales.utils.ScalesUtils
 import scales.utils.io
 
 /**
@@ -171,7 +170,7 @@ trait Iteratees {
    * combine with onDone to get through chunks of data.
    */
   def foldOnDone[E,A, ACC, F[_]]( it : F[E] )( initAcc : ACC, initResumable : ResumableIter[E,A] )( f : (ACC, A) => ACC )(implicit e : Enumerator[F] ) : ACC = {
-    import ScalesUtils._
+    import ScalesIterV._
 
     var currentI = initResumable(it).eval
     var isdone = isDone(currentI)
@@ -195,7 +194,7 @@ trait Iteratees {
   }
 
   class ResumableIterIterator[E,A,F[_]]( it : F[E])(init : ResumableIter[E,A])(implicit e : Enumerator[F]) extends Iterator[A] {
-    import ScalesUtils._
+    import ScalesIterV._
 
     var cur = init(it).eval
     var isdone = isDone(cur)

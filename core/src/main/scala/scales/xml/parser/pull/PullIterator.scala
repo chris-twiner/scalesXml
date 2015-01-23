@@ -133,9 +133,9 @@ trait XmlPull extends Iterator[PullType] with DocLike {
 
 object PullUtils {
 
-  private[xml] val dtdDummy = PI("onlyforme", "init")
-
   implicit val weAreInAParser : FromParser = IsFromParser
+
+  private[scales] val dtdDummy = PI("onlyforme", "init")
 
   def getMisc(c: PullType, in: String): Misc =
     c.fold[Misc](e => e match {

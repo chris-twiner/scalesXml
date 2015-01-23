@@ -24,7 +24,7 @@ object ScalesXmlRoot extends Build {
     // Override more to taste
   }
 
-  lazy val root = Project("scales-xml-root", file("."), settings = standardSettings ++ dontPublishSettings) aggregate(core, coreTests, jaxen, saxonTests, xercesTests, jaxenTests, aalto, aaltoTests)
+  lazy val root = Project("scales-xml-root", file("."), settings = standardSettings ++ dontPublishSettings) aggregate(core, coreTests, jaxen, saxonTests, xercesTests, jaxenTests, aalto, aaltoTests, iterV, iterVTests, aaltoIterv, aaltoIterVTests)
 
   lazy val core = Project("scales-xml", file("core"), settings = standardSettings ++ deployOrg)
 
@@ -34,13 +34,21 @@ object ScalesXmlRoot extends Build {
 
   lazy val xercesTests = Project("xerces-tests", file("xerces-tests"), settings = standardSettings ++ dontPublishSettings) dependsOn(coreTests % "test->test")
 
+  lazy val iterV = Project("scales-iterv", file("iterv"), settings = standardSettings ++ deployOrg) dependsOn(core)
+
+  lazy val iterVTests = Project("iterv-tests", file("iterv-tests"), settings = standardSettings ++ dontPublishSettings) dependsOn(iterV % "compile->test", coreTests % "test->test") //  % "compile->compile;test->test"
+
   lazy val jaxen = Project("scales-jaxen", file("jaxen"), settings = standardSettings ++ deployOrg) dependsOn(core)
 
   lazy val jaxenTests = Project("jaxen-tests", file("jaxen-tests"), settings = standardSettings ++ dontPublishSettings) dependsOn(jaxen % "compile->test", coreTests % "test->test") //  % "compile->compile;test->test"
 
   lazy val aalto = Project("scales-aalto", file("aalto"), settings = standardSettings ++ deployOrg) dependsOn(core)
 
+  lazy val aaltoIterv = Project("scales-aalto-iterv", file("aalto-iterv"), settings = standardSettings ++ deployOrg) dependsOn(aalto, iterV)
+
   lazy val aaltoTests = Project("aalto-tests", file("aalto-tests"), settings = standardSettings ++ dontPublishSettings) dependsOn(aalto % "compile->test", coreTests % "test->test")
+
+  lazy val aaltoIterVTests = Project("aalto-iterv-tests", file("aalto-iterv-tests"), settings = standardSettings ++ dontPublishSettings) dependsOn(aaltoIterv % "compile->test", aaltoTests % "test->test")
 
   /* project that sucks in the others like fullDocsAndSxr for the purpose of coverage tests
   lazy val coverageProject = {
@@ -110,7 +118,7 @@ object ScalesXmlRoot extends Build {
 */
 //    organization := "org.scalesxml",
     offline := true,
-    version := "0.6.0-M2",
+    version := "0.6.0-M3",
     scalaVersion := "2.11.4",
 //    scalaVersion := "2.10.0-M7",
     crossScalaVersions := Seq("2.9.3","2.11.4","2.10.4"),

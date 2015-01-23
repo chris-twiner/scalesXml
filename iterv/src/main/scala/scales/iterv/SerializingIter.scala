@@ -1,10 +1,12 @@
-package scales.xml.serializers
+package scales.iterv
 
 import scales.utils._
 
 import resources._
 
 import scales.xml._
+
+import serializers._
 
 import java.io.Writer
 

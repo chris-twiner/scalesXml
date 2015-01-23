@@ -194,7 +194,7 @@ object Presentation {
     pull.close // we haven't read it all
   }
 
-  def foldNames {
+/*  def foldNames {
     val pull = pullXml(resource(this, "/data/svnLogIteratorEg.xml"))
 
     // Who touched what file at what revision
@@ -229,7 +229,7 @@ object Presentation {
     
     allAuthorsAndFiles._2 take 2 foreach println
   }
-
+*/
   def main(args: Array[String]) {
     separation
     qNames
@@ -240,7 +240,7 @@ object Presentation {
     transformations
     directPullParsing
     iterateEg
-    println("foldNames")
-    foldNames
+  //  println("foldNames")
+  //  foldNames
   }
 }
