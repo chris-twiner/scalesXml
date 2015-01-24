@@ -26,7 +26,7 @@ As such the following imports are now required to obtain the same functionality:
     import scales.iterv._ // the IterV based iteratee functions and enhancements
     import ScalesIterV._ // the Eval implicit conversion and Iterator Enumerator
 
-    import scales.aalto.parser.pull._ // The aalto pull parsing parser (moved package)
+    import scales.aalto.parser.pull._ // The aalto pull parsing parser (moved package)
     import scales.aalto.parser.pull.iterv._ // The new package containing the AsyncParserIterV object
     // You can then use AsyncParserIterV.parse to provide a ResumableIter from an AsyncParser.
 
