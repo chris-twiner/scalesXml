@@ -228,7 +228,7 @@ class PullIterateTest extends junit.framework.TestCase {
     // we won't get past iterator...
     val ourMax = maxIterations / 10 // full takes too long but does work in constant space
 
-    val iter = eevents(ourMax).iterator
+    val iter = EphemeralStream.toIterable(eevents(ourMax)).iterator
 
     val QNames = List("root"l, "child"l, "interesting"l)
 

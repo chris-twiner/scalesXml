@@ -8,7 +8,7 @@ libraryDependencies ++= Seq(
 )
 
 libraryDependencies <++= scalaVersion{ v =>
-      Seq("org.scalaz" %% "scalaz-core" % "7.0.6")
+      Seq("org.scalaz" %% "scalaz-core" % "7.1.3")
 //      "org.scalaz" %% "scalaz-iteratee" % "7.0.6",
 }
 
