@@ -311,7 +311,7 @@ on both the qname matching (3 of them) and then the above combos
 
     try{
 
-      val iter = eevents(ourMax).iterator
+      val iter = EphemeralStream.toIterable(eevents(ourMax)).iterator
       at=0
       val QNames = List("root"l, "child"l, "interesting"l)
 

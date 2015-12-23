@@ -252,7 +252,7 @@ class ParsingPerformanceRecon extends SimpleScalaBenchmark {
   var s : String = _
 
   override def setUp() {
-    s = asString(PerfData.reconDoc(size).iterator)
+    s = asString(EphemeralStream.toIterable(PerfData.reconDoc(size)).iterator)
   }
   
   def loadXmlS[T <: OptimisationToken]( s : String, ostrategy : PathOptimisationStrategy[T]) = 
@@ -564,7 +564,7 @@ trait ReconTest extends RunTest {
   val size = 40000
 
   def prepare(args: Array[String]) {
-    p.s = asString(PerfData.reconDoc(size).iterator)
+    p.s = asString(EphemeralStream.toIterable(PerfData.reconDoc(size)).iterator)
   }
 }
 
