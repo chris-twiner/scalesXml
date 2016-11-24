@@ -2,17 +2,11 @@ package scales.xml
 
 class PullTest extends junit.framework.TestCase {
 
+  import ScalesXml._
   import junit.framework.Assert._
-  import java.io._
-
   import scales.utils._
   import io._
-  import ScalesUtils._
-  import ScalesXml._
-
   import resources._
-
-  import Functions._
 
   val Default = Namespace("urn:default")
   val DefaultRoot = Default("Default")
@@ -161,7 +155,45 @@ class PullTest extends junit.framework.TestCase {
     assertEquals(expectedHead, t)
 
     // sanity check
-    if (it.isTraversableAgain) assertTrue(!it.isEmpty)
+    if (it.isTraversableAgain) assertTrue(it.nonEmpty)
+
+    pull.close
+  }
+
+  def testIteratorForStrictSelectivePulling() = {
+    val expectedPlants = List(
+      ("English ivy","Hedera helix", "3", "Mostly Shady", "$9.99", "000100"),
+      ("Dwarf periwinkle","Vinca minor", "3", "Mostly Shady", "$12.10", "000409")
+    )
+
+    val pull = pullXml(
+      sresource(this, "/data/plant_catalog.xml"),
+      strictPath = List(
+        NoNamespaceQName("CATALOG"),
+        NoNamespaceQName("PLANT")
+      )
+    )
+    val PlantEntries = List("CATALOG"l, "PLANT"l)
+
+    val it = scales.xml.iterate(PlantEntries, pull.it)
+    val plantsIt = for {
+      entry: XmlPath <- it
+      common <- entry.\*("COMMON"l).one
+      botanical <- entry.\*("BOTANICAL"l).one
+      zone <- entry.\*("ZONE"l).one
+      light <- entry.\*("LIGHT"l).one
+      price <- entry.\*("PRICE"l).one
+      availability <- entry.\*("AVAILABILITY"l).one
+    } yield (value(common), value(botanical), value(zone), value(light), value(price), value(availability))
+
+    val plants = plantsIt.toList
+
+    assertEquals(expectedPlants.size, plants.size)
+    for ((plant, idx) <- plants.zipWithIndex)
+      assertEquals(expectedPlants(idx), plant)
+
+    // sanity check
+    if (it.isTraversableAgain) assertTrue(it.nonEmpty)
 
     pull.close
   }
