@@ -93,7 +93,7 @@ abstract class AsyncParser(implicit xmlVersion : XmlVersion) extends CloseOnNeed
    */
   protected def pumpMisc() : Input[PullType] = {
 
-    val (event, num, odepth, oprolog) = PullUtils.pumpEvent(parser, strategy, token, prolog, depth)(eventHandler)
+    val (event, num, odepth, oprolog, _) = PullUtils.pumpEvent(parser, strategy, token, prolog, depth)(eventHandler)
 
     depth = odepth
 
@@ -151,7 +151,7 @@ abstract class AsyncParser(implicit xmlVersion : XmlVersion) extends CloseOnNeed
       r
     } else {
       // 2nd > events
-      val (event, num, odepth, oprolog) = PullUtils.pumpEvent(parser, strategy, token, prolog, depth)(eventHandler)
+      val (event, num, odepth, oprolog, _) = PullUtils.pumpEvent(parser, strategy, token, prolog, depth)(eventHandler)
 
       depth = odepth
 
