@@ -10,7 +10,8 @@ It also provides a far more XPath like experience than the normal Scala XML, Pat
 
 A number of the pain points of Scala XML are also simply removed, want to change an attribute?  Just do it on the Element.  Want to match against a namespace, why not?? All name access is fully qualified.  Want to transform all children matching a condition via a Path, that works too.  If sorting the attributes on serializing is of interest to you, plugin a Serializer.
 
-A very flexible XML stream handling approach is based upon StAX and Iteratees (courtesy of Scalaz) which uses the same model as the tree based, no separate event hierarchy needed.  New in 0.5.0 is also support for asynchronous pull parsing - no more blocking on streams.
+A very flexible XML stream handling approach is based upon StAX and Iteratees (courtesy of Scalaz) which uses the same model as the tree based, no separate event hierarchy needed.
+  New in 0.5.0 is also support for asynchronous pull parsing - no more blocking on streams.
 
 The current stable 0.5.0 release [site](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.10/0.5.0/index.html) improves again on Scales's fast parsing and low memory usage (which, of course, are coupled) and adds optional trees to a number of other usability improvements.
 
@@ -42,7 +43,7 @@ Maven repos should therefore use org.scalesxml scales-xml_2.10 as the dependency
 
     resolvers += "Scales Repo" at "http://scala-scales.googlecode.com/svn/repo"
 
-[The 0.5.0 documentation site is here](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.10/0.5.0/index.html) and zip of the site documentation is available at [scales-xml.zip](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.10/0.5.0/org.scalesxml-scales-xml-0.5.0-site.zip).
+[The 0.5.0 documentation site is here](https://scalesxml.github.io/scales-xml_2.10/0.5.0/index.html) and zip of the site documentation is available at [scales-xml.zip](https://scalesxml.github.io/scales-xml_2.10/0.5.0/0.5.0/org.scalesxml-scales-xml-0.5.0-site.zip).
 
 _Warning_ local file based offline sites may not fully work in Chrome, use Firefox or IE as needed.
 
