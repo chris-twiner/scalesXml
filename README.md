@@ -13,7 +13,7 @@ A number of the pain points of Scala XML are also simply removed, want to change
 A very flexible XML stream handling approach is based upon StAX and Iteratees (courtesy of Scalaz) which uses the same model as the tree based, no separate event hierarchy needed.
   New in 0.5.0 is also support for asynchronous pull parsing - no more blocking on streams.
 
-The current stable 0.5.0 release [site](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.10/0.5.0/index.html) improves again on Scales's fast parsing and low memory usage (which, of course, are coupled) and adds optional trees to a number of other usability improvements.
+The current stable 0.5.0 release [site](https://scalesxml.github.io/scales-xml_2.10/0.5.0/index.html) improves again on Scales's fast parsing and low memory usage (which, of course, are coupled) and adds optional trees to a number of other usability improvements.
 
 The artifacts are now on Maven Central under the group org.scales.xml.
 
