@@ -231,6 +231,8 @@ object PullUtils {
               vpath = vpath.take(vpath.size - 1)
               None
             }
+          case XMLStreamConstants.END_DOCUMENT =>
+            Some(null)
           case _ =>
             None
         }
@@ -258,12 +260,12 @@ object PullUtils {
           val elemQName = PullUtils.getElemQName(parser, strategy, token)
           vpath = ipath :+ elemQName
           val validSubtree = vpath.take(strictPath.size).equals(strictPath)
-          if (idepth != StartDepth && !validSubtree) {
-            dropWhile()
-          } else {
+          if (idepth == StartDepth || validSubtree) {
             val attributes = PullUtils.getAttributes(parser, strategy, token)
             val namespaces = PullUtils.getNamespaces(parser, strategy, token)
             strategy.elem(elemQName, attributes, namespaces, token)
+          } else {
+            dropWhile()
           }
         }
       case XMLStreamConstants.END_ELEMENT => //2

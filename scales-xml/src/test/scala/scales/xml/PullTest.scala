@@ -1051,9 +1051,10 @@ try{
     )
 
     val pull = pullXml(
-      sresource(this, "/data/plant_catalog.xml"),
+      sresource(this, "/data/nature.xml"),
       strictPath = List(
         NoNamespaceQName("CATALOG"),
+        NoNamespaceQName("EUKARYOTE"),
         NoNamespaceQName("PLANT")
       )
     )
