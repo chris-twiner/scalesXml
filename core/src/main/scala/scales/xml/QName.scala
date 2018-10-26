@@ -1,10 +1,7 @@
 package scales.xml
 
-import scales.utils.error
 import scales.utils.{LeftLike, RightLike}
-
-import impl.QNameCharUtils._
-
+import scales.xml.impl.QNameCharUtils._
 import scales.xml.impl.{FromParser, NotFromParser}
 
 /**

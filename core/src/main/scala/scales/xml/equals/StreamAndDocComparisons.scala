@@ -1,15 +1,9 @@
 package scales.xml.equals
 
-import scales.xml.{QName, Elem, Attribs, Attributes, Attribute, XmlItem, Text, PI, CData, Comment, PullType, EndElem, Misc, Miscs, DocLike, impl}
-
-import impl.EqualsHelpers
-
-import XmlEquals._
-
-import scalaz._
-import Scalaz._
-
-import SomeDifference.noCalculation
+import scalaz.Equal
+import scales.xml.equals.SomeDifference.noCalculation
+import scales.xml.impl.EqualsHelpers
+import scales.xml.{DocLike, Elem, EndElem, Miscs, PullType, QName, XmlItem, impl}
 
 /**
  * This interface allows for non xml matching, for example a forward Iterator from a Text child.  This would be impossible to model as an xml document, but could be useful for comparison.
@@ -97,9 +91,6 @@ trait ExactStreamEquals extends StreamEquals {
 }
 
 object ExactStreamEquals extends ExactStreamEquals {
-  import QNameEquals._
-  import AttributeEquals._
-  import AttributesEquals._
 
   def defaultStreamComparison(implicit qnameTokenComparison : Option[(ComparisonContext, String, String) => Boolean]) : XmlComparison[StreamComparable[_]] = new StreamComparison()( ItemEquals.defaultXmlItemComparison, ElemEquals.defaultElemComparison(AttributesEquals.defaultAttributesComparison(AttributeEquals.defaultAttributeComparison(EqualsHelpers.qnameEqual, qnameTokenComparison)), EqualsHelpers.qnameEqual), EqualsHelpers.qnameEqual, qnameTokenComparison)
 
@@ -117,9 +108,6 @@ trait DefaultStreamEquals extends StreamEquals {
 
 object DefaultStreamEquals extends DefaultStreamEquals {
   import LogicalFilters.joinTextAndCData
-  import QNameEquals._
-  import AttributeEquals._
-  import AttributesEquals._
 
   def defaultStreamComparison(implicit qnameTokenComparison : Option[(ComparisonContext, String, String) => Boolean]) : XmlComparison[StreamComparable[_]] = new StreamComparison(joinTextAndCData _)( ItemEquals.defaultXmlItemComparison, ElemEquals.defaultElemComparison(AttributesEquals.defaultAttributesComparison(AttributeEquals.defaultAttributeComparison(EqualsHelpers.qnameEqual, qnameTokenComparison)), EqualsHelpers.qnameEqual), EqualsHelpers.qnameEqual, qnameTokenComparison)
 }

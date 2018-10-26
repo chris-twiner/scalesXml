@@ -1,6 +1,6 @@
 package scales.utils
 
-import impl.{LeftLikeProjection, RightLikeProjection, NonLeftP, NonRightP}
+import scales.utils.impl.{LeftLikeProjection, NonLeftP, NonRightP, RightLikeProjection}
 
 /**
  * Either is great, perfect for what is needed, except for the indirection and the added memory and cpu costs thereof.  If ScalesXml is meant to be used in the placesthat JAXP and friends would live it should perform the best it can.

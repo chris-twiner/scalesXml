@@ -1,26 +1,13 @@
 package scales.xml.parser.sax
 
-import org.xml.sax.Locator
 import org.xml.sax.ext.Locator2
-
 import scales.xml._
-import parser._
-import scales.xml.parser.strategies.{PathOptimisationStrategy, OptimisationToken}
-
-import scales.xml.impl.{NotFromParser, IsFromParser, FromParser}
-
-import impl.{NameCreators, TreeProxies}
+import scales.xml.impl.{FromParser, IsFromParser, NameCreators, TreeProxies}
+import scales.xml.parser.strategies.{OptimisationToken, PathOptimisationStrategy}
 
 class Handler[Token <: OptimisationToken](strategy : PathOptimisationStrategy[Token])(implicit val defaultVersion : XmlVersion) extends org.xml.sax.ext.DefaultHandler2 {
-  import scales.xml.ScalesXml.xmlCBF
-
-  import scales.utils.{noPath, top, ScalesUtils }
-  import scales.utils.collection.path.Path
-  import org.xml.sax._
-  import scala.collection.immutable.Stack
-  import ScalesUtils._
-
   import NameCreators._
+  import org.xml.sax._
   
   //    import ScalesXml.toQName // Note we aren't validating the names here anyway so we don't need to use the correct xml version, future version may double check perhaps?
 

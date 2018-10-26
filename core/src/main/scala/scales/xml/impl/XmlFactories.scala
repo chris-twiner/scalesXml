@@ -2,16 +2,14 @@ package scales.xml.impl
 
 import javax.xml.parsers._
 import javax.xml.stream._
-import javax.xml.validation._
 import javax.xml.transform._
-
+import javax.xml.validation._
 import org.xml.sax.XMLReader
 import org.xml.sax.helpers.XMLReaderFactory
-
 import scales.utils.resources._
+import scales.xml.asStreamSource
 import scales.xml.parser.sax._
 import scales.xml.trax.ScalesSource
-import scales.xml.asStreamSource
 
 /**
  * Most of the JAXP, STAX and DOM apis don't mention much about
@@ -34,7 +32,6 @@ trait XmlFactories {
     factory.loan{ 
       f => 
 
-      import javax.xml.transform.stream._
       import scales.xml.ScalesXml._
 
       if (!Versions.newSchemaShouldSerialize) 

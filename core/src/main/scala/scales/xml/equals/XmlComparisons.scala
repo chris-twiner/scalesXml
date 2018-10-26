@@ -1,16 +1,13 @@
 package scales.xml.equals
 
-import scales.xml.{QName, Elem, Attribs, Attributes, Attribute, XmlItem, Text, PI, CData, Comment, PullType, EndElem, Misc, Miscs, DocLike, impl}
-
-import impl.EqualsHelpers
-
-import XmlEquals._
-
+import scalaz.Equal
 import scalaz.Equal._
-import scalaz._
-import Scalaz._
-
-import SomeDifference.noCalculation
+import scalaz.syntax.equal._
+import scalaz.syntax.std.option._
+import scales.xml.equals.SomeDifference.noCalculation
+import scales.xml.equals.XmlEquals._
+import scales.xml.impl.EqualsHelpers
+import scales.xml.{Attribute, Attributes, CData, Comment, PI, QName, Text, XmlItem, impl}
 
 /**
  * Like Equals but also gives a path in addition to the fun reason

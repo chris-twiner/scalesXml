@@ -1,10 +1,8 @@
 package scales.xml.serializers
 
-import scales.xml._
-
-import scales.utils._
-
 import java.nio.charset.Charset
+
+import scales.xml._
 
 object SimpleSerializerFactory extends SerializerFactory {
   type ExactSerializer = SimpleSerializer

@@ -1,8 +1,7 @@
 package scales.xml.impl
 
-import scales.utils.collection.{array, ArraySet, ArraySetsFactory}
 import scales.utils.collection.array._
-
+import scales.utils.collection.{ArraySet, ArraySetsFactory}
 import scales.xml.Attribute
 
 object AttributeSetImplHelper {

@@ -1,8 +1,7 @@
 package scales.xml.impl
 
-import scales.xml.{QName, AttributeQName, UnprefixedQName, Namespace, NoNamespaceQName, XmlVersion}
-
 import scales.xml.parser.strategies.{MemoryOptimisationStrategy, OptimisationToken}
+import scales.xml.{AttributeQName, Namespace, NoNamespaceQName, QName, UnprefixedQName, XmlVersion}
 
 /**
  * Given an optimisation strategy create QNames for elements and attributes.
@@ -67,7 +66,7 @@ class StringToNSBuilder(local: String)(implicit ver : XmlVersion, fromParser: Fr
   /**
    * ns :: localname pimp.
    */ 
-  def ::( namespace : String ) = if ((namespace eq null) || namespace == "") error("Namespace should not be non empty or null") else UnprefixedQName(local, Namespace(namespace))
+  def ::( namespace : String ) = if ((namespace eq null) || namespace == "") sys.error("Namespace should not be non empty or null") else UnprefixedQName(local, Namespace(namespace))
 
   /**
    * When there are other implicits after the string conversion gold add an "l" for local only 

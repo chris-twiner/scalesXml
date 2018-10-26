@@ -1,12 +1,7 @@
 package scales.utils.collection
 
-import annotation.tailrec
-
+import scalaz.Equal
 import scales.utils.Equiv
-
-import scalaz._
-import Scalaz._
-
 import scales.utils.collection.array._
 
 /**

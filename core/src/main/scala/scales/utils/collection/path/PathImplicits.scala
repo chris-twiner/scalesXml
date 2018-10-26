@@ -1,14 +1,10 @@
 package scales.utils.collection.path
 
-import scala.collection.immutable.Stack
-import scala.collection.IndexedSeqLike
-import scala.collection.generic.CanBuildFrom
-
 import scales.utils.collection.Tree
-import scales.utils.{PathFoldR, FoldR, LeftLike, deepestLast}
+import scales.utils.{FoldR, LeftLike, PathFoldR}
 
-import scalaz._
-import Scalaz._
+import scala.collection.IndexedSeqLike
+
 
 /**
  * Provide & combinator to pass the result of one fold onto the other,

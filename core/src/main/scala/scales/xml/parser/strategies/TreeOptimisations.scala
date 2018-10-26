@@ -1,13 +1,9 @@
 package scales.xml.parser.strategies
 
+import scales.utils.collection.ImmutableArrayProxy.one
+import scales.utils.collection.{ImmutableArrayProxy, Tree}
 import scales.xml._
-import scales.utils.collection.{Tree, ImmutableArrayProxy}
-
-import scales.xml.impl.{NotFromParser, IsFromParser, FromParser}
-
-import ImmutableArrayProxy.one
-
-import impl.TreeProxies
+import scales.xml.impl.{FromParser, IsFromParser, NotFromParser, TreeProxies}
 
 /**
  * Allows replacing a tree for memory optimisations
@@ -17,7 +13,6 @@ trait TreeOptimisation[TOKEN <: OptimisationToken] extends PathOptimisationStrat
   def newTree( elem : Elem, children : XmlChildren, token : TOKEN ) : XmlTree
 
   final override def elementEnd( xml : TreeProxies, token : TOKEN ) {
-    import ScalesXml.xmlCBF
 
     val l = xml.current
     val nt = newTree(l.elem, l.builder.result, token)

@@ -1,24 +1,10 @@
 package scales.xml.impl
 
-import scala.collection.immutable.Map
-
-import scala.collection.generic.CanBuildFrom
-
 //import scales.utils.collection.path.{Path, Node, Position}
-import scales.utils.{TreeCBF, subtree, item, top, ItemOrTree, noPath => fno, EitherLike, LeftLike}
-import scales.utils.collection.{ListSet, Tree, ImmutableArrayProxy, ImmutableArrayProxyBuilder }
-import scales.utils.collection.path.{ Path, Position, Node }
-
-import scales.xml.{NoNamespaceQName, PrefixedQName, AttributeQName, Attribute, XmlTree, Doc, XmlVersion, XmlCBF, XmlPath, Elem, XCC, XmlItem, QName}
-
-import scalaz._
-import Scalaz._
-
-import java.nio.charset.Charset
+import scales.utils.collection.path.Position
+import scales.xml.{Attribute, AttributeQName, Doc, Elem, NoNamespaceQName, PrefixedQName, QName, XCC, XmlCBF, XmlItem, XmlPath, XmlTree, XmlVersion}
 
 trait XmlTypesImplicits {
-
-  import EqualsHelpers.aqnameEqual
 
   implicit def toAttrQNameN(nons: NoNamespaceQName): AttributeQName = nons
 
@@ -42,8 +28,6 @@ trait XmlTypesImplicits {
    * Converts AQN -> String into an attribute
    */ 
   implicit def aqpairToAttribute(pair : (AttributeQName, String)) = Attribute(pair._1, pair._2)
-
-  import scales.utils._
 
   /**
    * Provided for those who don't care about the rest

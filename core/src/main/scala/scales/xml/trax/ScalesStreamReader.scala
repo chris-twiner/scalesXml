@@ -1,14 +1,9 @@
 package scales.xml.trax
 
-import scales.xml._
-
-import javax.xml.transform.stream._
+import javax.xml.namespace.{NamespaceContext, QName => JQName}
 import javax.xml.stream._
-
-import javax.xml.namespace.{QName => JQName, NamespaceContext}
-
-
-import ScalesXml._
+import scales.xml.ScalesXml._
+import scales.xml._
 
 /**
  * The trax support, the stream reader in particular

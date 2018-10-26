@@ -1,15 +1,14 @@
 package scales.xml.impl
 
+import scalaz.Equal
 import scalaz.Equal._
-import scalaz._
-import Scalaz._
 
 /**
  * Needed to help with cyclic issues in multi threaded MODULE$ access, after startup no problem, but we can't gaurantee that.
  */ 
 object EqualsHelpers extends scales.xml.equals.DefaultQNameEquals {
   
-  import scales.xml.{Attribute, QName, AttributeQName}
+  import scales.xml.{Attribute, AttributeQName, QName}
   
   // only used for default attribute comparisoms in Attributes
   implicit val aqnameEqual: Equal[Attribute] = equal { (a: Attribute, b: Attribute) => a.name =:= b.name }

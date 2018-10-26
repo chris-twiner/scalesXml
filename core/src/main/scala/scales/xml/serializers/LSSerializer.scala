@@ -1,16 +1,11 @@
 package scales.xml.serializers
 
-import java.io.Writer
-
 import java.nio.charset.Charset
 
-import scales.xml._
-import impl._
-
-import scales.utils._
-import resources._
-
 import javax.xml.parsers._
+import scales.utils._
+import scales.xml._
+import scales.xml.impl._
 
 /**
  * Base implementation for a correct serializer using LSSerializer to provide escape character references.
@@ -130,6 +125,7 @@ object LSSerializerFactory extends LSSerializerConcurrentCacheFactory {
 
 trait LSSerializerConcurrentCacheFactory extends LSSerializerFactoryBase {
   import java.util.concurrent.ConcurrentHashMap
+
   import scales.utils.collection.Once
 
   /**
@@ -232,7 +228,6 @@ trait LSSerializer extends Serializer {
   import javax.xml.parsers._
   import org.w3c.dom._
   import ls._
-  import java.util.concurrent.ConcurrentHashMap
 
   val data: SerializerData
   import data._

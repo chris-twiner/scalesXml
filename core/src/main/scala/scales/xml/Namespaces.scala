@@ -1,9 +1,7 @@
 package scales.xml
 
 import scales.utils.error
-import scales.utils.{LeftLike, RightLike}
-
-import scales.xml.impl.{FromParser, NotFromParser, IsFromParser}
+import scales.xml.impl.{FromParser, NotFromParser}
 
 /**
  * Scales supports many aspects of Xml10 and Xml11, verification of serialization and values takes place with the XmlVersion ADT. 
@@ -18,7 +16,7 @@ case object Xml10 extends XmlVersion {
   val version = "1.0"
 }
 
-import impl.QNameCharUtils._
+import scales.xml.impl.QNameCharUtils._
 
 /**
  * Seperate the notion of a normal Namespace and that of the "empty namespace" - no default namespace

@@ -1,19 +1,16 @@
 package scales.xml.trax
 
 import javax.xml.transform.Source
-import javax.xml.transform.stax._
 import javax.xml.transform.sax._
-
-import scales.utils._
+import javax.xml.transform.stax._
 
 //import ScalesXml._
 
-import scales.xml.parser.sax.Handler
-import scales.xml.parser.strategies.{PathOptimisationStrategy, OptimisationToken}
-
-import scales.xml.{Doc, DocLike, EmptyDoc, PullType, XmlTree, streamOr, convertToStream, asString, ScalesXml}
 import scales.xml.impl.Versions
+import scales.xml.parser.sax.Handler
+import scales.xml.parser.strategies.{OptimisationToken, PathOptimisationStrategy}
 import scales.xml.serializers.SerializeableXml
+import scales.xml.{Doc, DocLike, EmptyDoc, PullType, ScalesXml, XmlTree, asString, convertToStream, streamOr}
 
 /**
  * A TrAX Result

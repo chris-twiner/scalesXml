@@ -1,6 +1,6 @@
 package scales.xml.impl
 
-import scales.xml.{AttributeQName, Attribute, XmlPath}
+import scales.xml.{Attribute, AttributeQName, XmlPath}
 
 /**
  * exists only to provide Jaxen and JXPath with a document "root"

@@ -1,11 +1,7 @@
 package scales.xml.parser.strategies
 
-import scales.utils._
 import scales.xml._
-
-import scales.xml.impl.{NotFromParser, FromParser}
-
-import scales.xml.impl.TreeProxies
+import scales.xml.impl.{FromParser, TreeProxies}
 
 trait OptimisingStrategiesImplicits {
 

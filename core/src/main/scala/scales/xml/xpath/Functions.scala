@@ -1,12 +1,9 @@
 package scales.xml.xpath
 
-import scales.xml._
-import impl.EqualsHelpers
-
-import impl.IsFromParser
-import dsl.DslBuilder
-
 import scales.utils._
+import scales.xml._
+import scales.xml.dsl.DslBuilder
+import scales.xml.impl.{EqualsHelpers, IsFromParser}
 
 /**
  * Type class representing Xml objects which provide qnames.  Most of the

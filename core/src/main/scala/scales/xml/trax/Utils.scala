@@ -1,17 +1,9 @@
 package scales.xml.trax
 
-import scales.xml._
-
+import javax.xml.namespace.NamespaceContext
 import javax.xml.stream._
-import scales.utils._
-import ScalesXml._
-
-import javax.xml.namespace.{QName => JQName, NamespaceContext}
-
-import javax.xml.transform.Source
-import javax.xml.transform.stax._
-import javax.xml.transform.sax._
-import javax.xml.transform.stream._
+import scales.xml.ScalesXml._
+import scales.xml._
 
 object EmptyStreamLocation extends Location {
   val getCharacterOffset : Int = -1

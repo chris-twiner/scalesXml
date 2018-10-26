@@ -1,10 +1,10 @@
 package scales.utils.collection
 
-import collection.{IndexedSeqOptimized, IndexedSeqLike, IndexedSeq}
-import collection.mutable.Builder
-import collection.generic.{CanBuildFrom, GenericTraversableTemplate, SeqFactory, GenericCompanion}
-
 import scales.utils.collection.array._
+
+import scala.collection.generic.{CanBuildFrom, GenericCompanion, GenericTraversableTemplate, SeqFactory}
+import scala.collection.mutable.Builder
+import scala.collection.{IndexedSeq, IndexedSeqOptimized}
 
 object ImmutableArrayProxyBuilder {
   final val vectorAfter = 31
@@ -72,7 +72,7 @@ case class ImmutableArrayProxyBuilder[ A ]() extends Builder[A, ImmutableArrayPr
     if (inVector) VectorImpl(vectorBuilder.result)
     else { // do it here as this is the correct type
       val buf = arrayBuilder.buf
-      import scala.annotation.switch	
+      import scala.annotation.switch
 
       (length : @switch) match {
 	case 0 =>

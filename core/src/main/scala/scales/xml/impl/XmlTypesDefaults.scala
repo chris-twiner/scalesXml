@@ -2,21 +2,11 @@ package scales.xml.impl
 
 import scala.collection.immutable.Map
 
-import scala.collection.generic.CanBuildFrom
-
 //import scales.utils.collection.path.{Path, Node, Position}
-import scales.utils.{TreeCBF, subtree, item, top, 
-		     ItemOrTree, noPath => fno, 
-		     EitherLike, LeftLike}
-
-import scales.utils.collection.{ListSet, Tree, 
-				ImmutableArrayProxy, ImmutableArrayProxyBuilder }
-import scales.utils.collection.path.{ Path, Position, Node }
-
-import scales.xml.{XmlItem, Elem, Comment, 
-		   PI, QName, PrefixedQName, 
-		   NoNamespaceQName, Attribute,
-		   ScalesXml}
+import scales.utils.collection.path.{Node, Path}
+import scales.utils.collection.{ImmutableArrayProxy, ImmutableArrayProxyBuilder, Tree}
+import scales.utils.{EitherLike, ItemOrTree, TreeCBF, item, subtree, top, noPath => fno}
+import scales.xml.{Attribute, Comment, Elem, NoNamespaceQName, PI, PrefixedQName, QName, ScalesXml, XmlItem}
 
 trait XmlTypes {
 
@@ -101,7 +91,6 @@ trait XmlTypes {
    * What is returned is either a Seq of attribute values or a simple boolean
    */
   def ElemMatcher(name: QName, attributes: AttributeQName*) = new {
-    import ExtraTypesImplicits._
 
     def matchAttribs(elem: Elem) = for (attribute <- attributes; matches <- elem.attributes(attribute)) yield matches
 

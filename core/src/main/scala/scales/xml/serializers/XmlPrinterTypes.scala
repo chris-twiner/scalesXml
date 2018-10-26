@@ -1,14 +1,11 @@
 package scales.xml.serializers
 
-import scales.utils._
+import java.io.Writer
+import java.nio.charset.Charset
 
 import scales.xml.{DocLike, QName, XmlVersion}
 
-import scala.collection.immutable.{ Stack, Map }
-
-import java.io.Writer
-
-import java.nio.charset.Charset
+import scala.collection.immutable.{Map, Stack}
 
 /**
  * Type class for choosing a serializing algo

@@ -1,13 +1,13 @@
 package scales.xml.parser.sax
 
-import org.xml.sax.{InputSource, XMLReader}
-import javax.xml.parsers.SAXParser
-import scales.utils._
-import scales.utils.resources._
 import java.io._
+
+import javax.xml.parsers.SAXParser
+import org.xml.sax.{InputSource, XMLReader}
+import scales.utils.resources._
 import scales.xml._
-import parser.strategies._
 import scales.xml.impl._
+import scales.xml.parser.strategies._
 
 trait XmlParserImplicits {
   implicit def streamToSource( source : InputStream ) = new org.xml.sax.InputSource(source)

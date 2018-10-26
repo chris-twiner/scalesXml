@@ -1,18 +1,12 @@
 package scales.xml
 
-import scala.collection.immutable.Map
-
-import scala.collection.generic.CanBuildFrom
-
-import scalaz._
-import Scalaz._
-
-import scales.utils.{EitherLike, LeftLike}
-import scales.utils.collection.{ListSet, Tree}
-
 import java.nio.charset.Charset
 
-import scales.xml.impl.{FromParser, IsFromParser, NotFromParser, EqualsHelpers}
+import scales.utils.LeftLike
+import scales.utils.collection.Tree
+import scales.xml.impl.{FromParser, IsFromParser, NotFromParser}
+
+import scala.collection.immutable.Map
 
 /**
  * Attributes can only work with either a prefixed qname or an empty ns name
@@ -44,9 +38,7 @@ sealed trait XmlEvent
  *
  */
 
-import ScalesXml._
-import xml._
-
+import scales.xml.ScalesXml._
 import scales.xml.impl.DefaultHashes._
 
 sealed trait Elem extends XmlEvent {
@@ -340,7 +332,6 @@ case class EndElem(name: QName, namespaces: Map[String, String] = Map[String, St
  */ 
 object Attribs {
   def apply( attribs : Attribute * ) : Attributes = {
-    import EqualsHelpers._
     //ListSet[Attribute](attribs :_*)
     emptyAttributes ++ attribs
   }

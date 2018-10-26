@@ -1,9 +1,9 @@
 package scales.utils.collection.path
 
-import scala.collection.IndexedSeqLike
-
 import scales.utils.collection.Tree
-import scales.utils.{PathFoldR, FoldR, LeftLike, deepestLast}
+import scales.utils.{LeftLike, deepestLast}
+
+import scala.collection.IndexedSeqLike
 
 /**
  * Provides an Iterator from a given initial path that traverses the entire tree, allows both forwards and backwards iteration.
@@ -70,7 +70,7 @@ trait AbstractPathIterator[Item <: LeftLike[Item, Tree[Item, Section, CC]], Sect
 
   case object End extends State {
     override def hasNext = false
-    def next = error("Can't go past the root")
+    def next = sys.error("Can't go past the root")
   }
 
   def end : T

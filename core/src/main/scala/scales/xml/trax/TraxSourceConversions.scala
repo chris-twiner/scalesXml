@@ -1,14 +1,9 @@
 package scales.xml.trax
 
-import scales.xml._
-
-import javax.xml.transform.stream._
-import javax.xml.transform.Source
-import javax.xml.stream._
-
-import scales.utils.{top}
 import scales.utils.collection.path.AbstractPathIterator
-import ScalesXml._
+import scales.utils.top
+import scales.xml.ScalesXml._
+import scales.xml._
 
 class TreeIterable( tree : XmlTree ) extends AbstractPathIterator[XmlItem, Elem, XCC, PullType] {
   lazy val initialPath = top(tree)

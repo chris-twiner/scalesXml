@@ -1,20 +1,9 @@
 package scales.xml.dsl
 
-import scales.xml.{
-  XmlTree, Elem, 
-  XCC, XmlItem, 
-  QName, ScalesXml,
-  Attribute, emptyChildren,
-  ItemOrElem, XPath,
-  XmlPath, Text, raw
-  }
-
 import scales.utils.collection.path._
-import scales.utils.{AsBoolean, subtree, foldPositions, booleanMatcher, booleanAndTMatcher, top, item}
-
-import ScalesXml.xmlCBF
-
-import ScalesXml.fromParserDefault // note cannot be in parser here
+import scales.utils.{foldPositions, item, subtree, top}
+import scales.xml.ScalesXml.{fromParserDefault, xmlCBF}
+import scales.xml.{Attribute, Elem, ItemOrElem, QName, ScalesXml, Text, XCC, XPath, XmlItem, XmlPath, XmlTree, emptyChildren, raw} // note cannot be in parser here
 
 /**
  * Entry point to creating DslBuilders, can be used without the implicit helpers

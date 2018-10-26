@@ -2,9 +2,8 @@ package scales.utils.collection.array
 
 import scales.utils.collection.{ImmutableArrayProxy, ImmutableArrayProxyBuilder}
 
-import collection.{IndexedSeqOptimized, IndexedSeqLike, IndexedSeq}
-import collection.mutable.Builder
-import collection.generic.{CanBuildFrom, GenericTraversableTemplate, SeqFactory, GenericCompanion}
+import scala.collection.generic.CanBuildFrom
+import scala.collection.mutable.Builder
 
 object ImmutableArray {
   val emptyImmutableArray = new ImmutableArray[Nothing](Array[AnyRef](),0,0)
@@ -79,7 +78,7 @@ final class ImmutableArrayBuilder[ A ](private[this] var _buf : Array[AnyRef] = 
 case class IAEmpty[ +A ]() extends ImmutableArrayProxy[A] {
   def length = 0
 
-  def apply(idx : Int) = error("Can't return an item, as we are empty")
+  def apply(idx : Int) = sys.error("Can't return an item, as we are empty")
 
   def ar = this  
 
