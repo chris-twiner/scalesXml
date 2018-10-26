@@ -1,9 +1,9 @@
 package scales.utils.collection
 
+import scales.utils.{EitherLike, LeftLike, RightLike}
+
 import scala.collection.IndexedSeqLike
 import scala.collection.generic.CanBuildFrom
-
-import scales.utils.{LeftLike, RightLike, EitherLike}
 
 trait Trees {
 
@@ -19,7 +19,7 @@ trait Trees {
 
 }
 
-import scales.utils.{ItemOrTree, ItemOrSectionWalk}
+import scales.utils.{ItemOrSectionWalk, ItemOrTree}
 
 /**
  * IF hasChildren then isStart indicates that this particular occurence

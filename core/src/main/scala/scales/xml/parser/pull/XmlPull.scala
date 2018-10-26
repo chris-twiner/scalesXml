@@ -1,26 +1,11 @@
 package scales.xml.parser.pull
 
 import javax.xml.stream._
-import scales.utils.io.{ProxiedCloseOnNeedReader, ProxiedCloseOnNeedInputStream}
+import scales.utils.io.{ProxiedCloseOnNeedInputStream, ProxiedCloseOnNeedReader}
 import scales.utils.resources.{CloseOnNeed, IsClosed, Pool}
-
-import scales.xml.impl
-import impl.{FromParser, IsFromParser}
-
-import scales.xml.{
-  ScalesXml,
-  defaultOptimisation,
-  defaultPathOptimisation,
-  Doc,
-  XmlItem,
-  Elem, EndElem,
-  Xml10,
-  XmlEvent
-  }
-
-import scales.xml.parser.strategies.{MemoryOptimisationStrategy, PathOptimisationStrategy, OptimisationToken}
-
-import java.io._
+import scales.xml.impl.{FromParser, IsFromParser}
+import scales.xml.parser.strategies.{MemoryOptimisationStrategy, OptimisationToken, PathOptimisationStrategy}
+import scales.xml.{Doc, Elem, EndElem, ScalesXml, Xml10, XmlEvent, XmlItem, defaultOptimisation, defaultPathOptimisation, impl}
 
 /**
  * We should give the stax what it needs to work best, especially with encoding issues, converting streams to readers etc is teh suxor
@@ -44,7 +29,7 @@ case class ByteSourceUser(stream : ProxiedCloseOnNeedInputStream) extends Source
  *
  * scala.xml.pull uses a thread based on stax approach to push/pull events.
  *
- * This code uses stax only, extra iteratee goodness will appear curtousy of scalaz....
+ * This code uses stax only, extra iteratee goodness will appear curtousy of scalaz6....
  *
  */
 trait XmlPulls {

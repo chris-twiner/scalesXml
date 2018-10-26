@@ -2,32 +2,10 @@ package scales.xml.parser.pull
 
 import javax.xml.stream._
 import scales.utils._
-import scales.xml.parser._
-
-import strategies.{MemoryOptimisationStrategy, OptimisationToken}
-
 import scales.xml.impl.{FromParser, IsFromParser}
-
-import scales.xml.{
-  PullType,
-  CData,
-  Comment,
-  Elem,
-  PI,
-  Text,
-  EndElem,
-  Misc,
-  Attributes,
-  ScalesXml,
-  Prolog,
-  EndMisc,
-  DTD,
-  Declaration,
-  AttributeQName,
-  DocLike,
-  Xml11, Xml10,
-  emptyAttributes
-  }
+import scales.xml.parser._
+import scales.xml.parser.strategies.{MemoryOptimisationStrategy, OptimisationToken}
+import scales.xml.{AttributeQName, Attributes, CData, Comment, DTD, Declaration, DocLike, EndElem, EndMisc, Misc, PI, Prolog, PullType, Text, Xml10, Xml11}
 
 /**
  * Basis for xmlpulls, an Iterator[PullType]
@@ -37,8 +15,6 @@ trait XmlPull extends Iterator[PullType] with DocLike {
   type Token <: OptimisationToken
 
   implicit val weAreInAParser : FromParser = IsFromParser
-
-  import ScalesXml.defaultVersion
 
   protected[xml] val parser: XMLStreamReader
   protected[xml] val resourceCloser: () => Unit
@@ -146,7 +122,6 @@ object PullUtils {
   // it must be a left and a comment or pi
 
   def getAttributes[Token <: OptimisationToken]( parser: XMLStreamReader, strategy : MemoryOptimisationStrategy[Token], token : Token ): Attributes = {
-    import ScalesXml.toQName
 
     val count = parser.getAttributeCount()
 

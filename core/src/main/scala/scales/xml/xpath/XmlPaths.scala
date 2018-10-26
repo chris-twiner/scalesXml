@@ -1,10 +1,10 @@
 package scales.xml.xpath
 
-import scales.utils.{collection, one, toPositionalEqual, sortT, sort, comparePathsDirect}
-import collection.DuplicateFilter
-import scala.collection.generic.CanBuildFrom
+import scales.utils.collection.DuplicateFilter
+import scales.utils.{collection, comparePathsDirect, one, sort, sortT, toPositionalEqual}
+import scales.xml.{Attribute, Attributes, CData, Elem, ScalesXml, Text, XCC, XmlItem, XmlPath}
 
-import scales.xml.{Elem, Attributes, Attribute, XCC, XmlItem, XmlPath, ScalesXml, Text, CData}
+import scala.collection.generic.CanBuildFrom
 
 object PositionalEquals {
 

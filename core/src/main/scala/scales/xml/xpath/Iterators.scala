@@ -1,7 +1,7 @@
 package scales.xml.xpath
 
 import scales.utils._
-import collection.path.DirectionIterator
+import scales.utils.collection.path.DirectionIterator
 import scales.xml._
 
 /**

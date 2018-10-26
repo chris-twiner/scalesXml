@@ -1,20 +1,14 @@
 package scales.xml.serializers
 
-import scales.xml.impl.NamespaceDefaults
-
-import scales.xml.{EmptyDoc, XmlItem, DocLike,
-		 Misc, XmlVersion, Declaration,
-		 XmlPull, ScalesXml, Elem}
+import java.io.Writer
+import java.nio.charset.Charset
 
 import scales.utils._
+import scales.utils.resources._
+import scales.xml.impl.NamespaceDefaults
+import scales.xml.{Declaration, DocLike, Elem, EmptyDoc, Misc, ScalesXml, XmlItem, XmlPull, XmlVersion}
 
-import scala.collection.immutable.{ Stack, Map }
-
-import resources._
-
-import java.io.Writer
-
-import java.nio.charset.Charset
+import scala.collection.immutable.Map
 
 trait XmlPrinterImplicits {
 

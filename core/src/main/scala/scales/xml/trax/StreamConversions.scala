@@ -1,10 +1,7 @@
 package scales.xml.trax
 
-import scales.utils._
-
+import scales.xml.dsl.DslBuilder
 import scales.xml.{PullType, XmlTree, dsl}
-
-import dsl.DslBuilder
 
 /**
  * All safe conversions from T to Iterator[PullType].

@@ -1,6 +1,6 @@
 package scales.xml
 
-import ScalesXml.{xmlCBF, fromParserDefault} // note cannot be in parser here
+import scales.xml.ScalesXml.fromParserDefault // note cannot be in parser here
 
 /**
  * Creates DslBuilder instances

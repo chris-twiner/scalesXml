@@ -1,7 +1,7 @@
 package scales.xml.impl
 
-import scales.xml._
 import scales.utils.collection.Tree
+import scales.xml._
 
 // XmlBuilder, XmlChildren
 final class TreeProxy( private[this] var _elem : Elem, private[this] val _builder : XmlBuilder){
@@ -14,15 +14,12 @@ final class TreeProxy( private[this] var _elem : Elem, private[this] val _builde
   @inline def builder = _builder
 }
 
-import scala.collection.mutable.ArrayBuffer
-
 /**
  * Mutable list that keeps the item creation to a minimum, no extra garbage here until the parse is done...
  *
  * NOTE this is effectively an internal structure, but is provided for user land performance tweaks
  */ 
 class TreeProxies( ){
-  import ScalesXml.xmlCBF
 
   // special case root tree
   var rootTree : XmlTree = _

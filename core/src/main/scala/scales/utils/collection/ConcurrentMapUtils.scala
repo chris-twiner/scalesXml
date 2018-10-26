@@ -1,7 +1,6 @@
 package scales.utils.collection
 
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.{ConcurrentHashMap, ConcurrentLinkedQueue}
 
 /**
  * Only created once and via calcOnce

@@ -1,12 +1,6 @@
 package scales.utils.collection.array
 
-import annotation.tailrec
-
 import scales.utils.Equiv
-
-import scalaz._
-import Scalaz._
-
 import scales.utils.collection.{ArraySet, ArraySetsFactory}
 
 trait EmptyArraySet[A] extends ArraySet[A] with ArraySetsFactory[A] {

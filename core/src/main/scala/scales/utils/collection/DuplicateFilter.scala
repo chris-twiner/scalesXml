@@ -1,7 +1,6 @@
 package scales.utils.collection
 
-import scalaz._
-import Scalaz._
+import scalaz.Equal
 
 /**
  * Remove neighbouring duplicates based on a given predicate (defaults to _ eq _).

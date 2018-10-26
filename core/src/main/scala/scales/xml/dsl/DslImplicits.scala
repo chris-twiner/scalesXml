@@ -1,21 +1,9 @@
 package scales.xml.dsl
 
-import scales.utils.collection.path._
-import scales.utils.{AsBoolean, subtree, foldPositions, booleanMatcher, booleanAndTMatcher, top, item}
-
-import scales.xml.{
-  NoNamespaceQName, PrefixedQName, AttributeQName, 
-  Attribute, XmlTree, Doc, XmlVersion, XmlCBF, 
-  XmlPath, Elem, XCC, XmlItem, QName, ItemOrElem,
-  ScalesXml, Text, Namespace, <, ?<}
-
-import ScalesXml.xmlCBF
-
-import ScalesXml.fromParserDefault // note cannot be in parser here
+import scales.xml.{<, ?<, Attribute, AttributeQName, Elem, ItemOrElem, Namespace, PrefixedQName, QName, Text, XmlTree} // note cannot be in parser here
 
 
 trait DslImplicits {
-  import ScalesXml._
   implicit def fromElemToBuilder(elem : Elem) = <(elem)
   implicit def fromQNamePairToAttribute(pair : (PrefixedQName, String)) = Attribute(pair._1, pair._2)
 

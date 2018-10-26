@@ -1,7 +1,8 @@
 package scales.utils.io
 
-import scales.utils.resources._
 import java.nio.ByteBuffer
+
+import scales.utils.resources._
 
 /**
  * ByteBuffer.allocate(bufferSize) backed pool

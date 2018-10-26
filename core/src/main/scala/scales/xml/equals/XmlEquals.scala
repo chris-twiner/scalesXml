@@ -1,21 +1,14 @@
 package scales.xml.equals
 
-import scales.xml.{PullType, QName, Elem, Attribs, Attributes, Attribute, XmlItem, XmlPath, EndElem, XCC, Misc, Miscs}
+import scales.xml.{Elem, EndElem, PullType, QName, XCC, XmlItem, XmlPath}
 
-import scales.xml.serializers.NamespaceContext
-
-import scala.collection.immutable.{ Stack, Map }
-
-import scalaz._
-import Scalaz._
+import scala.collection.immutable.Map
 
 object BasicPaths {
   // {ns}Local -> count
   type BasicPathA = (QName, Map[String, Int])
   type BasicPath = List[BasicPathA] 
 }
-
-import BasicPaths._
 
 /**
  * Base functions for equality
@@ -73,8 +66,6 @@ trait XmlEquals {
  */ 
 object XmlEquals extends XmlEquals {
 }
-
-import XmlEquals._
 
 /**
  * All default exact Xml Equal and XmlComparison trait instances.
@@ -145,7 +136,7 @@ trait TheyReallyAreIterators {
  * NOTE: The results are only usable with compare / ===, and should not be used to serialize
  */
 trait StreamComparableImplicits extends TheyReallyAreIterators {
-  import scales.xml.{CloseablePull, XmlPull, DocLike, Doc, XmlTree}
+  import scales.xml.{CloseablePull, Doc, DocLike, XmlPull, XmlTree}
 
   implicit val itrPlusDocAsAnIterator = (x : (Iterator[PullType], DocLike)) => x._1 : Iterator[PullType]
 

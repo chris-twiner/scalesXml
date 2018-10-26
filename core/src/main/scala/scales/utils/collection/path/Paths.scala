@@ -1,11 +1,12 @@
 package scales.utils.collection.path
 
-import scala.collection.immutable.Stack
+import scales.utils.collection.Tree
+import scales.utils.{EitherLike, ItemOrTree, LeftLike, RightLike, collection, subtree}
+
 import scala.collection.IndexedSeqLike
 import scala.collection.generic.CanBuildFrom
-
-import scales.utils.{LeftLike, RightLike, EitherLike, ItemOrTree, collection, subtree}
-import collection.Tree
+import scala.collection.immutable.Stack
+import scala.sys.error
 
 /**
  * Represents the Top for a given Path, there isn't a tree above this

@@ -1,10 +1,8 @@
 package scales.xml.serializers
 
-import scales.xml._
-
-import dsl.DslBuilder
-
 import scales.utils._
+import scales.xml._
+import scales.xml.dsl.DslBuilder
 
 /**
  * Status of stream processing
@@ -31,8 +29,7 @@ object StreamSerializer {
    */ 
   def pump(event: (PullType, PullType), status : StreamStatus, serializer: Serializer) : StreamStatus = {
     // shadow it
-    import status.output.{serializerF => defaultSerializerFactory}
-    import status.{output, isEmpty}
+    import status.{isEmpty, output}
 
     if (status.thrown.isDefined) status
     else {
@@ -73,7 +70,7 @@ object StreamSerializer {
  * Provides a base class for steam handling
  */ 
 class StreamSerializer[T](toP : T => Iterator[PullType]) extends SerializeableXml[T] {
-  import StreamSerializer._ 
+  import StreamSerializer._
   
   /**
    * Override to provide an actual doc
@@ -81,7 +78,6 @@ class StreamSerializer[T](toP : T => Iterator[PullType]) extends SerializeableXm
   def doc(it: T) : DocLike = EmptyDoc()
   def apply(itT: T)(out: XmlOutput, serializer: Serializer): (XmlOutput, Option[Throwable]) = {
     // 2.10 forces implicits at copy use site NOT at declaration site
-    import out.serializerF
 
     val it = toP(itT)
     // left of the sequence is our actual, 

@@ -1,12 +1,9 @@
 package scales.xml.xpath
 
-import scales.utils._
-import scala.collection.generic.CanBuildFrom
 import scales.utils.one
+import scales.xml.{Attribute, AttributeQName, ScalesXml, UnprefixedQName, XmlPath, text}
 
-import scales.xml.{Elem, Attributes, Attribute, XCC, XmlItem, XmlPath, AttributeQName, ScalesXml, text, UnprefixedQName}
-
-import scales.xml.impl.EqualsHelpers
+import scala.collection.generic.CanBuildFrom
 
 /** Simple container for keeping relationship between the parent and attribute */
 case class AttributePath(attribute: Attribute, parent: XmlPath)

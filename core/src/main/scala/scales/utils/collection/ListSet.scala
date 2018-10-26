@@ -1,11 +1,9 @@
 package scales.utils.collection
 
-import annotation.tailrec
-
+import scalaz.Equal
 import scales.utils.Equiv
 
-import scalaz._
-import Scalaz._
+import scala.annotation.tailrec
 
 //TODO also integrate the non quadratic add/apply from PaulPs fixes, tough as we can't use hashCode or == directly we can't re-use hashset....
 
@@ -26,7 +24,7 @@ object ListSet {
  *  @author <- corrupted by Chris Twiner with a number of PaulPs fixes
  *  @version 1.0, 30/12/2010
  */
-@serializable
+
 class ListSet[A : Equal](val plusFast : Boolean = false) extends Iterable[A]{ self =>
 
   val equal = implicitly[Equal[A]]
@@ -87,7 +85,6 @@ class ListSet[A : Equal](val plusFast : Boolean = false) extends Iterable[A]{ se
 
   /** Creates a new iterator over all elements contained in this set.
    *
-   *  @throws Predef.NoSuchElementException
    *  @return the new iterator
    */
   def iterator: Iterator[A] = new Iterator[A] {
@@ -99,12 +96,10 @@ class ListSet[A : Equal](val plusFast : Boolean = false) extends Iterable[A]{ se
   }
 
   /**
-   *  @throws Predef.NoSuchElementException
    */
   protected def elem: A = throw new NoSuchElementException("Set has no elements");
 
   /**
-   *  @throws Predef.NoSuchElementException
    */
   protected def next: ListSet[A] = throw new NoSuchElementException("Next of an empty set");
 
@@ -112,7 +107,7 @@ class ListSet[A : Equal](val plusFast : Boolean = false) extends Iterable[A]{ se
 
   /** Represents an entry in the `ListSet`.
    */
-  @serializable
+
   protected class Node(override protected val elem: A) extends ListSet[A] {
 
     override private[ListSet] def unchecked_outer = self

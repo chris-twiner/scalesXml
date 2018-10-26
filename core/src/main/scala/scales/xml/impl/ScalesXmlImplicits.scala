@@ -1,6 +1,6 @@
 package scales.xml.impl
 
-import scales.xml.{xpath, trax, equals, parser, serializers, dsl}
+import scales.xml.{dsl, equals, parser, serializers, trax, xpath}
 
 trait ScalesXmlImplicits extends XmlTypesImplicits 
   with DefaultXmlVersion

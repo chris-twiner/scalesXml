@@ -1,12 +1,10 @@
 package scales.xml.serializers
 
-import scales.utils._
-
-import scales.xml._
-
 import java.io.Writer
-
 import java.nio.charset.Charset
+
+import scales.utils._
+import scales.xml._
 
 /**
  * Interface used for serializing the XML events, same for both stream and tree.

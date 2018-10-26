@@ -1,18 +1,10 @@
 package scales.xml.impl
 
-import scales.xml.{ItemOrElem, XmlChildren, 
-		   XmlItem, Text, XmlTree, XmlVersion, 
-		   ScalesXml, defaultPathOptimisation, 
-		   Doc, loadXmlReader, convertFromScalaXml, 
-		   emptyChildren, AttributeQName,
-		   Namespace, Xml10}
-
-import ScalesXml.xmlCBF
 import scales.utils.resources.Loaner
-  
-import scales.xml.parser.strategies.{PathOptimisationStrategy, OptimisationToken}
-
+import scales.xml.ScalesXml.xmlCBF
 import scales.xml.parser.sax.SaxSupport
+import scales.xml.parser.strategies.{OptimisationToken, PathOptimisationStrategy}
+import scales.xml.{AttributeQName, Doc, ItemOrElem, Namespace, ScalesXml, Text, Xml10, XmlChildren, XmlItem, XmlTree, XmlVersion, convertFromScalaXml, defaultPathOptimisation, emptyChildren, loadXmlReader}
 
 /**
  * A collection of whitespace related functions

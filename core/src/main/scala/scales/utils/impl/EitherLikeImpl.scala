@@ -1,5 +1,7 @@
 package scales.utils.impl
 
+import scala.sys.error
+
 
 trait LeftLikeProjection[+L] {
   def get : L

@@ -1,11 +1,9 @@
 package scales.utils.collection.path
 
-import scala.collection.immutable.Stack
-import scala.collection.IndexedSeqLike
-import scala.collection.generic.CanBuildFrom
-
 import scales.utils._
-import collection._
+import scales.utils.collection._
+
+import scala.collection.IndexedSeqLike
 
 object PathFold {
 
@@ -185,7 +183,10 @@ trait Paths {
 
 
   import scalaz.Equal
-  import scalaz.Scalaz.equal
+
+  def equal[A](f: (A, A) => Boolean): Equal[A] = new Equal[A] {
+    def equal(a1: A, a2: A) = f(a1, a2)
+  }
 
   /**
    * Provides an instance of the Equal type class for positional Equality

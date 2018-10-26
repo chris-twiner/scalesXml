@@ -1,12 +1,7 @@
 package scales.xml.dsl
 
-import scales.utils.{AsBoolean, booleanMatcher, booleanAndTMatcher}
-
-import scales.xml.{
-  NoNamespaceQName, PrefixedQName, AttributeQName, 
-  Attribute, XmlTree, Doc, XmlVersion, XmlCBF, 
-  XmlPath, Elem, XCC, XmlItem, QName, 
-  ScalesXml, Text, Namespace, <}
+import scales.utils.{AsBoolean, booleanAndTMatcher, booleanMatcher}
+import scales.xml.{Attribute, Elem, Namespace, QName, ScalesXml, XmlTree}
 
 /**
  * Matches a given QName against either an Attribute or Elem with the namespace and localname only (QName.=:=)

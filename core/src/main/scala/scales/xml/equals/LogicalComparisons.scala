@@ -1,6 +1,6 @@
 package scales.xml.equals
 
-import scales.xml.{PullType, Text, CData, PI, Comment}
+import scales.xml.{CData, Comment, PI, PullType, Text}
 
 /**
  * Modifies the stream to turn CData nodes into Text nodes and join all adjacent Text nodes togeter i.e. a "tree" with children (Text, CData, Text, CData) will become a single Text child.
