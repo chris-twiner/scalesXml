@@ -56,8 +56,8 @@
     <modules>
         <module>scales-xml</module> <!--
         <module>aalto</module>
-        <module>jaxen</module>
-        <module>saxen-tests</module> -->
+        <module>jaxen</module>-->
+        <module>saxon-tests</module>
     </modules>
 
     <properties>
