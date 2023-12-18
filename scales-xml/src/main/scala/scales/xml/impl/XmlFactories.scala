@@ -189,6 +189,8 @@ object Versions {
    * If scales.newSchemaShouldSerialize is defined its value is used.
    *
    * Otherwise we examine the implemenation version of jaxp schemafactory, 1.5 and 1.6 need to serialize, 1.7 (and hopefully above ^_^) don't.
+   *
+   * Assuming non sun 1.8 and above come ready to validate.
    */ 
   lazy val newSchemaShouldSerialize = {
     val p = System.getProperty("scales.newSchemaShouldSerialize")
@@ -197,12 +199,16 @@ object Versions {
     else {
       val fac = SchemaFactory.newInstance(javax.xml.XMLConstants.W3C_XML_SCHEMA_NS_URI)
       val ver = fac.getClass.getPackage.getImplementationVersion
-      val pre = ver.substring(0,3)
 
-      if (pre == "1.5" || pre == "1.6") 
-	true
-      else
-	false
+      if (ver ne null) {
+        val pre = ver.substring(0, 3)
+
+        if (pre == "1.5" || pre == "1.6")
+          true
+        else
+          false
+      } else
+        false // null for 1.8 and above, otherwise use the property
     }
   }
 }
