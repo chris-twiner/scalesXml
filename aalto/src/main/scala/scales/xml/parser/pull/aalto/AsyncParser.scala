@@ -6,17 +6,15 @@ import io._
 import resources._
 import com.fasterxml.aalto._
 import AsyncXMLStreamReader.EVENT_INCOMPLETE
-import javax.xml.stream.XMLStreamConstants.END_DOCUMENT
 
+import javax.xml.stream.XMLStreamConstants.END_DOCUMENT
 import java.nio.ByteBuffer
 import java.nio.channels.ReadableByteChannel
-
 import scales.xml.parser.pull.PullUtils
-
-import scalaz.{IterV, Enumerator, Input, EphemeralStream}
+import scalaz.{Enumerator, EphemeralStream, Input, IterV}
 import EphemeralStream.emptyEphemeralStream
+import com.fasterxml.aalto.stax.InputFactoryImpl
 import scalaz.IterV._
-
 import scales.xml.parser.strategies.{MemoryOptimisationStrategy, OptimisationToken}
 
 /**
@@ -31,11 +29,11 @@ abstract class AsyncParser(implicit xmlVersion : XmlVersion) extends CloseOnNeed
 
   protected val strategy : MemoryOptimisationStrategy[Token]
 
-  protected val feeder : AsyncInputFeeder
+  protected val feeder : AsyncByteArrayFeeder
 
   protected val token : Token
 
-  protected val parser : AsyncXMLStreamReader
+  protected val parser : AsyncXMLStreamReader[AsyncByteArrayFeeder]
 
   /**
    * Closes the feeder and parser
@@ -315,7 +313,7 @@ object AsyncParser {
 
     val pf = parsers.grab
 
-    val parser = pf.createAsyncXMLStreamReader()
+    val parser = pf.createAsyncForByteArray()
     val feeder = parser.getInputFeeder
 
     /**

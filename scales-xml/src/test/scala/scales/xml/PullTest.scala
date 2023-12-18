@@ -1,5 +1,8 @@
 package scales.xml
 
+import scales.xml.impl.NoVersionXmlReaderFactoryPool
+import scales.xml.serializers.XmlOutput
+
 class PullTest extends junit.framework.TestCase {
 
   import junit.framework.Assert._
@@ -1021,4 +1024,5 @@ at += 1
 
     assertTrue("Should not have found anything", res.isEmpty)
   }
+
 }

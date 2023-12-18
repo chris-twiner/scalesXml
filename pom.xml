@@ -54,9 +54,9 @@
     </profiles>
 
     <modules>
-        <module>scales-xml</module> <!--
+        <module>scales-xml</module>
         <module>aalto</module>
-        <module>jaxen</module>-->
+        <module>jaxen</module>
         <module>saxon-tests</module>
     </modules>
 

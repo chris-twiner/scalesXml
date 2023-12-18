@@ -16,8 +16,6 @@ class AsyncPullTest extends junit.framework.TestCase {
   import io._
   import ScalesUtilsIO._
 
-  import Functions._
-
   val Default = Namespace("urn:default")
   val DefaultRoot = Default("Default")
 
@@ -172,9 +170,9 @@ class AsyncPullTest extends junit.framework.TestCase {
 	  headed += 1
 	  var st = e
 	  while(!st.isEmpty) {
-	    val h = st.head()
+	    val h = st.headOption.get
 	    res = res :+ h
-	    st = st.tail()
+	    st = st.tailOption.get
 	  }
 	},
 	empty = {nexted += 1;()},
@@ -229,9 +227,9 @@ class AsyncPullTest extends junit.framework.TestCase {
 
 	    var st = e
 	    while(!st.isEmpty) {
-	      val h = st.head()
+	      val h = st.headOption.get
 	      res = res :+ h
-	      st = st.tail()
+	      st = st.tailOption.get
 	    }
 	    // is
 	    cont.asInstanceOf[ResumableIter[DataChunk, EphemeralStream[PullType]]]

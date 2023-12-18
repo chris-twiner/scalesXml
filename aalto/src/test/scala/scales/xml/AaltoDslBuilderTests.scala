@@ -5,8 +5,7 @@ class AaltoDslBuildersTest extends DslBuildersTest {
 
   import org.xml.sax.InputSource
   import ScalesXml._
-  import Functions._
- 
+
   import impl.NoVersionXmlReaderFactoryPool
   import parser.strategies._
 

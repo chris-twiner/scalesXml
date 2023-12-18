@@ -101,7 +101,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Iterator;
 
-abstract class DefaultLocationPath extends DefaultExpr implements LocationPath
+abstract class DefaultLocationPath extends ADefaultExpr implements LocationPath
 {
     private List steps;
     
