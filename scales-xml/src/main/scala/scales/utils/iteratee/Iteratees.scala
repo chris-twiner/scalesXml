@@ -479,7 +479,8 @@ trait Iteratees {
 	    else {
 	      val h = e1.headOption.get
 	      // println("some data after all "+h)
-	      next(k(IterV.El(h)), () => e1.tailOption.get, nextContR)
+        val tail = e1.tailOption.get
+	      next(k(IterV.El(h)), () => tail, nextContR)
 	    }
 	  }
 	},

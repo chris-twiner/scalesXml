@@ -28,18 +28,6 @@
     </scm>
     <profiles>
         <profile>
-            <id>Scala_2_10</id>
-            <properties>
-                <scalaVersion>2.10.4</scalaVersion>
-                <scalaCompatVersion>2.10</scalaCompatVersion>
-                <profileDir>2.10</profileDir>
-
-                <scalazVersion>6.0.4</scalazVersion>
-                <scalazItervVersion>6.0.4</scalazItervVersion>
-                <scalaXmlVersion>1.3.1</scalaXmlVersion>
-            </properties>
-        </profile>
-        <profile>
             <id>Scala_2_11</id>
             <properties>
                 <scalaVersion>2.11.12</scalaVersion>
@@ -47,8 +35,7 @@
                 <profileDir>2.11</profileDir>
 
                 <scalazVersion>7.3.7</scalazVersion>
-                <!--<scalazItervVersion>7.0.9</scalazItervVersion>-->
-                <scalazItervVersion>6.0.4</scalazItervVersion>
+                <scalazItervVersion>7.0.9</scalazItervVersion>
                 <scalaXmlVersion>1.3.1</scalaXmlVersion>
             </properties>
         </profile>
@@ -127,12 +114,12 @@
             <version>${scalatestVersion}</version>
             <scope>test</scope>
         </dependency>
-   <!--     <dependency>
+        <dependency>
             <groupId>org.scala-lang.modules</groupId>
             <artifactId>scala-xml_${scalaCompatVersion}</artifactId>
             <version>${scalaXmlVersion}</version>
         </dependency>
--->
+
         <dependency>
             <groupId>com.google.caliper</groupId>
             <artifactId>caliper</artifactId>

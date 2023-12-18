@@ -29,16 +29,6 @@
             <artifactId>aalto-xml</artifactId>
             <version>1.3.2</version>
         </dependency>
-        <dependency>
-            <groupId>org.scalaz</groupId>
-            <artifactId>scalaz-core_${scalaCompatVersion}</artifactId>
-            <version>${scalazVersion}</version>
-        </dependency><!--
-        <dependency>
-            <groupId>org.scalaz</groupId>
-            <artifactId>scalaz-iterv_${scalaCompatVersion}</artifactId>
-            <version>${scalazItervVersion}</version>
-        </dependency>-->
     </dependencies>
 
 </project>

@@ -17,11 +17,11 @@
             <artifactId>scalaz-core_${scalaCompatVersion}</artifactId>
             <version>${scalazVersion}</version>
         </dependency>
-        <!-- <dependency>
+         <dependency>
             <groupId>org.scalaz</groupId>
             <artifactId>scalaz-iterv_${scalaCompatVersion}</artifactId>
             <version>${scalazItervVersion}</version>
-        </dependency> -->
+        </dependency>
     </dependencies>
 
 </project>
