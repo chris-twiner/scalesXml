@@ -2,7 +2,6 @@ package scales.xml.equalsTest // different to keep default xml._ out
 
 import scales.xml._
 import ScalesXml._
-import Functions._
 import parser.strategies._
 
 import scales.xml.equals._

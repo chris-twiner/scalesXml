@@ -45,7 +45,6 @@ sealed trait XmlEvent
  */
 
 import ScalesXml._
-import xml._
 
 import scales.xml.impl.DefaultHashes._
 

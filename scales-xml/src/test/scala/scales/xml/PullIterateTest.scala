@@ -1,5 +1,7 @@
 package scales.xml
 
+import scalaz.EphemeralStream
+
 /**
  * Prior to 0.4.4 iterate was based on onQNames, the PullTest qnames test covered this, and although the implementation is pretty much identical, these test from the iterate function directly.
  */ 
@@ -11,8 +13,6 @@ class PullIterateTest extends junit.framework.TestCase {
   import scales.utils._
   import ScalesUtils._
   import ScalesXml._
-
-  import Functions._
 
   val Default = Namespace("urn:default")
   val DefaultRoot = Default("Default")
@@ -26,11 +26,11 @@ class PullIterateTest extends junit.framework.TestCase {
     // we won't get past iterator...
     val ourMax = maxIterations / 10 // full takes too long but does work in constant space
 
-    val iter = eevents(ourMax).iterator
+    val iter = EphemeralStream.toIterable(eevents(ourMax))
 
     val QNames = List("root"l, "child"l, "interesting"l)
 
-    val itr = iterate(QNames, iter)
+    val itr = iterate(QNames, iter.iterator)
 
     // skip the first
     

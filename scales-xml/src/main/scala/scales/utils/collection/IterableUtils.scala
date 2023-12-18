@@ -68,7 +68,7 @@ trait IterableUtilsImplicits extends FlatMapImplicits {
    */ 
   implicit def ephemeralAppender[A]( e : EphemeralStream[A] ) = new { 
     def append[A, B >: A]( a : EphemeralStream[A], e : => EphemeralStream[B] ) : EphemeralStream[B] = 
-      if (!a.isEmpty) EphemeralStream.cons(a.head(), append(a.tail(), e))
+      if (!a.isEmpty) EphemeralStream.cons(a.headOption.get, append(a.tailOption.get, e))
       else e
 
     def +:+[B >: A]( e1 : => EphemeralStream[B]) : EphemeralStream[B] = append[A, B](e, e1)

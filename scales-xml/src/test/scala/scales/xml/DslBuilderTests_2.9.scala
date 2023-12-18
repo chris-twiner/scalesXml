@@ -12,8 +12,6 @@ class DslBuildersTest29 extends junit.framework.TestCase {
 
   import ScalesXml._
 
-  import Functions._
-
   val ns = Namespace("test:uri")
   val nsa = Namespace("test:uri:attribs")
   val nsp = nsa.prefixed("pre")

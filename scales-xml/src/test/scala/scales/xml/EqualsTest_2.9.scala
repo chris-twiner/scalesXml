@@ -75,8 +75,6 @@ class EqualsTest extends junit.framework.TestCase {
   import KeepEmSeperate._
   import KeepEmSeperateI._
 
-  import scales.xml.Functions._
-
   val xmlFile = loadXml(resource(this, "/data/BaseXmlTest.xml"))
   val xml = xmlFile.rootElem
   val xmlFile2 = loadXml(resource(this, "/data/BaseXmlTest.xml"))

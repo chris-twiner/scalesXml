@@ -18,8 +18,7 @@ class ValidateTest extends junit.framework.TestCase {
 
   import org.xml.sax.InputSource
   import ScalesXml._
-  import Functions._
- 
+
   def doLoadXml[Token <: OptimisationToken](in : InputSource, strategy : PathOptimisationStrategy[Token] = defaultPathOptimisation) = {
     loadXml(in, strategy = strategy)
   }

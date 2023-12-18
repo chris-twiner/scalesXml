@@ -7,8 +7,6 @@ import ScalesXml._
 
 import collection.path.Replace
 
-import Functions._
-
 /**
  * Code used in the intro presentation.  Variables aren't re-used as the functions
  * are meant to standalone as piccies in the pressy.

@@ -20,9 +20,6 @@ package object xml extends dsl.XPathMatcher
   val defaultPathOptimisation : PathOptimisationStrategy[QNameToken] = QNameMemoryOptimisation
   val defaultOptimisation : MemoryOptimisationStrategy[QNameToken] = QNameMemoryOptimisation
 
-  @deprecated(message="Functions - since 0.3 - imports are provided via the xml package object")
-  val Functions = new Object()
-
   // forwarders
 
   /**

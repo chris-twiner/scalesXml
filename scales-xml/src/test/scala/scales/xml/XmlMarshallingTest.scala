@@ -19,7 +19,6 @@ class XmlMarshallingTest extends junit.framework.TestCase {
 
   import parser.strategies._
 
-  import Functions._
   import org.xml.sax.InputSource
 
   val ns = Namespace("urn:test:uri")

@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>  <!-- rebuild -->
 
     <groupId>org.scalesxml</groupId>
-    <artifactId>scales-xml_2.11</artifactId>
+    <artifactId>scales-xml-root_2.11</artifactId>
 
     <packaging>pom</packaging>
     <version>0.6.0-SNAPSHOT</version>
@@ -32,11 +32,11 @@
             <properties>
                 <scalaVersion>2.11.12</scalaVersion>
                 <scalaCompatVersion>2.11</scalaCompatVersion>
-                <framelessVersion>0.8.0</framelessVersion>
                 <profileDir>2.11</profileDir>
 
                 <scalazVersion>7.3.7</scalazVersion>
                 <scalazItervVersion>7.0.9</scalazItervVersion>
+                <scalaXmlVersion>1.3.1</scalaXmlVersion>
             </properties>
         </profile>
         <profile>
@@ -44,11 +44,11 @@
             <properties>
                 <scalaVersion>2.12.12</scalaVersion>
                 <scalaCompatVersion>2.12</scalaCompatVersion>
-                <framelessVersion>0.8.0</framelessVersion>
                 <profileDir>2.12</profileDir>
 
                 <scalazVersion>7.3.8</scalazVersion>
                 <scalazItervVersion>7.0.9</scalazItervVersion>
+                <scalaXmlVersion>2.2.0</scalaXmlVersion>
             </properties>
         </profile>
     </profiles>
@@ -83,6 +83,10 @@
         <scalazItervVersion>7.0.9</scalazItervVersion>
         <commonsCodecVersion>1.4</commonsCodecVersion>
         <slf4jVersion>1.6.1</slf4jVersion>
+        <scalaXmlVersion>1.3.1</scalaXmlVersion>
+        <caliperVersion>0.5-rc1</caliperVersion>
+        <nuHtmlVersion>1.4</nuHtmlVersion>
+        <tagSoupVersion>1.2.1</tagSoupVersion>
     </properties>
 
     <distributionManagement>
@@ -110,6 +114,33 @@
             <version>${scalatestVersion}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.scala-lang.modules</groupId>
+            <artifactId>scala-xml_${scalaCompatVersion}</artifactId>
+            <version>${scalaXmlVersion}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.caliper</groupId>
+            <artifactId>caliper</artifactId>
+            <version>${caliperVersion}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>nu.validator.htmlparser</groupId>
+            <artifactId>htmlparser</artifactId>
+            <version>${nuHtmlVersion}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.ccil.cowan.tagsoup</groupId>
+            <artifactId>tagsoup</artifactId>
+            <version>${tagSoupVersion}</version>
+            <scope>test</scope>
+        </dependency>
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
@@ -206,6 +237,11 @@
                                     <arg>-dependencyfile</arg>
                                     <arg>${project.build.directory}/.scala_dependencies</arg>
                                     <arg>-g:vars</arg>
+                                    <arg>-nobootcp</arg>
+                                    <arg>-language:implicitConversions</arg>
+                                    <arg>-language:postfixOps</arg>
+                                    <arg>-language:existentials</arg>
+                                    <arg>-language:higherKinds</arg>
                                 </args>
                                 <recompileMode>all</recompileMode>
                                 <scalaCompatVersion>${scalaCompatVersion}</scalaCompatVersion>

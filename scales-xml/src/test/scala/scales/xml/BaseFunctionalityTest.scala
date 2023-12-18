@@ -10,7 +10,6 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
   import ScalesUtils._
   import ScalesXml._
 
-  import Functions._
 
 //  import strategies.TextNodeJoiner
 
