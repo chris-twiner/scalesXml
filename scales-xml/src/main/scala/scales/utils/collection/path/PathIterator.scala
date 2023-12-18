@@ -70,7 +70,7 @@ trait AbstractPathIterator[Item <: LeftLike[Item, Tree[Item, Section, CC]], Sect
 
   case object End extends State {
     override def hasNext = false
-    def next = error("Can't go past the root")
+    def next = scales.utils.error("Can't go past the root")
   }
 
   def end : T

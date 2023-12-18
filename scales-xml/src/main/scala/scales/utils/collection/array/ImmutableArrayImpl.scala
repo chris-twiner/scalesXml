@@ -79,7 +79,7 @@ final class ImmutableArrayBuilder[ A ](private[this] var _buf : Array[AnyRef] = 
 case class IAEmpty[ +A ]() extends ImmutableArrayProxy[A] {
   def length = 0
 
-  def apply(idx : Int) = error("Can't return an item, as we are empty")
+  def apply(idx : Int) = scales.utils.error("Can't return an item, as we are empty")
 
   def ar = this  
 

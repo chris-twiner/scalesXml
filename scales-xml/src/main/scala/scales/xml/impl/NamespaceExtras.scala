@@ -64,7 +64,7 @@ object QNameCharUtils {
     if (validLocalName(validLocal)) 
       validLocal
     else
-      error("The local name '"+validLocal+"' is not valid for Xml "+ver.version)
+      scales.utils.error("The local name '"+validLocal+"' is not valid for Xml "+ver.version)
 
 }
 

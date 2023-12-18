@@ -16,7 +16,7 @@ package object utils extends collection.IterableUtils
   with collection.path.Paths
   with collection.ConcurrentMapUtils
 {
-  def error(str : String) = Predef.error(str)
+  //def error(str : String) = sys.error(str)
 
 // https://issues.scala-lang.org/browse/SI-4767 forces them to be here if we want them inlining
 

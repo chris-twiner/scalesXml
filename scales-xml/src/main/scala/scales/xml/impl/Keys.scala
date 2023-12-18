@@ -171,7 +171,7 @@ final class FullEqualQNameKey() {
 	  ((oq.prefix eq null) && (prefix eq null))
       else 
 	false
-    case _ => error("Cannot compare a FullEqualQNameKey to anything else other than a FullEqualQNameKey")
+    case _ => scales.utils.error("Cannot compare a FullEqualQNameKey to anything else other than a FullEqualQNameKey")
   }
 
   /**

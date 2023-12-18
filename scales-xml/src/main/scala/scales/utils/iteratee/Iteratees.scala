@@ -46,6 +46,8 @@ trait IterateeImplicits {
  */
 trait Iteratees {
 
+  def error(string: String) = sys.error(string)
+
   /** drop while iteratee */
   def dropWhile[E](f: (E) => Boolean) : IterV[E, Option[E]] = {
     def step(s: Input[E]): IterV[E, Option[E]] =

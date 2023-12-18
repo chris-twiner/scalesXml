@@ -87,8 +87,8 @@ class ComparisonContext private (private val lnc : NamespaceContext = null,
    * path.tail, pops the head off as it moves up, counts are not changed
    */ 
   def endElem : ComparisonContext = 
-    if (parent eq null) 
-      error("Cannot call endElem on a root context")
+    if (parent eq null)
+      scales.utils.error("Cannot call endElem on a root context")
     else
       // the path's count must be kept, everything else should come from the 
       // parent

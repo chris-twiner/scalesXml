@@ -97,7 +97,7 @@ case class Path[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] 
 
   private[this] class ItemIterator() extends Iterator[Path[Item,Section, CC]] { 
     def hasNext = false
-    def next() = error("Cannot iterate over an item")
+    def next() = scales.utils.error("Cannot iterate over an item")
   }
 
   private[this] class TreeIterator() extends Iterator[Path[Item,Section, CC]] { 

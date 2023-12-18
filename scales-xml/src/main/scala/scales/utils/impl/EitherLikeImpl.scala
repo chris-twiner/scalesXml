@@ -10,10 +10,10 @@ trait RightLikeProjection[+R] {
 }
 
 object NonLeftP extends LeftLikeProjection[Nothing] {
-  def get : Nothing = error("Cannot get a left from a RightLike.")
+  def get : Nothing = scales.utils.error("Cannot get a left from a RightLike.")
 }
 
 object NonRightP extends RightLikeProjection[Nothing] {
-  def get : Nothing = error("Cannot get a right from a LeftLike.")
+  def get : Nothing = scales.utils.error("Cannot get a right from a LeftLike.")
 }
 

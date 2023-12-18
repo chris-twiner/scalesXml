@@ -67,7 +67,7 @@ class StringToNSBuilder(local: String)(implicit ver : XmlVersion, fromParser: Fr
   /**
    * ns :: localname pimp.
    */ 
-  def ::( namespace : String ) = if ((namespace eq null) || namespace == "") error("Namespace should not be non empty or null") else UnprefixedQName(local, Namespace(namespace))
+  def ::( namespace : String ) = if ((namespace eq null) || namespace == "") scales.utils.error("Namespace should not be non empty or null") else UnprefixedQName(local, Namespace(namespace))
 
   /**
    * When there are other implicits after the string conversion gold add an "l" for local only 
