@@ -4,11 +4,11 @@
 
     <artifactId>scales-xml-saxon-tests_${scalaCompatVersion}</artifactId>
     <parent>
-        <artifactId>scales-xml-root_2.11</artifactId>
+        <artifactId>scales-xml-root_${scalaCompatVersion}</artifactId>
         <groupId>org.scalesxml</groupId>
         <version>0.6.0-SNAPSHOT</version>
     </parent>
-    <version>0.6.0-SNAPSHOT</version>
+    <version>${parent.version}</version>
     <packaging>jar</packaging>
     <name>scales-xml-saxon-tests</name>
     <dependencies>

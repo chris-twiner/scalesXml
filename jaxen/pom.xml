@@ -4,11 +4,11 @@
 
     <artifactId>scales-xml-jaxen_${scalaCompatVersion}</artifactId>
     <parent>
-        <artifactId>scales-xml-root_2.11</artifactId>
+        <artifactId>scales-xml-root_${scalaCompatVersion}</artifactId>
         <groupId>org.scalesxml</groupId>
         <version>0.6.0-SNAPSHOT</version>
     </parent>
-    <version>0.6.0-SNAPSHOT</version>
+    <version>${parent.version}</version>
     <packaging>jar</packaging>
     <name>scales-xml-jaxen</name>
     <dependencies>
@@ -34,11 +34,11 @@
             <artifactId>scalaz-core_${scalaCompatVersion}</artifactId>
             <version>${scalazVersion}</version>
         </dependency>
-        <!-- <dependency>
+        <dependency>
             <groupId>org.scalaz</groupId>
             <artifactId>scalaz-iterv_${scalaCompatVersion}</artifactId>
             <version>${scalazItervVersion}</version>
-        </dependency> -->
+        </dependency>
     </dependencies>
 
 </project>
