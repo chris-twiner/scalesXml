@@ -438,8 +438,9 @@ trait Iteratees {
 	  cont =
 	    k => {
 	      // println("got cont")
-	      val head = cs.headOption.get // if used in El it captures the byname not the value
-	      (k(IterV.El(head)), cs.tailOption.get)
+        val cs_called = cs
+	      val head = cs_called.headOption.get // if used in El it captures the byname not the value
+	      (k(IterV.El(head)), cs_called.tailOption.get)
 	    }
 	    )
 	c = nc

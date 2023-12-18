@@ -50,7 +50,7 @@ package scales.xml.jaxen;
 import org.jaxen.expr.*;
 import org.jaxen.*;
 
-abstract class DefaultBinaryExpr extends DefaultExpr implements BinaryExpr
+abstract class DefaultBinaryExpr extends ADefaultExpr implements BinaryExpr
 {
     private Expr lhs;
     private Expr rhs;

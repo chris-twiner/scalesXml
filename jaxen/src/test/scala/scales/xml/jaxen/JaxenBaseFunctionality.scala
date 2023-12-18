@@ -5,8 +5,6 @@ import ScalesUtils._
 import scales.xml._
 import ScalesXml._
 
-import Functions._
-
 class JaxenBaseFunctionalityTest extends test.BaseFunctionalityTest {
 
   import junit.framework.Assert._
