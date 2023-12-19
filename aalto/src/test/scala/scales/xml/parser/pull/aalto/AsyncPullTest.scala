@@ -1,5 +1,10 @@
 package scales.xml.parser.pull.aalto
 
+import scalaz.iteratee.Input.{Element, Empty, Eof}
+import scalaz.iteratee.Iteratee
+import scalaz.iteratee.Iteratee.{peek, iteratee => siteratee}
+import scalaz.iteratee.StepT.Done
+
 class AsyncPullTest extends junit.framework.TestCase {
 
   import junit.framework.Assert._
@@ -21,7 +26,6 @@ class AsyncPullTest extends junit.framework.TestCase {
 
   import scalaz._
   import Scalaz._
-  import scalaz.IterV._
   import EphemeralStream.emptyEphemeralStream
 
   import scales.utils.{resource => sresource}
@@ -37,7 +41,7 @@ class AsyncPullTest extends junit.framework.TestCase {
   import serializers._
 
 
-  type SerialIterT = IterV[PullType, (XmlOutput, Option[Throwable])] 
+  type SerialIterT = Iteratee[PullType, (XmlOutput, Option[Throwable])]
 
   import java.nio.charset.Charset
   import scales.utils.{io, resources}
@@ -48,17 +52,17 @@ class AsyncPullTest extends junit.framework.TestCase {
    */ 
   trait EvalW[WHAT,RETURN] {
     
-    val orig : IterV[WHAT, RETURN]
+    val orig : Iteratee[WHAT, RETURN]
 
-    def evalw : IterV[WHAT, RETURN] = {
-      orig.fold(done = (x, y) => Done(x,y),
-		cont = k => {
-		  orig
-		})
+    def evalw : Iteratee[WHAT, RETURN] = {
+      orig.foldT(done = (x, y) => siteratee(Done(x,y)),
+        cont = k => {
+          orig
+        })
     }
   }
 
-  implicit def toEvalw[WHAT, RETURN]( i : IterV[WHAT, RETURN] ) = new EvalW[WHAT, RETURN] {
+  implicit def toEvalw[WHAT, RETURN]( i : Iteratee[WHAT, RETURN] ) = new EvalW[WHAT, RETURN] {
     lazy val orig = i
   }
 
@@ -75,22 +79,22 @@ class AsyncPullTest extends junit.framework.TestCase {
     
     val iter = 
       for {
-	_ <- peek[PullType]
-	_ <- peek[PullType]
-	_ <- peek[PullType]
-	_ <- peek[PullType]
-	_ <- peek[PullType]
-	i <- evalWith((p : PullType) => {
-	  p} )
-	j <- dropWhile((p : PullType) => {
-	   p.fold( x => !x.isInstanceOf[Elem] , y => false)
-	  } )
+        _ <- peek[PullType, Id]
+        _ <- peek[PullType, Id]
+        _ <- peek[PullType, Id]
+        _ <- peek[PullType, Id]
+        _ <- peek[PullType, Id]
+        i <- evalWith((p : PullType) => {
+          p} )
+        j <- dropWhile((p : PullType) => {
+           p.fold( x => !x.isInstanceOf[Elem] , y => false)
+          } )
       } yield j
     
     val enumeratee = enumToMany(iter)(AsyncParser.parse(parser))
     val wrapped = new ReadableByteChannelWrapper(channel, true, tinyBuffers)
     
-    val (e,cont) = enumeratee(wrapped).run
+    val (e,cont) = (enumeratee &= dataChunkerEnumerator(wrapped)).run
     assertTrue("Should be defined", e.isDefined)
     assertEquals("{urn:default}DontRedeclare", e.get.left.get.asInstanceOf[Elem].name.qualifiedName)
     parser.closeResource
@@ -101,11 +105,11 @@ class AsyncPullTest extends junit.framework.TestCase {
     doSimpleLoadAndFold{
       (p, iter, wrapped) => 
       val enumeratee = enumToMany(iter)(AsyncParser.parse(p))
-      val (e,cont) = enumeratee(wrapped).run
+      val (e,cont) = (enumeratee &= dataChunkerEnumerator(wrapped)).run
       e
     }
 
-  def doSimpleLoadAndFold[T](test: (AsyncParser, IterV[PullType, List[String]], ReadableByteChannelWrapper[DataChunk ]) =>  List[String] ) : Unit = {
+  def doSimpleLoadAndFold[T](test: (AsyncParser, Iteratee[PullType, List[String]], ReadableByteChannelWrapper[DataChunk ]) =>  List[String] ) : Unit = {
     val url = sresource(this, "/data/BaseXmlTest.xml")
 
     val channel = Channels.newChannel(url.openStream())
@@ -135,7 +139,7 @@ class AsyncPullTest extends junit.framework.TestCase {
     doSimpleLoadAndFold{
       (p, iter, wrapped) => 
       val enumeratee = enumToMany(iter)(AsyncParser.parse(p))
-      val (e,cont) = enumeratee(wrapped).run
+      val (e,cont) = (enumeratee &= dataChunkerEnumerator(wrapped)).run
       e
     }
 // here
@@ -212,38 +216,39 @@ class AsyncPullTest extends junit.framework.TestCase {
     while(b != EOFData) {
       def input =
 	if (b.isEOF)
-	  IterV.EOF[DataChunk]
+	  Eof[DataChunk]
 	else
 	  if (b.isEmpty) {
-	    IterV.Empty[DataChunk]
+	    Empty[DataChunk]
 	  } else
-	    El(b)
+	    Element(b)
       
       def nextC = 
-	c.fold (
-	  done = (a, y) => { // if eof
-	    val (e, cont) = a
-	    headed += 1
+        c.foldT (
+          done = (a, y) => { // if eof
+            val (e, cont) = a
+            headed += 1
 
-	    var st = e
-	    while(!st.isEmpty) {
-	      val h = st.headOption.get
-	      res = res :+ h
-	      st = st.tailOption.get
-	    }
-	    // is
-	    cont.asInstanceOf[ResumableIter[DataChunk, EphemeralStream[PullType]]]
-	  },
-	  cont = k => {
-	    nexted += 1
-	    // need to push the next chunk
-	    k(input)
-	  }
-	)
+            var st = e
+            while(!st.isEmpty) {
+              val h = st.headOption.get
+              res = res :+ h
+              st = st.tailOption.get
+            }
+            // is
+            cont.asInstanceOf[ResumableIter[DataChunk, EphemeralStream[PullType]]]
+          },
+          cont = k => {
+            nexted += 1
+            // need to push the next chunk
+            k(input)
+          }
+        )
 
       // if its done we have to pump
-      if (!randomChannel.isClosed && !isDone(c))
-	b = randomChannel.nextChunk
+      if (!randomChannel.isClosed && !isDone(c)) {
+        b = randomChannel.nextChunk
+      }
 
       c = nextC
     }
@@ -284,16 +289,16 @@ class AsyncPullTest extends junit.framework.TestCase {
      * the random channel does every 10, every 6 forces it back but allows
      * a fair chunk of Empty -> Conts followed by data
      */ 
-    implicit val readableByteChannelEnumerator = new AsyncDataChunkerEnumerator( 6 )
+    val readableByteChannelEnumerator = new AsyncDataChunkerEnumerator(wrapped, 6 )
 
-    val cstable = enumeratee(wrapped).evalw
+    val cstable = (enumeratee &= readableByteChannelEnumerator).evalw
     var c = cstable
     
     type cType = cstable.type
 
     var count = 0
     while(!isDone(c)) {
-      c = c(wrapped).evalw
+      c = (c &= dataChunkerEnumerator(wrapped)).evalw
       count += 1
     }
 
@@ -301,7 +306,7 @@ class AsyncPullTest extends junit.framework.TestCase {
       assertTrue("There were "+randomChannel.zeroed+" zeros fed but it never left the evalw", count > 0)
     }
 
-    c.fold[Unit](
+    c.foldT[Unit](
       done = (a,i) => {
 	val ((out, thrown), cont) = a
 	assertFalse( "shouldn't have thrown", thrown.isDefined)
@@ -333,7 +338,7 @@ class AsyncPullTest extends junit.framework.TestCase {
     val (closer, iter) = pushXmlIter( strout , doc )
 
     val enumeratee = enumToMany(iter)(AsyncParser.parse(parser))
-    val ((out, thrown), cont) = enumeratee(channel).runEval
+    val ((out, thrown), cont) = (enumeratee &= dataChunkerEnumerator(channel)).runEval
 
     // we can swallow the lot, but endmiscs don't know there is more until the main loop, which needs evaling
     assertFalse( "shouldn't have thrown", thrown.isDefined)
@@ -354,7 +359,7 @@ class AsyncPullTest extends junit.framework.TestCase {
     val parser = AsyncParser()
     
     val enumeratee = enumToMany(iter)(AsyncParser.parse(parser))
-    val (e, cont) = enumeratee(channel.wrapped).run
+    val (e, cont) = (enumeratee &= dataChunkerEnumerator(channel.wrapped)).run
 
     assertEquals("{urn:default}Default", e.right.get.name.qualifiedName)
     assertTrue("The parser should have been closed", parser.isClosed)
@@ -377,7 +382,7 @@ class AsyncPullTest extends junit.framework.TestCase {
     val (closer, iter) = pushXmlIter( strout , doc )
 
     val enumeratee = enumToMany(iter)(parser.iteratee)
-    val ((out, thrown), cont) = enumeratee(channel).run
+    val ((out, thrown), cont) = (enumeratee &= dataChunkerEnumerator(channel)).run
 
     // we can swallow the lot
     assertFalse( "shouldn't have thrown", thrown.isDefined)

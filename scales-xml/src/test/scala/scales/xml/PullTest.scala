@@ -380,17 +380,17 @@ on both the qname matching (3 of them) and then the above combos
     val ionDone = onDone(List(counter, inThrees))
 
     def isDone( i : Int, res : ResumableIterList[Int,Long]) = 
-      res match {
-        case Done((x :: Nil,cont), y) if i % 3 != 0 =>
+      res foldT( done = (x,y) => (x,y) match {
+        case ((x :: Nil,cont), y) if i % 3 != 0 =>
           assertEquals(i, x)
           assertTrue("should have been Empty "+i, isEmpty(res))
-        case Done((x :: x2 :: Nil,cont), y)  if i % 3 == 0 =>
+        case ((x :: x2 :: Nil,cont), y)  if i % 3 == 0 =>
           assertEquals(i, x)
           assertEquals(i, x2)
           assertTrue("should have been Empty "+i, isEmpty(res))
-        case Done(x,y) => fail("Was done but not expected "+ x +" -> " + y )
-        case _ => fail("was not done "+i)
-      }
+        case (x,y) => fail("Was done but not expected "+ x +" -> " + y )
+
+      }, cont = _ => fail("was not done "+i))
 
     var res = (ionDone &= iteratorEnumerator(liter)).eval
     isDone(1, res)
@@ -403,11 +403,11 @@ on both the qname matching (3 of them) and then the above combos
     }
 
     res = (extractCont(res) &= iteratorEnumerator(liter)).eval
-    res match {
-      case Done((Nil,cont), y)  => 
+    res foldT(done = (x,y) => (x,y) match {
+      case ((Nil,cont), y)  =>
 	      assertTrue("should have been EOL", isEOF(res))
-      case _ => fail("was not done with empty")
-    }
+
+    }, cont = _ => fail("was not done with empty"))
 
   }
 
@@ -653,11 +653,13 @@ try{
     }
 
     res = (extractCont(res) &= iteratorEnumerator(iter)).eval
-    res match {
-      case Done((Nil,cont), y)  => 
-	      assertTrue("should have been EOL", isEOF(res))
-      case _ => fail("was not done with empty")
-    }
+    res foldT(
+      done = (x,y) => (x,y) match {
+        case ((Nil,cont), y) =>
+	        assertTrue("should have been EOL", isEOF(res))
+      },
+      cont = _ => fail("was not done with empty")
+    )
 } catch {
   case e : StackOverflowError => println("got to " + at)
 }
@@ -700,11 +702,11 @@ try{
     }
 
     res = (extractCont(res) &= iteratorEnumerator(iter)).eval
-    res match {
-      case Done((Nil,cont), y)  => 
-	assertTrue("should have been EOL", isEOF(res))
-      case _ => fail("was not done with empty")
-    }
+    res foldT (done = (x,y) => (x,y) match {
+      case ((Nil,cont), y)  =>
+      	assertTrue("should have been EOL", isEOF(res))
+
+    }, cont = _ => fail("was not done with empty"))
     
   }
 
@@ -739,11 +741,10 @@ try{
     }
 
     res = (extractCont(res) &= iteratorEnumerator(iter)).eval
-    res match {
-      case Done((Nil,cont), y)  => 
-	assertTrue("should have been EOL", isEOF(res))
-      case _ => fail("was not done with empty")
-    }
+    res foldT( done = (x,y) => (x,y) match {
+      case ((Nil,cont), y)  =>
+	      assertTrue("should have been EOL", isEOF(res))
+    }, cont = _ => fail("was not done with empty"))
     
   }
 
@@ -775,11 +776,11 @@ try{
     }
 
     res = (extractCont(res) &= iteratorEnumerator(iter)).eval
-    res match {
-      case Done((Nil,cont), y)  => 
-	assertTrue("should have been EOL", isEOF(res))
-      case _ => fail("was not done with empty")
-    }
+    res foldT( done = (x,y) => (x,y) match {
+      case ((Nil,cont), y)  =>
+	      assertTrue("should have been EOL", isEOF(res))
+
+    }, cont = _ => fail("was not done with empty"))
     
   }
 
@@ -837,11 +838,10 @@ try{
     }
 
     res = (extractCont(res) &= iteratorEnumerator(iter)).eval
-    res match {
-      case Done((Nil,cont), y)  => 
-	assertTrue("should have been EOL", isEOF(res))
-      case _ => fail("was not done with empty")
-    }
+    res foldT( done = (x,y) => (x,y) match {
+      case ((Nil,cont), y)  =>
+	      assertTrue("should have been EOL", isEOF(res))
+    }, cont = _ => fail("was not done with empty"))
     
   }
 

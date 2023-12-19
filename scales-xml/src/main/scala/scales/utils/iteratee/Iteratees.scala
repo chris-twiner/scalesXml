@@ -3,7 +3,7 @@ package scales.utils.iteratee
 import scalaz.Id.Id
 import scalaz.{EphemeralStream, Id, Monad}
 import scalaz.iteratee.Input.{Element, Empty, Eof}
-import scalaz.iteratee.Iteratee.iteratee
+import scalaz.iteratee.Iteratee.{cont, done, iteratee}
 import scalaz.iteratee.StepT.{Cont, Done}
 import scalaz.iteratee.{Enumerator, EnumeratorT, Input, Iteratee, IterateeT, StepT}
 import scales.utils.ScalesUtils
@@ -34,14 +34,13 @@ trait IterateeImplicits {
    * Taken from huynhjl's answer on StackOverflow, just abstracting the type to allow for better implicit inference
    */
   def iteratorEnumerator[E](iter: Iterator[E]) = new Enumerator[E] {
-
     override def apply[A]: StepT[E, Id.Id, A] => IterateeT[E, Id.Id, A] =
       {
         case step if iter.isEmpty => iteratee(step)
         case step @ Done(acc, input) => iteratee(step)
         case Cont(k) =>
           val x : E = iter.next
-          k(Element(x))
+          k(Element(x)) >>== apply
       }
   }
 
@@ -263,9 +262,9 @@ trait Iteratees {
           @inline def add( k : (Input[E]) => Iteratee[E,(A, Iteratee[E, _])]) {
             val d = k(Element(e))
             newl = d :: newl
-            d foldT (
+            d foldT[Unit] (
               done = (x, _) => res = x._1 :: res,
-              cont = error("should not be a cont")
+              cont = _ => ()
             )
           }
 
@@ -371,14 +370,15 @@ trait Iteratees {
   def sum[T](implicit n: Numeric[T]): Iteratee[T,T] = {
     import n._
     def step(acc: T)( s : Input[T] ) : Iteratee[T, T] =
-      iteratee(
-        s( el = e => Cont(step(acc + e)),
-          empty = Cont(step(acc)),
-          eof = Done(acc, Eof[T])
-        )
+      s( el = e =>
+          cont(step(acc + e)),
+        empty =
+          cont(step(acc)),
+        eof =
+          done(acc, Eof[T])
       )
 
-    iteratee( Cont(step(zero)) )
+    cont(step(zero))
   }
 
   /**
