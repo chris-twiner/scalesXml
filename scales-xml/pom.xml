@@ -12,16 +12,7 @@
     <packaging>jar</packaging>
     <name>scales-xml</name>
     <dependencies>
-        <dependency>
-            <groupId>org.scalaz</groupId>
-            <artifactId>scalaz-core_${scalaCompatVersion}</artifactId>
-            <version>${scalazVersion}</version>
-        </dependency>
-         <dependency>
-            <groupId>org.scalaz</groupId>
-            <artifactId>scalaz-iterv_${scalaCompatVersion}</artifactId>
-            <version>${scalazItervVersion}</version>
-        </dependency>
+
     </dependencies>
 
 </project>

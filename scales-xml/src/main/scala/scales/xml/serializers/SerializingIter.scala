@@ -1,22 +1,21 @@
 package scales.xml.serializers
 
 import scales.utils._
-
 import resources._
-
+import scalaz.Id.Id
+import scalaz.iteratee.Input.Eof
+import scalaz.iteratee.Iteratee.iteratee
+import scalaz.iteratee.StepT.{Cont, Done}
 import scales.xml._
-
-import java.io.Writer
-
-import scalaz.{IterV, Enumerator, Input, EphemeralStream}
-import scalaz.IterV._
+import scalaz.iteratee.{Enumerator, Input, Iteratee, StepT}
 
 /**
  * Provide push based serializing Iteratee
  */ 
 trait SerializingIter {
 
-  type SerialIterT = IterV[PullType, (XmlOutput, Option[Throwable])] 
+  type SerialIterT = Iteratee[PullType, (XmlOutput, Option[Throwable])]
+  type SerialStepT = StepT[PullType, Id, (XmlOutput, Option[Throwable])]
 
   import java.nio.charset.Charset
 
@@ -29,57 +28,63 @@ trait SerializingIter {
 
     var empties = 0
 
-    def done( status : StreamStatus ) : SerialIterT = {
+    def done( status : StreamStatus ) : SerialStepT = {
       // give it back
       closer()
       //println("empties was "+empties)
-      Done((status.output, status.thrown), EOF[PullType])
+      Done((status.output, status.thrown), Eof[PullType])
     }
 
-    def rest( status : StreamStatus, prev : PullType, serializer : Serializer )(s : Input[PullType]) : SerialIterT = {
-      s(el = e => {
-	if (status.thrown.isDefined) done(status)
-	else {
-	  val r = StreamSerializer.pump((prev, e), status, serializer)
-	  if (r.thrown.isDefined) done(r)
-	  else Cont(rest(r, e, serializer))
-	}
-	},
-        empty = {
-	  empties += 1
-	  //println("outitr empty")
-	  Cont(rest(status, prev, serializer))
-	},
-        eof =  {
-	if (status.thrown.isDefined) done(status)
-	else {
-	  val r = StreamSerializer.pump((prev, StreamSerializer.dummy), status, serializer)
-	  val opt = serializeMisc(r.output, doc.end.misc, serializer)._2
-	    
-	  val lastStatus = r.copy(thrown = opt)
-	  
-	  done(lastStatus)
-	}})
-    }
-    
+    def rest( status : StreamStatus, prev : PullType, serializer : Serializer )(s : Input[PullType]) : SerialIterT =
+      iteratee(
+        s(el = e =>
+            if (status.thrown.isDefined) done(status)
+            else {
+              val r = StreamSerializer.pump((prev, e), status, serializer)
+              if (r.thrown.isDefined) done(r)
+              else Cont(rest(r, e, serializer))
+            },
+          empty = {
+              empties += 1
+              //println("outitr empty")
+              Cont(rest(status, prev, serializer))
+            },
+          eof =  {
+            if (status.thrown.isDefined) done(status)
+            else {
+              val r = StreamSerializer.pump((prev, StreamSerializer.dummy), status, serializer)
+              val opt = serializeMisc(r.output, doc.end.misc, serializer)._2
+
+              val lastStatus = r.copy(thrown = opt)
+
+              done(lastStatus)
+            }}
+        )
+      )
+
+
+
     def first( status : StreamStatus, serializer : Serializer )(s : Input[PullType]) : SerialIterT =
-      s(el = e => {
-	// decl and prolog misc, which should have been collected by now
-	val opt = serializer.xmlDeclaration(status.output.data.encoding, 
-				  status.output.data.version).orElse{
-	    serializeMisc(status.output, doc.prolog.misc, serializer)._2
-	  }
-	val nstatus = status.copy(thrown = opt)
-	  
-	Cont(rest(nstatus, e, serializer))
-	},
-        empty = {
-	  empties += 1
-	  Cont(first(status, serializer))
-	},
-        eof = Done((status.output, Some(NoDataInStream())), EOF[PullType]))
+      iteratee(
+        s(el = e => {
+          // decl and prolog misc, which should have been collected by now
+          val opt = serializer.xmlDeclaration(status.output.data.encoding,
+                  status.output.data.version).orElse{
+              serializeMisc(status.output, doc.prolog.misc, serializer)._2
+            }
+          val nstatus = status.copy(thrown = opt)
 
-    Cont(first(StreamStatus(output), serializer))
+          Cont(rest(nstatus, e, serializer))
+          },
+          empty = {
+            empties += 1
+            Cont(first(status, serializer))
+          },
+          eof = Done((status.output, Some(NoDataInStream())), Eof[PullType])
+        )
+      )
+
+    iteratee( Cont(first(StreamStatus(output), serializer)) )
   }
 
   /**
