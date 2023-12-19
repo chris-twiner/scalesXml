@@ -1,5 +1,9 @@
 package scales.xml
 
+import scalaz.Id.Id
+import scalaz.iteratee.Input.Eof
+import scalaz.iteratee.Iteratee.{head, iteratee => siteratee}
+import scalaz.iteratee.StepT.{Cont, Done}
 import scales.xml.impl.NoVersionXmlReaderFactoryPool
 import scales.xml.serializers.XmlOutput
 
@@ -18,9 +22,8 @@ class PullTest extends junit.framework.TestCase {
   val Default = Namespace("urn:default")
   val DefaultRoot = Default("Default")
 
-  import scalaz.{IterV, Enumerator, Input, EphemeralStream}
-  import scalaz.IterV._
-
+  import scalaz.EphemeralStream
+  import scalaz.iteratee.{Iteratee, Enumerator, Input}
   
   import scales.utils.{resource => sresource}
  
@@ -144,14 +147,14 @@ class PullTest extends junit.framework.TestCase {
 
     val iteratee = dropWhile[PullType]( isShouldRedeclare )
 
-    val res = iteratee(pull.it) run
+    val res = (iteratee &= iteratorEnumerator(pull.it)) run
 
     assertTrue("Should have been some", res.isDefined)
     //println(res.get)
     assertTrue("Should have been a ShouldRedeclare", !isShouldRedeclare(res.get))
 
     // sanity check, we should now have an endelem
-    val sanity = head(pull.it) run
+    val sanity = (head[PullType, Id] &= iteratorEnumerator(pull.it)) run
 
     def sanityCheck = {
 
@@ -165,7 +168,7 @@ class PullTest extends junit.framework.TestCase {
     sanityCheck
 
     val iteratee2 = dropWhile[PullType]( isEndDefault )//(pull).run
-    val res2 = iteratee2(pull.it) run
+    val res2 = (iteratee2 &= iteratorEnumerator(pull.it)) run
 
     assertTrue("Should have been some - Default end", res2.isDefined)
     assertTrue("Should have been a Default end", !isEndDefault(res2.get))
@@ -211,24 +214,24 @@ class PullTest extends junit.framework.TestCase {
       })
 
     val count = (1 to maxIterations).iterator
-    itr(count) eval
+    (itr &= iteratorEnumerator(count)) eval
 
     val pull = pullXml(reader)
 
     val isEndRoot = (x : PullType) => {
       // pump more events
-      itr(count).eval
+      (itr &= iteratorEnumerator(count)).eval
 
       x match {
       case Right(EndElem(qname, _) ) if qname.local == "root" =>
-	false
+	      false
       case _ => 
-	true
+	      true
       
     }}
     
     val iteratee2 = dropWhile[PullType]( isEndRoot )
-    val res2 = iteratee2(pull.it) run
+    val res2 = (iteratee2 &= iteratorEnumerator(pull.it)) run
 
     assertTrue("Should have been some - root end", res2.isDefined)
     assertTrue("Should have been a root end", !isEndRoot(res2.get))
@@ -273,31 +276,37 @@ on both the qname matching (3 of them) and then the above combos
     val itrOdd : ITER  = find( (x : Int) => x % 2 == 1 )
 
     def isDone( i : Int, res : ITER) = 
-      res match {
-	case Done((x,cont), y) => 
-	  assertTrue("is defined "+i, x.isDefined)
-	  assertEquals(i, x.get)
-	  assertTrue("should have been Empty "+i, isEmpty(res))
-	case _ => fail("was not done "+i)
-      }
+      res foldT (
+        done = (a, y) =>
+          {
+            val (x,cont) = a
+            assertTrue("is defined " + i, x.isDefined)
+            assertEquals(i, x.get)
+            assertTrue("should have been Empty " + i, isEmpty(res))
+          },
+        cont = _ => fail("was not done "+i)
+      )
 
-    var res = itrOdd(liter).eval
+    var res = (itrOdd &= iteratorEnumerator(liter)).eval
     isDone(1, res)
 
     // check it does not blow up the stack and/or mem
 
     (2 to maxIterations).iterator.filter(_ % 2 == 1).foreach { i =>
-      res = extractCont(res)(liter).eval
+      res = (extractCont(res) &= iteratorEnumerator(liter)).eval
       isDone(i, res)
     }
 
-    res = extractCont(res)(liter).eval
-    res match {
-      case Done((x,cont), y) => 
-	assertFalse("should not be defined", x.isDefined)
-	assertTrue("should have been EOL", isEOF(res))
-      case _ => fail("was not done")
-    }
+    res = (extractCont(res) &= iteratorEnumerator(liter)).eval
+    res foldT (
+      done = (a, y) =>
+        {
+          val (x,cont) = a
+          assertFalse("should not be defined", x.isDefined)
+          assertTrue("should have been EOL", isEOF(res))
+        },
+      cont = _ => fail("was not done")
+    )
   }
 
   /**
@@ -312,30 +321,35 @@ on both the qname matching (3 of them) and then the above combos
     val counter = runningCount[Int] 
 
     def isDone( i : Int, res : ITER) = 
-      res match {
-	case Done((x,cont), y) => 
-	  assertEquals(i, x)
-	  assertTrue("should have been Empty "+i, isEmpty(res))
-	case _ => fail("was not done "+i)
-      }
+      res foldT (
+        done = (a, y) =>
+          {
+            val (x,cont) = a
+            assertEquals(i, x)
+            assertTrue("should have been Empty " + i, isEmpty(res))
+          },
+        cont = _ => fail("was not done "+i)
+      )
 
-    var res = counter(liter).eval
+    var res = (counter &= iteratorEnumerator(liter)).eval
     isDone(1, res)
 
     // check it does not blow up the stack and/or mem
 
     (2 to maxIterations).iterator.foreach { i =>
-      res = extractCont(res)(liter).eval
+      res = (extractCont(res) &= iteratorEnumerator(liter)).eval
       isDone(i, res)
     }
 
-    res = extractCont(res)(liter).eval
-    res match {
-      case Done((x,cont), y) => 
-	assertEquals(maxIterations, x)
-	assertTrue("should have been EOL", isEOF(res))
-      case _ => fail("was not done")
-    }
+    res = (extractCont(res) &= iteratorEnumerator(liter)).eval
+    res foldT (
+      done = (a, y) => {
+        val (x,cont) = a
+        assertEquals(maxIterations, x)
+        assertTrue("should have been EOL", isEOF(res))
+      },
+      cont = _ => fail("was not done")
+    )
   }
 
   /**
@@ -348,47 +362,50 @@ on both the qname matching (3 of them) and then the above combos
     val counter = runningCount[Int] 
 
     def step( list : List[Long])( s : Input[Int] ) : ResumableIter[Int,Long] =
-      s(el = {e =>
-	val next = e.longValue :: list
-	if (next.size == 3)
-	  Done((e, Cont(step(List()))), IterV.Empty[Int])
-	else
-	  Cont(step(next))
-	},
-        empty = Cont(step(list)),
-        eof = Done((list.last, Cont(step(List()))),IterV.EOF[Int]))
+      siteratee(
+        s(el = {e =>
+          val next = e.longValue :: list
+          if (next.size == 3)
+            Done((e, siteratee(Cont(step(List())))), Input.Empty[Int])
+          else
+            Cont(step(next))
+          },
+          empty = Cont(step(list)),
+          eof = Done((list.last, siteratee(Cont(step(List())))), Eof[Int])
+        )
+      )
     
-    val inThrees = Cont(step(List()))      
+    val inThrees = siteratee( Cont(step(List())) )
     
     val ionDone = onDone(List(counter, inThrees))
 
     def isDone( i : Int, res : ResumableIterList[Int,Long]) = 
       res match {
-	case Done((x :: Nil,cont), y) if i % 3 != 0 => 
-	  assertEquals(i, x)
-	  assertTrue("should have been Empty "+i, isEmpty(res))
-	case Done((x :: x2 :: Nil,cont), y)  if i % 3 == 0 => 
-	  assertEquals(i, x)
-	  assertEquals(i, x2)
-	  assertTrue("should have been Empty "+i, isEmpty(res))
-	case Done(x,y) => fail("Was done but not expected "+ x +" -> " + y )
-	case _ => fail("was not done "+i)
+        case Done((x :: Nil,cont), y) if i % 3 != 0 =>
+          assertEquals(i, x)
+          assertTrue("should have been Empty "+i, isEmpty(res))
+        case Done((x :: x2 :: Nil,cont), y)  if i % 3 == 0 =>
+          assertEquals(i, x)
+          assertEquals(i, x2)
+          assertTrue("should have been Empty "+i, isEmpty(res))
+        case Done(x,y) => fail("Was done but not expected "+ x +" -> " + y )
+        case _ => fail("was not done "+i)
       }
 
-    var res = ionDone(liter).eval
+    var res = (ionDone &= iteratorEnumerator(liter)).eval
     isDone(1, res)
 
     // check it does not blow up the stack and/or mem
 
     (2 to maxIterations).iterator.foreach { i =>
-      res = extractCont(res)(liter).eval
+      res = (extractCont(res) &= iteratorEnumerator(liter)).eval
       isDone(i, res)
     }
 
-    res = extractCont(res)(liter).eval
+    res = (extractCont(res) &= iteratorEnumerator(liter)).eval
     res match {
       case Done((Nil,cont), y)  => 
-	assertTrue("should have been EOL", isEOF(res))
+	      assertTrue("should have been EOL", isEOF(res))
       case _ => fail("was not done with empty")
     }
 
@@ -603,40 +620,42 @@ on both the qname matching (3 of them) and then the above combos
 try{
 
     val iter = EphemeralStream.toIterable(eevents(ourMax)).iterator
-at=0
+    at=0
     val QNames = List("root"l, "child"l, "interesting"l)
 
     val ionDone = onDone(List(onQNames(QNames)))
 
     def isDone( i : Int, res : ResumableIterList[PullType,QNamesMatch]) = 
-      res match {
-	case Done(((QNames, Some(x)) :: Nil,cont), y)  => 
-	  assertEquals( "interesting content "+ i, text(x))
-	  assertEquals(1, x.zipUp.children.size)
-	  assertTrue("should have been Empty "+i, isEmpty(res))
-	case Done((list, cont), y) => 
-	  fail("was done with "+ i+" "+list+" and input "+ y +" iter hasNext == "+iter.hasNext)
-	case _ => fail("was not done "+i+" was " + res )
-      }
+      res foldT( done = (x,y) => (x, y) match {
+          case (((QNames, Some(x)) :: Nil,cont), y)  =>
+            assertEquals( "interesting content "+ i, text(x))
+            assertEquals(1, x.zipUp.children.size)
+            assertTrue("should have been Empty "+i, isEmpty(res))
+          case ((list, cont), y) =>
+            fail("was done with "+ i+" "+list+" and input "+ y +" iter hasNext == "+iter.hasNext)
 
-    var res = ionDone(iter).eval
+        },
+        cont = _ => fail("was not done "+i+" was " + res )
+      )
+
+    var res = (ionDone &= iteratorEnumerator(iter)).eval
     isDone(1, res)
-    res = extractCont(res)(iter).eval
+    res = (extractCont(res) &= iteratorEnumerator(iter)).eval
     isDone(1+1, res)
     // check it does not blow up the stack and/or mem
-at=2
+    at=2
     (2 to (ourMax - 1)).iterator.foreach { i =>
-      res = extractCont(res)(iter).eval
+      res = (extractCont(res) &= iteratorEnumerator(iter)).eval
       isDone(i, res)
-      res = extractCont(res)(iter).eval
+      res = (extractCont(res) &= iteratorEnumerator(iter)).eval
       isDone(i + 1, res)
-at += 1
+      at += 1
     }
 
-    res = extractCont(res)(iter).eval
+    res = (extractCont(res) &= iteratorEnumerator(iter)).eval
     res match {
       case Done((Nil,cont), y)  => 
-	assertTrue("should have been EOL", isEOF(res))
+	      assertTrue("should have been EOL", isEOF(res))
       case _ => fail("was not done with empty")
     }
 } catch {
@@ -654,33 +673,33 @@ at += 1
     val ionDone = onDone(List(onQNames(QNames)))
 
     def isDone( i : Int, res : ResumableIterList[PullType,QNamesMatch]) = 
-      res match {
-	case Done(((QNames, Some(x)) :: Nil,cont), y)  =>
-	  // we want to see both sub text nodes
-	  assertEquals( "interesting content "+ i +"interesting content "+ (i + 1)
-		       , text(x))
-	  val count = x.zipUp.children.size
-	  if (count != 1){
-	    x.zipUp.children.foreach{x => println(x);println()}
-	    printTree(rootPath(x).tree)
-	    fail("more than one " + count +" at "+ println(elem(x)))
-	  }
-	  assertTrue("should have been Empty "+i, isEmpty(res))
-	case Done((list, cont), y) => 
-	  fail("was done with "+ i+" "+list+" and input "+ y +" iter hasNext == "+iter.hasNext)
-	case _ => fail("was not done "+i+" was " + res )
-      }
+      res foldT( done = (x,y) => (x,y) match {
+        case (((QNames, Some(x)) :: Nil,cont), y)  =>
+          // we want to see both sub text nodes
+          assertEquals( "interesting content "+ i +"interesting content "+ (i + 1)
+                 , text(x))
+          val count = x.zipUp.children.size
+          if (count != 1){
+            x.zipUp.children.foreach{x => println(x);println()}
+            printTree(rootPath(x).tree)
+            fail("more than one " + count +" at "+ println(elem(x)))
+          }
+          assertTrue("should have been Empty "+i, isEmpty(res))
+        case ((list, cont), y) =>
+          fail("was done with "+ i+" "+list+" and input "+ y +" iter hasNext == "+iter.hasNext)
 
-    var res = ionDone(iter).eval
+      }, cont = _ => fail("was not done "+i+" was " + res ))
+
+    var res = (ionDone &= iteratorEnumerator(iter)).eval
     isDone(1, res)
     // check it does not blow up the stack and/or mem
 
     (2 to (ourMax - 1)).iterator.foreach { i =>
-      res = extractCont(res)(iter).eval
+      res = (extractCont(res) &= iteratorEnumerator(iter)).eval
       isDone(i, res)
     }
 
-    res = extractCont(res)(iter).eval
+    res = (extractCont(res) &= iteratorEnumerator(iter)).eval
     res match {
       case Done((Nil,cont), y)  => 
 	assertTrue("should have been EOL", isEOF(res))
@@ -698,28 +717,28 @@ at += 1
     val ionDone = onDone(List(onQNames(repeatingQNames)))
 
     def isDone( i : Int, res : ResumableIterList[PullType,QNamesMatch]) = 
-      res match {
-	case Done(((repeatingQNames, Some(x)) :: Nil,cont), y)  =>
-	  // we want to see both sub text nodes
-	  assertEquals( "content "+ (i + 1)
-		       , text(x))
-	  assertEquals(1, x.zipUp.children.size)
-	  assertTrue("should have been Empty "+i, isEmpty(res))
-	case Done((list, cont), y) => 
-	  fail("was done with "+ i+" "+list+" and input "+ y +" iter hasNext == "+iter.hasNext)
-	case _ => fail("was not done "+i+" was " + res )
-      }
+      res foldT( done = (x,y) => (x,y) match {
+        case (((repeatingQNames, Some(x)) :: Nil,cont), y)  =>
+          // we want to see both sub text nodes
+          assertEquals( "content "+ (i + 1)
+                 , text(x))
+          assertEquals(1, x.zipUp.children.size)
+          assertTrue("should have been Empty "+i, isEmpty(res))
+        case ((list, cont), y) =>
+          fail("was done with "+ i+" "+list+" and input "+ y +" iter hasNext == "+iter.hasNext)
+      },  cont =  _ => fail("was not done "+i+" was " + res ))
 
-    var res = ionDone(iter).eval
+
+      var res = (ionDone &= iteratorEnumerator(iter)).eval
     isDone(1, res)
     // check it does not blow up the stack and/or mem
 
     (2 to (ourMax - 1)).iterator.foreach { i =>
-      res = extractCont(res)(iter).eval
+      res = (extractCont(res) &= iteratorEnumerator(iter)).eval
       isDone(i, res)
     }
 
-    res = extractCont(res)(iter).eval
+    res = (extractCont(res) &= iteratorEnumerator(iter)).eval
     res match {
       case Done((Nil,cont), y)  => 
 	assertTrue("should have been EOL", isEOF(res))
@@ -742,20 +761,20 @@ at += 1
 
     val iter = alternating.iterator
 
-    var res = altOnDone(iter).eval
+    var res = (altOnDone &= iteratorEnumerator(iter)).eval
     isInteresting(1, res)
-    res = extractCont(res)(iter).eval
+    res = (extractCont(res) &= iteratorEnumerator(iter)).eval
     isContent(2, res)
     // check it does not blow up the stack and/or mem
 
     (2 to (ourMax - 1)).iterator.foreach { i =>
-      res = extractCont(res)(iter).eval
+      res = (extractCont(res) &= iteratorEnumerator(iter)).eval
       isInteresting(i, res)
-      res = extractCont(res)(iter).eval
+      res = (extractCont(res) &= iteratorEnumerator(iter)).eval
       isContent(i+1, res)
     }
 
-    res = extractCont(res)(iter).eval
+    res = (extractCont(res) &= iteratorEnumerator(iter)).eval
     res match {
       case Done((Nil,cont), y)  => 
 	assertTrue("should have been EOL", isEOF(res))
@@ -773,17 +792,17 @@ at += 1
   val (isInteresting, isContent) = {
   
     def isDone(content : String, QNames : List[QName])( i : Int, res : ResumableIterList[PullType,QNamesMatch]) = 
-      res match {
-	case Done(((QNames, Some(x)) :: Nil,cont), y)  =>
-	  // we want to see both sub text nodes
-	  assertEquals( content+" "+ i
-		       , text(x))
-	  assertEquals(1, x.zipUp.children.size)
-	  assertTrue("should have been Empty "+i, isEmpty(res))
-	case Done((list, cont), y) => 
-	  fail("was "+content+" done with "+ i+" "+list+" and input "+ y)
-	case _ => fail("was not "+content+" done "+i+" was " + res )
-      }
+      res foldT( done = (x,y) => (x,y) match {
+        case (((QNames, Some(x)) :: Nil,cont), y)  =>
+          // we want to see both sub text nodes
+          assertEquals( content+" "+ i
+                 , text(x))
+          assertEquals(1, x.zipUp.children.size)
+          assertTrue("should have been Empty "+i, isEmpty(res))
+        case ((list, cont), y) =>
+          fail("was "+content+" done with "+ i+" "+list+" and input "+ y)
+
+      }, cont = _ => fail("was not "+content+" done "+i+" was " + res ))
     
     (isDone("interesting content", stillInterestingQNames) _,
       isDone("content", repeatingQNames) _)
@@ -803,21 +822,21 @@ at += 1
 
     val iter = alternating.iterator
 
-    var res = altOnDone(iter).eval
+    var res = (altOnDone &= iteratorEnumerator(iter)).eval
     isContent(2, res)
     // check it does not blow up the stack and/or mem
 
     (2 to (ourMax/2 - 1)).iterator.foreach { i =>
-      res = extractCont(res)(iter).eval
+      res = (extractCont(res) &= iteratorEnumerator(iter)).eval
       isContent(i+1, res)
     }
 
     (1 to (ourMax/2 - 1)).iterator.foreach { i =>
-      res = extractCont(res)(iter).eval
+      res = (extractCont(res) &= iteratorEnumerator(iter)).eval
       isInteresting(i, res)
     }
 
-    res = extractCont(res)(iter).eval
+    res = (extractCont(res) &= iteratorEnumerator(iter)).eval
     res match {
       case Done((Nil,cont), y)  => 
 	assertTrue("should have been EOL", isEOF(res))
@@ -878,33 +897,33 @@ at += 1
 
     val iter = withHeaders(ourMax).iterator
 
-    val total = foldOnDone(iter)( (0, 0), ionDone ){ 
+    val total = foldOnDone(iteratorEnumerator(iter))( (0, 0), ionDone ){
       (t, qnamesMatch) =>
-	if (qnamesMatch.size == 0) {
-	  t // no matches
-	} else {
-	  // only one at a time
-	  assertEquals(1, qnamesMatch.size)
-	  val head = qnamesMatch.head
-	  assertTrue("Should have been defined",head._2.isDefined)
-	  
-	  // we should never have more than one child in the parent
-	  // and thats us
-	  assertEquals(1, head._2.get.zipUp.children.size)
-/*	  val count = head._2.get.zipUp.children.size
-	  if (count != 1) {
-	    head._2.get.zipUp.children.foreach(println)
-	    fail("Had more children "+ count)
-	  }*/
-	  val i =  text(head._2.get).toInt
-	  if (head._1 eq Headers) {
-	    assertEquals(t._1, t._2)
-	    // get new section
-	    (i, 1)
-	  } else {
-	    (t._1, i)
-	  }
-	}
+        if (qnamesMatch.size == 0) {
+          t // no matches
+        } else {
+          // only one at a time
+          assertEquals(1, qnamesMatch.size)
+          val head = qnamesMatch.head
+          assertTrue("Should have been defined",head._2.isDefined)
+
+          // we should never have more than one child in the parent
+          // and thats us
+          assertEquals(1, head._2.get.zipUp.children.size)
+      /*	  val count = head._2.get.zipUp.children.size
+          if (count != 1) {
+            head._2.get.zipUp.children.foreach(println)
+            fail("Had more children "+ count)
+          }*/
+          val i =  text(head._2.get).toInt
+          if (head._1 eq Headers) {
+            assertEquals(t._1, t._2)
+            // get new section
+            (i, 1)
+          } else {
+            (t._1, i)
+          }
+	      }
     } 
     assertEquals(ourMax - 1, total._1)
     assertEquals(total._1, total._2)
@@ -958,21 +977,21 @@ at += 1
     val LogEntries = List("log"l,"logentry"l)
     val ionDone = onDone(List(onQNames(LogEntries)))
 
-    val entries = foldOnDone(pull.it)( List[FiveStrings](), ionDone ){ 
+    val entries = foldOnDone(iteratorEnumerator(pull.it))( List[FiveStrings](), ionDone ){
       (t, qnamesMatch) =>
-	if (qnamesMatch.size == 0) {
-	  t // no matches
-	} else {
-	  val entry = qnamesMatch.head._2.get
-	  val bits = for{ 
-			 revision <- entry.\.*@("revision"l).one
-			 author <- entry.\*("author"l).one
-			 path <- entry.\*("paths"l).\*("path"l)
-			 kind <- path.\.*@("kind"l)
-			 action <- path.\.*@("action"l)
-		       } yield (text(revision), value(author), text(kind), text(action), value(path))
-	  t ++ bits
-	}
+        if (qnamesMatch.size == 0) {
+          t // no matches
+        } else {
+          val entry = qnamesMatch.head._2.get
+          val bits = for{
+             revision <- entry.\.*@("revision"l).one
+             author <- entry.\*("author"l).one
+             path <- entry.\*("paths"l).\*("path"l)
+             kind <- path.\.*@("kind"l)
+             action <- path.\.*@("action"l)
+                 } yield (text(revision), value(author), text(kind), text(action), value(path))
+          t ++ bits
+        }
     }
     
     assertTrue("Pull was not closed",pull.isClosed)
@@ -984,11 +1003,11 @@ at += 1
   def testSkipTop = { 
     val iter = events(10).iterator
        
-    var res = skip(List())(iter) run
+    var res = (skip(List())  &= iteratorEnumerator(iter)) run
 
     assertEquals("{}root", qualifiedName(res.get))
 
-    res = skip(List())(iter) run
+    res = (skip(List()) &= iteratorEnumerator(iter)) run
 
     assertEquals("{}unloved", qualifiedName(res.get))
   }
@@ -996,7 +1015,7 @@ at += 1
   def testSkipSoap = {
     val iter = events(10).iterator
        
-    var res = skip(List(2, 1))(iter) run
+    var res = (skip(List(2, 1)) &= iteratorEnumerator(iter)) run
 
     val path = res.get
     assertEquals("{}interesting", qualifiedName(path))
@@ -1008,7 +1027,7 @@ at += 1
   def testSkipTooFar = {
     val iter = events(2).iterator
        
-    val res = skip(List(20, 1))(iter) run
+    val res = (skip(List(20, 1)) &= iteratorEnumerator(iter)) run
 
     assertTrue("Should not have found anything", res.isEmpty)
   }
@@ -1016,11 +1035,11 @@ at += 1
   def testSkipNoMatch = {
     def iter = events(2).iterator
        
-    var res = skip(List(1, 20))(iter) run
+    var res = (skip(List(1, 20)) &= iteratorEnumerator(iter)) run
 
     assertTrue("Should not have found anything", res.isEmpty)
 
-    res = skipv(1, 1, 20)(iter) run
+    res = (skipv(1, 1, 20) &= iteratorEnumerator(iter) )run
 
     assertTrue("Should not have found anything", res.isEmpty)
   }
