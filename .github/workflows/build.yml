@@ -83,7 +83,7 @@ jobs:
 
             grep -A 3 'Statement coverage:' target/site/scoverage/overview.html | tail -1 | sed 's/[[:space:]]\+//g' > target/coverage.txt
             grep -A 3 'Branch coverage:' target/site/scoverage/overview.html | tail -1 | sed 's/[[:space:]]\+//g' >> target/coverage.txt
-          gpgKey: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+            gpgKey: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
         env:
           OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           OSSRH_TOKEN: ${{ secrets.OSSRH_TOKEN }}
