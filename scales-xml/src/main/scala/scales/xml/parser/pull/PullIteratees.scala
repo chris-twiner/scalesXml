@@ -1,25 +1,14 @@
 package scales.xml.parser.pull
 
 import scales.utils._
-
-import scales.xml.{
-  PullType,
-  noXmlPath,
-  XmlPath,
-  QName,
-  ScalesXml,
-  Elem, EndElem,
-  XmlItem,
-  addAndFocus,
-  addChild,
-  XmlBuilder,
-  parser,
-  impl => ximpl
-  }
-
+import scales.xml.{Elem, EndElem, PullType, QName, ScalesXml, XmlBuilder, XmlItem, XmlPath, addAndFocus, addChild, noXmlPath, parser, impl => ximpl}
 import scales.xml.parser.strategies.{MemoryOptimisationStrategy, OptimisationToken}
-
 import collection.FlatMapIterator
+import scalaz.Id.Id
+import scalaz.iteratee.Input.{Empty, Eof}
+import scalaz.iteratee.Iteratee.iteratee
+import scalaz.iteratee.StepT
+import scalaz.iteratee.StepT.{Cont, Done}
 
 /**
  * Iteratees related to pull parsing
@@ -28,8 +17,8 @@ trait PullIteratees {
 
   // enumerators and iteratees follow
 
-  import scalaz.{IterV, Enumerator, Input, EphemeralStream}
-  import scalaz.IterV._
+  import scalaz.EphemeralStream
+  import scalaz.iteratee.{Iteratee, Enumerator, Input}
 
   type QNamesMatch = (List[QName], Option[XmlPath])
 
@@ -50,81 +39,83 @@ trait PullIteratees {
 
     lazy val starter = Cont(step(Nil, (qnames.head, 0), qnames.tail.map((_, 0)), noXmlPath, false))
 
-    def step(before: List[(QName, Int)], focus: (QName, Int), toGo: List[(QName, Int)], path: XmlPath, collecting: Boolean)(s: Input[PullType]): ResumableIter[PullType, QNamesMatch] =
-      s(el = { e => //println(e +" "+before+" "+focus+" " + toGo);
-        e match {
+    def step(before: List[(QName, Int)], focus: (QName, Int), toGo: List[(QName, Int)], path: XmlPath, collecting: Boolean)(s: Input[PullType]): ResumableIter[PullType, QNamesMatch] = {
+      iteratee(
+        s(el = {
+            case Left(elem@Elem(q, a, n)) => {
+              val nfocus = if (q == focus._1) (focus._1, focus._2 + 1)
+              else focus
+              val npath = addAndFocus(path, elem)
 
-          case Left(elem@Elem(q, a, n)) => {
-            val nfocus = if (q == focus._1) (focus._1, focus._2 + 1)
-            else focus
-            val npath = addAndFocus(path, elem)
+              val shouldCollect = collecting || (toGo.isEmpty && q == focus._1)
 
-            val shouldCollect = collecting || (toGo.isEmpty && q == focus._1)
-
-            Cont(
-              // is it our head?
-              if ((!toGo.isEmpty) && q == focus._1)
-                // move down
-                step(before :+ focus, toGo.head, toGo.tail, npath, false)
-              else
-                // wait for a down
-                step(before, nfocus, toGo, npath, shouldCollect))
-          }
-
-          case Left(x: XmlItem) =>
-            if (collecting) // collect
-              Cont(step(before, focus, toGo, addChild(path, x), true))
-            else
-              Cont(step(before, focus, toGo, path, false)) // don't collect
-
-          case Right(EndElem(q, n)) =>
-
-            if (q == focus._1) {
-              val ncfocus = (focus._1, focus._2 - 1)
-
-              if (toGo.isEmpty && ncfocus._2 == 0) // we are popping to the selected level
-                Done(((qnames, Some(path)),
-                  Cont(step(before, ncfocus, toGo,
-                    // remove all children on the next iteration
-                    path.removeAndUp.getOrElse(noXmlPath), false))), IterV.Empty[PullType])
-              else {
-                if (before.isEmpty)
-                  starter // only when the root is asked for, could just refuse that of course?
-                else {
-                  if (collecting)
-                    // we are collecting but we still have more than 0 repeated qnames deep
-                    Cont(step(before, ncfocus, toGo, path.zipUp, true))
-                  else {
-                    // we aren't collecting but we are moving up, we just have repeated names
-                    val nfocus = before.last
-                    val nbefore = before.dropRight(1)
-                    Cont(step(nbefore, nfocus, focus :: toGo,
-                      path.removeAndUp.getOrElse(noXmlPath), false // we have NOT been collecting
-                      ))
-                  }
-                }
-              }
-            } else {
-              Cont(step(before, focus, toGo,
-                if (collecting) // empty is not enough, it should also be definitely collecting
-                  path.zipUp
+              Cont(
+                // is it our head?
+                if ((!toGo.isEmpty) && q == focus._1)
+                  // move down
+                  step(before :+ focus, toGo.head, toGo.tail, npath, false)
                 else
-                  path.removeAndUp.getOrElse(noXmlPath), collecting))
+                  // wait for a down
+                  step(before, nfocus, toGo, npath, shouldCollect))
             }
 
-        }
-      },
-        empty = Cont(step(before, focus, toGo, path, false)),
-        eof = Done(((qnames, None), starter), IterV.EOF[PullType]))
+            case Left(x: XmlItem) =>
+              if (collecting) // collect
+                Cont(step(before, focus, toGo, addChild(path, x), true))
+              else
+                Cont(step(before, focus, toGo, path, false)) // don't collect
+
+            case Right(EndElem(q, n)) =>
+
+              if (q == focus._1) {
+                val ncfocus = (focus._1, focus._2 - 1)
+
+                if (toGo.isEmpty && ncfocus._2 == 0) // we are popping to the selected level
+                  Done(((qnames, Some(path)),
+                    iteratee(Cont(step(before, ncfocus, toGo,
+                      // remove all children on the next iteration
+                      path.removeAndUp.getOrElse(noXmlPath), false)))), Empty[PullType])
+                else {
+                  if (before.isEmpty)
+                    starter // only when the root is asked for, could just refuse that of course?
+                  else {
+                    if (collecting)
+                      // we are collecting but we still have more than 0 repeated qnames deep
+                      Cont(step(before, ncfocus, toGo, path.zipUp, true))
+                    else {
+                      // we aren't collecting but we are moving up, we just have repeated names
+                      val nfocus = before.last
+                      val nbefore = before.dropRight(1)
+                      Cont(step(nbefore, nfocus, focus :: toGo,
+                        path.removeAndUp.getOrElse(noXmlPath), false // we have NOT been collecting
+                        ))
+                    }
+                  }
+                }
+              } else {
+                Cont(step(before, focus, toGo,
+                  if (collecting) // empty is not enough, it should also be definitely collecting
+                    path.zipUp
+                  else
+                    path.removeAndUp.getOrElse(noXmlPath), collecting))
+              }
+
+          },
+          empty = Cont(step(before, focus, toGo, path, false)),
+          eof = Done(((qnames, None), iteratee( starter )), Eof[PullType])
+        )
+      )
+    }
+
 
     if (qnames.isEmpty) error("Qnames is empty")
 
-    starter
+    iteratee( starter )
   }
 
   type PeekMatch = Option[XmlPath]
 
-  def skipv(downTo: Int*): IterV[PullType, PeekMatch] = skip(List(downTo: _*))
+  def skipv(downTo: Int*): Iteratee[PullType, PeekMatch] = skip(List(downTo: _*))
 
   /**
    * Skips all events until the indexes match downTo, can be seen as
@@ -134,54 +125,54 @@ trait PullIteratees {
    * It returns the XmlPath to the skipped position, for soap /Envelope/Body/Request but does not collect the contents of that node.
    * An empty list will simply return the first Element found.
    */
-  def skip(downTo: => List[Int]): IterV[PullType, PeekMatch] = {
+  def skip(downTo: => List[Int]): Iteratee[PullType, PeekMatch] = {
 
-    lazy val dEof: IterV[PullType, PeekMatch] = Done(None, IterV.EOF[PullType])
+    lazy val dEof: StepT[PullType, Id, PeekMatch] = Done(None, Eof[PullType])
 
-    def step(before: List[Int], pos: List[Int], toGo: List[Int], path: XmlPath)(s: Input[PullType]): IterV[PullType, PeekMatch] =
-      s(el = { e =>
-        e match {
+    def step(before: List[Int], pos: List[Int], toGo: List[Int], path: XmlPath)(s: Input[PullType]): Iteratee[PullType, PeekMatch] =
+      iteratee(
+        s(el = {
 
-          case Left(elem@Elem(q, a, n)) => {
-            lazy val npath = addAndFocus(path, elem)
-            val npos = pos.head + 1 :: pos.tail
-            val could = toGo.head == npos.head
-            //println("pos "+pos+ " npos "+npos+" before "+before+" toGo "+toGo)
-            if (pos.size == (before.size + 1)) // correct level
-              if (toGo.size == 1 && could)
-                Done(Some(npath), IterV.Empty[PullType])
-              else if (npos.head > toGo.head)
-                dEof
-              else if (could)
-                // pop and move down
-                Cont(step(before :+ toGo.head, 0 :: npos, toGo.tail, npath))
+            case Left(elem@Elem(q, a, n)) => {
+              lazy val npath = addAndFocus(path, elem)
+              val npos = pos.head + 1 :: pos.tail
+              val could = toGo.head == npos.head
+              //println("pos "+pos+ " npos "+npos+" before "+before+" toGo "+toGo)
+              if (pos.size == (before.size + 1)) // correct level
+                if (toGo.size == 1 && could)
+                  Done(Some(npath), Empty[PullType])
+                else if (npos.head > toGo.head)
+                  dEof
+                else if (could)
+                  // pop and move down
+                  Cont(step(before :+ toGo.head, 0 :: npos, toGo.tail, npath))
+                else
+                  Cont(step(before, 0 :: npos, toGo, npath))
               else
                 Cont(step(before, 0 :: npos, toGo, npath))
-            else
-              Cont(step(before, 0 :: npos, toGo, npath))
 
-          }
+            }
 
-          // just return this again
-          case Left(x: XmlItem) =>
-            Cont(step(before, pos, toGo, path))
+            // just return this again
+            case Left(x: XmlItem) =>
+              Cont(step(before, pos, toGo, path))
 
-          // pop up no collecting, loose the head as we are moving up again
-          case Right(EndElem(q, n)) =>
-            // get or else end doc elem
-            if (pos.size > 0 && pos.size == before.size + 1)
-              // we have moved down in toGo
-              Cont(step(before.dropRight(1), pos.tail, before.last :: toGo, path.removeAndUp().getOrElse(noXmlPath)))
-            else
-              Cont(step(before, pos.tail, toGo, path.removeAndUp().getOrElse(noXmlPath)))
+            // pop up no collecting, loose the head as we are moving up again
+            case Right(EndElem(q, n)) =>
+              // get or else end doc elem
+              if (pos.size > 0 && pos.size == before.size + 1)
+                // we have moved down in toGo
+                Cont(step(before.dropRight(1), pos.tail, before.last :: toGo, path.removeAndUp().getOrElse(noXmlPath)))
+              else
+                Cont(step(before, pos.tail, toGo, path.removeAndUp().getOrElse(noXmlPath)))
 
-        }
-      },
-        empty = Cont(step(before, pos, toGo, path)),
-        eof = dEof //Done((downTo, None),IterV.EOF[PullType])
-        )
+          },
+          empty = Cont(step(before, pos, toGo, path)),
+          eof = dEof //Done((downTo, None),IterV.EOF[PullType])
+          )
+      )
 
-    Cont(step(List[Int](), List(0), 1 :: downTo, noXmlPath))
+    iteratee( Cont(step(List[Int](), List(0), 1 :: downTo, noXmlPath)) )
   }
 
   /**

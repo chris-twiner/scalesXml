@@ -1,16 +1,13 @@
 package scales.utils.collection.path
 
-import scala.collection.immutable.Stack
-import scala.collection.IndexedSeqLike
 import scala.collection.generic.CanBuildFrom
-
-import scales.utils.{LeftLike, RightLike, EitherLike, ItemOrTree, collection, subtree}
-import collection.Tree
+import scales.utils.{EitherLike, ItemOrTree, LeftLike, RightLike, TreeCBF, collection, subtree}
+import collection.{SeqLikeThing, Tree}
 
 /**
  * Represents the Top for a given Path, there isn't a tree above this
  */ 
-case class Top[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]]() extends LeftLike[Top[Item, Section, CC], Path[Item, Section, CC]] 
+case class Top[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: SeqLikeThing[X]]() extends LeftLike[Top[Item, Section, CC], Path[Item, Section, CC]]
 
 /**
  * Positions only have meaning for a given Path(s).
@@ -20,12 +17,12 @@ case class Top[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <
  * @author Chris
  *
  */
-trait Position[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]] {
+trait Position[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: SeqLikeThing[X]] {
   private[utils] val root: Path[Item, Section, CC]
-  private[utils] val position: Stack[Int]
+  private[utils] val position: List[Int]
 }
 
-private[utils] case class PositionImpl[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]](val position: Stack[Int], val root: Path[Item, Section, CC]) extends Position[Item, Section, CC]
+private[utils] case class PositionImpl[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: SeqLikeThing[X]](position: List[Int], root: Path[Item, Section, CC]) extends Position[Item, Section, CC]
 
 /**
  * Position in a parent Paths children
@@ -33,16 +30,14 @@ private[utils] case class PositionImpl[Item <: LeftLike[Item, Tree[Item, Section
  * @author Chris
  *
  */ // note - lazy is a perf killer for building, probably doesn't save much over interrogation either (given Iterator is used) 
-case class Node[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]](index: Int, focus: ItemOrTree[Item, Section, CC])
+case class Node[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: SeqLikeThing[X]](index: Int, focus: ItemOrTree[Item, Section, CC])
 
-case class Path[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]](top: EitherLike[Top[Item,Section,CC], Path[Item, Section, CC]], node: Node[Item, Section, CC])
-     (implicit cbf : CanBuildFrom[CC[_], ItemOrTree[Item, Section, CC], CC[ItemOrTree[Item, Section, CC]]]) extends Iterable[Path[Item, Section, CC]] with RightLike[Top[Item, Section, CC], Path[Item, Section, CC]] { self =>
-
-  // for some reason its not liking the types, probably  good one
+case class Path[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: SeqLikeThing[X]](top: EitherLike[Top[Item,Section,CC], Path[Item, Section, CC]], node: Node[Item, Section, CC])
+     (implicit cbf : TreeCBF[Item, Section, CC]) extends Iterable[Path[Item, Section, CC]] with RightLike[Top[Item, Section, CC], Path[Item, Section, CC]] { self =>
 
   def parentTree : Tree[Item, Section, CC] = top.getRight.node.focus.getRight
 
-  def parentCount = if (top.isLeft) 0 else parentTree.children.length
+  def parentCount = if (top.isLeft) 0 else parentTree.children.seq.length
 
   /** Is there a previous sibling */
   def hasPreviousSibling = (node.index > 0 && node.index <= parentCount)
@@ -60,7 +55,7 @@ case class Path[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] 
    */
   def hasChildren =
     if (isItem) false
-    else children.length != 0
+    else children.seq.length != 0
 
   /**
    * Folds over child or tree
@@ -76,12 +71,12 @@ case class Path[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] 
   /**
    * Call hasPreviousSibling first to assert there is a previous sibling
    */
-  def previousSibling = Path(top, Node(node.index - 1, parentTree.children.apply(node.index - 1)))
+  def previousSibling = Path(top, Node(node.index - 1, parentTree.children.seq.apply(node.index - 1)))
 
   /**
    * Call hasNextSibling first to assert there is a next sibling
    */
-  def nextSibling = Path(top, Node(node.index + 1, parentTree.children(node.index + 1)))
+  def nextSibling = Path(top, Node(node.index + 1, parentTree.children.seq(node.index + 1)))
 
   /**
    * get the tree (isItem == false)
@@ -127,7 +122,7 @@ case class Path[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] 
    */
   def firstChild(): Option[Path[Item, Section, CC]] =
     if (!hasChildren) None // can't have a child if its just a data node
-    else Some(Path(this, Node(0, children.head)))
+    else Some(Path(this, Node(0, children.seq.head)))
 
   /**
    * Returns either the last child or none.  Note the child would still need to be unpacked
@@ -137,11 +132,11 @@ case class Path[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] 
     if (isItem) None // items don't have children
     else {
       val c = children
-      if (c.length == 0) None // no children
+      if (c.seq.length == 0) None // no children
       else {
-	val newPos = c.length - 1
-	Some(Path(this,
-	  Node(newPos, c(newPos))))
+        val newPos = c.seq.length - 1
+        Some(Path(this,
+          Node(newPos, c.seq(newPos))))
       }
     }
 										   
@@ -155,10 +150,10 @@ case class Path[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] 
       val path = top.right.get
       val pt = parentTree
 
-      if (pt.children(node.index) eq node.focus) path
+      if (pt.children.seq(node.index) eq node.focus) path
       else {
         val parentFocus = // ZIP IT, must be a tree
-          subtree(pt.section, pt.children.updated(node.index, node.focus))
+          subtree[Item, Section, CC](pt.section, pt.children.updated(node.index, node.focus).asInstanceOf[CC[ItemOrTree[Item, Section, CC]]])
 
         Path(path.top, Node(path.node.index,
           parentFocus))
@@ -184,15 +179,15 @@ case class Path[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] 
       val tree = path.node.focus.right.get
 
       val parentFocus = {
-	val c = parentTree.children
+        val c = parentTree.children
 
-	if (c.size == 1) {
-	  // optimising for pull parse onqnames, if its only one in the parent, set the parent to empty, sucks if its not traversable
-	  subtree(tree.section, c.asInstanceOf[scala.collection.Traversable[ItemOrTree[Item, Section, CC]]].companion.empty.asInstanceOf[CC[ItemOrTree[Item, Section, CC]]])
-	} else {
-	  val parts = parentTree.children.splitAt(node.index)
-	  subtree(tree.section, parts._1 ++ parts._2.tail)
-	}
+        if (c.seq.size == 1) {
+          // optimising for pull parse onqnames, if its only one in the parent, set the parent to empty, sucks if its not traversable
+          subtree(tree.section, c.builder.result().asInstanceOf[CC[ItemOrTree[Item, Section, CC]]])
+        } else {
+          val parts = parentTree.children.splitAt(node.index)
+          subtree(tree.section, ((parts._1 ++ parts._2.tail).asInstanceOf[CC[ItemOrTree[Item, Section, CC]]]))
+        }
 	
       }
 
@@ -207,15 +202,15 @@ case class Path[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] 
    */
   def position(): Position[Item, Section, CC] = {
     @scala.annotation.tailrec
-    def makePosition(path: Path[Item, Section, CC], stack: Stack[Int]): (Stack[Int], Path[Item, Section, CC]) = {
-      val newStack = stack.push(path.node.index)
+    def makePosition(path: Path[Item, Section, CC], stack: List[Int]): (List[Int], Path[Item, Section, CC]) = {
+      val newStack = path.node.index :: stack
       if (path.top.isLeft)
         (newStack, path)
       else
         makePosition(path.top.right.get, newStack)
     }
 
-    val res = makePosition(this, Stack[Int]())
+    val res = makePosition(this, List[Int]())
     new PositionImpl[Item,Section,CC](res._1, res._2)
   }
 

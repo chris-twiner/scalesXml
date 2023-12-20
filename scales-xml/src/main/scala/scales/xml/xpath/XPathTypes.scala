@@ -1,11 +1,11 @@
 package scales.xml.xpath
 
 import scales.utils._
+import scales.utils.collection.BuilderHelper
+
 import scala.collection.generic.CanBuildFrom
 import scales.utils.one
-
-import scales.xml.{Elem, Attributes, Attribute, XCC, XmlItem, XmlPath, AttributeQName, ScalesXml, text, UnprefixedQName}
-
+import scales.xml.{Attribute, AttributeQName, Attributes, Elem, ScalesXml, UnprefixedQName, XCC, XmlItem, XmlPath, text}
 import scales.xml.impl.EqualsHelpers
 
 /** Simple container for keeping relationship between the parent and attribute */
@@ -22,7 +22,7 @@ case class AttributePathComparisoms(path: AttributePath) {
 }
 
 /** Attributes that have been selected */
-case class AttributePaths[PT <: Iterable[XmlPath]](attributes: Iterable[AttributePath], path: XPathInfo, cbf: CanBuildFrom[PT, XmlPath, PT]) {
+case class AttributePaths[PT <: Iterable[XmlPath]](attributes: Iterable[AttributePath], path: XPathInfo, cbf: CanBuildFrom[PT, XmlPath, PT])(implicit helper: BuilderHelper[XmlPath, PT]) {
   import scales.xml.impl.EqualsHelpers.toQName
   /** Parents of the attributepaths */
   def \^(): XPath[PT] = new XPath[PT](path.copy(nodes = List(attributes.map(_.parent))), cbf)
@@ -74,15 +74,15 @@ case class XPathInfo(nodes: Iterable[Iterable[XmlPath]], mustBeSorted: Boolean =
  *
  * (Temptation is to provide the base type as SeqLike instead of Iterable as it should be in a sequence with a defined order, also then providing .reverse and friends)
  */
-class XPath[PT <: Iterable[XmlPath]](val path: XPathInfo, val cbf: CanBuildFrom[PT, XmlPath, PT]) extends ElementStep with OtherNodeTypes with AttributeAxis with SiblingsAxis with DocumentSplitters {
+class XPath[PT <: Iterable[XmlPath]](val path: XPathInfo, val cbf: CanBuildFrom[PT, XmlPath, PT])(implicit val helper: BuilderHelper[XmlPath, PT]) extends ElementStep with OtherNodeTypes with AttributeAxis with SiblingsAxis with DocumentSplitters {
 
   type T = PT
 
   def newThis(xpathInfo: XPathInfo): XPath[T] =
     new XPath[T](xpathInfo, cbf)
 
-  def empty: Iterable[XmlPath] = cbf().result
-  def just(only: XmlPath): Iterable[XmlPath] = (cbf() += only).result
+  def empty: Iterable[XmlPath] = helper.builder.result
+  def just(only: XmlPath): Iterable[XmlPath] = (helper.builder += only).result
 
   /**
    * Allow working within the XPath, easily extend and test
@@ -128,7 +128,7 @@ class XPath[PT <: Iterable[XmlPath]](val path: XPathInfo, val cbf: CanBuildFrom[
 /**
  * Pos and filter for a direct access does not flatmap.  The next / breaks the chain
  */
-class DirectXPath[PT <: Iterable[XmlPath]](override val path: XPathInfo, override val cbf: CanBuildFrom[PT, XmlPath, PT]) extends XPath[PT](path, cbf) {
+class DirectXPath[PT <: Iterable[XmlPath]](override val path: XPathInfo, override val cbf: CanBuildFrom[PT, XmlPath, PT])(implicit helper: BuilderHelper[XmlPath, PT]) extends XPath[PT](path, cbf) {
   override def process(newNodes: Iterable[Iterable[XmlPath]],  info : XPathInfo = path) = {
       newThis(info.copy( nodes = newNodes ))
     }

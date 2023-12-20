@@ -299,27 +299,27 @@ class ParsingPerformanceRecon extends SimpleScalaBenchmark {
     import Recon._
 
     val xml = pullXml(new java.io.StringReader(s)).it
-    foldOnDone( xml )( Recon() , 
+    foldOnDone( iteratorEnumerator(xml) )( Recon() ,
 		      onDone( List(onQNames(Part), 
 				   onQNames(Bom), 
 				   onQNames(Rec)) )) {
       (recon, qNamesMatch) => 
-	if (qNamesMatch.size == 0)
-	  recon
-	else {
-	  // we expect only one to match in this pattern	  
-	  val matched = qNamesMatch.head
-	  val qnames = matched._1  // to get an onDone it must be defined
-	  val x = matched._2.get
-	  // only one child
-	  val pair = versionf(x)
-	  
-	  //recon
-	  qnames match {
-	    case Part => recon.copy( parts = recon.parts + pair )
-	    case Bom => recon.copy( boms = recon.boms + pair )
-	    case Rec => recon.copy( recs = recon.recs + pair )
-	  }/**/
+      if (qNamesMatch.size == 0)
+        recon
+      else {
+        // we expect only one to match in this pattern
+        val matched = qNamesMatch.head
+        val qnames = matched._1  // to get an onDone it must be defined
+        val x = matched._2.get
+        // only one child
+        val pair = versionf(x)
+
+        //recon
+        qnames match {
+          case Part => recon.copy( parts = recon.parts + pair )
+          case Bom => recon.copy( boms = recon.boms + pair )
+          case Rec => recon.copy( recs = recon.recs + pair )
+        }/**/
 	}			   
     
     }

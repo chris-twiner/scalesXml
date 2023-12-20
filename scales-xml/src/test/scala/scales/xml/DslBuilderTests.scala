@@ -457,11 +457,11 @@ class DslBuildersTest extends junit.framework.TestCase {
 
     val folded = foldPositions(all)( p =>
       localName(p.tree) match {
-	case "i30" => Replace(ns("i2"), ns("i3") )
-	case "i70" => Replace(ns("i4"), ns("i5") , ns("i6") ,ns("i7") )
-	case "i100" => Replace(ns("i8"), ns("i9") , ns("i10") ) 
-	// just copy it over - noop
-	case _ @ x => AsIs()
+        case "i30" => Replace(ns("i2"), ns("i3") )
+        case "i70" => Replace(ns("i4"), ns("i5") , ns("i6") ,ns("i7") )
+        case "i100" => Replace(ns("i8"), ns("i9") , ns("i10") )
+        // just copy it over - noop
+        case _ @ x => AsIs()
       }
     )
     

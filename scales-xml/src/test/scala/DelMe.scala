@@ -14,13 +14,13 @@ object ReplaceStuff {
 
   val sysEnv = {
 //    import scala.collection.jcl.Conversions._
-    import scala.collection.JavaConversions._
-    System.getenv().map{(x) => (x._1, () => x._2)}
+    import scala.collection.JavaConverters._
+    System.getenv().asScala.map{(x) => (x._1, () => x._2)}
   }
   val sysProperties = {
 //    import scala.collection.jcl.Conversions._
-    import scala.collection.JavaConversions._
-    System.getProperties().map{(x) => (x._1.toString, () => x._2.toString)}
+    import scala.collection.JavaConverters._
+    System.getProperties().asScala.map{(x) => (x._1.toString, () => x._2.toString)}
   }
 
   def siteTokens = Map( "User" -> userF, "timestamp" -> { () => {new java.util.Date().toString}}, 

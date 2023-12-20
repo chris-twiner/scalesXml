@@ -1,8 +1,8 @@
 package scales.xml.impl
 
 import scala.collection.immutable.Map
-
 import scala.collection.generic.CanBuildFrom
+import scala.reflect.ClassManifest
 
 //import scales.utils.collection.path.{Path, Node, Position}
 import scales.utils.{TreeCBF, subtree, item, top, ItemOrTree, noPath => fno, EitherLike, LeftLike}

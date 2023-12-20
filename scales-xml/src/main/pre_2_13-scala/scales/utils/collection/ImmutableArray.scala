@@ -1,10 +1,11 @@
 package scales.utils.collection
 
-import collection.{IndexedSeqOptimized, IndexedSeqLike, IndexedSeq}
-import collection.mutable.Builder
-import collection.generic.{CanBuildFrom, GenericTraversableTemplate, SeqFactory, GenericCompanion}
+import scales.utils.collection.array.{IAEmpty, IAOne, IAThree, IATwo, ImmutableArrayAll, ImmutableArrayBuilder, VectorImpl}
 
-import scales.utils.collection.array._
+import scala.collection.generic.{CanBuildFrom, GenericCompanion, GenericTraversableTemplate, SeqFactory}
+import scala.collection.mutable.Builder
+import scala.collection.{IndexedSeq, IndexedSeqOptimized}
+import scala.reflect.ClassManifest
 
 object ImmutableArrayProxyBuilder {
   final val vectorAfter = 31
@@ -93,6 +94,7 @@ case class ImmutableArrayProxyBuilder[ A ]() extends Builder[A, ImmutableArrayPr
       }
     }
 
+  //override def addAll(xs: TraversableOnce[A]): this.type = {
   override def ++=(xs: TraversableOnce[A]): this.type = {
     // if its already a vector don't start with arrays again
     if (!haveChosen && xs.isInstanceOf[VectorImpl[A]]) {
@@ -123,6 +125,7 @@ case class ImmutableArrayProxyBuilder[ A ]() extends Builder[A, ImmutableArrayPr
   }
 
   def +=( elem : A) : this.type = {
+  //override def addOne(elem: A): ImmutableArrayProxyBuilder.this.type = {
     length += 1
     if (inVector) {
       vectorBuilder.+=(elem)
@@ -176,7 +179,7 @@ object ImmutableArrayProxy extends SeqFactory[ImmutableArrayProxy] {
   /**
    * Convenience constructor creates a single cell array
    */ 
-  def one[A](a: A): ImmutableArrayProxy[A] = IAOne(a)
+  def one[A](a: A): ImmutableArrayProxyLikeThing[A] = ImmutableArrayProxyLikeThing(IAOne(a))
 
   @inline final override def empty[ A ] : ImmutableArrayProxy[A]  = emptyImmutableArray.asInstanceOf[ImmutableArrayProxy[A]]
 

@@ -1,8 +1,8 @@
 package scales.xml.xpath
 
 import scales.xml._
-
 import scales.utils._
+import scales.utils.collection.BuilderHelper
 
 /**
  * Unlike XPath spec no reverse axis are directly provided by the dsl
@@ -42,6 +42,8 @@ trait SiblingsAxis extends Axis {
 
 /** The * and @ must be swapped otherwise its an annotation */
 trait AttributeAxis extends Axis {
+
+  implicit val helper: BuilderHelper[XmlPath, T]
 
   def i_*@ : Iterable[AttributePath] =
     path.nodes.flatMap {

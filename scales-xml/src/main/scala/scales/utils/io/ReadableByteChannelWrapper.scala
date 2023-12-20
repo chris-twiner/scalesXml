@@ -1,15 +1,15 @@
 package scales.utils.io
 
 import scales.utils._
-
 import resources._
-
-import scalaz.{IterV, Enumerator, Input}
-import scalaz.IterV._
+import scalaz.Id
+import scalaz.iteratee.Input.{Element, Empty, Eof}
+import scalaz.iteratee.Iteratee.iteratee
+import scalaz.iteratee.StepT.{Cont, Done}
+import scalaz.iteratee.{Enumerator, Input, Iteratee, IterateeT, StepT}
 
 import java.io._
 import java.nio.channels._
-
 import java.nio.ByteBuffer
 
 sealed trait DataChunkEvidence[T]
@@ -194,8 +194,8 @@ trait ReadableByteChannelWrapperImplicits {
 
   implicit def toRBCWrapper(channel: ReadableByteChannel)(implicit ev: DataChunkEvidence[DataChunk]): RBCImplicitWrapper = new RBCImplicitWrapper(channel)
 
-  implicit def dataChunkerEnumerator[T[_] <: DataChunker[_]]: Enumerator[T] =
-    new AsyncDataChunkerEnumerator[T]()
+  implicit def dataChunkerEnumerator[E](chunker: DataChunker[E]): Enumerator[E] =
+    new AsyncDataChunkerEnumerator[E](chunker)
 
   /**
    * Use in a call to asyncReadableByteChannelEnumerator to turn it into a synchronous enumerator (constantly trying to get new chunks of data)
@@ -210,39 +210,40 @@ trait ReadableByteChannelWrapperImplicits {
    * Note: Call via eval only.
    * @param contOnCont INFINITE_RETRIES (-1) for keep on trying, the default is 5 (as exposed by the implicit enumerator readableByteChannelEnumerator)
    */
-  class AsyncDataChunkerEnumerator[T[_] <: DataChunker[_]]( contOnCont: Int = 5 ) extends Enumerator[T] {
-    def apply[E,A](chunker: T[E], i: IterV[E,A]): IterV[E, A] = {
- 
-      def apply(chunker: T[E], i: IterV[E,A], count: Int): IterV[E, A] = {
-	i match {
-	  case _ if chunker.underlyingClosed || chunker.isClosed => i
-	  case Done(acc, input) => i
-	  case Cont(k) =>
-	    val realChunk = chunker.nextChunk
-	    val nextChunk = realChunk.asInstanceOf[E]
-	    val nextI = 
-	      if (realChunk.isEOF) {
-		 // println("actual data was EOF !!!")
-		  k(IterV.EOF[E])
-		} else
-		  if (realChunk.isEmpty)
-		    k(IterV.Empty[E])
-		  else
-		    k(El(nextChunk))
-	    val nc = 
-	      if (realChunk.isEmpty && !isDone(nextI)) {
-		count + 1
-	      } else 0
+  class AsyncDataChunkerEnumerator[E]( chunker: DataChunker[E], contOnCont: Int = 5 ) extends Enumerator[E] {
 
-	    if ((contOnCont != INFINITE_RETRIES) && (nc > contOnCont)) {
-	      //println("had cont on cont count, returning")
-	      nextI
-	    } else
-	      apply(chunker, nextI, nc)
-	}
+    override def apply[A]: StepT[E, Id.Id, A] => IterateeT[E, Id.Id, A] = i => {
+
+      def apply(stepT: StepT[E, Id.Id, A], count: Int): IterateeT[E, Id.Id, A] = stepT match {
+        case i if chunker.underlyingClosed || chunker.isClosed => iteratee(i)
+        case i@Done(acc, input) => iteratee(i)
+        case Cont(k) =>
+          val realChunk = chunker.nextChunk
+          val nextChunk = realChunk.asInstanceOf[E]
+          val nextI =
+            if (realChunk.isEOF)
+              // println("actual data was EOF !!!")
+              k(Eof[E])
+            else
+              if (realChunk.isEmpty)
+                k(Empty[E])
+              else
+                k(Element(nextChunk))
+
+          val nc =
+            if (realChunk.isEmpty && !isDone(nextI))
+              count + 1
+            else
+              0
+
+          if ((contOnCont != INFINITE_RETRIES) && (nc > contOnCont))
+            //println("had cont on cont count, returning")
+            nextI
+          else
+            apply(nextI.value, nc)
       }
 
-      apply(chunker, i, 0)
+      apply(i, 0)
     }
   }
 

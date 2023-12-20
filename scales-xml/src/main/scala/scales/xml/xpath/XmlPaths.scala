@@ -91,7 +91,7 @@ trait XmlPaths {
    * Its only useful as a lazy evaluator if viewed was used.
    */
   def lazyRaw[T <: Iterable[XmlPath]](xpath : XPath[T]) : Iterable[XmlPath] =
-    xpath.path.nodes.iterator.toIterable.flatten
+    xpath.path.nodes.iterator.toStream.flatten
 
   /**
    * Lazy evaluation of XPaths

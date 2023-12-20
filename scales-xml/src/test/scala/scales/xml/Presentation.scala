@@ -206,23 +206,23 @@ object Presentation {
 	   onQNames(Paths))
     )
     
-    val allAuthorsAndFiles = foldOnDone(pull.it)( 
+    val allAuthorsAndFiles = foldOnDone(iteratorEnumerator(pull.it))(
       ("", Map[String, List[String]]()), ionDone )  {
-	case ((author, map), qnamesMatch) =>
-	  qnamesMatch match {
-	    case Nil => (author, map)
-	    case (Authors, Some(newAuthor)) :: Nil =>
-	      (value(newAuthor), map)
-	    case (Paths, Some(path)) :: Nil =>
-	      (author, 
-	       map.updated(
-		 author, 
-		 value(path) ::
-		   map.get(author).
-		   getOrElse(List()) 
-	       ))
-	    case _ => error("Oops " + qnamesMatch )
-	  }
+      case ((author, map), qnamesMatch) =>
+        qnamesMatch match {
+          case Nil => (author, map)
+          case (Authors, Some(newAuthor)) :: Nil =>
+            (value(newAuthor), map)
+          case (Paths, Some(path)) :: Nil =>
+            (author,
+             map.updated(
+               author,
+               value(path) ::
+                 map.get(author).
+                 getOrElse(List())
+             ))
+          case _ => error("Oops " + qnamesMatch )
+        }
     }
     
     allAuthorsAndFiles._2 take 2 foreach println

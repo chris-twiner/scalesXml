@@ -4,7 +4,7 @@ import scales.xml.{PullType, QName, Elem, Attribs, Attributes, Attribute, XmlIte
 
 import scales.xml.serializers.NamespaceContext
 
-import scala.collection.immutable.{ Stack, Map }
+import scala.collection.immutable.Map
 
 import scalaz._
 import Scalaz._

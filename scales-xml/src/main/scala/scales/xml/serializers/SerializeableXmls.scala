@@ -46,13 +46,13 @@ object StreamSerializer {
 	  if (next.isRight) {
 
 	    // x.namespaces can't be used any further
-	    val nc = doElement(x, output.currentMappings.top)
+	    val nc = doElement(x, output.currentMappings.head)
 	    StreamStatus(output, serializer.emptyElement(x.name, x.attributes, nc.declMap, nc.addDefault, x.name :: output.path), true) // let us know to ignore the next end
 	  } else {
 	    val npath = x.name :: output.path
 
-	    val nc = doElement(x, output.currentMappings.top)
-	    StreamStatus(output.copy(currentMappings = output.currentMappings.push(nc.mappings), path = npath),
+	    val nc = doElement(x, output.currentMappings.head)
+	    StreamStatus(output.copy(currentMappings = nc.mappings +: output.currentMappings, path = npath),
 	      serializer.startElement(x.name, x.attributes, nc.declMap, nc.addDefault, npath), false)
 	  }
 	case Right(endElem) =>
@@ -60,7 +60,7 @@ object StreamSerializer {
 	    StreamStatus(output, None, false)
 	  else
 	    // pop the last ones
-	    StreamStatus(output.copy(currentMappings = output.currentMappings.pop,
+	    StreamStatus(output.copy(currentMappings = output.currentMappings.tail,
 				     path = output.path.tail), 
 	      serializer.endElement(endElem.name, output.path), false)
 
@@ -125,20 +125,20 @@ trait SerializerImplicits {
               if (!walk.hasChildren) {
 
                 // x.namespaces can't be used any further
-                val nc = doElement(x, output.currentMappings.top)
+                val nc = doElement(x, output.currentMappings.head)
                 (output, serializer.emptyElement(x.name, x.attributes, nc.declMap, nc.addDefault, x.name :: output.path))
               } else {
                 if (walk.isStart) {
 
                   val npath = x.name :: output.path
 
-                  val nc = doElement(x, output.currentMappings.top)
-                  (output.copy(currentMappings = output.currentMappings.push(nc.mappings),
+                  val nc = doElement(x, output.currentMappings.head)
+                  (output.copy(currentMappings = nc.mappings +: output.currentMappings,
                     path = npath),
                     serializer.startElement(x.name, x.attributes, nc.declMap, nc.addDefault, npath))
                 } else {
                   // pop the last ones
-                  (output.copy(currentMappings = output.currentMappings.pop,
+                  (output.copy(currentMappings = output.currentMappings.tail,
                     path = output.path.tail), serializer.endElement(x.name, output.path))
                 }
               }

@@ -1,5 +1,7 @@
 package scales
 
+import scales.utils.collection.SeqLikeThing
+
 /**
  * The [[scales.utils]] packages provide the basis functionality for [[scales.xml]].
  *
@@ -20,14 +22,13 @@ package object utils extends collection.IterableUtils
 
 // https://issues.scala-lang.org/browse/SI-4767 forces them to be here if we want them inlining
 
-  import scala.collection.IndexedSeqLike
   import scala.collection.generic.CanBuildFrom
   
   import collection.Tree
 
-  @inline final def item[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]](item: Item): ItemOrTree[Item, Section, CC] = item
+  @inline final def item[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: SeqLikeThing[X]](item: Item): ItemOrTree[Item, Section, CC] = item
 
-  @inline final def subtree[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[A] <: IndexedSeqLike[A, CC[A]]](section: Section, children: CC[ItemOrTree[Item, Section, CC]])(implicit cbf : TreeCBF[Item, Section, CC]): ItemOrTree[Item, Section, CC] = Tree[Item, Section, CC](section, children)
+  @inline final def subtree[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: SeqLikeThing[X]](section: Section, children: CC[ItemOrTree[Item, Section, CC]])(implicit cbf : TreeCBF[Item, Section, CC]): ItemOrTree[Item, Section, CC] = Tree[Item, Section, CC](section, children)
 
   @inline final def one[T]( i : T ) : List[T] =
       i :: Nil

@@ -276,9 +276,9 @@ class BaseFunctionalityTest extends junit.framework.TestCase {
     
     val paths = viewed(path).\\*(hasLocalNameX("DontRedeclare")).
       filter{
-	path => 
-	  res = path :: res
-	  true
+        path =>
+          res = path :: res
+          true
       }
  
     assertEquals(0, res.size)

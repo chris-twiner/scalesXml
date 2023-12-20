@@ -17,7 +17,7 @@ class Handler[Token <: OptimisationToken](strategy : PathOptimisationStrategy[To
   import scales.utils.{noPath, top, ScalesUtils }
   import scales.utils.collection.path.Path
   import org.xml.sax._
-  import scala.collection.immutable.Stack
+
   import ScalesUtils._
 
   import NameCreators._

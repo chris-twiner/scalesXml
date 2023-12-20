@@ -9,8 +9,6 @@ class JaxenBaseFunctionalityTest extends test.BaseFunctionalityTest {
 
   import junit.framework.Assert._
 
-  import scala.collection.JavaConversions._
-
   import BaseTestConstants._
 
   def jaxen(str : String) =

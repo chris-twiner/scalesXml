@@ -32,22 +32,34 @@
             <properties>
                 <scalaVersion>2.11.12</scalaVersion>
                 <scalaCompatVersion>2.11</scalaCompatVersion>
-                <profileDir>2.11</profileDir>
+                <profileDir>pre_2_13</profileDir>
 
                 <scalazVersion>7.3.7</scalazVersion>
-                <scalazItervVersion>7.0.9</scalazItervVersion>
+                <scalazIterateevVersion>7.3.7</scalazIterateevVersion>
                 <scalaXmlVersion>1.3.1</scalaXmlVersion>
             </properties>
         </profile>
         <profile>
             <id>Scala_2_12</id>
             <properties>
-                <scalaVersion>2.12.12</scalaVersion>
+                <scalaVersion>2.12.18</scalaVersion>
                 <scalaCompatVersion>2.12</scalaCompatVersion>
-                <profileDir>2.12</profileDir>
+                <profileDir>pre_2_13</profileDir>
 
                 <scalazVersion>7.3.8</scalazVersion>
-                <scalazItervVersion>7.0.9</scalazItervVersion>
+                <scalazIterateevVersion>7.3.8</scalazIterateevVersion>
+                <scalaXmlVersion>2.2.0</scalaXmlVersion>
+            </properties>
+        </profile>
+        <profile>
+            <id>Scala_2_13</id>
+            <properties>
+                <scalaVersion>2.13.12</scalaVersion>
+                <scalaCompatVersion>2.13</scalaCompatVersion>
+                <profileDir>2_13</profileDir>
+
+                <scalazVersion>7.3.8</scalazVersion>
+                <scalazIterateevVersion>7.3.8</scalazIterateevVersion>
                 <scalaXmlVersion>2.2.0</scalaXmlVersion>
             </properties>
         </profile>
@@ -80,7 +92,7 @@
         <scalaCrossPluginVersion>0.3.0</scalaCrossPluginVersion>
 
         <scalazVersion>7.3.8</scalazVersion>
-        <scalazItervVersion>7.0.9</scalazItervVersion>
+        <scalazIterateevVersion>7.0.9</scalazIterateevVersion>
         <commonsCodecVersion>1.4</commonsCodecVersion>
         <slf4jVersion>1.6.1</slf4jVersion>
         <scalaXmlVersion>1.3.1</scalaXmlVersion>
@@ -108,12 +120,24 @@
             <artifactId>scala-library</artifactId>
             <version>${scalaVersion}</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.scalaz</groupId>
+            <artifactId>scalaz-core_${scalaCompatVersion}</artifactId>
+            <version>${scalazVersion}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.scalaz</groupId>
+            <artifactId>scalaz-iteratee_${scalaCompatVersion}</artifactId>
+            <version>${scalazIterateevVersion}</version>
+        </dependency>
+<!--
         <dependency>
             <groupId>org.scalatest</groupId>
             <artifactId>scalatest_${scalaCompatVersion}</artifactId>
             <version>${scalatestVersion}</version>
             <scope>test</scope>
-        </dependency>
+        </dependency> -->
         <dependency>
             <groupId>org.scala-lang.modules</groupId>
             <artifactId>scala-xml_${scalaCompatVersion}</artifactId>
@@ -197,7 +221,7 @@
                             <configuration>
                                 <sources>
                                     <source>src/main/scala</source>
-                                    <!--<source>src/main/${profileDir}-scala</source>-->
+                                    <source>src/main/${profileDir}-scala</source>
                                 </sources>
                             </configuration>
                         </execution>
@@ -237,11 +261,12 @@
                                     <arg>-dependencyfile</arg>
                                     <arg>${project.build.directory}/.scala_dependencies</arg>
                                     <arg>-g:vars</arg>
-                                    <arg>-nobootcp</arg>
                                     <arg>-language:implicitConversions</arg>
                                     <arg>-language:postfixOps</arg>
                                     <arg>-language:existentials</arg>
                                     <arg>-language:higherKinds</arg>
+
+                                    <arg>-nobootcp</arg>
                                 </args>
                                 <recompileMode>all</recompileMode>
                                 <scalaCompatVersion>${scalaCompatVersion}</scalaCompatVersion>

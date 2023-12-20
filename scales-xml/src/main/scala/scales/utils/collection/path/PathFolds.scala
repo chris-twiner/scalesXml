@@ -1,16 +1,13 @@
 package scales.utils.collection.path
 
-import scala.collection.immutable.Stack
-import scala.collection.IndexedSeqLike
 import scala.collection.generic.CanBuildFrom
-
-import scales.utils.collection.Tree
-import scales.utils.{PathFoldR, FoldR, LeftLike, deepestLast, top, ItemOrTree, TreeCBF}
+import scales.utils.collection.{SeqLikeThing, Tree}
+import scales.utils.{FoldR, ItemOrTree, LeftLike, PathFoldR, TreeCBF, deepestLast, top}
 
 /**
  * Represents the base for operations that fold over a list of paths
  */ 
-sealed trait FoldOperation[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]] {
+sealed trait FoldOperation[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: SeqLikeThing[X]] {
 
   protected def rootChangeAllowed = false
 
@@ -28,13 +25,13 @@ sealed trait FoldOperation[Item <: LeftLike[Item, Tree[Item, Section, CC]], Sect
           val index = path.node.index + direction
           val (pre,pos) = tree.children.splitAt(index)
           val newChildren = (pre ++ newPath) ++ pos
-          Tree(tree.section, newChildren)
+          Tree(tree.section, newChildren.asInstanceOf[CC[ItemOrTree[Item, Section, CC]]]) // actually the same
         })
 
   }
 }
 
-case class Remove[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]](implicit cbf : TreeCBF[Item, Section, CC]) extends FoldOperation[Item, Section, CC] {
+case class Remove[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: SeqLikeThing[X]]()(implicit cbf : TreeCBF[Item, Section, CC]) extends FoldOperation[Item, Section, CC] {
 
   def perform(path: Path[Item, Section, CC]): FoldR[Item, Section, CC] = {
     val ores = path.removeAndUp();
@@ -43,12 +40,12 @@ case class Remove[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X
   }
 }
 
-case class AddBefore[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]](newPath: ItemOrTree[Item, Section, CC])(implicit cbf : TreeCBF[Item, Section, CC]) extends FoldOperation[Item, Section, CC] {
+case class AddBefore[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: SeqLikeThing[X]](newPath: ItemOrTree[Item, Section, CC])(implicit cbf : TreeCBF[Item, Section, CC]) extends FoldOperation[Item, Section, CC] {
 
   def perform(path: Path[Item, Section, CC]): FoldR[Item, Section, CC] = add(path, 0, List(newPath))
 }
 
-case class AddAfter[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]](newPath: ItemOrTree[Item, Section, CC])(implicit cbf : TreeCBF[Item, Section, CC]) extends FoldOperation[Item, Section, CC] {
+case class AddAfter[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: SeqLikeThing[X]](newPath: ItemOrTree[Item, Section, CC])(implicit cbf : TreeCBF[Item, Section, CC]) extends FoldOperation[Item, Section, CC] {
 
   def perform(path: Path[Item, Section, CC]): FoldR[Item, Section, CC] = add(path, 1, List(newPath))
 }
@@ -56,7 +53,7 @@ case class AddAfter[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC
 /**
  * Use to make it easier to filter out large sets (for those that aren't interesting simply asis them, see tests for use case)
  */
-case class AsIs[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]]() extends FoldOperation[Item, Section, CC] {
+case class AsIs[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: SeqLikeThing[X]]() extends FoldOperation[Item, Section, CC] {
 
   def perform(path: Path[Item, Section, CC]): FoldR[Item, Section, CC] = Left(path)
 }
@@ -65,14 +62,14 @@ object Replace {
   /**
    * Simpler interface
    */
-  def apply[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]](replaceWith: ItemOrTree[Item, Section, CC]*)(implicit cbf : TreeCBF[Item, Section, CC]) = new Replace[Item, Section, CC](replaceWith)
+  def apply[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: SeqLikeThing[X]](replaceWith: ItemOrTree[Item, Section, CC]*)(implicit cbf : TreeCBF[Item, Section, CC]) = new Replace[Item, Section, CC](replaceWith)
 
 }
 
 /**
  * Allows replacing one path with many, may be easier to use the * version however
  */
-case class Replace[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]](replaceWith: Iterable[ItemOrTree[Item, Section, CC]])(implicit cbf : TreeCBF[Item, Section, CC]) extends FoldOperation[Item, Section, CC] {
+case class Replace[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: SeqLikeThing[X]](replaceWith: Iterable[ItemOrTree[Item, Section, CC]])(implicit cbf : TreeCBF[Item, Section, CC]) extends FoldOperation[Item, Section, CC] {
   override def rootChangeAllowed = true
 
   def perform(path: Path[Item, Section, CC]): FoldR[Item, Section, CC] = {
@@ -95,25 +92,27 @@ case class Replace[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[
  * 
  * When wholeTree is true the function f is passed the Path (or item) in the original tree, any transformations are then conusmed across the whole tree, which is likely not desired. 
  */
-case class ReplaceWith[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: IndexedSeqLike[X, CC[X]]](f: PathFoldR[Item, Section, CC], wholeTree : Boolean = false)(implicit cbf : TreeCBF[Item, Section, CC]) extends FoldOperation[Item, Section, CC] {
+case class ReplaceWith[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: SeqLikeThing[X]](f: PathFoldR[Item, Section, CC], wholeTree : Boolean = false)(implicit cbf : TreeCBF[Item, Section, CC]) extends FoldOperation[Item, Section, CC] {
 
   def perform(path: Path[Item, Section, CC]): FoldR[Item, Section, CC] =
     // modify back in (allows changes), or pass on the error
     f( if (wholeTree) 
-	 path 
+      	 path
        else
-	 top(path.tree) ).
-      fold(fres => 
-	Left(path.modify(_ => 
-      	  fres.tree
-	  )),
-        x => {
-	  if ((x eq RemovedRoot) && 
-	      (!wholeTree))
-	    // delete the node - special case as per doc
-	    Remove().perform(path) // it might itself be the root but thats fine
-	  else
-	    Right(x)})
+         top(path.tree) ).
+            fold(fres =>
+                Left(path.modify(_ =>
+                        fres.tree
+                  )),
+              x => {
+                if ((x eq RemovedRoot) &&
+                    (!wholeTree))
+                  // delete the node - special case as per doc
+                  Remove().perform(path) // it might itself be the root but thats fine
+                else
+                  Right(x)
+              }
+            )
 
 }
 

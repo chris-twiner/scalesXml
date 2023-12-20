@@ -8,20 +8,11 @@
         <groupId>org.scalesxml</groupId>
         <version>0.6.0-SNAPSHOT</version>
     </parent>
-    <version>${parent.version}</version>
+    <version>${project.parent.version}</version>
     <packaging>jar</packaging>
     <name>scales-xml</name>
     <dependencies>
-        <dependency>
-            <groupId>org.scalaz</groupId>
-            <artifactId>scalaz-core_${scalaCompatVersion}</artifactId>
-            <version>${scalazVersion}</version>
-        </dependency>
-         <dependency>
-            <groupId>org.scalaz</groupId>
-            <artifactId>scalaz-iterv_${scalaCompatVersion}</artifactId>
-            <version>${scalazItervVersion}</version>
-        </dependency>
+
     </dependencies>
 
 </project>
