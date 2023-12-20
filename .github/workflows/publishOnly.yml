@@ -1,0 +1,41 @@
+# Only does a publish step, no tests are run
+name: Publishes Only
+
+on:
+  push:
+    branches: [ "publishOnly" ]
+
+env:
+  MAVEN_CLI_OPTS: "--batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true"
+  MAVEN_CLI_TESTSHADES_OPTS: "-f testShades/pom.xml --batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true"
+  # -Dmaven.repo.local=.m2/repository not needed on github, seems ~/.m2 is supported / expected
+  MAVEN_OPTS: "-Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.class=standard -Dmaven.wagon.http.retryHandler.count=3 -Dhttps.protocols=TLSv1.2 -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
+
+jobs:
+
+  # only publish snapshots on main by default, or when ~cut-release is in the commits
+  publishOnly:
+    strategy:
+      matrix:
+        profile: [Spark3, Spark2, Spark32, Spark321, Spark313, Spark332, Spark341, Spark350, "10.4.dbr", "9.1.dbr", "11.3.dbr", "12.2.dbr", "13.1.dbr"] #[Spark3, Spark2, Spark32, Spark321, Spark313, Spark332, Spark341, "10.4.dbr", "9.1.dbr", "11.3.dbr", "12.2.dbr", "13.1.dbr", "14.0.dbr"]
+    # needs always per https://github.com/actions/runner/issues/491 very annoying
+    # only do snapshots on main by default, releases/snapshots forced with ~cut-release
+    if: |
+      (contains(github.event.head_commit.message, '~docsOnly') != true) &&
+        ( (endsWith(needs.site.outputs.version, '-SNAPSHOT') && github.ref == 'refs/heads/main') ||
+          contains(github.event.head_commit.message, '~cut-release') )
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/workflows/spark_maven
+        with:
+          title: Publishing ${{ matrix.profile }}
+          script: |
+            mvn $MAVEN_CLI_OPTS -DskipTests -Dclassifiers=tests clean deploy -P ${{ matrix.profile }}
+            mvn $MAVEN_CLI_TESTSHADES_OPTS clean deploy -P ${{ matrix.profile }}
+          gpgKey: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+        env:
+          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          OSSRH_TOKEN: ${{ secrets.OSSRH_TOKEN }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
