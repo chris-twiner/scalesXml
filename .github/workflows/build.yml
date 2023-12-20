@@ -143,13 +143,10 @@ jobs:
         with:
           name: target
           path: target
-
-  mkdocs:
-    needs: [site]
-    uses: sparkutils/quality/.github/workflows/mkdocs/action.yml@e8cd720ee2cb495a6a020363441a81da3bb70b23
-    with:
-      prepScript: |
-        cp -rf target/site docs/
-        cp target/coverage.txt docs/
-        cp target/version.txt .
-        cp target/coverage.txt .
+      - uses: .github/workflows/mkdocs #sparkutils/quality/.github/workflows/mkdocs/action.yml@e8cd720ee2cb495a6a020363441a81da3bb70b23
+        with:
+          prepScript: |
+            cp -rf target/site docs/
+            cp target/coverage.txt docs/
+            cp target/version.txt .
+            cp target/coverage.txt .
