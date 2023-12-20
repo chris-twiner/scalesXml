@@ -65,8 +65,8 @@ jobs:
           server-password: OSSRH_TOKEN # env variable for token in deploy
           gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }} # Value of the GPG private key to import
           gpg-passphrase: MAVEN_GPG_PASSPHRASE # env variable for GPG private key passphrase
-          title: Building site against Scala_2_13
-          script: |
+          name: Building site against Scala_2_13
+          run: |
             conda install libgomp=11.2.0 # force the right libs
             conda install graphviz=2.50.0 # conda is from fatty
 
@@ -124,8 +124,8 @@ jobs:
           server-password: OSSRH_TOKEN # env variable for token in deploy
           gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }} # Value of the GPG private key to import
           gpg-passphrase: MAVEN_GPG_PASSPHRASE # env variable for GPG private key passphrase
-          title: Publishing ${{ matrix.profile }}
-          script: |
+          name: Publishing ${{ matrix.profile }}
+          run: |
             mvn $MAVEN_CLI_OPTS -DskipTests -Dclassifiers=tests clean deploy -P ${{ matrix.profile }}
             mvn $MAVEN_CLI_TESTSHADES_OPTS clean deploy -P ${{ matrix.profile }}
         env:
