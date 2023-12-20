@@ -52,8 +52,8 @@ class ListSet[A : Equal](val plusFast : Boolean = false) extends Iterable[A] wit
 
   /**
    * The default empty doesn't really work for us as we can't hide away the equality, so doing it here
-   */ 
-  def empty = new ListSet[A]
+  override def empty = new ListSet[A]
+   */
 
   /**
    * With another level of indirection, the caller decides what Equal to use.

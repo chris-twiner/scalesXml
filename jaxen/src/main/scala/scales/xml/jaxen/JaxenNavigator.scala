@@ -15,7 +15,7 @@ import scales.xml.impl.{DocumentRoot, DocsUp}
 
 import collection.DuplicateFilter
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 
 //TODO - get a type class in here, looks like doclike usage from the serializers, smells like re-use to me
 
@@ -131,7 +131,7 @@ class ScalesXPath(val xpath : String, val nsMap : Map[String,String] = Map(), va
 	  })
       }
     else
-      DuplicateFilter(sortT[XmlItem, Elem, XCC, Either[AttributePath,XmlPath]](res.map{
+      DuplicateFilter(sortT[XmlItem, Elem, XCC, Either[AttributePath,XmlPath]](res.asScala.map{
 	case x @ DocsUp(a : AttributePath, p) => (Left(a), a.parent)
 	case x @ DocsUp(xp : XmlPath, p) => (Right(xp), xp)
 	case DocumentRoot(r) => (Right(r), r)
@@ -242,23 +242,23 @@ class ScalesNavigator(val nameConversion : QName => QName) extends DefaultNaviga
 
   override def getChildAxisIterator( ctx : AnyRef ) = 
     ctx match {
-      case dr @ DocumentRoot(r) => one(DocsUp(r,dr)).iterator
-      case DocsUp(x : XmlPath,d) => x.map(DocsUp(_,d)).iterator
+      case dr @ DocumentRoot(r) => one(DocsUp(r,dr)).iterator.asJava
+      case DocsUp(x : XmlPath,d) => x.map(DocsUp(_,d)).iterator.asJava
       case x : XmlPath => // relative paths ./stuff, . triggers this
 	val root = DocumentRoot(rootPath(x))
-	x.map(DocsUp(_, root)).iterator
+	x.map(DocsUp(_, root)).iterator.asJava
       case _ => error("couldn't get childaxis "+ctx)
     }
 
   override def getParentAxisIterator( ctx : AnyRef ) =
-    one(getParentNode(ctx)).iterator
+    one(getParentNode(ctx)).iterator.asJava
 
   override def getAttributeAxisIterator( ctx : AnyRef ) = {
     def attribs(d : DocsUp[XmlPath]) = 
       d.what.tree.section.
 	attributes.map(a => DocsUp(
 	  xpath.AttributePath(a, d.what), 
-	  d.docroot)).iterator
+	  d.docroot)).iterator.asJava
 
     ctx match {
       case d @ DocsUp(x : XmlPath, r) if (!x.isItem) => 
@@ -266,7 +266,7 @@ class ScalesNavigator(val nameConversion : QName => QName) extends DefaultNaviga
       case x : XmlPath if (!x.isItem) => // relative paths ./stuff, . triggers this
 	val root = DocumentRoot(rootPath(x))
 	attribs(DocsUp(x, root))
-      case _ => Nil.iterator
+      case _ => Nil.iterator.asJava
     }
   }
 

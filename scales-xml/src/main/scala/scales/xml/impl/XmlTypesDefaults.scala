@@ -4,6 +4,7 @@ import scales.utils.collection.{ImmutableArrayProxyLikeThing, SeqLikeThingBuilde
 
 import scala.collection.immutable.Map
 import scala.collection.generic.CanBuildFrom
+import scala.collection.mutable
 
 //import scales.utils.collection.path.{Path, Node, Position}
 import scales.utils.{TreeCBF, subtree, item, top, 
@@ -40,7 +41,7 @@ trait XmlTypes {
   /**
    * Default implementation for constructing an instance of XmlBuilder (ImmutableArrayProxyBuilder)
    */ 
-  def XmlBuilder() : XmlBuilder = SeqLikeThingBuilder[ItemOrElem, ImmutableArrayProxyLikeThing](ImmutableArrayProxyBuilder[ItemOrElem]())//ImmutableArrayProxyBuilder[ItemOrElem]()
+  def XmlBuilder() : XmlBuilder = SeqLikeThingBuilder[ItemOrElem, ImmutableArrayProxyLikeThing](ImmutableArrayProxyBuilder[ItemOrElem]().asInstanceOf[mutable.Builder[XmlTypes.this.ItemOrElem,Seq[XmlTypes.this.ItemOrElem]]])//ImmutableArrayProxyBuilder[ItemOrElem]()
 
   /**
    * Alias for Trees of Elem and XmlItem

@@ -1,13 +1,11 @@
 package scales.utils.collection
 
-import collection.{IndexedSeqOptimized, IndexedSeqLike, IndexedSeq}
-import collection.mutable.Builder
+import scales.utils.collection.array.{IAEmpty, IAOne, IAThree, IATwo, ImmutableArrayAll, ImmutableArrayBuilder, VectorImpl}
 
-import scala.collection.generic.CanBuildFrom
+import scala.collection.generic.{CanBuildFrom, GenericCompanion, GenericTraversableTemplate, SeqFactory}
+import scala.collection.mutable.Builder
+import scala.collection.{IndexedSeq, IndexedSeqOptimized}
 import scala.reflect.ClassManifest
-import collection.generic.{CanBuildFrom, GenericTraversableTemplate, SeqFactory, GenericCompanion}
-
-import scales.utils.collection.array._
 
 object ImmutableArrayProxyBuilder {
   final val vectorAfter = 31

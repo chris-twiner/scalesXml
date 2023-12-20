@@ -2,7 +2,7 @@ package scales.utils.collection
 
 import scales.utils.collection
 
-import scala.collection.generic.{CanBuildFrom, GenericCompanion}
+import scala.collection.generic.CanBuildFrom
 import scala.collection.{GenTraversableOnce, mutable}
 
 /**

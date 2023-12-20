@@ -38,17 +38,17 @@ object PathFold {
           var path = head._2
           while (!positions.isEmpty) {
 
-                  val (accf, res) = folder(accum, path)
-                  accum = accf
-                  val matched = res.perform(path) //matchIt( res, path )
+            val (accf, res) = folder(accum, path)
+            accum = accf
+            val matched = res.perform(path) //matchIt( res, path )
 
-                  if (matched.isLeft) {
-                    path = matched.left.get
-                    positions = positions.drop(1)
-                    if (!positions.isEmpty) {
-                      path = moveTo(path, positions.head) // else nothing we keep path to call root
-                    }
-                  } else return Right(matched.right.get)
+            if (matched.isLeft) {
+              path = matched.left.get
+              positions = positions.drop(1)
+              if (!positions.isEmpty) {
+                path = moveTo(path, positions.head) // else nothing we keep path to call root
+              }
+            } else return Right(matched.right.get)
           }
           Left((accum, rootPath(path)))
       }
@@ -90,7 +90,7 @@ trait Paths {
     // cheaty way, crap but quick enough
     // TODO come back to this and properly move,
     newPos.position.tail.foldLeft(root) { (path, pos) =>
-      Path(path, Node(pos, path.children.seq(pos)))
+      Path(path, Node(pos, path.children(pos)))
     }
   }
 

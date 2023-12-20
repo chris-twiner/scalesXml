@@ -32,7 +32,7 @@
             <properties>
                 <scalaVersion>2.11.12</scalaVersion>
                 <scalaCompatVersion>2.11</scalaCompatVersion>
-                <profileDir>2.11</profileDir>
+                <profileDir>pre_2_13</profileDir>
 
                 <scalazVersion>7.3.7</scalazVersion>
                 <scalazIterateevVersion>7.3.7</scalazIterateevVersion>
@@ -44,7 +44,7 @@
             <properties>
                 <scalaVersion>2.12.18</scalaVersion>
                 <scalaCompatVersion>2.12</scalaCompatVersion>
-                <profileDir>2.12</profileDir>
+                <profileDir>pre_2_13</profileDir>
 
                 <scalazVersion>7.3.8</scalazVersion>
                 <scalazIterateevVersion>7.3.8</scalazIterateevVersion>
@@ -56,7 +56,7 @@
             <properties>
                 <scalaVersion>2.13.12</scalaVersion>
                 <scalaCompatVersion>2.13</scalaCompatVersion>
-                <profileDir>2.13</profileDir>
+                <profileDir>2_13</profileDir>
 
                 <scalazVersion>7.3.8</scalazVersion>
                 <scalazIterateevVersion>7.3.8</scalazIterateevVersion>
@@ -221,7 +221,7 @@
                             <configuration>
                                 <sources>
                                     <source>src/main/scala</source>
-                                    <!--<source>src/main/${profileDir}-scala</source>-->
+                                    <source>src/main/${profileDir}-scala</source>
                                 </sources>
                             </configuration>
                         </execution>
@@ -261,11 +261,12 @@
                                     <arg>-dependencyfile</arg>
                                     <arg>${project.build.directory}/.scala_dependencies</arg>
                                     <arg>-g:vars</arg>
-                                    <arg>-nobootcp</arg>
                                     <arg>-language:implicitConversions</arg>
                                     <arg>-language:postfixOps</arg>
                                     <arg>-language:existentials</arg>
                                     <arg>-language:higherKinds</arg>
+
+                                    <arg>-nobootcp</arg>
                                 </args>
                                 <recompileMode>all</recompileMode>
                                 <scalaCompatVersion>${scalaCompatVersion}</scalaCompatVersion>
