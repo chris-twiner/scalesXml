@@ -32,18 +32,18 @@ jobs:
           distribution: 'temurin'
           cache: maven #this caches ~/.m2/repo
           server-id: ossrh # Value of the distributionManagement/repository/id field of the pom.xml
-          server-username: ${{ secrets.OSSRH_USERNAME }} # env variable for username in deploy
-          server-password: ${{ secrets.OSSRH_TOKEN }} # env variable for token in deploy
+          server-username: OSSRH_USERNAME # env variable for username in deploy
+          server-password: OSSRH_TOKEN # env variable for token in deploy
           gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }} # Value of the GPG private key to import
-          gpg-passphrase: ${{ secrets.MAVEN_GPG_PASSPHRASE }} # env variable for GPG private key passphrase
-      - name: Build ${{ matrix.profile }} with tests
-        run: |
-            mvn $MAVEN_CLI_OPTS clean test install -P ${{ matrix.profile }}
-            mvn $MAVEN_CLI_TESTSHADES_OPTS clean install -P ${{ matrix.profile }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE # env variable for GPG private key passphrase
         env:
           OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           OSSRH_TOKEN: ${{ secrets.OSSRH_TOKEN }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+      - name: Build ${{ matrix.profile }} with tests
+        run: |
+            mvn $MAVEN_CLI_OPTS clean test install -P ${{ matrix.profile }}
+            mvn $MAVEN_CLI_TESTSHADES_OPTS clean install -P ${{ matrix.profile }}
 
   # prove tests run with single thread, ensures compilation issues aren't hidden by being run on multiple threads instead of re-used in the same thread (e.g. state resetting etc.)
   # build scoverage tests on 3.3.0 first with aggregate, the copy the data out, not doing a clean build fails on site.  Also needs single threading to work, have noticed multiple failures and inconsistent coverage.
@@ -61,10 +61,14 @@ jobs:
           distribution: 'temurin'
           cache: maven #this caches ~/.m2/repo
           server-id: ossrh # Value of the distributionManagement/repository/id field of the pom.xml
-          erver-username: ${{ secrets.OSSRH_USERNAME }} # env variable for username in deploy
-          server-password: ${{ secrets.OSSRH_TOKEN }} # env variable for token in deploy
+          server-username: OSSRH_USERNAME # env variable for username in deploy
+          server-password: OSSRH_TOKEN # env variable for token in deploy
           gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }} # Value of the GPG private key to import
-          gpg-passphrase: ${{ secrets.MAVEN_GPG_PASSPHRASE }} # env variable for GPG private key passphrase
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE # env variable for GPG private key passphrase
+        env:
+          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          OSSRH_TOKEN: ${{ secrets.OSSRH_TOKEN }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
       - name: Building site against Scala_2_13
         run: |
             conda install libgomp=11.2.0 # force the right libs
@@ -84,10 +88,6 @@ jobs:
             grep -A 3 'Statement coverage:' target/site/scoverage/overview.html | tail -1 | sed 's/[[:space:]]\+//g' > target/coverage.txt
             grep -A 3 'Branch coverage:' target/site/scoverage/overview.html | tail -1 | sed 's/[[:space:]]\+//g' >> target/coverage.txt
             gpgKey: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
-        env:
-          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
-          OSSRH_TOKEN: ${{ secrets.OSSRH_TOKEN }}
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
       - id: version
         run: echo version=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout -P Spark341) >> "$GITHUB_OUTPUT"
       - name: Upload coverage to Codecov
@@ -120,18 +120,18 @@ jobs:
           distribution: 'temurin'
           cache: maven #this caches ~/.m2/repo
           server-id: ossrh # Value of the distributionManagement/repository/id field of the pom.xml
-          server-username: ${{ secrets.OSSRH_USERNAME }} # env variable for username in deploy
-          server-password: ${{ secrets.OSSRH_TOKEN }} # env variable for token in deploy
+          server-username: OSSRH_USERNAME # env variable for username in deploy
+          server-password: OSSRH_TOKEN # env variable for token in deploy
           gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }} # Value of the GPG private key to import
-          gpg-passphrase: ${{ secrets.MAVEN_GPG_PASSPHRASE }} # env variable for GPG private key passphrase
-      - name: Publishing ${{ matrix.profile }}
-        run: |
-          mvn $MAVEN_CLI_OPTS -DskipTests -Dclassifiers=tests clean deploy -P ${{ matrix.profile }}
-          mvn $MAVEN_CLI_TESTSHADES_OPTS clean deploy -P ${{ matrix.profile }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE # env variable for GPG private key passphrase
         env:
           OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           OSSRH_TOKEN: ${{ secrets.OSSRH_TOKEN }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+      - name: Publishing ${{ matrix.profile }}
+        run: |
+          mvn $MAVEN_CLI_OPTS -DskipTests -Dclassifiers=tests clean deploy -P ${{ matrix.profile }}
+          mvn $MAVEN_CLI_TESTSHADES_OPTS clean deploy -P ${{ matrix.profile }}
 
   site:
     needs: [mvn_site]
