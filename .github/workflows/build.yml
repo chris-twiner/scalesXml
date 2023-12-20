@@ -36,8 +36,8 @@ jobs:
           server-password: ${{ secrets.OSSRH_TOKEN }} # env variable for token in deploy
           gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }} # Value of the GPG private key to import
           gpg-passphrase: ${{ secrets.MAVEN_GPG_PASSPHRASE }}# env variable for GPG private key passphrase
-          name: Build ${{ matrix.profile }} with tests
-          run: |
+      - name: Build ${{ matrix.profile }} with tests
+        run: |
             mvn $MAVEN_CLI_OPTS clean test install -P ${{ matrix.profile }}
             mvn $MAVEN_CLI_TESTSHADES_OPTS clean install -P ${{ matrix.profile }}
         env:
@@ -65,8 +65,8 @@ jobs:
           server-password: ${{ secrets.OSSRH_TOKEN }} # env variable for token in deploy
           gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }} # Value of the GPG private key to import
           gpg-passphrase: ${{ secrets.MAVEN_GPG_PASSPHRASE }}# env variable for GPG private key passphrase
-          name: Building site against Scala_2_13
-          run: |
+      - name: Building site against Scala_2_13
+        run: |
             conda install libgomp=11.2.0 # force the right libs
             conda install graphviz=2.50.0 # conda is from fatty
 
@@ -120,14 +120,14 @@ jobs:
           distribution: 'temurin'
           cache: maven #this caches ~/.m2/repo
           server-id: ossrh # Value of the distributionManagement/repository/id field of the pom.xml
-          erver-username: ${{ secrets.OSSRH_USERNAME }} # env variable for username in deploy
+          server-username: ${{ secrets.OSSRH_USERNAME }} # env variable for username in deploy
           server-password: ${{ secrets.OSSRH_TOKEN }} # env variable for token in deploy
           gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }} # Value of the GPG private key to import
           gpg-passphrase: ${{ secrets.MAVEN_GPG_PASSPHRASE }}# env variable for GPG private key passphrase
-          name: Publishing ${{ matrix.profile }}
-          run: |
-            mvn $MAVEN_CLI_OPTS -DskipTests -Dclassifiers=tests clean deploy -P ${{ matrix.profile }}
-            mvn $MAVEN_CLI_TESTSHADES_OPTS clean deploy -P ${{ matrix.profile }}
+      - name: Publishing ${{ matrix.profile }}
+        run: |
+          mvn $MAVEN_CLI_OPTS -DskipTests -Dclassifiers=tests clean deploy -P ${{ matrix.profile }}
+          mvn $MAVEN_CLI_TESTSHADES_OPTS clean deploy -P ${{ matrix.profile }}
         env:
           OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           OSSRH_TOKEN: ${{ secrets.OSSRH_TOKEN }}
