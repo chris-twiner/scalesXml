@@ -2,9 +2,10 @@ package scales.utils.collection.array
 
 import scales.utils.collection.{ImmutableArrayProxy, ImmutableArrayProxyBuilder}
 
-import collection.{IndexedSeqOptimized, IndexedSeqLike, IndexedSeq}
+import collection.{IndexedSeq, IndexedSeqLike, IndexedSeqOptimized}
 import collection.mutable.Builder
-import collection.generic.{CanBuildFrom, GenericTraversableTemplate, SeqFactory, GenericCompanion}
+import collection.generic.{CanBuildFrom, GenericCompanion, GenericTraversableTemplate, SeqFactory}
+import scala.reflect.ClassManifest
 
 object ImmutableArray {
   val emptyImmutableArray = new ImmutableArray[Nothing](Array[AnyRef](),0,0)

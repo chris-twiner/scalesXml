@@ -1,7 +1,5 @@
 package scales.utils.collection.path
 
-import scala.collection.immutable.Stack
-import scala.collection.IndexedSeqLike
 import scala.collection.generic.CanBuildFrom
 import scales.utils.collection.{SeqLikeThing, Tree}
 import scales.utils.{FoldR, LeftLike, PathFoldR, deepestLast}

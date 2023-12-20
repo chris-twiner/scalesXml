@@ -3,7 +3,7 @@ package scales.xml.equals
 import scales.xml.{PullType, QName, Elem, Attribs, Attributes, Attribute, XmlItem, XmlPath, EndElem, XCC, Misc, Miscs}
 import scales.xml.serializers.NamespaceContext
 
-import scala.collection.immutable.{ Stack, Map }
+import scala.collection.immutable.Map
 
 import BasicPaths._
 

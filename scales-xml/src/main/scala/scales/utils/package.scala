@@ -22,7 +22,6 @@ package object utils extends collection.IterableUtils
 
 // https://issues.scala-lang.org/browse/SI-4767 forces them to be here if we want them inlining
 
-  import scala.collection.IndexedSeqLike
   import scala.collection.generic.CanBuildFrom
   
   import collection.Tree

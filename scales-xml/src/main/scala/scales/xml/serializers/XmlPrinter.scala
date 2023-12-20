@@ -8,7 +8,7 @@ import scales.xml.{EmptyDoc, XmlItem, DocLike,
 
 import scales.utils._
 
-import scala.collection.immutable.{ Stack, Map }
+import scala.collection.immutable.Map
 
 import resources._
 

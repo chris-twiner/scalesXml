@@ -1,10 +1,6 @@
 package scales.xml.equals
 
-import scales.xml.{PullType, QName, Elem, Attribs, Attributes, Attribute, XmlItem, XmlPath, EndElem, XCC, Misc, Miscs}
-
-import scales.xml.serializers.NamespaceContext
-
-import scala.collection.immutable.{ Stack, Map }
+import scales.xml.{PullType, QName, Elem, Attributes, Attribute, XmlItem, EndElem, Misc, Miscs}
 
 /**
  * Why did equality fail, pattern match fun

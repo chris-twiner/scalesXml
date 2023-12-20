@@ -2,6 +2,9 @@ package scales.utils.collection
 
 import collection.{IndexedSeqOptimized, IndexedSeqLike, IndexedSeq}
 import collection.mutable.Builder
+
+import scala.collection.generic.CanBuildFrom
+import scala.reflect.ClassManifest
 import collection.generic.{CanBuildFrom, GenericTraversableTemplate, SeqFactory, GenericCompanion}
 
 import scales.utils.collection.array._
@@ -93,6 +96,7 @@ case class ImmutableArrayProxyBuilder[ A ]() extends Builder[A, ImmutableArrayPr
       }
     }
 
+  //override def addAll(xs: TraversableOnce[A]): this.type = {
   override def ++=(xs: TraversableOnce[A]): this.type = {
     // if its already a vector don't start with arrays again
     if (!haveChosen && xs.isInstanceOf[VectorImpl[A]]) {
@@ -123,6 +127,7 @@ case class ImmutableArrayProxyBuilder[ A ]() extends Builder[A, ImmutableArrayPr
   }
 
   def +=( elem : A) : this.type = {
+  //override def addOne(elem: A): ImmutableArrayProxyBuilder.this.type = {
     length += 1
     if (inVector) {
       vectorBuilder.+=(elem)

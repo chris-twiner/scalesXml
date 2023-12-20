@@ -1,7 +1,5 @@
 package scales.utils.collection
 
-import scala.collection.immutable.Stack
-
 trait StackUtils {
 
   // it is expected that the top is the same, afterwards recurse (as available) until a difference is seen
@@ -28,13 +26,13 @@ trait StackUtils {
     }
   }
 
-  def sameBase(test: Stack[Int], against: Stack[Int]): Boolean = {
+  def sameBase(test: List[Int], against: List[Int]): Boolean = {
 
     /**
      * Should go into a seperate util class along with compare
      */
     @scala.annotation.tailrec
-    def iSameBase(test: Stack[Int], against: Stack[Int]): Boolean = {
+    def iSameBase(test: List[Int], against: List[Int]): Boolean = {
       if (test.isEmpty && against.isEmpty == false) {
         true // if it was empty to start its still true, if not against is still below this stack
       } else if (test.isEmpty == false && against.isEmpty) {
@@ -43,10 +41,10 @@ trait StackUtils {
         true // the same depth, and in this function the same position
       } else {
         // get the tops, compare, if same pop and recurse
-        val t1 = test.top
-        val t2 = against.top
+        val t1 = test.head
+        val t2 = against.head
         if (t1 == t2) {
-          iSameBase(test.pop, against.pop)
+          iSameBase(test.tail, against.tail)
         } else {
           false // different
         }

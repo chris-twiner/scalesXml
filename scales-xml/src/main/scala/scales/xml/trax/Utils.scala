@@ -28,7 +28,7 @@ trait TNC extends NamespaceContext {
 }
 
 object EmptyNamespaceContext extends TNC {
- import scala.collection.JavaConversions._
+ import scala.collection.JavaConverters._
 
  val parent = this
    
@@ -36,7 +36,7 @@ object EmptyNamespaceContext extends TNC {
 
  def getNamespaceURI( prefix : String) : String = ""
  def getPrefix( namespaceURI : String) : String = ""
- def getPrefixes(namespaceURI : String) : java.util.Iterator[String] = List().iterator 
+ def getPrefixes(namespaceURI : String) : java.util.Iterator[String] = List().iterator.asJava
  
 }
 
@@ -46,7 +46,7 @@ object EmptyNamespaceContext extends TNC {
 object NamespaceContextFunctions {
   
   def newContext( prev : TNC, elem : Elem ) =  new TNC {
-    import scala.collection.JavaConversions._
+    import scala.collection.JavaConverters._
 
     val parent = prev
 
@@ -63,7 +63,7 @@ object NamespaceContextFunctions {
     def getNamespaceURI( prefix : String) : String = preToNS.get(prefix).getOrElse(prev.getNamespaceURI(prefix))
     def getPrefix( namespaceURI : String) : String = nsToPre.get(namespaceURI).map(_.head).getOrElse(prev.getPrefix(namespaceURI))
     def getPrefixes(namespaceURI : String) : java.util.Iterator[String] = 
-      nsToPre.get(namespaceURI).getOrElse(List()).iterator
+      nsToPre.get(namespaceURI).getOrElse(List()).iterator.asJava
   }
 
 }

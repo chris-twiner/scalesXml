@@ -42,9 +42,21 @@
         <profile>
             <id>Scala_2_12</id>
             <properties>
-                <scalaVersion>2.12.12</scalaVersion>
+                <scalaVersion>2.12.18</scalaVersion>
                 <scalaCompatVersion>2.12</scalaCompatVersion>
                 <profileDir>2.12</profileDir>
+
+                <scalazVersion>7.3.8</scalazVersion>
+                <scalazIterateevVersion>7.3.8</scalazIterateevVersion>
+                <scalaXmlVersion>2.2.0</scalaXmlVersion>
+            </properties>
+        </profile>
+        <profile>
+            <id>Scala_2_13</id>
+            <properties>
+                <scalaVersion>2.13.12</scalaVersion>
+                <scalaCompatVersion>2.13</scalaCompatVersion>
+                <profileDir>2.13</profileDir>
 
                 <scalazVersion>7.3.8</scalazVersion>
                 <scalazIterateevVersion>7.3.8</scalazIterateevVersion>
@@ -119,13 +131,13 @@
             <artifactId>scalaz-iteratee_${scalaCompatVersion}</artifactId>
             <version>${scalazIterateevVersion}</version>
         </dependency>
-
+<!--
         <dependency>
             <groupId>org.scalatest</groupId>
             <artifactId>scalatest_${scalaCompatVersion}</artifactId>
             <version>${scalatestVersion}</version>
             <scope>test</scope>
-        </dependency>
+        </dependency> -->
         <dependency>
             <groupId>org.scala-lang.modules</groupId>
             <artifactId>scala-xml_${scalaCompatVersion}</artifactId>

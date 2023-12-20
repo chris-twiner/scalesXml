@@ -1,6 +1,5 @@
 package scales.utils.collection
 
-import scala.collection.IndexedSeqLike
 import scala.collection.generic.CanBuildFrom
 
 import scales.utils.{LeftLike, RightLike, EitherLike}

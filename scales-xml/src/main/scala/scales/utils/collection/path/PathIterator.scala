@@ -1,6 +1,5 @@
 package scales.utils.collection.path
 
-import scala.collection.IndexedSeqLike
 import scales.utils.collection.{SeqLikeThing, Tree}
 import scales.utils.{FoldR, LeftLike, PathFoldR, deepestLast}
 

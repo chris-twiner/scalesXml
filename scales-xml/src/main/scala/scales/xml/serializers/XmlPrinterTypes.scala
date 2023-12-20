@@ -4,7 +4,7 @@ import scales.utils._
 
 import scales.xml.{DocLike, QName, XmlVersion}
 
-import scala.collection.immutable.{ Stack, Map }
+import scala.collection.immutable.Map
 
 import java.io.Writer
 
@@ -31,7 +31,7 @@ trait SerializeableXml[T] {
  * This class represents state during a serialization
  */
 case class XmlOutput(data: SerializerData,
-  currentMappings: Stack[Map[String, String]] = Stack[Map[String, String]]().push(
+  currentMappings: List[Map[String, String]] = List[Map[String, String]](
     Map[String, String]() + ("" -> "") // default namespace 
     ), path: List[QName] = List())(implicit serializerFI: SerializerFactory) {
   implicit val serializerF = serializerFI
