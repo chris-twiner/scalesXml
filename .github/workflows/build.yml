@@ -82,7 +82,6 @@ jobs:
 
             grep -A 3 'Statement coverage:' target/site/scoverage/overview.html | tail -1 | sed 's/[[:space:]]\+//g' > target/coverage.txt
             grep -A 3 'Branch coverage:' target/site/scoverage/overview.html | tail -1 | sed 's/[[:space:]]\+//g' >> target/coverage.txt
-            gpgKey: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
       - id: version
         run: echo version=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout -P Scala_2_12) >> "$GITHUB_OUTPUT"
       - name: Upload coverage to Codecov
