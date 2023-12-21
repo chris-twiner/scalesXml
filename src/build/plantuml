@@ -1,0 +1,2 @@
+#!/bin/bash
+java $PLANTUML_JAVAOPTS -jar ./src/build/lib/plantuml.jar ${@}
