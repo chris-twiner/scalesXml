@@ -42,6 +42,11 @@ jobs:
       - name: Build ${{ matrix.profile }} with tests
         run: |
             mvn $MAVEN_CLI_OPTS clean test install -P ${{ matrix.profile }}
+      - name: target
+        uses: actions/upload-artifact@v3
+        with:
+          name: target
+          path: target
 
   # Scala_2_12 used as scaladocs fail on 2.13 without any context as to why, which is nice
   mvn_site:
@@ -86,6 +91,11 @@ jobs:
         run: echo version=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout -P Scala_2_12) >> "$GITHUB_OUTPUT"
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
+      - name: target
+        uses: actions/upload-artifact@v3
+        with:
+          name: target
+          path: target
     outputs:
       version: ${{ steps.version.outputs.version }}
 
