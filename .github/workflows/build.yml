@@ -14,7 +14,7 @@ env:
 
 jobs:
 
-  # all versions that can be built with tests - typically oss only.  Fail fast so we can see all compilation or test errors at once
+  # all versions that can be built with tests.  Fail fast so we can see all compilation or test errors at once
   testBuilds:
     strategy:
       fail-fast: false
@@ -43,8 +43,7 @@ jobs:
         run: |
             mvn $MAVEN_CLI_OPTS clean test install -P ${{ matrix.profile }}
 
-  # prove tests run with single thread, ensures compilation issues aren't hidden by being run on multiple threads instead of re-used in the same thread (e.g. state resetting etc.)
-  # build scoverage tests on 3.3.0 first with aggregate, the copy the data out, not doing a clean build fails on site.  Also needs single threading to work, have noticed multiple failures and inconsistent coverage.
+  # Scala_2_12 used as scaladocs fail on 2.13 without any context as to why, which is nice
   mvn_site:
     runs-on: ubuntu-latest
 
@@ -76,18 +75,16 @@ jobs:
             echo 'dot "$@" 2> >(grep -v "pango" | grep -v "Warning" >&2 )' >> dott
 
             chmod u+x dott
+          
+            mvn $MAVEN_CLI_OPTS site -P Scala_2_12
 
-            mvn $MAVEN_CLI_OPTS clean scoverage:test -P Scala_2_13
-            
-            mvn $MAVEN_CLI_OPTS site -P Scala_2_13
-
-            echo $(mvn help:evaluate -Dexpression=project.version -q -DforceStdout -P Scala_2_13) > target/version.txt
+            echo $(mvn help:evaluate -Dexpression=project.version -q -DforceStdout -P Scala_2_12) > target/version.txt
 
             grep -A 3 'Statement coverage:' target/site/scoverage/overview.html | tail -1 | sed 's/[[:space:]]\+//g' > target/coverage.txt
             grep -A 3 'Branch coverage:' target/site/scoverage/overview.html | tail -1 | sed 's/[[:space:]]\+//g' >> target/coverage.txt
             gpgKey: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
       - id: version
-        run: echo version=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout -P Spark341) >> "$GITHUB_OUTPUT"
+        run: echo version=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout -P Scala_2_12) >> "$GITHUB_OUTPUT"
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
     outputs:
@@ -145,10 +142,10 @@ jobs:
         with:
           prepScript: |
             cp -rf target/site docs/
-            cp -rf scales-xml/target/site docs/site/scales-xml_2_13
-            cp -rf aalto/target/site docs/site/scales-xml-aalto_2_13
-            cp -rf jaxen/target/site docs/site/scales-xml-jaxen_2_13
-            cp -rf saxon-tests/target/site docs/site/scales-xml-saxon-tests_2_13
+            cp -rf scales-xml/target/site docs/site/scales-xml_2_12
+            cp -rf aalto/target/site docs/site/scales-xml-aalto_2_12
+            cp -rf jaxen/target/site docs/site/scales-xml-jaxen_2_12
+            cp -rf saxon-tests/target/site docs/site/scales-xml-saxon-tests_2_12
             cp target/coverage.txt docs/
             cp target/version.txt .
             cp target/coverage.txt .
