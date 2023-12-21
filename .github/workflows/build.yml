@@ -147,6 +147,10 @@ jobs:
         with:
           prepScript: |
             cp -rf target/site docs/
+            cp -rf scales-xml/target/site docs/site/scales-xml_2_13
+            cp -rf aalto/target/site docs/site/scales-xml-aalto_2_13
+            cp -rf jaxen/target/site docs/site/scales-xml-jaxen_2_13
+            cp -rf saxon-tests/target/site docs/site/scales-xml-saxon-tests_2_13
             cp target/coverage.txt docs/
             cp target/version.txt .
             cp target/coverage.txt .
