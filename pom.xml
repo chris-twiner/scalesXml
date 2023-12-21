@@ -205,25 +205,6 @@
                             <goals>
                                 <goal>compile</goal>
                             </goals>
-                            <configuration>
-                                <args>
-                                    <arg>-feature</arg>
-                                    <arg>-deprecation</arg>
-                                    <!--<arg>-Xelide-below</arg>
-                                    <arg>${elidebelow}</arg>-->
-                                    <arg>-dependencyfile</arg>
-                                    <arg>${project.build.directory}/.scala_dependencies</arg>
-                                    <arg>-g:vars</arg>
-                                    <arg>-language:implicitConversions</arg>
-                                    <arg>-language:postfixOps</arg>
-                                    <arg>-language:existentials</arg>
-                                    <arg>-language:higherKinds</arg>
-
-                                    <arg>-nobootcp</arg>
-                                </args>
-                                <recompileMode>all</recompileMode>
-                                <scalaCompatVersion>${scalaCompatVersion}</scalaCompatVersion>
-                            </configuration>
                         </execution>
                         <execution>
                             <id>attach-javadocs</id>
@@ -245,6 +226,26 @@
                             </goals>
                         </execution>
                     </executions>
+
+                    <configuration>
+                        <args>
+                            <arg>-feature</arg>
+                            <arg>-deprecation</arg>
+                            <!--<arg>-Xelide-below</arg>
+                            <arg>${elidebelow}</arg>-->
+                            <arg>-dependencyfile</arg>
+                            <arg>${project.build.directory}/.scala_dependencies</arg>
+                            <arg>-g:vars</arg>
+                            <arg>-language:implicitConversions</arg>
+                            <arg>-language:postfixOps</arg>
+                            <arg>-language:existentials</arg>
+                            <arg>-language:higherKinds</arg>
+
+                            <arg>-nobootcp</arg>
+                        </args>
+                        <recompileMode>all</recompileMode>
+                        <scalaCompatVersion>${scalaCompatVersion}</scalaCompatVersion>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>

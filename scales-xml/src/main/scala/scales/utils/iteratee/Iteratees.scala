@@ -54,6 +54,7 @@ trait Iteratees {
   def error(string: String) = sys.error(string)
 
   /** drop while iteratee */
+  @deprecated("Now provided by Scalaz",since = "0.6.0")
   def dropWhile[E](f: (E) => Boolean) : Iteratee[E, Option[E]] = {
     def step(s: Input[E]): Iteratee[E, Option[E]] =
       iteratee( s(el = e => {
@@ -166,7 +167,7 @@ trait Iteratees {
     iteratee( Cont(step(oiter)) )
   }
 
-    /**
+  /**
    * Stepwise fold, each element is evaluated but each one is returned as a result+resumable iter.
    */
   def foldI[E,A]( f : (E,A) => A )( init : A ) : ResumableIter[E,A] = {
@@ -365,7 +366,7 @@ trait Iteratees {
   }
 
   /**
-   * Sums an iteratee up
+   * Sums an iteratee up, consider using the Scalaz IterateeT monadic sum instead
    */
   def sum[T](implicit n: Numeric[T]): Iteratee[T,T] = {
     import n._
