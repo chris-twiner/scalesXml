@@ -1,4 +1,4 @@
-# Scales Xml ${project.version} Overview
+# Scales Xml Overview
 
 Scales Xml, in addition to immutability, aims to focus on these separate concerns:
 

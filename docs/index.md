@@ -2,6 +2,17 @@
 
 ## {{project_version()}}
 
+??? coverage "Coverage"
+
+    <table>
+    <tr>
+        <td>Statement</td>
+        <td class="coveragePercent">{{statement_coverage()}}:material-percent-outline:</td>
+        <td>Branch</td>
+        <td class="coveragePercent">{{branch_coverage()}}:material-percent-outline:</td>
+    </tr>
+    </table>
+
 Scales XML is an alternative XML library for Scala, its design started with the question - _what if the structure of XML was separated from its contents?_.
 
 The answer for XML tends naturally to trees and zippers, enabling a combined model for both XML Tree handling and XML Event handling.  This allows opportunities for saving memory usage and increasing performance.

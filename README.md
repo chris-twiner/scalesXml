@@ -18,26 +18,21 @@ The artifacts are now on Maven Central under the group org.scales.xml.
 
 # How To Use
 
-Currently 2.8.1, 2.8.2, 2.9.1, 2.9.2 and 2.10.0-M6 are built against.
+Currently, 2.11, 2.12 and 2.13 are built against.
 
 So for sbt its:
 
-    val scalesXml = "org.scalesxml" %% "scales-xml" % "0.4.5"
+    val scalesXml = "org.scalesxml" %% "scales-xml" % "0.6.0-M4"
 
 xsbt 0.10+ its:
 
     libraryDependencies ++= Seq(
-      "org.scalesxml" %% "scales-xml" % "0.4.5",
-      //"org.scalesxml" %% "scales-jaxen" % "0.5.1" // optional for string based xpaths
+      "org.scalesxml" %% "scales-xml" % "0.6.0-M4",
+      "org.scalesxml" %% "scales-xml-jaxen" % "0.6.0-M4", // optional for string based xpaths
+      "org.scalesxml" %% "scales-xml-aalto" % "0.6.0-M4" // optional for string based xpaths
       )
 
-Maven repos should therefore use org.scalesxml scales-xml_2.9.2 as the dependency.   Also note that Jaxen 1.1.4 (tested against 0.3.1) isn't yet present via Maven, so if you use String XPath evaluation and you'd like to use the latest version you must add the folowing to the build:
-
-    resolvers += "Scales Repo" at "http://scala-scales.googlecode.com/svn/repo"
-
-[The 0.3.1 documentation site is here](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.3/index.html) and zip of the site documentation is available at [scales-xml.zip](http://scala-scales.googlecode.com/svn/sites/scales/scales-xml_2.9.2/0.3/org.scalesxml-scales-xml-0.3-site.zip).
-
-_Warning_ local file based sites do not fully work in Chrome, use Firefox or IE in preference.
+Maven repos should therefore use org.scalesxml scales-xml_2.13 as the dependency.
 
 # Mailing List
 

@@ -18,6 +18,49 @@ theme:
     - navigation.expand
     - content.code.copy
 
+nav:
+  - index.md
+  - Getting Started:
+    - Getting_Started/ScalesXmlIntro.md
+    - Getting_Started/Setup.md
+    - Getting_Started/HowToUse.md
+    - Getting_Started/MemoryOptimisation.md
+    - Getting_Started/release_notes
+    - XML Model:
+      - XML_Model/QNames.md
+      - XML_Model/Elem.md
+      - XML_Model/Attributes.md
+      - XML_Model/XmlItem.md
+      - XML_Model/XmlDsl.md
+      - XML_Model/OptionalDsl.md
+      - XML_Model/XmlVersionSupport.md
+  - Parsing XML:
+    - Parsing_XML/FullParsing.md
+    - Parsing_XML/PullParsing.md
+    - Parsing_XML/RepeatedSections.md
+    - Parsing_XML/AsyncPull.md
+  - Accessing and Querying Data:
+    - Accessing_and_Querying_Data/XPaths.md
+    - Accessing_and_Querying_Data/XPathFunctions.md
+    - Accessing_and_Querying_Data/StringXPaths.md
+  - Serializing & Transforming XML:
+    - Serializing_&_Transforming_XML/SerializingIntro.md
+    - Serializing_&_Transforming_XML/Folding.md
+    - Serializing_&_Transforming_XML/XSLT.md
+  - Advanced:
+    - Technical Details:
+      - Advanced/Technical_Details/OptimisationDetails.md
+      - Advanced/Technical_Details/Serialization.md
+    - XML Equality:
+      - Advanced/XML_Equality/EqualityBasics.md
+      - Advanced/XML_Equality/XmlComparison.md
+  - Reference Material:
+    - Maven Site: site/index.html
+    - Scaladocs:
+      - scales-xml: site/scales-xml_2.12/scaladocs/index.html
+      - scales-xml-jaxen: site/scales-xml-jaxen_2.12/scaladocs/index.html
+      - scales-xml-aalto: site/scales-xml-aalto_2.12/scaladocs/index.html
+
 extra:
   version:
     default: latest
@@ -32,11 +75,11 @@ plugins:
       type: datetime
       fallback_to_build_date: true
       enable_creation_date: true
-  - with-pdf:
-      enabled_if_env: ENABLE_PDF_EXPORT
-      cover_subtitle: A High Performance Scala Xml Library
-      copyright: Copyright @ 2010 - Chris Twiner
-      author: Chris Twiner
+ # - with-pdf:
+ #     enabled_if_env: ENABLE_PDF_EXPORT
+ #     cover_subtitle: A High Performance Scala Xml Library
+ #     copyright: Copyright @ 2010 - Chris Twiner
+ #     author: Chris Twiner
 
 markdown_extensions:
   - markdown.extensions.toc:

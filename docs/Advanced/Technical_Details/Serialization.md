@@ -1,6 +1,6 @@
 # Serialising - Nitty Gritty
 
-While [SerializingIntro.html Serialising] provides a high-level overview of serializing in Scales, this section gets into the specifics of how its implemented and compatibility issues.
+While [Serialising](../../Serializing_&_Transforming_XML/SerializingIntro.md) provides a high-level overview of serializing in Scales, this section gets into the specifics of how its implemented and compatibility issues.
 
 Scales attempts the following:
 
@@ -31,7 +31,7 @@ XML 1.0 allows the use of a large enough range of unicode names that umlauts are
 
 This document is itself not valid, as the ü in the markup cannot be represented by US-ASCII.
 
-The default [./doc/scales/xml/serializers/LSSerializerFactory$.html LSSerializerSerializerFactory] provides an implementation of the encF function which abstracts away this issue.  For a given character set it attempts to encode the string replying an <nowiki>Option[Throwable]</nowiki>, with None indicating that it can be serialized with that encoding.  Each serialized QName has its parts checked against the shared global cache, to reduce costs in creating encoders and their use.
+The default [LSSerializerSerializerFactory](../../../site/scales-xml_{{site_scala_compat()}}/scaladocs/scales/xml/serializers/LSSerializerFactory$.html) provides an implementation of the encF function which abstracts away this issue.  For a given character set it attempts to encode the string replying an <nowiki>Option[Throwable]</nowiki>, with None indicating that it can be serialized with that encoding.  Each serialized QName has its parts checked against the shared global cache, to reduce costs in creating encoders and their use.
 
 A LSSerializerNoCacheFactory can be used if the caching behaviour is not desirable.
 
