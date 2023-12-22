@@ -188,7 +188,7 @@ class XmlMarshallingTest extends junit.framework.TestCase {
     //println(str.toString)
 
   // 2.11 / jdk 1.8 doesn't convert
-//    assertTrue("Should have been encoded for US-ASCII", (str.toString.indexOf("&#228;chte") > -1) || (str.toString.indexOf("&#xe4;chte") > -1)) //&#228;  &#xe4; the same. xe4 for jre non hex for xalan
+    assertTrue("Should have been encoded for US-ASCII", (str.toString.indexOf("&#228;chte") > -1) || (str.toString.indexOf("&#xe4;chte") > -1)) //&#228;  &#xe4; the same. xe4 for jre non hex for xalan
   }
 
   def testCDataEncoding = {//cdata isn't written out correctly
