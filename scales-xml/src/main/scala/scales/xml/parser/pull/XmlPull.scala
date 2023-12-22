@@ -1,25 +1,12 @@
 package scales.xml.parser.pull
 
 import javax.xml.stream._
-import scales.utils.io.{ProxiedCloseOnNeedReader, ProxiedCloseOnNeedInputStream}
+
+import scales.utils.io.{ProxiedCloseOnNeedInputStream, ProxiedCloseOnNeedReader}
 import scales.utils.resources.{CloseOnNeed, IsClosed, Pool}
-
-import scales.xml.impl
+import scales.xml.{Doc, Elem, EndElem, QName, ScalesXml, Xml10, XmlEvent, XmlItem, defaultOptimisation, defaultPathOptimisation, impl}
 import impl.{FromParser, IsFromParser}
-
-import scales.xml.{
-  ScalesXml,
-  defaultOptimisation,
-  defaultPathOptimisation,
-  Doc,
-  XmlItem,
-  Elem, EndElem,
-  Xml10,
-  XmlEvent
-  }
-
-import scales.xml.parser.strategies.{MemoryOptimisationStrategy, PathOptimisationStrategy, OptimisationToken}
-
+import scales.xml.parser.strategies.{MemoryOptimisationStrategy, OptimisationToken, PathOptimisationStrategy}
 import java.io._
 
 /**
@@ -122,7 +109,11 @@ trait XmlPulls {
   /**
    * Creates a new XmlPull based on source.  By default it will close the stream after use.
    */
-  def pullXml[RToken <: OptimisationToken](source: org.xml.sax.InputSource, optimisationStrategy : MemoryOptimisationStrategy[RToken] = defaultOptimisation, parserFactoryPool: Pool[XMLInputFactory] = impl.DefaultStaxInputFactoryPool, closeAfterUse: Boolean = true) : XmlPull with java.io.Closeable with IsClosed = {
+  def pullXml[RToken <: OptimisationToken](source: org.xml.sax.InputSource,
+                                           optimisationStrategy: MemoryOptimisationStrategy[RToken] = defaultOptimisation,
+                                           parserFactoryPool: Pool[XMLInputFactory] = impl.DefaultStaxInputFactoryPool,
+                                           closeAfterUse: Boolean = true,
+                                           strictPath: List[QName] = Nil) : XmlPull with java.io.Closeable with IsClosed = {
     val stream = sourceUser(source)
 
     val pf = parserFactoryPool.grab
@@ -153,6 +144,7 @@ trait XmlPulls {
         }
       }
 
+      override val iStrictPath = strictPath
       start
     }
   }

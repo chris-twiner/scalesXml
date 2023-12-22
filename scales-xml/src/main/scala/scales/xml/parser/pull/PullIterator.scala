@@ -3,35 +3,15 @@ package scales.xml.parser.pull
 import javax.xml.stream._
 import scales.utils._
 import scales.xml.parser._
-
 import strategies.{MemoryOptimisationStrategy, OptimisationToken}
-
 import scales.xml.impl.{FromParser, IsFromParser}
+import scales.xml.{AttributeQName, Attributes, CData, Comment, DTD, Declaration, DocLike, EndElem, EndMisc, Misc, PI, Prolog, PullType, QName, ScalesXml, Text, Xml10, Xml11, emptyAttributes}
 
-import scales.xml.{
-  PullType,
-  CData,
-  Comment,
-  Elem,
-  PI,
-  Text,
-  EndElem,
-  Misc,
-  Attributes,
-  ScalesXml,
-  Prolog,
-  EndMisc,
-  DTD,
-  Declaration,
-  AttributeQName,
-  DocLike,
-  Xml11, Xml10,
-  emptyAttributes
-  }
+import scala.annotation.tailrec
 
 /**
- * Basis for xmlpulls, an Iterator[PullType]
- */
+  * Basis for xmlpulls, an Iterator[PullType]
+  */
 trait XmlPull extends Iterator[PullType] with DocLike {
 
   type Token <: OptimisationToken
@@ -48,9 +28,12 @@ trait XmlPull extends Iterator[PullType] with DocLike {
   /**
    * Why is this on a pull parser?  Simple answer is by default it costs little,
    * and by selection the user can optimise whole streams at an early and central place.  Optimising the stream in onQNames or another iteratee or in user code seems to go against the definition of a good design.
-   */ 
+   */
   protected[xml] val strategy : MemoryOptimisationStrategy[Token]
   protected[xml] val token : Token
+
+  protected[xml] val iStrictPath: List[QName] = Nil
+  private[xml] var path: List[QName] = Nil
 
   private[xml] var current: PullType = null
 
@@ -117,13 +100,14 @@ trait XmlPull extends Iterator[PullType] with DocLike {
 
     var nextEvent = XMLStreamConstants.END_DOCUMENT
     try {
-      val (event, num, odepth, oprolog) = PullUtils.pumpEvent(parser, strategy, token, vprolog, depth){_ => pumpEvent}
+      val (event, num, odepth, oprolog, opath) = PullUtils.pumpEvent(parser, strategy, token, vprolog, depth, iStrictPath, path) { _ => pumpEvent }
       nextEvent = num
       depth = odepth
       vprolog = oprolog
+      path = opath
       event
     } finally {
-      // should we close it? 
+      // should we close it?
       if (nextEvent == XMLStreamConstants.END_DOCUMENT) {
         internalClose
       }
@@ -132,6 +116,7 @@ trait XmlPull extends Iterator[PullType] with DocLike {
 }
 
 object PullUtils {
+  private[xml] final val StartDepth = -1
 
   private[xml] val dtdDummy = PI("onlyforme", "init")
 
@@ -163,7 +148,7 @@ object PullUtils {
         else
           strategy.prefixedQName(local, jqname.getNamespaceURI, pre, token) // Left )
 
-      map = map unsafePlus 
+      map = map unsafePlus
 	strategy.attribute(aqname, 
 		       parser.getAttributeValue(i), token)
 
@@ -205,22 +190,92 @@ object PullUtils {
 	strategy.unprefixedQName(local, ns, token)
     } else
       strategy.prefixedQName(local, ns, pre, token)
-    
+
   }
 
-  def pumpEvent[Token <: OptimisationToken]( parser: XMLStreamReader, strategy : MemoryOptimisationStrategy[Token], token : Token, prolog : Prolog, idepth : Int )(otherEventHandler : Int => PullType) : (PullType, Int, Int, Prolog) = {
+  def pumpEvent[Token <: OptimisationToken](parser: XMLStreamReader,
+                                            strategy: MemoryOptimisationStrategy[Token],
+                                            token: Token,
+                                            prolog: Prolog,
+                                            idepth: Int,
+                                            strictPath: List[QName] = Nil,
+                                            ipath: List[QName]= Nil)(otherEventHandler : Int => PullType) : (PullType, Int, Int, Prolog, List[QName]) = {
     var depth = idepth
     var vprolog = prolog
+    var vpath = ipath
+
+    @tailrec
+    def dropWhile(): PullType = {
+      def doStep(event: Int): Option[PullType] = {
+        event match {
+          case XMLStreamConstants.START_ELEMENT =>
+            depth += 1
+            val elemQName: QName = PullUtils.getElemQName(parser, strategy, token)
+            vpath = vpath :+ elemQName
+            if (vpath.equals(strictPath)) {
+              val attributes = PullUtils.getAttributes(parser, strategy, token)
+              val namespaces = PullUtils.getNamespaces(parser, strategy, token)
+              Some(strategy.elem(elemQName, attributes, namespaces, token))
+            } else {
+              None
+            }
+          case XMLStreamConstants.END_ELEMENT =>
+            depth -= 1
+            val isMissingStrictPath = vpath.equals(strictPath.take(strictPath.size - 1))
+            if (isMissingStrictPath) {
+              val elemQName = PullUtils.getElemQName(parser, strategy, token)
+              val namespaces = PullUtils.getNamespaces(parser, strategy, token)
+              vpath = ipath.take(ipath.size - 1)
+              Some(EndElem(elemQName, namespaces))
+            } else {
+              vpath = vpath.take(vpath.size - 1)
+              None
+            }
+          case _ =>
+            None
+        }
+      }
+
+      if (parser.hasNext) {
+        doStep(parser.next()) match {
+          case Some(res) => res
+          case None => dropWhile()
+        }
+      } else {
+        error("this should never happen")
+      }
+    }
 
     var nextEvent = XMLStreamConstants.END_DOCUMENT // use this in the case of error from calling next as well, blow it up but try to shut down
     nextEvent = parser.next
 
     val event: PullType = nextEvent match {
-      case XMLStreamConstants.START_ELEMENT => 
-	depth += 1
-      strategy.elem(getElemQName(parser, strategy, token), getAttributes(parser, strategy, token), getNamespaces(parser, strategy, token), token)
-
-      case XMLStreamConstants.END_ELEMENT => depth -= 1; EndElem(getElemQName(parser, strategy, token), getNamespaces(parser, strategy, token))
+      case XMLStreamConstants.START_ELEMENT => //1
+        depth += 1
+        if (strictPath.isEmpty)
+          strategy.elem(getElemQName(parser, strategy, token), getAttributes(parser, strategy, token), getNamespaces(parser, strategy, token), token)
+        else {
+          val elemQName = PullUtils.getElemQName(parser, strategy, token)
+          vpath = ipath :+ elemQName
+          val validSubtree = vpath.take(strictPath.size).equals(strictPath)
+          if (idepth != StartDepth && !validSubtree) {
+            dropWhile()
+          } else {
+            val attributes = PullUtils.getAttributes(parser, strategy, token)
+            val namespaces = PullUtils.getNamespaces(parser, strategy, token)
+            strategy.elem(elemQName, attributes, namespaces, token)
+          }
+        }
+      case XMLStreamConstants.END_ELEMENT => //2
+        depth -= 1
+        if (strictPath.isEmpty)
+          EndElem(getElemQName(parser, strategy, token), getNamespaces(parser, strategy, token))
+        else {
+          val elemQName = PullUtils.getElemQName(parser, strategy, token)
+          val namespaces = PullUtils.getNamespaces(parser, strategy, token)
+          vpath = ipath.take(ipath.size - 1)
+          EndElem(elemQName, namespaces)
+        }
       case XMLStreamConstants.CHARACTERS => Text(parser.getText)
       case XMLStreamConstants.CDATA => CData(parser.getText)
       case XMLStreamConstants.COMMENT => Comment(parser.getText)
@@ -237,7 +292,7 @@ object PullUtils {
           encoding = if (ec eq null) defaultCharset else java.nio.charset.Charset.forName(ec), // TODO what do we do about unsupported, throwing is probably fine, but it irritates, if we can get here the parser at least supports it, even if we can't write to it
           standalone = parser.isStandalone()))
 
-        val (nev, nex, nde, vvp) = pumpEvent(parser, strategy, token, vprolog, depth)(otherEventHandler) // we don't want to handle this
+        val (nev, nex, nde, vvp, _) = pumpEvent(parser, strategy, token, vprolog, depth)(otherEventHandler) // we don't want to handle this
 
 	// reset to keep the correct values
 	nextEvent = nex
@@ -250,7 +305,7 @@ object PullUtils {
       // we don't really want to handle other types?
       case _ => otherEventHandler(nextEvent)
     }
-    (event, nextEvent, depth, vprolog)
+    (event, nextEvent, depth, vprolog, vpath)
   }
-  
+
 }
