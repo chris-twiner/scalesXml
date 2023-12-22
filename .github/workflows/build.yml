@@ -154,7 +154,6 @@ jobs:
       - uses: ./.github/workflows/mkdocs #sparkutils/quality/.github/workflows/mkdocs/action.yml@e8cd720ee2cb495a6a020363441a81da3bb70b23
         with:
           prepScript: |
-            ls -R target
             cp -rf target/target/site docs/
             cp -rf target/scales-xml/target/site docs/site/scales-xml_2_12
             cp -rf target/aalto/target/site docs/site/scales-xml-aalto_2_12
