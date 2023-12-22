@@ -1,0 +1,1598 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/xml/impl/XmlFactories.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.xml.impl
+</span>2 <span style=''>
+</span>3 <span style=''>import javax.xml.parsers._
+</span>4 <span style=''>import javax.xml.stream._
+</span>5 <span style=''>import javax.xml.validation._
+</span>6 <span style=''>import javax.xml.transform._
+</span>7 <span style=''>
+</span>8 <span style=''>import org.xml.sax.XMLReader
+</span>9 <span style=''>import org.xml.sax.helpers.XMLReaderFactory
+</span>10 <span style=''>
+</span>11 <span style=''>import scales.utils.resources._
+</span>12 <span style=''>import scales.xml.parser.sax._
+</span>13 <span style=''>import scales.xml.trax.ScalesSource
+</span>14 <span style=''>import scales.xml.asStreamSource
+</span>15 <span style=''>
+</span>16 <span style=''>/**
+</span>17 <span style=''> * Most of the JAXP, STAX and DOM apis don't mention much about
+</span>18 <span style=''> * thread safety but the dominant xerces is completely unsafe with regards
+</span>19 <span style=''> * to threads.  In fact only the 1.4.2 apis mention anything about thread safety
+</span>20 <span style=''> * expectations.
+</span>21 <span style=''> *
+</span>22 <span style=''> * The process of getting a factory is very expensive and are not thread safe (you can't trust it to create a document in parallel).  See MUSE 270 for an example of why.
+</span>23 <span style=''> *
+</span>24 <span style=''> * As such we must use a pool for all handling.  A thread/piece of code
+</span>25 <span style=''> * grabs a factory from the pool, creating if necessary.
+</span>26 <span style=''> *
+</span>27 <span style=''> * To aid the user the parsing code uses the Loaner interface (for SAX and DOM factories) and uses the Pool interface directly for Pull Parsers, as using them does not imply a given scope.
+</span>28 <span style=''> *
+</span>29 <span style=''> * By default no validating is performed
+</span>30 <span style=''> */ 
+</span>31 <span style=''>trait XmlFactories {
+</span>32 <span style=''>
+</span>33 <span style=''>  def newSchema( source : Source, factory : Loaner[SchemaFactory] = DefaultXSDSchemaFactoryPool ) =
+</span>34 <span style=''>    </span><span style='background: #AEF1AE'>factory.loan{ 
+</span>35 <span style=''></span><span style='background: #AEF1AE'>      f =&gt; 
+</span>36 <span style=''></span><span style='background: #AEF1AE'>
+</span>37 <span style=''></span><span style='background: #AEF1AE'>      import javax.xml.transform.stream._
+</span>38 <span style=''></span><span style='background: #AEF1AE'>      import scales.xml.ScalesXml._
+</span>39 <span style=''></span><span style='background: #AEF1AE'>
+</span>40 <span style=''></span><span style='background: #AEF1AE'>      if (!Versions.newSchemaShouldSerialize) 
+</span>41 <span style=''></span><span style='background: #AEF1AE'>	f.newSchema(source)
+</span>42 <span style=''></span><span style='background: #AEF1AE'>      else 
+</span>43 <span style=''></span><span style='background: #AEF1AE'>	</span><span style='background: #F0ADAD'>if (source.isInstanceOf[ScalesSource]) {
+</span>44 <span style=''></span><span style='background: #F0ADAD'>	  val s = source.asInstanceOf[ScalesSource]
+</span>45 <span style=''></span><span style='background: #F0ADAD'>	  f.newSchema(asStreamSource((s.stream, s.documentLike)))
+</span>46 <span style=''></span><span style='background: #F0ADAD'>	} else f.newSchema(source)</span><span style='background: #AEF1AE'>
+</span>47 <span style=''></span><span style='background: #AEF1AE'> 
+</span>48 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>49 <span style=''>
+</span>50 <span style=''>}
+</span>51 <span style=''>
+</span>52 <span style=''>/**
+</span>53 <span style=''> * Default SAXParser Factory
+</span>54 <span style=''> */ 
+</span>55 <span style=''>object DefaultSAXParserFactoryPool extends SimpleUnboundedPool[SAXParserFactory] { pool =&gt;
+</span>56 <span style=''>  
+</span>57 <span style=''>  def create = {
+</span>58 <span style=''>    val parserFactory = </span><span style='background: #AEF1AE'>SAXParserFactory.newInstance()</span><span style=''>
+</span>59 <span style=''>    </span><span style='background: #AEF1AE'>parserFactory.setNamespaceAware(true)</span><span style=''>
+</span>60 <span style=''>    </span><span style='background: #AEF1AE'>parserFactory.setFeature(&quot;http://xml.org/sax/features/namespaces&quot;, true)</span><span style=''>
+</span>61 <span style=''>    </span><span style='background: #AEF1AE'>parserFactory.setValidating(false)</span><span style=''>
+</span>62 <span style=''>    parserFactory
+</span>63 <span style=''>  }
+</span>64 <span style=''>										     val parsers = </span><span style='background: #AEF1AE'>new</span><span style=''> Loaner[SAXParser] with DefaultSaxSupport {
+</span>65 <span style=''>										       def loan[X]( tThunk : SAXParser =&gt; X ) : X =
+</span>66 <span style=''>											 </span><span style='background: #AEF1AE'>pool.loan{ x =&gt; tThunk(x.newSAXParser) }</span><span style=''>
+</span>67 <span style=''>										     }
+</span>68 <span style=''>										   }
+</span>69 <span style=''>
+</span>70 <span style=''>/**
+</span>71 <span style=''> * SAXParser Factory without version support
+</span>72 <span style=''> */ 
+</span>73 <span style=''>object NoVersionSAXParserFactoryPool extends SimpleUnboundedPool[SAXParserFactory] { pool =&gt;
+</span>74 <span style=''>  
+</span>75 <span style=''>  def create = {
+</span>76 <span style=''>    val parserFactory = </span><span style='background: #F0ADAD'>SAXParserFactory.newInstance()</span><span style=''>
+</span>77 <span style=''>    </span><span style='background: #F0ADAD'>parserFactory.setNamespaceAware(true)</span><span style=''>
+</span>78 <span style=''>    </span><span style='background: #F0ADAD'>parserFactory.setFeature(&quot;http://xml.org/sax/features/namespaces&quot;, true)</span><span style=''>
+</span>79 <span style=''>    </span><span style='background: #F0ADAD'>parserFactory.setValidating(false)</span><span style=''>
+</span>80 <span style=''>    parserFactory
+</span>81 <span style=''>  }
+</span>82 <span style=''>										     val parsers = </span><span style='background: #F0ADAD'>new</span><span style=''> Loaner[SAXParser] with DefaultSaxSupport {
+</span>83 <span style=''>										       // doesn't support xml version retrieval
+</span>84 <span style=''>    override def getXmlVersion( reader : XMLReader ) : AnyRef =
+</span>85 <span style=''>      </span><span style='background: #F0ADAD'>null</span><span style=''>
+</span>86 <span style=''>    										       def loan[X]( tThunk : SAXParser =&gt; X ) : X =
+</span>87 <span style=''>      </span><span style='background: #F0ADAD'>pool.loan{ x =&gt; tThunk(x.newSAXParser) }</span><span style=''>
+</span>88 <span style=''>										     }
+</span>89 <span style=''>}
+</span>90 <span style=''>
+</span>91 <span style=''>/**
+</span>92 <span style=''> * Default XMLReader Factory
+</span>93 <span style=''> */ 
+</span>94 <span style=''>object DefaultXMLReaderFactoryPool extends SimpleUnboundedPool[XMLReader] with DefaultSaxSupport { pool =&gt;
+</span>95 <span style=''>  
+</span>96 <span style=''>  def create = 
+</span>97 <span style=''>    </span><span style='background: #AEF1AE'>XMLReaderFactory.createXMLReader()</span><span style=''>
+</span>98 <span style=''>
+</span>99 <span style=''>}
+</span>100 <span style=''>
+</span>101 <span style=''>/**
+</span>102 <span style=''> * Aalto and others don't support getting the xml version, if your parser doesn't you could use loadXmlReader with this pool directly.
+</span>103 <span style=''> */ 
+</span>104 <span style=''>object NoVersionXmlReaderFactoryPool extends SimpleUnboundedPool[XMLReader] with DefaultSaxSupport {
+</span>105 <span style=''>  
+</span>106 <span style=''>  // doesn't support xml version retrieval
+</span>107 <span style=''>  override def getXmlVersion( reader : XMLReader ) : AnyRef =
+</span>108 <span style=''>    </span><span style='background: #F0ADAD'>null</span><span style=''>
+</span>109 <span style=''>
+</span>110 <span style=''>  def create = 
+</span>111 <span style=''>    </span><span style='background: #F0ADAD'>XMLReaderFactory.createXMLReader()</span><span style=''>
+</span>112 <span style=''>  
+</span>113 <span style=''>}
+</span>114 <span style=''>
+</span>115 <span style=''>/**
+</span>116 <span style=''> * Default DOMFactory impl
+</span>117 <span style=''> */ 
+</span>118 <span style=''>object DefaultDOMFactoryPool extends SimpleUnboundedPool[DocumentBuilderFactory] { pool =&gt;
+</span>119 <span style=''>  
+</span>120 <span style=''>  def create = {
+</span>121 <span style=''>    val dbFactory = </span><span style='background: #AEF1AE'>DocumentBuilderFactory.newInstance()</span><span style=''>
+</span>122 <span style=''>    </span><span style='background: #AEF1AE'>dbFactory.setNamespaceAware(true)</span><span style=''>
+</span>123 <span style=''>    </span><span style='background: #AEF1AE'>dbFactory.setValidating(false)</span><span style=''>
+</span>124 <span style=''>    dbFactory
+</span>125 <span style=''>  }
+</span>126 <span style=''>
+</span>127 <span style=''>  val parsers = </span><span style='background: #AEF1AE'>new</span><span style=''> Loaner[DocumentBuilder] {
+</span>128 <span style=''>    def loan[X]( tThunk : DocumentBuilder =&gt; X ) : X =
+</span>129 <span style=''>      </span><span style='background: #F0ADAD'>pool.loan{ x =&gt; tThunk(x.newDocumentBuilder) }</span><span style=''>
+</span>130 <span style=''>  }
+</span>131 <span style=''>										   }
+</span>132 <span style=''>
+</span>133 <span style=''>/**
+</span>134 <span style=''> * Default StaxInputFactory impl
+</span>135 <span style=''> */ 
+</span>136 <span style=''>object DefaultStaxInputFactoryPool extends SimpleUnboundedPool[XMLInputFactory] { pool =&gt;
+</span>137 <span style=''>  
+</span>138 <span style=''>  val cdata = </span><span style='background: #AEF1AE'>&quot;http://java.sun.com/xml/stream/properties/report-cdata-event&quot;</span><span style=''>
+</span>139 <span style=''>
+</span>140 <span style=''>  def create = {
+</span>141 <span style=''>    val fac = </span><span style='background: #AEF1AE'>XMLInputFactory.newInstance()</span><span style=''>
+</span>142 <span style=''>    if (</span><span style='background: #AEF1AE'>fac.isPropertySupported(cdata)</span><span style=''>) {
+</span>143 <span style=''>      </span><span style='background: #AEF1AE'>fac.setProperty(cdata, java.lang.Boolean.TRUE)</span><span style=''>;
+</span>144 <span style=''>    }
+</span>145 <span style=''>    fac
+</span>146 <span style=''>  }
+</span>147 <span style=''>										   }
+</span>148 <span style=''>
+</span>149 <span style=''>/**
+</span>150 <span style=''> * Default XSD SchemaFactory impl
+</span>151 <span style=''> */ 
+</span>152 <span style=''>object DefaultXSDSchemaFactoryPool extends SimpleUnboundedPool[SchemaFactory] { pool =&gt;
+</span>153 <span style=''>  
+</span>154 <span style=''>  def create = {
+</span>155 <span style=''>    val fac = </span><span style='background: #AEF1AE'>SchemaFactory.newInstance(javax.xml.XMLConstants.W3C_XML_SCHEMA_NS_URI)</span><span style=''>
+</span>156 <span style=''>    fac
+</span>157 <span style=''>  }
+</span>158 <span style=''>
+</span>159 <span style=''>}
+</span>160 <span style=''>
+</span>161 <span style=''>/**
+</span>162 <span style=''> * Lazy val needed to trap impl, need pluggable (slf4j style) to swap out different
+</span>163 <span style=''> * logic, defaulting to sun jaxp ?  For a future version, env property is enough for now.
+</span>164 <span style=''> *
+</span>165 <span style=''> */ 
+</span>166 <span style=''>object Versions {
+</span>167 <span style=''>
+</span>168 <span style=''>  /**
+</span>169 <span style=''>   * If the transformer is Xalan then serialize before creating a source
+</span>170 <span style=''>   */ 
+</span>171 <span style=''>  lazy val traxSourceShouldSerialize = {
+</span>172 <span style=''>    val p = System.getProperty(&quot;scales.traxSourceShouldSerialize&quot;)
+</span>173 <span style=''>    if (p ne null)
+</span>174 <span style=''>      p.toBoolean
+</span>175 <span style=''>    else {
+</span>176 <span style=''>
+</span>177 <span style=''>      import javax.xml.transform._
+</span>178 <span style=''>
+</span>179 <span style=''>      val t = TransformerFactory.newInstance.newTransformer
+</span>180 <span style=''>      t.getClass.getName == &quot;org.apache.xalan.transformer.TransformerIdentityImpl&quot;
+</span>181 <span style=''>    }
+</span>182 <span style=''>  }
+</span>183 <span style=''>
+</span>184 <span style=''>  /**
+</span>185 <span style=''>   * If newSchema is called should we serialize the source?  Sun JDK does trax but not validation for StAXSource :&lt;
+</span>186 <span style=''>   * 
+</span>187 <span style=''>   * JDK 1.7 shares the StAX love though.
+</span>188 <span style=''>   *
+</span>189 <span style=''>   * If scales.newSchemaShouldSerialize is defined its value is used.
+</span>190 <span style=''>   *
+</span>191 <span style=''>   * Otherwise we examine the implemenation version of jaxp schemafactory, 1.5 and 1.6 need to serialize, 1.7 (and hopefully above ^_^) don't.
+</span>192 <span style=''>   *
+</span>193 <span style=''>   * Assuming non sun 1.8 and above come ready to validate.
+</span>194 <span style=''>   */ 
+</span>195 <span style=''>  lazy val newSchemaShouldSerialize = {
+</span>196 <span style=''>    val p = System.getProperty(&quot;scales.newSchemaShouldSerialize&quot;)
+</span>197 <span style=''>    if (p ne null)
+</span>198 <span style=''>      p.toBoolean
+</span>199 <span style=''>    else {
+</span>200 <span style=''>      val fac = SchemaFactory.newInstance(javax.xml.XMLConstants.W3C_XML_SCHEMA_NS_URI)
+</span>201 <span style=''>      val ver = fac.getClass.getPackage.getImplementationVersion
+</span>202 <span style=''>
+</span>203 <span style=''>      if (ver ne null) {
+</span>204 <span style=''>        val pre = ver.substring(0, 3)
+</span>205 <span style=''>
+</span>206 <span style=''>        if (pre == &quot;1.5&quot; || pre == &quot;1.6&quot;)
+</span>207 <span style=''>          true
+</span>208 <span style=''>        else
+</span>209 <span style=''>          false
+</span>210 <span style=''>      } else
+</span>211 <span style=''>        false // null for 1.8 and above, otherwise use the property
+</span>212 <span style=''>    }
+</span>213 <span style=''>  }
+</span>214 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          34
+        </td>
+        <td>
+          3509
+        </td>
+        <td>
+          1258
+          -
+          1626
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.resources.Loaner.loan
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          factory.loan[javax.xml.validation.Schema](((f: javax.xml.validation.SchemaFactory) =&gt; {
+  import javax.xml.transform.stream._;
+  import scales.xml.ScalesXml._;
+  if (Versions.newSchemaShouldSerialize.unary_!)
+    f.newSchema(source)
+  else
+    if (source.isInstanceOf[scales.xml.trax.ScalesSource])
+      {
+        val s: scales.xml.trax.ScalesSource = source.asInstanceOf[scales.xml.trax.ScalesSource];
+        f.newSchema(scales.xml.`package`.asStreamSource[(Iterator[scales.xml.PullType], scales.xml.DocLike)](scala.Tuple2.apply[Iterator[scales.xml.PullType], scales.xml.DocLike](s.stream, s.documentLike))(scales.xml.ScalesXml.defaultSerializerFactory, scales.xml.ScalesXml.pullAndDocSerializeable))
+      }
+    else
+      f.newSchema(source)
+}))
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          3493
+        </td>
+        <td>
+          1375
+          -
+          1409
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Versions.newSchemaShouldSerialize.unary_!
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          3494
+        </td>
+        <td>
+          1413
+          -
+          1432
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.validation.SchemaFactory.newSchema
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          f.newSchema(source)
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          3495
+        </td>
+        <td>
+          1413
+          -
+          1432
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          javax.xml.validation.SchemaFactory.newSchema
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          f.newSchema(source)
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          3496
+        </td>
+        <td>
+          1450
+          -
+          1483
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.isInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          source.isInstanceOf[scales.xml.trax.ScalesSource]
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          3505
+        </td>
+        <td>
+          1485
+          -
+          1593
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          {
+  val s: scales.xml.trax.ScalesSource = source.asInstanceOf[scales.xml.trax.ScalesSource];
+  f.newSchema(scales.xml.`package`.asStreamSource[(Iterator[scales.xml.PullType], scales.xml.DocLike)](scala.Tuple2.apply[Iterator[scales.xml.PullType], scales.xml.DocLike](s.stream, s.documentLike))(scales.xml.ScalesXml.defaultSerializerFactory, scales.xml.ScalesXml.pullAndDocSerializeable))
+}
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          3508
+        </td>
+        <td>
+          1446
+          -
+          1618
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          if (source.isInstanceOf[scales.xml.trax.ScalesSource])
+  {
+    val s: scales.xml.trax.ScalesSource = source.asInstanceOf[scales.xml.trax.ScalesSource];
+    f.newSchema(scales.xml.`package`.asStreamSource[(Iterator[scales.xml.PullType], scales.xml.DocLike)](scala.Tuple2.apply[Iterator[scales.xml.PullType], scales.xml.DocLike](s.stream, s.documentLike))(scales.xml.ScalesXml.defaultSerializerFactory, scales.xml.ScalesXml.pullAndDocSerializeable))
+  }
+else
+  f.newSchema(source)
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          3497
+        </td>
+        <td>
+          1498
+          -
+          1531
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          source.asInstanceOf[scales.xml.trax.ScalesSource]
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          3498
+        </td>
+        <td>
+          1563
+          -
+          1571
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.trax.ScalesSource.stream
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          s.stream
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          3499
+        </td>
+        <td>
+          1573
+          -
+          1587
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.trax.ScalesSource.documentLike
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          s.documentLike
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          3500
+        </td>
+        <td>
+          1562
+          -
+          1588
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Tuple2.apply[Iterator[scales.xml.PullType], scales.xml.DocLike](s.stream, s.documentLike)
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          3501
+        </td>
+        <td>
+          1561
+          -
+          1561
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.XmlPrinterImplicits.defaultSerializerFactory
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.xml.ScalesXml.defaultSerializerFactory
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          3502
+        </td>
+        <td>
+          1561
+          -
+          1561
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.SerializerImplicits.pullAndDocSerializeable
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.xml.ScalesXml.pullAndDocSerializeable
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          3503
+        </td>
+        <td>
+          1547
+          -
+          1589
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.trax.TraxSourceConversions.asStreamSource
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.xml.`package`.asStreamSource[(Iterator[scales.xml.PullType], scales.xml.DocLike)](scala.Tuple2.apply[Iterator[scales.xml.PullType], scales.xml.DocLike](s.stream, s.documentLike))(scales.xml.ScalesXml.defaultSerializerFactory, scales.xml.ScalesXml.pullAndDocSerializeable)
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          3504
+        </td>
+        <td>
+          1535
+          -
+          1590
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.validation.SchemaFactory.newSchema
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          f.newSchema(scales.xml.`package`.asStreamSource[(Iterator[scales.xml.PullType], scales.xml.DocLike)](scala.Tuple2.apply[Iterator[scales.xml.PullType], scales.xml.DocLike](s.stream, s.documentLike))(scales.xml.ScalesXml.defaultSerializerFactory, scales.xml.ScalesXml.pullAndDocSerializeable))
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          3506
+        </td>
+        <td>
+          1599
+          -
+          1618
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.validation.SchemaFactory.newSchema
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          f.newSchema(source)
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          3507
+        </td>
+        <td>
+          1599
+          -
+          1618
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          javax.xml.validation.SchemaFactory.newSchema
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          f.newSchema(source)
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          3510
+        </td>
+        <td>
+          1804
+          -
+          1834
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.parsers.SAXParserFactory.newInstance
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          javax.xml.parsers.SAXParserFactory.newInstance()
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          3511
+        </td>
+        <td>
+          1839
+          -
+          1876
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.parsers.SAXParserFactory.setNamespaceAware
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          parserFactory.setNamespaceAware(true)
+        </td>
+      </tr><tr>
+        <td>
+          60
+        </td>
+        <td>
+          3512
+        </td>
+        <td>
+          1881
+          -
+          1953
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.parsers.SAXParserFactory.setFeature
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          parserFactory.setFeature(&quot;http://xml.org/sax/features/namespaces&quot;, true)
+        </td>
+      </tr><tr>
+        <td>
+          61
+        </td>
+        <td>
+          3513
+        </td>
+        <td>
+          1958
+          -
+          1992
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.parsers.SAXParserFactory.setValidating
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          parserFactory.setValidating(false)
+        </td>
+      </tr><tr>
+        <td>
+          64
+        </td>
+        <td>
+          3517
+        </td>
+        <td>
+          2044
+          -
+          2047
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.DefaultSAXParserFactoryPool.$anon.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          66
+        </td>
+        <td>
+          3514
+        </td>
+        <td>
+          2188
+          -
+          2202
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.parsers.SAXParserFactory.newSAXParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x.newSAXParser()
+        </td>
+      </tr><tr>
+        <td>
+          66
+        </td>
+        <td>
+          3515
+        </td>
+        <td>
+          2181
+          -
+          2203
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          tThunk.apply(x.newSAXParser())
+        </td>
+      </tr><tr>
+        <td>
+          66
+        </td>
+        <td>
+          3516
+        </td>
+        <td>
+          2165
+          -
+          2205
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.resources.SimpleUnboundedPool.loan
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          DefaultSAXParserFactoryPool.this.loan[X](((x: javax.xml.parsers.SAXParserFactory) =&gt; tThunk.apply(x.newSAXParser())))
+        </td>
+      </tr><tr>
+        <td>
+          76
+        </td>
+        <td>
+          3518
+        </td>
+        <td>
+          2430
+          -
+          2460
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.parsers.SAXParserFactory.newInstance
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          javax.xml.parsers.SAXParserFactory.newInstance()
+        </td>
+      </tr><tr>
+        <td>
+          77
+        </td>
+        <td>
+          3519
+        </td>
+        <td>
+          2465
+          -
+          2502
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.parsers.SAXParserFactory.setNamespaceAware
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          parserFactory.setNamespaceAware(true)
+        </td>
+      </tr><tr>
+        <td>
+          78
+        </td>
+        <td>
+          3520
+        </td>
+        <td>
+          2507
+          -
+          2579
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.parsers.SAXParserFactory.setFeature
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          parserFactory.setFeature(&quot;http://xml.org/sax/features/namespaces&quot;, true)
+        </td>
+      </tr><tr>
+        <td>
+          79
+        </td>
+        <td>
+          3521
+        </td>
+        <td>
+          2584
+          -
+          2618
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.parsers.SAXParserFactory.setValidating
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          parserFactory.setValidating(false)
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          3526
+        </td>
+        <td>
+          2670
+          -
+          2673
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.NoVersionSAXParserFactoryPool.$anon.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          85
+        </td>
+        <td>
+          3522
+        </td>
+        <td>
+          2845
+          -
+          2849
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          3523
+        </td>
+        <td>
+          2945
+          -
+          2959
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.parsers.SAXParserFactory.newSAXParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          x.newSAXParser()
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          3524
+        </td>
+        <td>
+          2938
+          -
+          2960
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          tThunk.apply(x.newSAXParser())
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          3525
+        </td>
+        <td>
+          2922
+          -
+          2962
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.resources.SimpleUnboundedPool.loan
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          NoVersionSAXParserFactoryPool.this.loan[X](((x: javax.xml.parsers.SAXParserFactory) =&gt; tThunk.apply(x.newSAXParser())))
+        </td>
+      </tr><tr>
+        <td>
+          97
+        </td>
+        <td>
+          3527
+        </td>
+        <td>
+          3151
+          -
+          3185
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.xml.sax.helpers.XMLReaderFactory.createXMLReader
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          org.xml.sax.helpers.XMLReaderFactory.createXMLReader()
+        </td>
+      </tr><tr>
+        <td>
+          108
+        </td>
+        <td>
+          3528
+        </td>
+        <td>
+          3547
+          -
+          3551
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          3529
+        </td>
+        <td>
+          3573
+          -
+          3607
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.xml.sax.helpers.XMLReaderFactory.createXMLReader
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          org.xml.sax.helpers.XMLReaderFactory.createXMLReader()
+        </td>
+      </tr><tr>
+        <td>
+          121
+        </td>
+        <td>
+          3530
+        </td>
+        <td>
+          3781
+          -
+          3817
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.parsers.DocumentBuilderFactory.newInstance
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          javax.xml.parsers.DocumentBuilderFactory.newInstance()
+        </td>
+      </tr><tr>
+        <td>
+          122
+        </td>
+        <td>
+          3531
+        </td>
+        <td>
+          3822
+          -
+          3855
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.parsers.DocumentBuilderFactory.setNamespaceAware
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          dbFactory.setNamespaceAware(true)
+        </td>
+      </tr><tr>
+        <td>
+          123
+        </td>
+        <td>
+          3532
+        </td>
+        <td>
+          3860
+          -
+          3890
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.parsers.DocumentBuilderFactory.setValidating
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          dbFactory.setValidating(false)
+        </td>
+      </tr><tr>
+        <td>
+          127
+        </td>
+        <td>
+          3536
+        </td>
+        <td>
+          3926
+          -
+          3929
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.DefaultDOMFactoryPool.$anon.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          129
+        </td>
+        <td>
+          3533
+        </td>
+        <td>
+          4040
+          -
+          4060
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.parsers.DocumentBuilderFactory.newDocumentBuilder
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          x.newDocumentBuilder()
+        </td>
+      </tr><tr>
+        <td>
+          129
+        </td>
+        <td>
+          3534
+        </td>
+        <td>
+          4033
+          -
+          4061
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          tThunk.apply(x.newDocumentBuilder())
+        </td>
+      </tr><tr>
+        <td>
+          129
+        </td>
+        <td>
+          3535
+        </td>
+        <td>
+          4017
+          -
+          4063
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.resources.SimpleUnboundedPool.loan
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          DefaultDOMFactoryPool.this.loan[X](((x: javax.xml.parsers.DocumentBuilderFactory) =&gt; tThunk.apply(x.newDocumentBuilder())))
+        </td>
+      </tr><tr>
+        <td>
+          138
+        </td>
+        <td>
+          3537
+        </td>
+        <td>
+          4233
+          -
+          4295
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;http://java.sun.com/xml/stream/properties/report-cdata-event&quot;
+        </td>
+      </tr><tr>
+        <td>
+          141
+        </td>
+        <td>
+          3538
+        </td>
+        <td>
+          4328
+          -
+          4357
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.stream.XMLInputFactory.newInstance
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          javax.xml.stream.XMLInputFactory.newInstance()
+        </td>
+      </tr><tr>
+        <td>
+          142
+        </td>
+        <td>
+          3539
+        </td>
+        <td>
+          4390
+          -
+          4395
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.DefaultStaxInputFactoryPool.cdata
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          DefaultStaxInputFactoryPool.this.cdata
+        </td>
+      </tr><tr>
+        <td>
+          142
+        </td>
+        <td>
+          3540
+        </td>
+        <td>
+          4366
+          -
+          4396
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.stream.XMLInputFactory.isPropertySupported
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          fac.isPropertySupported(DefaultStaxInputFactoryPool.this.cdata)
+        </td>
+      </tr><tr>
+        <td>
+          142
+        </td>
+        <td>
+          3545
+        </td>
+        <td>
+          4362
+          -
+          4362
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          142
+        </td>
+        <td>
+          3546
+        </td>
+        <td>
+          4362
+          -
+          4362
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          143
+        </td>
+        <td>
+          3541
+        </td>
+        <td>
+          4422
+          -
+          4427
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.DefaultStaxInputFactoryPool.cdata
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          DefaultStaxInputFactoryPool.this.cdata
+        </td>
+      </tr><tr>
+        <td>
+          143
+        </td>
+        <td>
+          3542
+        </td>
+        <td>
+          4429
+          -
+          4451
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          java.lang.Boolean.TRUE
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          java.lang.Boolean.TRUE
+        </td>
+      </tr><tr>
+        <td>
+          143
+        </td>
+        <td>
+          3543
+        </td>
+        <td>
+          4406
+          -
+          4452
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.stream.XMLInputFactory.setProperty
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          fac.setProperty(DefaultStaxInputFactoryPool.this.cdata, java.lang.Boolean.TRUE)
+        </td>
+      </tr><tr>
+        <td>
+          143
+        </td>
+        <td>
+          3544
+        </td>
+        <td>
+          4406
+          -
+          4452
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          javax.xml.stream.XMLInputFactory.setProperty
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          fac.setProperty(DefaultStaxInputFactoryPool.this.cdata, java.lang.Boolean.TRUE)
+        </td>
+      </tr><tr>
+        <td>
+          155
+        </td>
+        <td>
+          3547
+        </td>
+        <td>
+          4653
+          -
+          4724
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.validation.SchemaFactory.newInstance
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          javax.xml.validation.SchemaFactory.newInstance(&quot;http://www.w3.org/2001/XMLSchema&quot;)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

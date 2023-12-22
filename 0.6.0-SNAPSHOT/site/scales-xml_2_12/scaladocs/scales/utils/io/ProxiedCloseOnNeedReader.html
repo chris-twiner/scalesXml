@@ -1,0 +1,913 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+          <title>scales-xml 0.6.0-SNAPSHOT API  - scales.utils.io.ProxiedCloseOnNeedReader</title>
+          <meta name="description" content="scales - xml 0.6.0 - SNAPSHOT API - scales.utils.io.ProxiedCloseOnNeedReader" />
+          <meta name="keywords" content="scales xml 0.6.0 SNAPSHOT API scales.utils.io.ProxiedCloseOnNeedReader" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      
+      <link href="../../../lib/index.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../lib/jquery.min.js"></script>
+      <script type="text/javascript" src="../../../lib/jquery.panzoom.min.js"></script>
+      <script type="text/javascript" src="../../../lib/jquery.mousewheel.min.js"></script>
+      <script type="text/javascript" src="../../../lib/index.js"></script>
+      <script type="text/javascript" src="../../../index.js"></script>
+      <script type="text/javascript" src="../../../lib/scheduler.js"></script>
+      <script type="text/javascript" src="../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../lib/modernizr.custom.js"></script><script type="text/javascript" src="../../../lib/diagrams.js" id="diagrams-js"></script>
+      <script type="text/javascript">
+        /* this variable can be used by the JS to determine the path to the root document */
+        var toRoot = '../../../';
+      </script>
+    
+        </head>
+        <body>
+      <div id="search">
+        <span id="doc-title">scales-xml 0.6.0-SNAPSHOT API<span id="doc-version"></span></span>
+        <span class="close-results"><span class="left">&lt;</span> Back</span>
+        <div id="textfilter">
+          <span class="input">
+            <input autocapitalize="none" placeholder="Search" id="index-input" type="text" accesskey="/" />
+            <i class="clear material-icons"></i>
+            <i id="search-icon" class="material-icons"></i>
+          </span>
+        </div>
+    </div>
+      <div id="search-results">
+        <div id="search-progress">
+          <div id="progress-fill"></div>
+        </div>
+        <div id="results-content">
+          <div id="entity-results"></div>
+          <div id="member-results"></div>
+        </div>
+      </div>
+      <div id="content-scroll-container" style="-webkit-overflow-scrolling: touch;">
+        <div id="content-container" style="-webkit-overflow-scrolling: touch;">
+          <div id="subpackage-spacer">
+            <div id="packages">
+              <h1>Packages</h1>
+              <ul>
+                <li name="_root_.root" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="_root_"></a><a id="root:_root_"></a>
+      <span class="permalink">
+      <a href="../../../index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="../../../index.html"><span class="name">root</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../index.html" class="extype" name="_root_">root</a></dd></dl></div>
+    </li><li name="_root_.scales" visbl="pub" class="indented1 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="scales"></a><a id="scales:scales"></a>
+      <span class="permalink">
+      <a href="../../../scales/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="Scales Xml provides both a more flexible approach to XML handling and a simplified way of interacting with XML." href="../../index.html"><span class="name">scales</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Scales Xml provides both a more flexible approach to XML handling and a simplified way of interacting with XML.</p><div class="fullcomment"><div class="comment cmt"><p>Scales Xml provides both a more flexible approach to XML handling and a simplified way of interacting with XML.</p><p>It fits nicely with the Java APIs you know, TrAX and javax.xml.validation for example, allowing you to run XSLTs and convert to and from Scales XML and other DOMs.</p><p>It also provides a far more XPath like experience than the normal Scala XML, Paths look like XPaths and work like them too (with many of the same functions and axes).
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../index.html" class="extype" name="_root_">root</a></dd></dl></div>
+    </li><li name="scales.utils" visbl="pub" class="indented2 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="utils"></a><a id="utils:utils"></a>
+      <span class="permalink">
+      <a href="../../../scales/utils/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="The scales.utils packages provide the basis functionality for scales.xml." href="../index.html"><span class="name">utils</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">The <a href="../index.html" class="extype" name="scales.utils">scales.utils</a> packages provide the basis functionality for <a href="../../xml/index.html" class="extype" name="scales.xml">scales.xml</a>.</p><div class="fullcomment"><div class="comment cmt"><p>The <a href="../index.html" class="extype" name="scales.utils">scales.utils</a> packages provide the basis functionality for <a href="../../xml/index.html" class="extype" name="scales.xml">scales.xml</a>.</p><p>The Tree an Path collections that underpin the XML model, as well as the iteratee functionality are located in the relevant sub-packages.</p><p>The package object itself pulls in the main utility functions for tree, path and iteratee handling.  Import the <a href="../ScalesUtils$.html" class="extype" name="scales.utils.ScalesUtils">scales.utils.ScalesUtils</a> object implicit members to provide the path &amp; and | extension functions, the iteratorEnumerator and the +:+ lazy appender for <span class="extype" name="scalaz.EphemeralStream">scalaz.EphemeralStream</span>.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../index.html" class="extype" name="scales">scales</a></dd></dl></div>
+    </li><li name="scales.utils.io" visbl="pub" class="indented3 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="io"></a><a id="io:io"></a>
+      <span class="permalink">
+      <a href="../../../scales/utils/io/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="index.html"><span class="name">io</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="scales.utils">utils</a></dd></dl></div>
+    </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="class" href="AppendableWriter.html" title="To provide a writer to LSSerializer (and anything else that wants it _) we need to wrap appendables."></a>
+                        <a href="AppendableWriter.html" title="To provide a writer to LSSerializer (and anything else that wants it _) we need to wrap appendables.">AppendableWriter</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="class" href="ByteArrayPool.html" title="Pools byte arrays"></a>
+                        <a href="ByteArrayPool.html" title="Pools byte arrays">ByteArrayPool</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="class" href="Chunk.html" title="A section of a Byte array"></a>
+                        <a href="Chunk.html" title="A section of a Byte array">Chunk</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="trait" href="DataChunk.html" title="Represents a chunk of data to feed into an async parser."></a>
+                        <a href="DataChunk.html" title="Represents a chunk of data to feed into an async parser.">DataChunk</a>
+                      </li><li class="current-entities indented3">
+                        <a class="object" href="DataChunkEvidence$.html" title=""></a>
+                        <a class="trait" href="DataChunkEvidence.html" title=""></a>
+                        <a href="DataChunkEvidence.html" title="">DataChunkEvidence</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="trait" href="DataChunker.html" title="An abstraction over a stream that provides DataChunks"></a>
+                        <a href="DataChunker.html" title="An abstraction over a stream that provides DataChunks">DataChunker</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="object" href="DefaultBufferPool$.html" title="Default buffer pool backed by byte arrays"></a>
+                        <a href="DefaultBufferPool$.html" title="Default buffer pool backed by byte arrays">DefaultBufferPool</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="object" href="DefaultByteArrayPool$.html" title="Default Byte Array pool with 8k chunks"></a>
+                        <a href="DefaultByteArrayPool$.html" title="Default Byte Array pool with 8k chunks">DefaultByteArrayPool</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="class" href="DirectBufferPool.html" title="ByteBuffer.allocateDirect(bufferSize) backed pool"></a>
+                        <a href="DirectBufferPool.html" title="ByteBuffer.allocateDirect(bufferSize) backed pool">DirectBufferPool</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="object" href="EOFData$.html" title="Represents the end of a stream, no more Bytes are available"></a>
+                        <a href="EOFData$.html" title="Represents the end of a stream, no more Bytes are available">EOFData</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="object" href="EmptyData$.html" title="Represents a data stream with no immediate data to return."></a>
+                        <a href="EmptyData$.html" title="Represents a data stream with no immediate data to return.">EmptyData</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="class" href="FullChunk.html" title="Represents the full array"></a>
+                        <a href="FullChunk.html" title="Represents the full array">FullChunk</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="class" href="JVMBufferPool.html" title="ByteBuffer.allocate(bufferSize) backed pool"></a>
+                        <a href="JVMBufferPool.html" title="ByteBuffer.allocate(bufferSize) backed pool">JVMBufferPool</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="class" href="ProxiedCloseOnNeedInputStream.html" title="Wrap the InputStream to allow better bracketing etc."></a>
+                        <a href="ProxiedCloseOnNeedInputStream.html" title="Wrap the InputStream to allow better bracketing etc.">ProxiedCloseOnNeedInputStream</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="class" href="" title="Wrap the Reader to allow better bracketing etc."></a>
+                        <a href="" title="Wrap the Reader to allow better bracketing etc.">ProxiedCloseOnNeedReader</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="class" href="RBCImplicitWrapper.html" title="Convenience function for wrapping a channel"></a>
+                        <a href="RBCImplicitWrapper.html" title="Convenience function for wrapping a channel">RBCImplicitWrapper</a>
+                      </li><li class="current-entities indented3">
+                        <a class="object" href="ReadableByteChannelWrapper$.html" title=""></a>
+                        <a class="class" href="ReadableByteChannelWrapper.html" title="Wraps a ReadableByteChannel to provide DataChunks, optionally closes the channel (defaults to closing)."></a>
+                        <a href="ReadableByteChannelWrapper.html" title="Wraps a ReadableByteChannel to provide DataChunks, optionally closes the channel (defaults to closing).">ReadableByteChannelWrapper</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="class" href="ReadableByteChannelWrapperBase.html" title="Wraps a ReadableByteChannel to provide DataChunks, optionally closes the channel (defaults to closing)."></a>
+                        <a href="ReadableByteChannelWrapperBase.html" title="Wraps a ReadableByteChannel to provide DataChunks, optionally closes the channel (defaults to closing).">ReadableByteChannelWrapperBase</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="trait" href="ReadableByteChannelWrapperImplicits.html" title=""></a>
+                        <a href="ReadableByteChannelWrapperImplicits.html" title="">ReadableByteChannelWrapperImplicits</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="object" href="ScalesUtilsIO$.html" title=""></a>
+                        <a href="ScalesUtilsIO$.html" title="">ScalesUtilsIO</a>
+                      </li>
+              </ul>
+            </div>
+          </div>
+          <div id="content">
+            <body class="class type">
+      <div id="definition">
+        <div class="big-circle class">c</div>
+        <p id="owner"><a href="../../index.html" class="extype" name="scales">scales</a>.<a href="../index.html" class="extype" name="scales.utils">utils</a>.<a href="index.html" class="extype" name="scales.utils.io">io</a></p>
+        <h1>ProxiedCloseOnNeedReader<span class="permalink">
+      <a href="../../../scales/utils/io/ProxiedCloseOnNeedReader.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span></h1>
+        <h3><span class="morelinks"></span></h3>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ProxiedCloseOnNeedReader</span><span class="params">(<span name="orig">orig: <span class="extype" name="java.io.Reader">Reader</span></span>)</span><span class="result"> extends <span class="extype" name="java.io.Reader">Reader</span> with <a href="../resources/CloseOnNeed.html" class="extype" name="scales.utils.resources.CloseOnNeed">CloseOnNeed</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+
+      
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Wrap the Reader to allow better bracketing etc.
+</p></div><div class="toggleContainer block">
+          <span class="toggle">
+            Linear Supertypes
+          </span>
+          <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="../resources/CloseOnNeed.html" class="extype" name="scales.utils.resources.CloseOnNeed">CloseOnNeed</a>, <a href="../resources/IsClosed.html" class="extype" name="scales.utils.resources.IsClosed">IsClosed</a>, <span class="extype" name="java.io.Reader">Reader</span>, <span class="extype" name="java.io.Closeable">Closeable</span>, <span class="extype" name="java.lang.AutoCloseable">AutoCloseable</span>, <span class="extype" name="java.lang.Readable">Readable</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+        </div><div class="toggleContainer block diagram-container" id="inheritance-diagram-container">
+                <span class="toggle diagram-link">
+                  Type Hierarchy
+                </span>
+                <div class="diagram" id="inheritance-diagram"><svg class="class-diagram" id="graph1" width="410pt" height="118pt" viewBox="0.00 0.00 409.50 118.00" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><g id="page0,1_graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 114)"><polygon fill="white" stroke="transparent" points="-4,4 -4,-114 405.5,-114 405.5,4 -4,4"></polygon><g id="clust1" class="cluster"></g><g id="clust2" class="cluster"></g><!-- node0 --><g class="node this class" id="graph1_0"><g id="a_this class|graph1_0"><a xlink:href="#inheritance-diagram" xlink:title="scales.utils.io.ProxiedCloseOnNeedReader (this class)"><path fill="#418565" stroke="#418565" d="M260.17,-49C260.17,-49 122.83,-49 122.83,-49 118.67,-49 114.5,-44.83 114.5,-40.67 114.5,-40.67 114.5,-32.33 114.5,-32.33 114.5,-28.17 118.67,-24 122.83,-24 122.83,-24 260.17,-24 260.17,-24 264.33,-24 268.5,-28.17 268.5,-32.33 268.5,-32.33 268.5,-40.67 268.5,-40.67 268.5,-44.83 264.33,-49 260.17,-49"></path><image xlink:href="../../../lib/class_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="124.5" y="-43.5"></image><text text-anchor="start" x="145.5" y="-34.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">ProxiedCloseOnNeedReader</text></a></g></g><!-- node1 --><g class="node class" id="graph1_1"><g id="a_class|graph1_1"><a xlink:title="java.io.Reader"><path fill="#418565" stroke="#418565" d="M64.67,-110C64.67,-110 8.33,-110 8.33,-110 4.17,-110 0,-105.83 0,-101.67 0,-101.67 0,-93.33 0,-93.33 0,-89.17 4.17,-85 8.33,-85 8.33,-85 64.67,-85 64.67,-85 68.83,-85 73,-89.17 73,-93.33 73,-93.33 73,-101.67 73,-101.67 73,-105.83 68.83,-110 64.67,-110"></path><image xlink:href="../../../lib/class_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="10.5" y="-104.5"></image><text text-anchor="start" x="31.5" y="-95.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">Reader</text></a></g></g><!-- node1&#45;&gt;node0 --><g class="edge inheritance" id="graph1_1_0"><g id="a_inheritance|graph1_1_0"><a xlink:title="ProxiedCloseOnNeedReader is a subtype of Reader"><path fill="none" stroke="#d4d4d4" d="M73.35,-82.47C100.12,-72.28 135.91,-58.66 161.06,-49.09"></path><polygon fill="none" stroke="#d4d4d4" points="72.42,-80.2 66.75,-84.98 74.17,-84.78 72.42,-80.2"></polygon></a></g></g><!-- node2 --><g class="node trait" id="graph1_2"><g id="a_trait|graph1_2"><a xlink:href="../resources/CloseOnNeed.html#inheritance-diagram" xlink:title="scales.utils.resources.CloseOnNeed"><path fill="#2e6d82" stroke="#2e6d82" d="M179.17,-110C179.17,-110 99.83,-110 99.83,-110 95.67,-110 91.5,-105.83 91.5,-101.67 91.5,-101.67 91.5,-93.33 91.5,-93.33 91.5,-89.17 95.67,-85 99.83,-85 99.83,-85 179.17,-85 179.17,-85 183.33,-85 187.5,-89.17 187.5,-93.33 187.5,-93.33 187.5,-101.67 187.5,-101.67 187.5,-105.83 183.33,-110 179.17,-110"></path><image xlink:href="../../../lib/trait_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="101.5" y="-104.5"></image><text text-anchor="start" x="122.5" y="-95.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">CloseOnNeed</text></a></g></g><!-- node2&#45;&gt;node0 --><g class="edge inheritance" id="graph1_2_0"><g id="a_inheritance|graph1_2_0"><a xlink:title="ProxiedCloseOnNeedReader is a subtype of CloseOnNeed"><path fill="none" stroke="#d4d4d4" d="M154.56,-79.42C163.13,-69.69 173.63,-57.77 181.25,-49.13"></path><polygon fill="none" stroke="#d4d4d4" points="152.56,-77.97 149.77,-84.84 156.24,-81.21 152.56,-77.97"></polygon></a></g></g><!-- node3 --><g class="node trait" id="graph1_3"><g id="a_trait|graph1_3"><a xlink:title="scala.Product"><path fill="#2e6d82" stroke="#2e6d82" d="M275.17,-110C275.17,-110 213.83,-110 213.83,-110 209.67,-110 205.5,-105.83 205.5,-101.67 205.5,-101.67 205.5,-93.33 205.5,-93.33 205.5,-89.17 209.67,-85 213.83,-85 213.83,-85 275.17,-85 275.17,-85 279.33,-85 283.5,-89.17 283.5,-93.33 283.5,-93.33 283.5,-101.67 283.5,-101.67 283.5,-105.83 279.33,-110 275.17,-110"></path><image xlink:href="../../../lib/trait_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="215.5" y="-104.5"></image><text text-anchor="start" x="236.5" y="-95.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">Product</text></a></g></g><!-- node3&#45;&gt;node0 --><g class="edge inheritance" id="graph1_3_0"><g id="a_inheritance|graph1_3_0"><a xlink:title="ProxiedCloseOnNeedReader is a subtype of Product"><path fill="none" stroke="#d4d4d4" d="M229.15,-79.42C220.42,-69.69 209.71,-57.77 201.95,-49.13"></path><polygon fill="none" stroke="#d4d4d4" points="227.53,-81.27 234.03,-84.84 231.17,-78 227.53,-81.27"></polygon></a></g></g><!-- node4 --><g class="node trait" id="graph1_4"><g id="a_trait|graph1_4"><a xlink:title="scala.Serializable"><path fill="#2e6d82" stroke="#2e6d82" d="M393.17,-110C393.17,-110 309.83,-110 309.83,-110 305.67,-110 301.5,-105.83 301.5,-101.67 301.5,-101.67 301.5,-93.33 301.5,-93.33 301.5,-89.17 305.67,-85 309.83,-85 309.83,-85 393.17,-85 393.17,-85 397.33,-85 401.5,-89.17 401.5,-93.33 401.5,-93.33 401.5,-101.67 401.5,-101.67 401.5,-105.83 397.33,-110 393.17,-110"></path><image xlink:href="../../../lib/trait_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="311.5" y="-104.5"></image><text text-anchor="start" x="332.5" y="-95.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">Serializable</text></a></g></g><!-- node4&#45;&gt;node0 --><g class="edge inheritance" id="graph1_4_0"><g id="a_inheritance|graph1_4_0"><a xlink:title="ProxiedCloseOnNeedReader is a subtype of Serializable"><path fill="none" stroke="#d4d4d4" d="M313.46,-82.47C285.83,-72.28 248.88,-58.66 222.92,-49.09"></path><polygon fill="none" stroke="#d4d4d4" points="312.86,-84.86 320.27,-84.98 314.55,-80.26 312.86,-84.86"></polygon></a></g></g></g></svg></div>
+                <div id="diagram-controls" class="hiddenContent">
+                  <button id="diagram-zoom-out" class="diagram-btn"><i class="material-icons"></i></button>
+                  <button id="diagram-zoom-in" class="diagram-btn"><i class="material-icons"></i></button>
+                  <button title="Toggle full-screen" id="diagram-fs" class="diagram-btn to-full"><i class="material-icons"></i></button>
+                </div>
+              </div></div>
+        
+
+      <div id="mbrsel">
+        <div class="toggle"></div>
+        <div id="memberfilter">
+          <i class="material-icons arrow"></i>
+          <span class="input">
+            <input id="mbrsel-input" placeholder="Filter all members" type="text" accesskey="/" />
+          </span>
+          <i class="clear material-icons"></i>
+        </div>
+        <div id="filterby">
+          <div id="order">
+            <span class="filtertype">Ordering</span>
+            <ol>
+              
+              <li class="alpha in"><span>Alphabetic</span></li>
+              <li class="inherit out"><span>By Inheritance</span></li>
+            </ol>
+          </div>
+          <div class="ancestors">
+                  <span class="filtertype">Inherited<br />
+                  </span>
+                  <ol id="linearization">
+                    <li class="in" name="scales.utils.io.ProxiedCloseOnNeedReader"><span>ProxiedCloseOnNeedReader</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scales.utils.resources.CloseOnNeed"><span>CloseOnNeed</span></li><li class="in" name="scales.utils.resources.IsClosed"><span>IsClosed</span></li><li class="in" name="java.io.Reader"><span>Reader</span></li><li class="in" name="java.io.Closeable"><span>Closeable</span></li><li class="in" name="java.lang.AutoCloseable"><span>AutoCloseable</span></li><li class="in" name="java.lang.Readable"><span>Readable</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  </ol>
+                </div><div class="ancestors">
+              <span class="filtertype"></span>
+              <ol>
+                <li class="hideall out"><span>Hide All</span></li>
+                <li class="showall in"><span>Show All</span></li>
+              </ol>
+            </div>
+          <div id="visbl">
+              <span class="filtertype">Visibility</span>
+              <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+            </div>
+        </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        <div id="constructors" class="members">
+              <h3>Instance Constructors</h3>
+              <ol><li name="scales.utils.io.ProxiedCloseOnNeedReader#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;(orig:java.io.Reader):scales.utils.io.ProxiedCloseOnNeedReader"></a><a id="&lt;init&gt;:ProxiedCloseOnNeedReader"></a>
+      <span class="permalink">
+      <a href="../../../scales/utils/io/ProxiedCloseOnNeedReader.html#&lt;init&gt;(orig:java.io.Reader):scales.utils.io.ProxiedCloseOnNeedReader" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">new</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ProxiedCloseOnNeedReader</span><span class="params">(<span name="orig">orig: <span class="extype" name="java.io.Reader">Reader</span></span>)</span>
+      </span>
+      
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+
+        <div class="values members">
+              <h3>Value Members</h3>
+              <ol>
+                <li name="scala.AnyRef#!=" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="!=(x$1:Any):Boolean"></a><a id="!=(Any):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../scales/utils/io/ProxiedCloseOnNeedReader.html#!=(x$1:Any):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef###" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="##():Int"></a>
+      <span class="permalink">
+      <a href="../../../scales/utils/io/ProxiedCloseOnNeedReader.html###():Int" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $hash$hash" class="name">##</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scales.utils.resources.CloseOnNeed#++" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="++(close2:scales.utils.resources.CloseOnNeed):scales.utils.resources.CloseOnNeed"></a><a id="++(CloseOnNeed):CloseOnNeed"></a>
+      <span class="permalink">
+      <a href="../../../scales/utils/io/ProxiedCloseOnNeedReader.html#++(close2:scales.utils.resources.CloseOnNeed):scales.utils.resources.CloseOnNeed" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $plus$plus" class="name">++</span><span class="params">(<span name="close2">close2: <a href="../resources/CloseOnNeed.html" class="extype" name="scales.utils.resources.CloseOnNeed">CloseOnNeed</a></span>)</span><span class="result">: <a href="../resources/CloseOnNeed.html" class="extype" name="scales.utils.resources.CloseOnNeed">CloseOnNeed</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../resources/CloseOnNeed.html" class="extype" name="scales.utils.resources.CloseOnNeed">CloseOnNeed</a></dd></dl></div>
+    </li><li name="scala.AnyRef#==" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="==(x$1:Any):Boolean"></a><a id="==(Any):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../scales/utils/io/ProxiedCloseOnNeedReader.html#==(x$1:Any):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.Any#asInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="asInstanceOf[T0]:T0"></a>
+      <span class="permalink">
+      <a href="../../../scales/utils/io/ProxiedCloseOnNeedReader.html#asInstanceOf[T0]:T0" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Any.asInstanceOf.T0">T0</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="scala.AnyRef#clone" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="clone():Object"></a><a id="clone():AnyRef"></a>
+      <span class="permalink">
+      <a href="../../../scales/utils/io/ProxiedCloseOnNeedReader.html#clone():Object" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<span class="extype" name="java.lang">lang</span>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.CloneNotSupportedException]">...</span>
+    </span>)</span>
+              
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="scales.utils.io.ProxiedCloseOnNeedReader#close" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="close():Unit"></a>
+      <span class="permalink">
+      <a href="../../../scales/utils/io/ProxiedCloseOnNeedReader.html#close():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">close</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.utils.io.ProxiedCloseOnNeedReader">ProxiedCloseOnNeedReader</a> → Reader → Closeable → AutoCloseable</dd></dl></div>
+    </li><li name="scales.utils.resources.CloseOnNeed#closeResource" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="closeResource:Unit"></a>
+      <span class="permalink">
+      <a href="../../../scales/utils/io/ProxiedCloseOnNeedReader.html#closeResource:Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">closeResource</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">Close the underlying something, but only do it once.</p><div class="fullcomment"><div class="comment cmt"><p>Close the underlying something, but only do it once.</p><p>This allows closing of an xml input stream directly after the end doc, but without disturbing
+the normal model.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../resources/CloseOnNeed.html" class="extype" name="scales.utils.resources.CloseOnNeed">CloseOnNeed</a></dd></dl></div>
+    </li><li name="scales.utils.io.ProxiedCloseOnNeedReader#doClose" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="doClose():Unit"></a>
+      <span class="permalink">
+      <a href="../../../scales/utils/io/ProxiedCloseOnNeedReader.html#doClose():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">doClose</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.utils.io.ProxiedCloseOnNeedReader">ProxiedCloseOnNeedReader</a> → <a href="../resources/CloseOnNeed.html" class="extype" name="scales.utils.resources.CloseOnNeed">CloseOnNeed</a></dd></dl></div>
+    </li><li name="scala.AnyRef#eq" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="eq(x$1:AnyRef):Boolean"></a><a id="eq(AnyRef):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../scales/utils/io/ProxiedCloseOnNeedReader.html#eq(x$1:AnyRef):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#finalize" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="finalize():Unit"></a>
+      <span class="permalink">
+      <a href="../../../scales/utils/io/ProxiedCloseOnNeedReader.html#finalize():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">finalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<span class="extype" name="java.lang">lang</span>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.lang.Throwable]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#getClass" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getClass():Class[_]"></a>
+      <span class="permalink">
+      <a href="../../../scales/utils/io/ProxiedCloseOnNeedReader.html#getClass():Class[_]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getClass</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.Class">Class</span>[_]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd><dt>Annotations</dt><dd>
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="scales.utils.resources.CloseOnNeed#isClosed" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isClosed:Boolean"></a>
+      <span class="permalink">
+      <a href="../../../scales/utils/io/ProxiedCloseOnNeedReader.html#isClosed:Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isClosed</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../resources/CloseOnNeed.html" class="extype" name="scales.utils.resources.CloseOnNeed">CloseOnNeed</a> → <a href="../resources/IsClosed.html" class="extype" name="scales.utils.resources.IsClosed">IsClosed</a></dd></dl></div>
+    </li><li name="scala.Any#isInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <span class="permalink">
+      <a href="../../../scales/utils/io/ProxiedCloseOnNeedReader.html#isInstanceOf[T0]:Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="scales.utils.io.ProxiedCloseOnNeedReader#mark" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="mark(rah:Int):Unit"></a><a id="mark(Int):Unit"></a>
+      <span class="permalink">
+      <a href="../../../scales/utils/io/ProxiedCloseOnNeedReader.html#mark(rah:Int):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">mark</span><span class="params">(<span name="rah">rah: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.utils.io.ProxiedCloseOnNeedReader">ProxiedCloseOnNeedReader</a> → Reader</dd></dl></div>
+    </li><li name="scales.utils.io.ProxiedCloseOnNeedReader#markSupported" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="markSupported():Boolean"></a>
+      <span class="permalink">
+      <a href="../../../scales/utils/io/ProxiedCloseOnNeedReader.html#markSupported():Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">markSupported</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.utils.io.ProxiedCloseOnNeedReader">ProxiedCloseOnNeedReader</a> → Reader</dd></dl></div>
+    </li><li name="scala.AnyRef#ne" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ne(x$1:AnyRef):Boolean"></a><a id="ne(AnyRef):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../scales/utils/io/ProxiedCloseOnNeedReader.html#ne(x$1:AnyRef):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#notify" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notify():Unit"></a>
+      <span class="permalink">
+      <a href="../../../scales/utils/io/ProxiedCloseOnNeedReader.html#notify():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notify</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#notifyAll" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notifyAll():Unit"></a>
+      <span class="permalink">
+      <a href="../../../scales/utils/io/ProxiedCloseOnNeedReader.html#notifyAll():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notifyAll</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="scales.utils.io.ProxiedCloseOnNeedReader#orig" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="orig:java.io.Reader"></a><a id="orig:Reader"></a>
+      <span class="permalink">
+      <a href="../../../scales/utils/io/ProxiedCloseOnNeedReader.html#orig:java.io.Reader" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">orig</span><span class="result">: <span class="extype" name="java.io.Reader">Reader</span></span>
+      </span>
+      
+      
+    </li><li name="scales.utils.io.ProxiedCloseOnNeedReader#read" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="read(target:java.nio.CharBuffer):Int"></a><a id="read(CharBuffer):Int"></a>
+      <span class="permalink">
+      <a href="../../../scales/utils/io/ProxiedCloseOnNeedReader.html#read(target:java.nio.CharBuffer):Int" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">read</span><span class="params">(<span name="target">target: <span class="extype" name="java.nio.CharBuffer">CharBuffer</span></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.utils.io.ProxiedCloseOnNeedReader">ProxiedCloseOnNeedReader</a> → Reader → Readable</dd></dl></div>
+    </li><li name="scales.utils.io.ProxiedCloseOnNeedReader#read" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="read(cbuf:Array[Char],off:Int,len:Int):Int"></a><a id="read(Array[Char],Int,Int):Int"></a>
+      <span class="permalink">
+      <a href="../../../scales/utils/io/ProxiedCloseOnNeedReader.html#read(cbuf:Array[Char],off:Int,len:Int):Int" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">read</span><span class="params">(<span name="cbuf">cbuf: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Char">Char</span>]</span>, <span name="off">off: <span class="extype" name="scala.Int">Int</span></span>, <span name="len">len: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.utils.io.ProxiedCloseOnNeedReader">ProxiedCloseOnNeedReader</a> → Reader</dd></dl></div>
+    </li><li name="scales.utils.io.ProxiedCloseOnNeedReader#read" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="read(cbuf:Array[Char]):Int"></a><a id="read(Array[Char]):Int"></a>
+      <span class="permalink">
+      <a href="../../../scales/utils/io/ProxiedCloseOnNeedReader.html#read(cbuf:Array[Char]):Int" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">read</span><span class="params">(<span name="cbuf">cbuf: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Char">Char</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.utils.io.ProxiedCloseOnNeedReader">ProxiedCloseOnNeedReader</a> → Reader</dd></dl></div>
+    </li><li name="scales.utils.io.ProxiedCloseOnNeedReader#read" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="read():Int"></a>
+      <span class="permalink">
+      <a href="../../../scales/utils/io/ProxiedCloseOnNeedReader.html#read():Int" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">read</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.utils.io.ProxiedCloseOnNeedReader">ProxiedCloseOnNeedReader</a> → Reader</dd></dl></div>
+    </li><li name="scales.utils.io.ProxiedCloseOnNeedReader#ready" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ready():Boolean"></a>
+      <span class="permalink">
+      <a href="../../../scales/utils/io/ProxiedCloseOnNeedReader.html#ready():Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ready</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.utils.io.ProxiedCloseOnNeedReader">ProxiedCloseOnNeedReader</a> → Reader</dd></dl></div>
+    </li><li name="scales.utils.io.ProxiedCloseOnNeedReader#reset" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="reset():Unit"></a>
+      <span class="permalink">
+      <a href="../../../scales/utils/io/ProxiedCloseOnNeedReader.html#reset():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">reset</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.utils.io.ProxiedCloseOnNeedReader">ProxiedCloseOnNeedReader</a> → Reader</dd></dl></div>
+    </li><li name="scales.utils.io.ProxiedCloseOnNeedReader#skip" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="skip(n:Long):Long"></a><a id="skip(Long):Long"></a>
+      <span class="permalink">
+      <a href="../../../scales/utils/io/ProxiedCloseOnNeedReader.html#skip(n:Long):Long" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">skip</span><span class="params">(<span name="n">n: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.utils.io.ProxiedCloseOnNeedReader">ProxiedCloseOnNeedReader</a> → Reader</dd></dl></div>
+    </li><li name="scala.AnyRef#synchronized" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="synchronized[T0](x$1:=&gt;T0):T0"></a><a id="synchronized[T0](⇒T0):T0"></a>
+      <span class="permalink">
+      <a href="../../../scales/utils/io/ProxiedCloseOnNeedReader.html#synchronized[T0](x$1:=&gt;T0):T0" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">synchronized</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="params">(<span name="arg0">arg0: ⇒ <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>)</span><span class="result">: <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait():Unit"></a>
+      <span class="permalink">
+      <a href="../../../scales/utils/io/ProxiedCloseOnNeedReader.html#wait():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long,x$2:Int):Unit"></a><a id="wait(Long,Int):Unit"></a>
+      <span class="permalink">
+      <a href="../../../scales/utils/io/ProxiedCloseOnNeedReader.html#wait(x$1:Long,x$2:Int):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long):Unit"></a><a id="wait(Long):Unit"></a>
+      <span class="permalink">
+      <a href="../../../scales/utils/io/ProxiedCloseOnNeedReader.html#wait(x$1:Long):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li>
+              </ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="scala.Serializable">
+              <h3>Inherited from <span class="extype" name="scala.Serializable">Serializable</span></h3>
+            </div><div class="parent" name="java.io.Serializable">
+              <h3>Inherited from <span class="extype" name="java.io.Serializable">Serializable</span></h3>
+            </div><div class="parent" name="scala.Product">
+              <h3>Inherited from <span class="extype" name="scala.Product">Product</span></h3>
+            </div><div class="parent" name="scala.Equals">
+              <h3>Inherited from <span class="extype" name="scala.Equals">Equals</span></h3>
+            </div><div class="parent" name="scales.utils.resources.CloseOnNeed">
+              <h3>Inherited from <a href="../resources/CloseOnNeed.html" class="extype" name="scales.utils.resources.CloseOnNeed">CloseOnNeed</a></h3>
+            </div><div class="parent" name="scales.utils.resources.IsClosed">
+              <h3>Inherited from <a href="../resources/IsClosed.html" class="extype" name="scales.utils.resources.IsClosed">IsClosed</a></h3>
+            </div><div class="parent" name="java.io.Reader">
+              <h3>Inherited from <span class="extype" name="java.io.Reader">Reader</span></h3>
+            </div><div class="parent" name="java.io.Closeable">
+              <h3>Inherited from <span class="extype" name="java.io.Closeable">Closeable</span></h3>
+            </div><div class="parent" name="java.lang.AutoCloseable">
+              <h3>Inherited from <span class="extype" name="java.lang.AutoCloseable">AutoCloseable</span></h3>
+            </div><div class="parent" name="java.lang.Readable">
+              <h3>Inherited from <span class="extype" name="java.lang.Readable">Readable</span></h3>
+            </div><div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+    </body>
+          </div>
+        </div>
+      </div>
+    </body>
+      </html>

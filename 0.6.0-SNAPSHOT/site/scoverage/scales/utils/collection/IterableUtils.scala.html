@@ -1,0 +1,1215 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/utils/collection/IterableUtils.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.utils.collection
+</span>2 <span style=''>
+</span>3 <span style=''>trait IterableUtils {
+</span>4 <span style=''>
+</span>5 <span style=''>  /** 
+</span>6 <span style=''>   * Makes a StringBuilder from an iterable using the builder parameter.
+</span>7 <span style=''>   */
+</span>8 <span style=''>  def mkString[A]( itr : Iterable[A], builder : java.lang.StringBuilder = new java.lang.StringBuilder(1000)
+</span>9 <span style=''>		  , separator : String = &quot; &quot;)( thunk : (A) =&gt; String) = {
+</span>10 <span style=''>    </span><span style='background: #F0ADAD'>for( a &lt;- itr ){
+</span>11 <span style=''></span><span style='background: #F0ADAD'>      builder.append(thunk(a))
+</span>12 <span style=''></span><span style='background: #F0ADAD'>      builder.append(separator)
+</span>13 <span style=''></span><span style='background: #F0ADAD'>    }</span><span style=''>
+</span>14 <span style=''>    // remove last 
+</span>15 <span style=''>    </span><span style='background: #F0ADAD'>builder.delete(builder.length() - separator.length(), builder.length())</span><span style=''>
+</span>16 <span style=''>  }
+</span>17 <span style=''>
+</span>18 <span style=''>  /**
+</span>19 <span style=''>   * Collects the first Some
+</span>20 <span style=''>   */ 
+</span>21 <span style=''>  def collectFirst[A, B]( in : Iterable[A] )( f : A =&gt; Option[B]) : Option[B] = {
+</span>22 <span style=''>    val it = </span><span style='background: #AEF1AE'>in.iterator</span><span style=''>
+</span>23 <span style=''>    while( </span><span style='background: #AEF1AE'>it.hasNext</span><span style=''> ) </span><span style='background: #AEF1AE'>{
+</span>24 <span style=''></span><span style='background: #AEF1AE'>      val a = it.next
+</span>25 <span style=''></span><span style='background: #AEF1AE'>      val res = f(a)
+</span>26 <span style=''></span><span style='background: #AEF1AE'>      if (res.isDefined) {
+</span>27 <span style=''></span><span style='background: #AEF1AE'>	return res
+</span>28 <span style=''></span><span style='background: #AEF1AE'>      }
+</span>29 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>30 <span style=''>    </span><span style='background: #AEF1AE'>None</span><span style=''>
+</span>31 <span style=''>  }
+</span>32 <span style=''>  
+</span>33 <span style=''>  def capture[A](orig : Iterator[A] ) = </span><span style='background: #AEF1AE'>new CapturedIterator(orig)</span><span style=''>
+</span>34 <span style=''>
+</span>35 <span style=''>  val ALREADY_RESTARTED = </span><span style='background: #AEF1AE'>&quot;Iterator has already been restarted&quot;</span><span style=''>
+</span>36 <span style=''>
+</span>37 <span style=''>}
+</span>38 <span style=''>
+</span>39 <span style=''>import scales.utils._
+</span>40 <span style=''>
+</span>41 <span style=''>/**
+</span>42 <span style=''> * Array backed buffer, restart returns the captured data and then rejoins the original iterator
+</span>43 <span style=''> */ 
+</span>44 <span style=''>class CapturedIterator[A](orig : Iterator[A]) extends Iterator[A] {
+</span>45 <span style=''>  private[this] var buffer = </span><span style='background: #AEF1AE'>new scala.collection.mutable.ArrayBuffer[A]()</span><span style=''>
+</span>46 <span style=''>  private[this] var haveRestarted = </span><span style='background: #AEF1AE'>false</span><span style=''>
+</span>47 <span style=''>  def restart : Iterator[A] =
+</span>48 <span style=''>    if (</span><span style='background: #AEF1AE'>haveRestarted</span><span style=''>) </span><span style='background: #AEF1AE'>error(ALREADY_RESTARTED)</span><span style=''>
+</span>49 <span style=''>    else </span><span style='background: #AEF1AE'>{
+</span>50 <span style=''></span><span style='background: #AEF1AE'>      haveRestarted = true
+</span>51 <span style=''></span><span style='background: #AEF1AE'>      buffer.iterator ++ orig
+</span>52 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>53 <span style=''>  
+</span>54 <span style=''>  def hasNext = </span><span style='background: #AEF1AE'>orig.hasNext</span><span style=''>
+</span>55 <span style=''>  def next = {
+</span>56 <span style=''>    val t = </span><span style='background: #AEF1AE'>orig.next</span><span style=''>
+</span>57 <span style=''>    </span><span style='background: #AEF1AE'>buffer += t</span><span style=''>
+</span>58 <span style=''>    t
+</span>59 <span style=''>  }
+</span>60 <span style=''>}
+</span>61 <span style=''>
+</span>62 <span style=''>import scalaz._
+</span>63 <span style=''>
+</span>64 <span style=''>trait IterableUtilsImplicits extends FlatMapImplicits {
+</span>65 <span style=''>
+</span>66 <span style=''>  /**
+</span>67 <span style=''>   * Lazy appenders for scalaz.EphemeralStream
+</span>68 <span style=''>   */ 
+</span>69 <span style=''>  implicit def ephemeralAppender[A]( e : EphemeralStream[A] ) = </span><span style='background: #AEF1AE'>new</span><span style=''> { 
+</span>70 <span style=''>    def append[A, B &gt;: A]( a : EphemeralStream[A], e : =&gt; EphemeralStream[B] ) : EphemeralStream[B] = 
+</span>71 <span style=''>      if (</span><span style='background: #AEF1AE'>!a.isEmpty</span><span style=''>) </span><span style='background: #AEF1AE'>EphemeralStream.cons(a.headOption.get, append(a.tailOption.get, e))</span><span style=''>
+</span>72 <span style=''>      else </span><span style='background: #AEF1AE'>e</span><span style=''>
+</span>73 <span style=''>
+</span>74 <span style=''>    def +:+[B &gt;: A]( e1 : =&gt; EphemeralStream[B]) : EphemeralStream[B] = </span><span style='background: #AEF1AE'>append[A, B](e, e1)</span><span style=''>
+</span>75 <span style=''>  }
+</span>76 <span style=''>
+</span>77 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          10
+        </td>
+        <td>
+          499
+        </td>
+        <td>
+          314
+          -
+          399
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.IterableLike.foreach
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          itr.foreach[StringBuilder](((a: A) =&gt; {
+  builder.append(thunk.apply(a));
+  builder.append(separator)
+}))
+        </td>
+      </tr><tr>
+        <td>
+          11
+        </td>
+        <td>
+          496
+        </td>
+        <td>
+          352
+          -
+          360
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          thunk.apply(a)
+        </td>
+      </tr><tr>
+        <td>
+          11
+        </td>
+        <td>
+          497
+        </td>
+        <td>
+          337
+          -
+          361
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.StringBuilder.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          builder.append(thunk.apply(a))
+        </td>
+      </tr><tr>
+        <td>
+          12
+        </td>
+        <td>
+          498
+        </td>
+        <td>
+          368
+          -
+          393
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.StringBuilder.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          builder.append(separator)
+        </td>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          500
+        </td>
+        <td>
+          458
+          -
+          476
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.length
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          separator.length()
+        </td>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          501
+        </td>
+        <td>
+          439
+          -
+          476
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.-
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          builder.length().-(separator.length())
+        </td>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          502
+        </td>
+        <td>
+          478
+          -
+          494
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.AbstractStringBuilder.length
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          builder.length()
+        </td>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          503
+        </td>
+        <td>
+          424
+          -
+          495
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.StringBuilder.delete
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          builder.delete(builder.length().-(separator.length()), builder.length())
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          504
+        </td>
+        <td>
+          638
+          -
+          649
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.IterableLike.iterator
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          in.iterator
+        </td>
+      </tr><tr>
+        <td>
+          23
+        </td>
+        <td>
+          505
+        </td>
+        <td>
+          661
+          -
+          671
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.Iterator.hasNext
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          it.hasNext
+        </td>
+      </tr><tr>
+        <td>
+          23
+        </td>
+        <td>
+          512
+        </td>
+        <td>
+          674
+          -
+          674
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.IterableUtils.while$1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          while$1()
+        </td>
+      </tr><tr>
+        <td>
+          23
+        </td>
+        <td>
+          513
+        </td>
+        <td>
+          674
+          -
+          771
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  {
+    val a: A = it.next();
+    val res: Option[B] = f.apply(a);
+    if (res.isDefined)
+      return res
+    else
+      ()
+  };
+  while$1()
+}
+        </td>
+      </tr><tr>
+        <td>
+          23
+        </td>
+        <td>
+          514
+        </td>
+        <td>
+          654
+          -
+          654
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          23
+        </td>
+        <td>
+          515
+        </td>
+        <td>
+          654
+          -
+          654
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          24
+        </td>
+        <td>
+          506
+        </td>
+        <td>
+          690
+          -
+          697
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.Iterator.next
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          it.next()
+        </td>
+      </tr><tr>
+        <td>
+          25
+        </td>
+        <td>
+          507
+        </td>
+        <td>
+          714
+          -
+          718
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          f.apply(a)
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          508
+        </td>
+        <td>
+          729
+          -
+          742
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Option.isDefined
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          res.isDefined
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          510
+        </td>
+        <td>
+          725
+          -
+          725
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          511
+        </td>
+        <td>
+          725
+          -
+          725
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          27
+        </td>
+        <td>
+          509
+        </td>
+        <td>
+          747
+          -
+          757
+        </td>
+        <td>
+          Return
+        </td>
+        <td>
+          scales.utils.collection.IterableUtils.collectFirst
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          return res
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          516
+        </td>
+        <td>
+          776
+          -
+          780
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          517
+        </td>
+        <td>
+          828
+          -
+          854
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.CapturedIterator.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new scales.utils.collection.CapturedIterator[A](orig)
+        </td>
+      </tr><tr>
+        <td>
+          35
+        </td>
+        <td>
+          518
+        </td>
+        <td>
+          882
+          -
+          919
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;Iterator has already been restarted&quot;
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          519
+        </td>
+        <td>
+          1150
+          -
+          1195
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.mutable.ArrayBuffer.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new scala.collection.mutable.ArrayBuffer[A]()
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          520
+        </td>
+        <td>
+          1232
+          -
+          1237
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          521
+        </td>
+        <td>
+          1276
+          -
+          1289
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.CapturedIterator.haveRestarted
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          CapturedIterator.this.haveRestarted
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          522
+        </td>
+        <td>
+          1297
+          -
+          1314
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.IterableUtils.ALREADY_RESTARTED
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.ALREADY_RESTARTED
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          523
+        </td>
+        <td>
+          1291
+          -
+          1315
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.iteratee.Iteratees.error
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.error(scales.utils.`package`.ALREADY_RESTARTED)
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          524
+        </td>
+        <td>
+          1291
+          -
+          1315
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.iteratee.Iteratees.error
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.error(scales.utils.`package`.ALREADY_RESTARTED)
+        </td>
+      </tr><tr>
+        <td>
+          49
+        </td>
+        <td>
+          528
+        </td>
+        <td>
+          1325
+          -
+          1389
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  CapturedIterator.this.haveRestarted = true;
+  CapturedIterator.this.buffer.iterator.++[A](CapturedIterator.this.orig)
+}
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          525
+        </td>
+        <td>
+          1349
+          -
+          1353
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          526
+        </td>
+        <td>
+          1379
+          -
+          1383
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.CapturedIterator.orig
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          CapturedIterator.this.orig
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          527
+        </td>
+        <td>
+          1360
+          -
+          1383
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.Iterator.++
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          CapturedIterator.this.buffer.iterator.++[A](CapturedIterator.this.orig)
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          529
+        </td>
+        <td>
+          1409
+          -
+          1421
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.Iterator.hasNext
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          CapturedIterator.this.orig.hasNext
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          530
+        </td>
+        <td>
+          1449
+          -
+          1458
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.Iterator.next
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          CapturedIterator.this.orig.next()
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          531
+        </td>
+        <td>
+          1463
+          -
+          1474
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.mutable.ArrayBuffer.+=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          CapturedIterator.this.buffer.+=(t)
+        </td>
+      </tr><tr>
+        <td>
+          69
+        </td>
+        <td>
+          540
+        </td>
+        <td>
+          1686
+          -
+          1689
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.IterableUtilsImplicits.$anon.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          71
+        </td>
+        <td>
+          532
+        </td>
+        <td>
+          1806
+          -
+          1816
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          a.isEmpty.unary_!
+        </td>
+      </tr><tr>
+        <td>
+          71
+        </td>
+        <td>
+          533
+        </td>
+        <td>
+          1839
+          -
+          1855
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Option.get
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          a.headOption.get
+        </td>
+      </tr><tr>
+        <td>
+          71
+        </td>
+        <td>
+          534
+        </td>
+        <td>
+          1864
+          -
+          1880
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Option.get
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          a.tailOption.get
+        </td>
+      </tr><tr>
+        <td>
+          71
+        </td>
+        <td>
+          535
+        </td>
+        <td>
+          1857
+          -
+          1884
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.IterableUtilsImplicits.$anon.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.append[A, B](a.tailOption.get, e)
+        </td>
+      </tr><tr>
+        <td>
+          71
+        </td>
+        <td>
+          536
+        </td>
+        <td>
+          1818
+          -
+          1885
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.EphemeralStream.cons
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.EphemeralStream.cons[B](a.headOption.get, $anon.this.append[A, B](a.tailOption.get, e))
+        </td>
+      </tr><tr>
+        <td>
+          71
+        </td>
+        <td>
+          537
+        </td>
+        <td>
+          1818
+          -
+          1885
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scalaz.EphemeralStream.cons
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.EphemeralStream.cons[B](a.headOption.get, $anon.this.append[A, B](a.tailOption.get, e))
+        </td>
+      </tr><tr>
+        <td>
+          72
+        </td>
+        <td>
+          538
+        </td>
+        <td>
+          1897
+          -
+          1898
+        </td>
+        <td>
+          Ident
+        </td>
+        <td>
+          scales.utils.collection.IterableUtilsImplicits.$anon.e
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          e
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          539
+        </td>
+        <td>
+          1972
+          -
+          1991
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.IterableUtilsImplicits.$anon.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.append[A, B](e, e1)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

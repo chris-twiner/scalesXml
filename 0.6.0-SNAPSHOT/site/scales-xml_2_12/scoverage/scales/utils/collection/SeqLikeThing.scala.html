@@ -1,0 +1,900 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/utils/collection/SeqLikeThing.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.utils.collection
+</span>2 <span style=''>
+</span>3 <span style=''>import scala.collection.generic.CanBuildFrom
+</span>4 <span style=''>import scala.collection.{GenTraversableOnce, mutable}
+</span>5 <span style=''>
+</span>6 <span style=''>/**
+</span>7 <span style=''> * 2.13 removes seqlike etc. so we need to behave like it, it also deprecates canbuild fromm.  This interface represents the operations on a seq used by scales
+</span>8 <span style=''> *
+</span>9 <span style=''> * @tparam X[_] a seq like container
+</span>10 <span style=''> */
+</span>11 <span style=''>trait SeqLikeThing[Repr, A, X[_]] {
+</span>12 <span style=''>
+</span>13 <span style=''>  implicit def cbf: CanBuildFrom[Repr, A, X[A]]
+</span>14 <span style=''>
+</span>15 <span style=''>  @inline def apply(x: X[A])(i: Int): A = </span><span style='background: #AEF1AE'>seq(x).apply(i)</span><span style=''>
+</span>16 <span style=''>
+</span>17 <span style=''>  @inline def seq(x: X[A]): Seq[A]
+</span>18 <span style=''>
+</span>19 <span style=''>  @inline def iterator(x: X[A]): Iterator[A] = </span><span style='background: #AEF1AE'>seq(x).iterator</span><span style=''>
+</span>20 <span style=''>
+</span>21 <span style=''>  @inline def updated(x: X[A])(index: Int, elem: A): X[A] =
+</span>22 <span style=''>    </span><span style='background: #AEF1AE'>wrap(seq(x).updated(index, elem))</span><span style=''>
+</span>23 <span style=''>
+</span>24 <span style=''>  @inline def splitAt(x: X[A])(index: Int): (X[A],X[A]) = {
+</span>25 <span style=''>    val (b, a) = seq(x: X[A]).splitAt(index)
+</span>26 <span style=''>    </span><span style='background: #AEF1AE'>(wrap(b), wrap(a))</span><span style=''>
+</span>27 <span style=''>  }
+</span>28 <span style=''>
+</span>29 <span style=''>  @inline def length(x: X[A]): Int = </span><span style='background: #AEF1AE'>seq(x: X[A]).length</span><span style=''>
+</span>30 <span style=''>
+</span>31 <span style=''>  @inline def ++(x: X[A])(itr: GenTraversableOnce[A]): X[A] =
+</span>32 <span style=''>    </span><span style='background: #AEF1AE'>wrap(seq(x: X[A]) ++ itr)</span><span style=''>
+</span>33 <span style=''>
+</span>34 <span style=''>  @inline def wrap(s: Seq[A]): X[A]
+</span>35 <span style=''>
+</span>36 <span style=''>  @inline def :+(x: X[A])(elem: A): X[A] =
+</span>37 <span style=''>    </span><span style='background: #AEF1AE'>wrap(seq(x: X[A]).:+(elem))</span><span style=''>
+</span>38 <span style=''>
+</span>39 <span style=''>  @inline def dropRight(x: X[A])(n: Int): X[A] =
+</span>40 <span style=''>    </span><span style='background: #AEF1AE'>wrap(seq(x: X[A]).dropRight(n))</span><span style=''>
+</span>41 <span style=''>
+</span>42 <span style=''>  @inline def filter(x: X[A])(p: A =&gt; Boolean): X[A] =
+</span>43 <span style=''>    </span><span style='background: #F0ADAD'>wrap(seq(x: X[A]).filter(p))</span><span style=''>
+</span>44 <span style=''>
+</span>45 <span style=''>  @inline def filterNot(x: X[A])(p: A =&gt; Boolean): X[A] =
+</span>46 <span style=''>    </span><span style='background: #AEF1AE'>wrap(seq(x: X[A]).filterNot(p))</span><span style=''>
+</span>47 <span style=''>
+</span>48 <span style=''>  @inline def builder: mutable.Builder[A, X[A]]
+</span>49 <span style=''>}
+</span>50 <span style=''>
+</span>51 <span style=''>case class ImmutableArrayProxyLikeThing[Repr, A](implicit val cbf: CanBuildFrom[Repr, A, ImmutableArrayProxy[A]]) extends SeqLikeThing[Repr, A, ImmutableArrayProxy] {
+</span>52 <span style=''>
+</span>53 <span style=''>  override def seq(x: ImmutableArrayProxy[A]): Seq[A] = x
+</span>54 <span style=''>
+</span>55 <span style=''>  override def wrap(s: Seq[A]): ImmutableArrayProxy[A] =
+</span>56 <span style=''>    </span><span style='background: #AEF1AE'>s.asInstanceOf[ImmutableArrayProxy[A]]</span><span style=''>
+</span>57 <span style=''>
+</span>58 <span style=''>  override def builder: mutable.Builder[A, ImmutableArrayProxy[A]] =
+</span>59 <span style=''>    </span><span style='background: #AEF1AE'>ImmutableArrayProxy.newBuilder</span><span style=''>
+</span>60 <span style=''>
+</span>61 <span style=''>}
+</span>62 <span style=''>
+</span>63 <span style=''>case class IndexedSeqLikeThing[Repr, A](implicit val cbf: CanBuildFrom[Repr, A, IndexedSeq[A]]) extends SeqLikeThing[Repr, A, IndexedSeq] {
+</span>64 <span style=''>
+</span>65 <span style=''>  override def seq(x: IndexedSeq[A]): Seq[A] = x
+</span>66 <span style=''>
+</span>67 <span style=''>  override def wrap(s: Seq[A]): IndexedSeq[A] = </span><span style='background: #F0ADAD'>s.asInstanceOf[IndexedSeq[A]]</span><span style=''>
+</span>68 <span style=''>
+</span>69 <span style=''>  override def builder: mutable.Builder[A, IndexedSeq[A]] = </span><span style='background: #F0ADAD'>IndexedSeq.newBuilder</span><span style=''>
+</span>70 <span style=''>}
+</span>71 <span style=''>
+</span>72 <span style=''>case class ListSeqLikeThing[Repr, A](implicit val cbf: CanBuildFrom[Repr, A, List[A]]) extends SeqLikeThing[Repr, A, List] {
+</span>73 <span style=''>
+</span>74 <span style=''>  override def seq(x: List[A]): Seq[A] = x
+</span>75 <span style=''>
+</span>76 <span style=''>  override def wrap(s: Seq[A]): List[A] = </span><span style='background: #F0ADAD'>s.asInstanceOf[List[A]]</span><span style=''>
+</span>77 <span style=''>
+</span>78 <span style=''>  override def builder: mutable.Builder[A, List[A]] = </span><span style='background: #F0ADAD'>List.newBuilder</span><span style=''>
+</span>79 <span style=''>}
+</span>80 <span style=''>
+</span>81 <span style=''>object SeqLikeThing {
+</span>82 <span style=''>
+</span>83 <span style=''>  implicit def immutableArrayProxyLikeThing[Repr, A](implicit canBuildFrom: CanBuildFrom[Repr, A, ImmutableArrayProxy[A]]): SeqLikeThing[Repr, A, ImmutableArrayProxy] =
+</span>84 <span style=''>    </span><span style='background: #AEF1AE'>ImmutableArrayProxyLikeThing()</span><span style=''>
+</span>85 <span style=''>  implicit def indexedSeqLikeThing[Repr, A](implicit canBuildFrom: CanBuildFrom[Repr, A, IndexedSeq[A]]): SeqLikeThing[Repr, A, IndexedSeq] =
+</span>86 <span style=''>    </span><span style='background: #F0ADAD'>IndexedSeqLikeThing()</span><span style=''>
+</span>87 <span style=''>
+</span>88 <span style=''>  implicit def listSeqLikeThing[Repr, A](implicit canBuildFrom: CanBuildFrom[Repr, A, List[A]]): SeqLikeThing[Repr, A, List] =
+</span>89 <span style=''>    </span><span style='background: #F0ADAD'>ListSeqLikeThing()</span><span style=''>
+</span>90 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          143
+        </td>
+        <td>
+          469
+          -
+          484
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.SeqLike.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SeqLikeThing.this.seq(x).apply(i)
+        </td>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          144
+        </td>
+        <td>
+          569
+          -
+          584
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.IterableLike.iterator
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SeqLikeThing.this.seq(x).iterator
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          145
+        </td>
+        <td>
+          669
+          -
+          669
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.Seq.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.Seq.canBuildFrom[A]
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          146
+        </td>
+        <td>
+          655
+          -
+          682
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.SeqLike.updated
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SeqLikeThing.this.seq(x).updated[A, Seq[A]](index, elem)(collection.this.Seq.canBuildFrom[A])
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          147
+        </td>
+        <td>
+          650
+          -
+          683
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.SeqLikeThing.wrap
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SeqLikeThing.this.wrap(SeqLikeThing.this.seq(x).updated[A, Seq[A]](index, elem)(collection.this.Seq.canBuildFrom[A]))
+        </td>
+      </tr><tr>
+        <td>
+          25
+        </td>
+        <td>
+          148
+        </td>
+        <td>
+          754
+          -
+          754
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$1._1
+        </td>
+      </tr><tr>
+        <td>
+          25
+        </td>
+        <td>
+          149
+        </td>
+        <td>
+          757
+          -
+          757
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$1._2
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          150
+        </td>
+        <td>
+          795
+          -
+          802
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.SeqLikeThing.wrap
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SeqLikeThing.this.wrap(b)
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          151
+        </td>
+        <td>
+          804
+          -
+          811
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.SeqLikeThing.wrap
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SeqLikeThing.this.wrap(a)
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          152
+        </td>
+        <td>
+          794
+          -
+          812
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[X[A], X[A]](SeqLikeThing.this.wrap(b), SeqLikeThing.this.wrap(a))
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          153
+        </td>
+        <td>
+          855
+          -
+          874
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.SeqLike.length
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SeqLikeThing.this.seq((x: X[A])).length
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          154
+        </td>
+        <td>
+          960
+          -
+          960
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.Seq.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.Seq.canBuildFrom[A]
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          155
+        </td>
+        <td>
+          947
+          -
+          966
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableLike.++
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SeqLikeThing.this.seq((x: X[A])).++[A, Seq[A]](itr)(collection.this.Seq.canBuildFrom[A])
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          156
+        </td>
+        <td>
+          942
+          -
+          967
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.SeqLikeThing.wrap
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SeqLikeThing.this.wrap(SeqLikeThing.this.seq((x: X[A])).++[A, Seq[A]](itr)(collection.this.Seq.canBuildFrom[A]))
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          157
+        </td>
+        <td>
+          1073
+          -
+          1073
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.Seq.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.Seq.canBuildFrom[A]
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          158
+        </td>
+        <td>
+          1058
+          -
+          1079
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.SeqLike.:+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SeqLikeThing.this.seq((x: X[A])).:+[A, Seq[A]](elem)(collection.this.Seq.canBuildFrom[A])
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          159
+        </td>
+        <td>
+          1053
+          -
+          1080
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.SeqLikeThing.wrap
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SeqLikeThing.this.wrap(SeqLikeThing.this.seq((x: X[A])).:+[A, Seq[A]](elem)(collection.this.Seq.canBuildFrom[A]))
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          160
+        </td>
+        <td>
+          1140
+          -
+          1165
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.IterableLike.dropRight
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SeqLikeThing.this.seq((x: X[A])).dropRight(n)
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          161
+        </td>
+        <td>
+          1135
+          -
+          1166
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.SeqLikeThing.wrap
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SeqLikeThing.this.wrap(SeqLikeThing.this.seq((x: X[A])).dropRight(n))
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          162
+        </td>
+        <td>
+          1232
+          -
+          1254
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.TraversableLike.filter
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          SeqLikeThing.this.seq((x: X[A])).filter(p)
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          163
+        </td>
+        <td>
+          1227
+          -
+          1255
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.SeqLikeThing.wrap
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          SeqLikeThing.this.wrap(SeqLikeThing.this.seq((x: X[A])).filter(p))
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          164
+        </td>
+        <td>
+          1324
+          -
+          1349
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.TraversableLike.filterNot
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SeqLikeThing.this.seq((x: X[A])).filterNot(p)
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          165
+        </td>
+        <td>
+          1319
+          -
+          1350
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.SeqLikeThing.wrap
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SeqLikeThing.this.wrap(SeqLikeThing.this.seq((x: X[A])).filterNot(p))
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          166
+        </td>
+        <td>
+          1691
+          -
+          1729
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          s.asInstanceOf[scales.utils.collection.ImmutableArrayProxy[A]]
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          167
+        </td>
+        <td>
+          1804
+          -
+          1834
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scales.utils.collection.ImmutableArrayProxy.newBuilder
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxy.newBuilder[A]
+        </td>
+      </tr><tr>
+        <td>
+          67
+        </td>
+        <td>
+          168
+        </td>
+        <td>
+          2078
+          -
+          2107
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          s.asInstanceOf[IndexedSeq[A]]
+        </td>
+      </tr><tr>
+        <td>
+          69
+        </td>
+        <td>
+          169
+        </td>
+        <td>
+          2169
+          -
+          2190
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.IndexedSeq.newBuilder
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.`package`.IndexedSeq.newBuilder[A]
+        </td>
+      </tr><tr>
+        <td>
+          76
+        </td>
+        <td>
+          170
+        </td>
+        <td>
+          2406
+          -
+          2429
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          s.asInstanceOf[List[A]]
+        </td>
+      </tr><tr>
+        <td>
+          78
+        </td>
+        <td>
+          171
+        </td>
+        <td>
+          2485
+          -
+          2500
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.immutable.List.newBuilder
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.collection.immutable.List.newBuilder[A]
+        </td>
+      </tr><tr>
+        <td>
+          84
+        </td>
+        <td>
+          172
+        </td>
+        <td>
+          2700
+          -
+          2730
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.ImmutableArrayProxyLikeThing.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyLikeThing.apply[Repr, A]()(canBuildFrom)
+        </td>
+      </tr><tr>
+        <td>
+          86
+        </td>
+        <td>
+          173
+        </td>
+        <td>
+          2877
+          -
+          2898
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.IndexedSeqLikeThing.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          IndexedSeqLikeThing.apply[Repr, A]()(canBuildFrom)
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          174
+        </td>
+        <td>
+          3031
+          -
+          3049
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.ListSeqLikeThing.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ListSeqLikeThing.apply[Repr, A]()(canBuildFrom)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

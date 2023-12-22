@@ -1,0 +1,2069 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/xml/serializers/SerializingIter.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.xml.serializers
+</span>2 <span style=''>
+</span>3 <span style=''>import scales.utils._
+</span>4 <span style=''>import resources._
+</span>5 <span style=''>import scalaz.Id.Id
+</span>6 <span style=''>import scalaz.iteratee.Input.Eof
+</span>7 <span style=''>import scalaz.iteratee.Iteratee.iteratee
+</span>8 <span style=''>import scalaz.iteratee.StepT.{Cont, Done}
+</span>9 <span style=''>import scales.xml._
+</span>10 <span style=''>import scalaz.iteratee.{Enumerator, Input, Iteratee, StepT}
+</span>11 <span style=''>
+</span>12 <span style=''>/**
+</span>13 <span style=''> * Provide push based serializing Iteratee
+</span>14 <span style=''> */ 
+</span>15 <span style=''>trait SerializingIter {
+</span>16 <span style=''>
+</span>17 <span style=''>  type SerialIterT = Iteratee[PullType, (XmlOutput, Option[Throwable])]
+</span>18 <span style=''>  type SerialStepT = StepT[PullType, Id, (XmlOutput, Option[Throwable])]
+</span>19 <span style=''>
+</span>20 <span style=''>  import java.nio.charset.Charset
+</span>21 <span style=''>
+</span>22 <span style=''>  /**
+</span>23 <span style=''>   * The serializer will be returned automatically to the pool by calling closer
+</span>24 <span style=''>   * 
+</span>25 <span style=''>   * doc functions are only evaluated upon the first elem / last elem
+</span>26 <span style=''>   */
+</span>27 <span style=''>  def serializeIter( output : XmlOutput, serializer : Serializer, closer : () =&gt; Unit, doc : DocLike = EmptyDoc()) : SerialIterT = {
+</span>28 <span style=''>
+</span>29 <span style=''>    var empties = </span><span style='background: #F0ADAD'>0</span><span style=''>
+</span>30 <span style=''>
+</span>31 <span style=''>    def done( status : StreamStatus ) : SerialStepT = {
+</span>32 <span style=''>      // give it back
+</span>33 <span style=''>      </span><span style='background: #F0ADAD'>closer()</span><span style=''>
+</span>34 <span style=''>      //println(&quot;empties was &quot;+empties)
+</span>35 <span style=''>      </span><span style='background: #F0ADAD'>Done((status.output, status.thrown), Eof[PullType])</span><span style=''>
+</span>36 <span style=''>    }
+</span>37 <span style=''>
+</span>38 <span style=''>    def rest( status : StreamStatus, prev : PullType, serializer : Serializer )(s : Input[PullType]) : SerialIterT =
+</span>39 <span style=''>      </span><span style='background: #F0ADAD'>iteratee(
+</span>40 <span style=''></span><span style='background: #F0ADAD'>        s(el = e =&gt;
+</span>41 <span style=''></span><span style='background: #F0ADAD'>            if (status.thrown.isDefined) done(status)
+</span>42 <span style=''></span><span style='background: #F0ADAD'>            else {
+</span>43 <span style=''></span><span style='background: #F0ADAD'>              val r = StreamSerializer.pump((prev, e), status, serializer)
+</span>44 <span style=''></span><span style='background: #F0ADAD'>              if (r.thrown.isDefined) done(r)
+</span>45 <span style=''></span><span style='background: #F0ADAD'>              else Cont(rest(r, e, serializer))
+</span>46 <span style=''></span><span style='background: #F0ADAD'>            },
+</span>47 <span style=''></span><span style='background: #F0ADAD'>          empty = {
+</span>48 <span style=''></span><span style='background: #F0ADAD'>              empties += 1
+</span>49 <span style=''></span><span style='background: #F0ADAD'>              //println(&quot;outitr empty&quot;)
+</span>50 <span style=''></span><span style='background: #F0ADAD'>              Cont(rest(status, prev, serializer))
+</span>51 <span style=''></span><span style='background: #F0ADAD'>            },
+</span>52 <span style=''></span><span style='background: #F0ADAD'>          eof =  {
+</span>53 <span style=''></span><span style='background: #F0ADAD'>            if (status.thrown.isDefined) done(status)
+</span>54 <span style=''></span><span style='background: #F0ADAD'>            else {
+</span>55 <span style=''></span><span style='background: #F0ADAD'>              val r = StreamSerializer.pump((prev, StreamSerializer.dummy), status, serializer)
+</span>56 <span style=''></span><span style='background: #F0ADAD'>              val opt = serializeMisc(r.output, doc.end.misc, serializer)._2
+</span>57 <span style=''></span><span style='background: #F0ADAD'>
+</span>58 <span style=''></span><span style='background: #F0ADAD'>              val lastStatus = r.copy(thrown = opt)
+</span>59 <span style=''></span><span style='background: #F0ADAD'>
+</span>60 <span style=''></span><span style='background: #F0ADAD'>              done(lastStatus)
+</span>61 <span style=''></span><span style='background: #F0ADAD'>            }}
+</span>62 <span style=''></span><span style='background: #F0ADAD'>        )
+</span>63 <span style=''></span><span style='background: #F0ADAD'>      )</span><span style=''>
+</span>64 <span style=''>
+</span>65 <span style=''>
+</span>66 <span style=''>
+</span>67 <span style=''>    def first( status : StreamStatus, serializer : Serializer )(s : Input[PullType]) : SerialIterT =
+</span>68 <span style=''>      </span><span style='background: #F0ADAD'>iteratee(
+</span>69 <span style=''></span><span style='background: #F0ADAD'>        s(el = e =&gt; {
+</span>70 <span style=''></span><span style='background: #F0ADAD'>          // decl and prolog misc, which should have been collected by now
+</span>71 <span style=''></span><span style='background: #F0ADAD'>          val opt = serializer.xmlDeclaration(status.output.data.encoding,
+</span>72 <span style=''></span><span style='background: #F0ADAD'>                  status.output.data.version).orElse{
+</span>73 <span style=''></span><span style='background: #F0ADAD'>              serializeMisc(status.output, doc.prolog.misc, serializer)._2
+</span>74 <span style=''></span><span style='background: #F0ADAD'>            }
+</span>75 <span style=''></span><span style='background: #F0ADAD'>          val nstatus = status.copy(thrown = opt)
+</span>76 <span style=''></span><span style='background: #F0ADAD'>
+</span>77 <span style=''></span><span style='background: #F0ADAD'>          Cont(rest(nstatus, e, serializer))
+</span>78 <span style=''></span><span style='background: #F0ADAD'>          },
+</span>79 <span style=''></span><span style='background: #F0ADAD'>          empty = {
+</span>80 <span style=''></span><span style='background: #F0ADAD'>            empties += 1
+</span>81 <span style=''></span><span style='background: #F0ADAD'>            Cont(first(status, serializer))
+</span>82 <span style=''></span><span style='background: #F0ADAD'>          },
+</span>83 <span style=''></span><span style='background: #F0ADAD'>          eof = Done((status.output, Some(NoDataInStream())), Eof[PullType])
+</span>84 <span style=''></span><span style='background: #F0ADAD'>        )
+</span>85 <span style=''></span><span style='background: #F0ADAD'>      )</span><span style=''>
+</span>86 <span style=''>
+</span>87 <span style=''>    </span><span style='background: #F0ADAD'>iteratee( Cont(first(StreamStatus(output), serializer)) )</span><span style=''>
+</span>88 <span style=''>  }
+</span>89 <span style=''>
+</span>90 <span style=''>  /**
+</span>91 <span style=''>   * Returns an Iteratee that can serialize PullTypes to out.  The serializer factory management is automatically handled upon calling with eof.  This can be triggered earlier by calling closeResource on the returned CloseOnNeed.
+</span>92 <span style=''>   */ 
+</span>93 <span style=''>  def pushXmlIter( out: java.io.Writer, doc : DocLike = EmptyDoc(), version: Option[XmlVersion] = None, encoding: Option[Charset] = None )(implicit serializerFI: SerializerFactory) : (CloseOnNeed, SerialIterT) = {
+</span>94 <span style=''>
+</span>95 <span style=''>    val decl = </span><span style='background: #F0ADAD'>doc.prolog.decl</span><span style=''>
+</span>96 <span style=''>    val sd = </span><span style='background: #F0ADAD'>SerializerData(out, 
+</span>97 <span style=''></span><span style='background: #F0ADAD'>      version.getOrElse(decl.version), 
+</span>98 <span style=''></span><span style='background: #F0ADAD'>      encoding.getOrElse(decl.encoding))</span><span style=''>
+</span>99 <span style=''>
+</span>100 <span style=''>    val xo = </span><span style='background: #F0ADAD'>XmlOutput(sd)(serializerFI)</span><span style=''>
+</span>101 <span style=''>
+</span>102 <span style=''>    val ser = </span><span style='background: #F0ADAD'>serializerFI.borrow( sd )</span><span style=''> 
+</span>103 <span style=''>
+</span>104 <span style=''>    val closer : CloseOnNeed = </span><span style='background: #F0ADAD'>new</span><span style=''> CloseOnNeed {
+</span>105 <span style=''>      def doClose() {
+</span>106 <span style=''>	</span><span style='background: #F0ADAD'>serializerFI.giveBack(ser)</span><span style=''>
+</span>107 <span style=''>      }
+</span>108 <span style=''>    }
+</span>109 <span style=''>    val iter = </span><span style='background: #F0ADAD'>serializeIter( xo, ser, () =&gt; closer.closeResource, doc)</span><span style=''>
+</span>110 <span style=''>
+</span>111 <span style=''>    </span><span style='background: #F0ADAD'>(closer, iter)</span><span style=''>
+</span>112 <span style=''>  }
+</span>113 <span style=''>
+</span>114 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          5105
+        </td>
+        <td>
+          869
+          -
+          870
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          5106
+        </td>
+        <td>
+          956
+          -
+          964
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function0.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          closer.apply()
+        </td>
+      </tr><tr>
+        <td>
+          35
+        </td>
+        <td>
+          5107
+        </td>
+        <td>
+          1017
+          -
+          1030
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.StreamStatus.output
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          status.output
+        </td>
+      </tr><tr>
+        <td>
+          35
+        </td>
+        <td>
+          5108
+        </td>
+        <td>
+          1032
+          -
+          1045
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.StreamStatus.thrown
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          status.thrown
+        </td>
+      </tr><tr>
+        <td>
+          35
+        </td>
+        <td>
+          5109
+        </td>
+        <td>
+          1016
+          -
+          1046
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Tuple2.apply[scales.xml.serializers.XmlOutput, Option[Throwable]](status.output, status.thrown)
+        </td>
+      </tr><tr>
+        <td>
+          35
+        </td>
+        <td>
+          5110
+        </td>
+        <td>
+          1048
+          -
+          1061
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scalaz.iteratee.Input.Eof.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scalaz.iteratee.Input.Eof.apply[scales.xml.PullType]
+        </td>
+      </tr><tr>
+        <td>
+          35
+        </td>
+        <td>
+          5111
+        </td>
+        <td>
+          1011
+          -
+          1062
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Done.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scalaz.iteratee.StepT.Done.apply[scales.xml.PullType, scalaz.Id.Id, (scales.xml.serializers.XmlOutput, Option[Throwable])](scala.Tuple2.apply[scales.xml.serializers.XmlOutput, Option[Throwable]](status.output, status.thrown), scalaz.iteratee.Input.Eof.apply[scales.xml.PullType])
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          5142
+        </td>
+        <td>
+          1193
+          -
+          2015
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.IterateeFunctions.iteratee
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scalaz.iteratee.Iteratee.iteratee[scales.xml.PullType, (scales.xml.serializers.XmlOutput, Option[Throwable])]({
+  &lt;artifact&gt; val x$4: (=&gt; scales.xml.PullType) =&gt; scalaz.iteratee.Step[scales.xml.PullType,(scales.xml.serializers.XmlOutput, Option[Throwable])] = ((e: =&gt; scales.xml.PullType) =&gt; if (status.thrown.isDefined)
+    done(status)
+  else
+    {
+      val r: scales.xml.serializers.StreamStatus = StreamSerializer.pump(scala.Tuple2.apply[scales.xml.PullType, scales.xml.PullType](prev, e), status, serializer);
+      if (r.thrown.isDefined)
+        done(r)
+      else
+        scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, scalaz.Id.Id, (scales.xml.serializers.XmlOutput, Option[Throwable])]({
+          ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; rest(r, e, serializer)(s))
+        })
+    });
+  &lt;artifact&gt; val x$5: () =&gt; scalaz.iteratee.StepT[scales.xml.PullType,scalaz.Id.Id,(scales.xml.serializers.XmlOutput, Option[Throwable])] = (() =&gt; {
+    empties = empties.+(1);
+    scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, scalaz.Id.Id, (scales.xml.serializers.XmlOutput, Option[Throwable])]({
+      ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; rest(status, prev, serializer)(s))
+    })
+  });
+  &lt;artifact&gt; val x$6: () =&gt; scalaz.iteratee.Step[scales.xml.PullType,(scales.xml.serializers.XmlOutput, Option[Throwable])] = (() =&gt; if (status.thrown.isDefined)
+    done(status)
+  else
+    {
+      val r: scales.xml.serializers.StreamStatus = StreamSerializer.pump(scala.Tuple2.apply[scales.xml.PullType, scala.util.Left[scales.xml.Elem,Nothing]](prev, StreamSerializer.dummy), status, serializer);
+      val opt: Option[Throwable] = scales.xml.`package`.serializeMisc(r.output, doc.end.misc, serializer)._2;
+      val lastStatus: scales.xml.serializers.StreamStatus = {
+        &lt;artifact&gt; val x$1: Option[Throwable] = opt;
+        &lt;artifact&gt; val x$2: scales.xml.serializers.XmlOutput = r.copy$default$1;
+        &lt;artifact&gt; val x$3: Boolean = r.copy$default$3;
+        r.copy(x$2, x$1, x$3)
+      };
+      done(lastStatus)
+    });
+  s.apply[scalaz.iteratee.Step[scales.xml.PullType,(scales.xml.serializers.XmlOutput, Option[Throwable])]](x$5.apply(), x$4, x$6.apply())
+})
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          5141
+        </td>
+        <td>
+          1211
+          -
+          2007
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.Input.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          s.apply[scalaz.iteratee.Step[scales.xml.PullType,(scales.xml.serializers.XmlOutput, Option[Throwable])]](x$5.apply(), x$4, x$6.apply())
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          5112
+        </td>
+        <td>
+          1239
+          -
+          1262
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Option.isDefined
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          status.thrown.isDefined
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          5113
+        </td>
+        <td>
+          1264
+          -
+          1276
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.SerializingIter.done
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          done(status)
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          5114
+        </td>
+        <td>
+          1264
+          -
+          1276
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.serializers.SerializingIter.done
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          done(status)
+        </td>
+      </tr><tr>
+        <td>
+          42
+        </td>
+        <td>
+          5123
+        </td>
+        <td>
+          1294
+          -
+          1478
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          {
+  val r: scales.xml.serializers.StreamStatus = StreamSerializer.pump(scala.Tuple2.apply[scales.xml.PullType, scales.xml.PullType](prev, e), status, serializer);
+  if (r.thrown.isDefined)
+    done(r)
+  else
+    scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, scalaz.Id.Id, (scales.xml.serializers.XmlOutput, Option[Throwable])]({
+      ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; rest(r, e, serializer)(s))
+    })
+}
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          5115
+        </td>
+        <td>
+          1340
+          -
+          1349
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Tuple2.apply[scales.xml.PullType, scales.xml.PullType](prev, e)
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          5116
+        </td>
+        <td>
+          1318
+          -
+          1370
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.StreamSerializer.pump
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          StreamSerializer.pump(scala.Tuple2.apply[scales.xml.PullType, scales.xml.PullType](prev, e), status, serializer)
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          5117
+        </td>
+        <td>
+          1389
+          -
+          1407
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Option.isDefined
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          r.thrown.isDefined
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          5118
+        </td>
+        <td>
+          1409
+          -
+          1416
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.SerializingIter.done
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          done(r)
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          5119
+        </td>
+        <td>
+          1409
+          -
+          1416
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.serializers.SerializingIter.done
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          done(r)
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          5120
+        </td>
+        <td>
+          1441
+          -
+          1463
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.SerializingIter.rest
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          rest(r, e, serializer)(s)
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          5121
+        </td>
+        <td>
+          1436
+          -
+          1464
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Cont.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, scalaz.Id.Id, (scales.xml.serializers.XmlOutput, Option[Throwable])]({
+  ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; rest(r, e, serializer)(s))
+})
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          5122
+        </td>
+        <td>
+          1436
+          -
+          1464
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Cont.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, scalaz.Id.Id, (scales.xml.serializers.XmlOutput, Option[Throwable])]({
+  ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; rest(r, e, serializer)(s))
+})
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          5139
+        </td>
+        <td>
+          1498
+          -
+          1498
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function0.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          x$5.apply()
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          5124
+        </td>
+        <td>
+          1514
+          -
+          1526
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          empties.+(1)
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          5125
+        </td>
+        <td>
+          1586
+          -
+          1616
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.SerializingIter.rest
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          rest(status, prev, serializer)(s)
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          5126
+        </td>
+        <td>
+          1581
+          -
+          1617
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Cont.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, scalaz.Id.Id, (scales.xml.serializers.XmlOutput, Option[Throwable])]({
+  ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; rest(status, prev, serializer)(s))
+})
+        </td>
+      </tr><tr>
+        <td>
+          53
+        </td>
+        <td>
+          5127
+        </td>
+        <td>
+          1668
+          -
+          1691
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Option.isDefined
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          status.thrown.isDefined
+        </td>
+      </tr><tr>
+        <td>
+          53
+        </td>
+        <td>
+          5128
+        </td>
+        <td>
+          1693
+          -
+          1705
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.SerializingIter.done
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          done(status)
+        </td>
+      </tr><tr>
+        <td>
+          53
+        </td>
+        <td>
+          5129
+        </td>
+        <td>
+          1693
+          -
+          1705
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.serializers.SerializingIter.done
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          done(status)
+        </td>
+      </tr><tr>
+        <td>
+          53
+        </td>
+        <td>
+          5140
+        </td>
+        <td>
+          1664
+          -
+          1664
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function0.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          x$6.apply()
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          5138
+        </td>
+        <td>
+          1723
+          -
+          1996
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          {
+  val r: scales.xml.serializers.StreamStatus = StreamSerializer.pump(scala.Tuple2.apply[scales.xml.PullType, scala.util.Left[scales.xml.Elem,Nothing]](prev, StreamSerializer.dummy), status, serializer);
+  val opt: Option[Throwable] = scales.xml.`package`.serializeMisc(r.output, doc.end.misc, serializer)._2;
+  val lastStatus: scales.xml.serializers.StreamStatus = {
+    &lt;artifact&gt; val x$1: Option[Throwable] = opt;
+    &lt;artifact&gt; val x$2: scales.xml.serializers.XmlOutput = r.copy$default$1;
+    &lt;artifact&gt; val x$3: Boolean = r.copy$default$3;
+    r.copy(x$2, x$1, x$3)
+  };
+  done(lastStatus)
+}
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          5130
+        </td>
+        <td>
+          1776
+          -
+          1798
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.StreamSerializer.dummy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          StreamSerializer.dummy
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          5131
+        </td>
+        <td>
+          1769
+          -
+          1799
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Tuple2.apply[scales.xml.PullType, scala.util.Left[scales.xml.Elem,Nothing]](prev, StreamSerializer.dummy)
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          5132
+        </td>
+        <td>
+          1747
+          -
+          1820
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.StreamSerializer.pump
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          StreamSerializer.pump(scala.Tuple2.apply[scales.xml.PullType, scala.util.Left[scales.xml.Elem,Nothing]](prev, StreamSerializer.dummy), status, serializer)
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          5133
+        </td>
+        <td>
+          1859
+          -
+          1867
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.StreamStatus.output
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          r.output
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          5134
+        </td>
+        <td>
+          1869
+          -
+          1881
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.EndMisc.misc
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          doc.end.misc
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          5135
+        </td>
+        <td>
+          1845
+          -
+          1897
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.xml.`package`.serializeMisc(r.output, doc.end.misc, serializer)._2
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          5136
+        </td>
+        <td>
+          1930
+          -
+          1950
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.StreamStatus.copy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          r.copy(x$2, x$1, x$3)
+        </td>
+      </tr><tr>
+        <td>
+          60
+        </td>
+        <td>
+          5137
+        </td>
+        <td>
+          1966
+          -
+          1982
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.SerializingIter.done
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          done(lastStatus)
+        </td>
+      </tr><tr>
+        <td>
+          68
+        </td>
+        <td>
+          5164
+        </td>
+        <td>
+          2126
+          -
+          2756
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.IterateeFunctions.iteratee
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scalaz.iteratee.Iteratee.iteratee[scales.xml.PullType, (scales.xml.serializers.XmlOutput, Option[Throwable])]({
+  &lt;artifact&gt; val x$4: (=&gt; scales.xml.PullType) =&gt; scalaz.iteratee.StepT[scales.xml.PullType,scalaz.Id.Id,(scales.xml.serializers.XmlOutput, Option[Throwable])] = ((e: =&gt; scales.xml.PullType) =&gt; {
+    val opt: Option[Throwable] = serializer.xmlDeclaration(status.output.data.encoding, status.output.data.version).orElse[Throwable](scales.xml.`package`.serializeMisc(status.output, doc.prolog.misc, serializer)._2);
+    val nstatus: scales.xml.serializers.StreamStatus = {
+      &lt;artifact&gt; val x$1: Option[Throwable] = opt;
+      &lt;artifact&gt; val x$2: scales.xml.serializers.XmlOutput = status.copy$default$1;
+      &lt;artifact&gt; val x$3: Boolean = status.copy$default$3;
+      status.copy(x$2, x$1, x$3)
+    };
+    scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, scalaz.Id.Id, (scales.xml.serializers.XmlOutput, Option[Throwable])]({
+      ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; rest(nstatus, e, serializer)(s))
+    })
+  });
+  &lt;artifact&gt; val x$5: () =&gt; scalaz.iteratee.StepT[scales.xml.PullType,scalaz.Id.Id,(scales.xml.serializers.XmlOutput, Option[Throwable])] = (() =&gt; {
+    empties = empties.+(1);
+    scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, scalaz.Id.Id, (scales.xml.serializers.XmlOutput, Option[Throwable])]({
+      ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; first(status, serializer)(s))
+    })
+  });
+  &lt;artifact&gt; val x$6: () =&gt; scalaz.iteratee.StepT[scales.xml.PullType,scalaz.Id.Id,(scales.xml.serializers.XmlOutput, Option[Throwable])] = (() =&gt; scalaz.iteratee.StepT.Done.apply[scales.xml.PullType, scalaz.Id.Id, (scales.xml.serializers.XmlOutput, Option[Throwable])](scala.Tuple2.apply[scales.xml.serializers.XmlOutput, Some[scales.xml.serializers.NoDataInStream]](status.output, scala.Some.apply[scales.xml.serializers.NoDataInStream](NoDataInStream.apply())), scalaz.iteratee.Input.Eof.apply[scales.xml.PullType]));
+  s.apply[scalaz.iteratee.StepT[scales.xml.PullType,scalaz.Id.Id,(scales.xml.serializers.XmlOutput, Option[Throwable])]](x$5.apply(), x$4, x$6.apply())
+})
+        </td>
+      </tr><tr>
+        <td>
+          69
+        </td>
+        <td>
+          5163
+        </td>
+        <td>
+          2144
+          -
+          2748
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.Input.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          s.apply[scalaz.iteratee.StepT[scales.xml.PullType,scalaz.Id.Id,(scales.xml.serializers.XmlOutput, Option[Throwable])]](x$5.apply(), x$4, x$6.apply())
+        </td>
+      </tr><tr>
+        <td>
+          71
+        </td>
+        <td>
+          5143
+        </td>
+        <td>
+          2279
+          -
+          2306
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.SerializerData.encoding
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          status.output.data.encoding
+        </td>
+      </tr><tr>
+        <td>
+          72
+        </td>
+        <td>
+          5144
+        </td>
+        <td>
+          2326
+          -
+          2352
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.SerializerData.version
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          status.output.data.version
+        </td>
+      </tr><tr>
+        <td>
+          72
+        </td>
+        <td>
+          5148
+        </td>
+        <td>
+          2253
+          -
+          2450
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.orElse
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          serializer.xmlDeclaration(status.output.data.encoding, status.output.data.version).orElse[Throwable](scales.xml.`package`.serializeMisc(status.output, doc.prolog.misc, serializer)._2)
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          5145
+        </td>
+        <td>
+          2390
+          -
+          2403
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.StreamStatus.output
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          status.output
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          5146
+        </td>
+        <td>
+          2405
+          -
+          2420
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Prolog.misc
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          doc.prolog.misc
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          5147
+        </td>
+        <td>
+          2376
+          -
+          2436
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.xml.`package`.serializeMisc(status.output, doc.prolog.misc, serializer)._2
+        </td>
+      </tr><tr>
+        <td>
+          75
+        </td>
+        <td>
+          5149
+        </td>
+        <td>
+          2475
+          -
+          2500
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.StreamStatus.copy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          status.copy(x$2, x$1, x$3)
+        </td>
+      </tr><tr>
+        <td>
+          77
+        </td>
+        <td>
+          5150
+        </td>
+        <td>
+          2517
+          -
+          2545
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.SerializingIter.rest
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          rest(nstatus, e, serializer)(s)
+        </td>
+      </tr><tr>
+        <td>
+          77
+        </td>
+        <td>
+          5151
+        </td>
+        <td>
+          2512
+          -
+          2546
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Cont.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, scalaz.Id.Id, (scales.xml.serializers.XmlOutput, Option[Throwable])]({
+  ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; rest(nstatus, e, serializer)(s))
+})
+        </td>
+      </tr><tr>
+        <td>
+          79
+        </td>
+        <td>
+          5161
+        </td>
+        <td>
+          2578
+          -
+          2578
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function0.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          x$5.apply()
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          5152
+        </td>
+        <td>
+          2592
+          -
+          2604
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          empties.+(1)
+        </td>
+      </tr><tr>
+        <td>
+          81
+        </td>
+        <td>
+          5153
+        </td>
+        <td>
+          2622
+          -
+          2647
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.SerializingIter.first
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          first(status, serializer)(s)
+        </td>
+      </tr><tr>
+        <td>
+          81
+        </td>
+        <td>
+          5154
+        </td>
+        <td>
+          2617
+          -
+          2648
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Cont.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, scalaz.Id.Id, (scales.xml.serializers.XmlOutput, Option[Throwable])]({
+  ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; first(status, serializer)(s))
+})
+        </td>
+      </tr><tr>
+        <td>
+          83
+        </td>
+        <td>
+          5155
+        </td>
+        <td>
+          2684
+          -
+          2697
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.StreamStatus.output
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          status.output
+        </td>
+      </tr><tr>
+        <td>
+          83
+        </td>
+        <td>
+          5156
+        </td>
+        <td>
+          2704
+          -
+          2720
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.NoDataInStream.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          NoDataInStream.apply()
+        </td>
+      </tr><tr>
+        <td>
+          83
+        </td>
+        <td>
+          5157
+        </td>
+        <td>
+          2699
+          -
+          2721
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Some.apply[scales.xml.serializers.NoDataInStream](NoDataInStream.apply())
+        </td>
+      </tr><tr>
+        <td>
+          83
+        </td>
+        <td>
+          5158
+        </td>
+        <td>
+          2683
+          -
+          2722
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Tuple2.apply[scales.xml.serializers.XmlOutput, Some[scales.xml.serializers.NoDataInStream]](status.output, scala.Some.apply[scales.xml.serializers.NoDataInStream](NoDataInStream.apply()))
+        </td>
+      </tr><tr>
+        <td>
+          83
+        </td>
+        <td>
+          5159
+        </td>
+        <td>
+          2724
+          -
+          2737
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scalaz.iteratee.Input.Eof.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scalaz.iteratee.Input.Eof.apply[scales.xml.PullType]
+        </td>
+      </tr><tr>
+        <td>
+          83
+        </td>
+        <td>
+          5160
+        </td>
+        <td>
+          2678
+          -
+          2738
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Done.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scalaz.iteratee.StepT.Done.apply[scales.xml.PullType, scalaz.Id.Id, (scales.xml.serializers.XmlOutput, Option[Throwable])](scala.Tuple2.apply[scales.xml.serializers.XmlOutput, Some[scales.xml.serializers.NoDataInStream]](status.output, scala.Some.apply[scales.xml.serializers.NoDataInStream](NoDataInStream.apply())), scalaz.iteratee.Input.Eof.apply[scales.xml.PullType])
+        </td>
+      </tr><tr>
+        <td>
+          83
+        </td>
+        <td>
+          5162
+        </td>
+        <td>
+          2682
+          -
+          2682
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function0.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          x$6.apply()
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          5165
+        </td>
+        <td>
+          2777
+          -
+          2816
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.SerializingIter.first
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          first(eta$0$1, serializer)(s)
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          5166
+        </td>
+        <td>
+          2772
+          -
+          2817
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Cont.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, scalaz.Id.Id, (scales.xml.serializers.XmlOutput, Option[Throwable])]({
+  &lt;synthetic&gt; val eta$0$1: scales.xml.serializers.StreamStatus = StreamStatus.apply(output, StreamStatus.apply$default$2, StreamStatus.apply$default$3);
+  ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; first(eta$0$1, serializer)(s))
+})
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          5167
+        </td>
+        <td>
+          2762
+          -
+          2819
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.IterateeFunctions.iteratee
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scalaz.iteratee.Iteratee.iteratee[scales.xml.PullType, (scales.xml.serializers.XmlOutput, Option[Throwable])](scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, scalaz.Id.Id, (scales.xml.serializers.XmlOutput, Option[Throwable])]({
+  &lt;synthetic&gt; val eta$0$1: scales.xml.serializers.StreamStatus = StreamStatus.apply(output, StreamStatus.apply$default$2, StreamStatus.apply$default$3);
+  ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; first(eta$0$1, serializer)(s))
+}))
+        </td>
+      </tr><tr>
+        <td>
+          95
+        </td>
+        <td>
+          5168
+        </td>
+        <td>
+          3298
+          -
+          3313
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Prolog.decl
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          doc.prolog.decl
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          5173
+        </td>
+        <td>
+          3327
+          -
+          3428
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.SerializerData.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          SerializerData.apply(out, version.getOrElse[scales.xml.XmlVersion](decl.version), encoding.getOrElse[java.nio.charset.Charset](decl.encoding))
+        </td>
+      </tr><tr>
+        <td>
+          97
+        </td>
+        <td>
+          5169
+        </td>
+        <td>
+          3372
+          -
+          3384
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Declaration.version
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          decl.version
+        </td>
+      </tr><tr>
+        <td>
+          97
+        </td>
+        <td>
+          5170
+        </td>
+        <td>
+          3354
+          -
+          3385
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.getOrElse
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          version.getOrElse[scales.xml.XmlVersion](decl.version)
+        </td>
+      </tr><tr>
+        <td>
+          98
+        </td>
+        <td>
+          5171
+        </td>
+        <td>
+          3413
+          -
+          3426
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Declaration.encoding
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          decl.encoding
+        </td>
+      </tr><tr>
+        <td>
+          98
+        </td>
+        <td>
+          5172
+        </td>
+        <td>
+          3394
+          -
+          3427
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.getOrElse
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          encoding.getOrElse[java.nio.charset.Charset](decl.encoding)
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          5174
+        </td>
+        <td>
+          3443
+          -
+          3470
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.XmlOutput.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          XmlOutput.apply(sd, XmlOutput.apply$default$2, XmlOutput.apply$default$3)(serializerFI)
+        </td>
+      </tr><tr>
+        <td>
+          102
+        </td>
+        <td>
+          5175
+        </td>
+        <td>
+          3486
+          -
+          3511
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.SerializerFactory.borrow
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          serializerFI.borrow(sd)
+        </td>
+      </tr><tr>
+        <td>
+          104
+        </td>
+        <td>
+          5177
+        </td>
+        <td>
+          3545
+          -
+          3548
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.SerializingIter.$anon.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          106
+        </td>
+        <td>
+          5176
+        </td>
+        <td>
+          3586
+          -
+          3612
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.SerializerFactory.giveBack
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          serializerFI.giveBack(ser)
+        </td>
+      </tr><tr>
+        <td>
+          109
+        </td>
+        <td>
+          5178
+        </td>
+        <td>
+          3672
+          -
+          3692
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.resources.CloseOnNeed.closeResource
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          closer.closeResource
+        </td>
+      </tr><tr>
+        <td>
+          109
+        </td>
+        <td>
+          5179
+        </td>
+        <td>
+          3642
+          -
+          3698
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.SerializingIter.serializeIter
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          SerializingIter.this.serializeIter(xo, ser, (() =&gt; closer.closeResource), doc)
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          5180
+        </td>
+        <td>
+          3704
+          -
+          3718
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Tuple2.apply[scales.utils.resources.CloseOnNeed, SerializingIter.this.SerialIterT](closer, iter)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

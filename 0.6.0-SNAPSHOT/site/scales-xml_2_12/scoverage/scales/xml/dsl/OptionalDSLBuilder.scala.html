@@ -1,0 +1,1576 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/xml/dsl/OptionalDSLBuilder.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.xml.dsl
+</span>2 <span style=''>
+</span>3 <span style=''>import scales.xml.{
+</span>4 <span style=''>  XmlTree, Elem, 
+</span>5 <span style=''>  XCC, XmlItem, 
+</span>6 <span style=''>  QName, ScalesXml,
+</span>7 <span style=''>  Attribute, emptyChildren,
+</span>8 <span style=''>  ItemOrElem, XPath,
+</span>9 <span style=''>  XmlPath, Text, isEmptyTree
+</span>10 <span style=''>  }
+</span>11 <span style=''>
+</span>12 <span style=''>import scales.utils.collection.path._
+</span>13 <span style=''>import scales.utils.{AsBoolean, subtree, foldPositions, booleanMatcher, booleanAndTMatcher, top, item}
+</span>14 <span style=''>
+</span>15 <span style=''>import ScalesXml.fromParserDefault // note cannot be in parser here
+</span>16 <span style=''>
+</span>17 <span style=''>/**
+</span>18 <span style=''> * Entry point to creating OptionalDslBuilders, can be used without the implicit helpers
+</span>19 <span style=''> */ 
+</span>20 <span style=''>object OptionalDslBuilder {
+</span>21 <span style=''>  
+</span>22 <span style=''>  /**
+</span>23 <span style=''>   * Creates a new tree for the DslBuilder with this @qname for the root elem
+</span>24 <span style=''>   */ 
+</span>25 <span style=''>  def apply( qname : QName ) = </span><span style='background: #F0ADAD'>new OptionalDslBuilder(DslBuilder.elem2tree(Elem(qname)))</span><span style=''> 
+</span>26 <span style=''>  /**
+</span>27 <span style=''>   * Creates a new tree for the DslBuilder with @elem as the root
+</span>28 <span style=''>   */
+</span>29 <span style=''>  def apply( elem : Elem ) = </span><span style='background: #AEF1AE'>new OptionalDslBuilder(DslBuilder.elem2tree(elem))</span><span style=''>
+</span>30 <span style=''>  /**
+</span>31 <span style=''>   * Uses @tree to directly create the DslBuilder
+</span>32 <span style=''>   */
+</span>33 <span style=''>  def apply( tree : XmlTree ) = </span><span style='background: #F0ADAD'>new OptionalDslBuilder(tree)</span><span style=''>
+</span>34 <span style=''>}
+</span>35 <span style=''>
+</span>36 <span style=''>/**
+</span>37 <span style=''> * Represents an optional cascading tree, 
+</span>38 <span style=''> * 
+</span>39 <span style=''> * NB Must have a starting element, modelled as tree as we need to keep the data around and trees must always have an elem. 
+</span>40 <span style=''> */
+</span>41 <span style=''>final class OptionalDslBuilder private(val tree: XmlTree) {
+</span>42 <span style=''>  import ScalesXml._
+</span>43 <span style=''>
+</span>44 <span style=''>  private implicit def dslToOptional(dsl: DslBuilder): OptionalDslBuilder =
+</span>45 <span style=''>    </span><span style='background: #AEF1AE'>new OptionalDslBuilder(dsl.toTree)</span><span style=''>
+</span>46 <span style=''>
+</span>47 <span style=''>  /**
+</span>48 <span style=''>   * Add attributes
+</span>49 <span style=''>   */ 
+</span>50 <span style=''>  def ?/@(attribs : =&gt; Iterable[Attribute]): OptionalDslBuilder = 
+</span>51 <span style=''>    </span><span style='background: #AEF1AE'>tree./@(attribs)</span><span style=''>
+</span>52 <span style=''>
+</span>53 <span style=''>  /**
+</span>54 <span style=''>   * Add attributes
+</span>55 <span style=''>   */ 
+</span>56 <span style=''>  def addOptionalAttributes(attribs : =&gt; Iterable[Attribute]): OptionalDslBuilder = 
+</span>57 <span style=''>    </span><span style='background: #AEF1AE'>tree./@(attribs)</span><span style=''>
+</span>58 <span style=''>
+</span>59 <span style=''>  /**
+</span>60 <span style=''>   * Optionally add a single attribute, when None no attribute will be added
+</span>61 <span style=''>   */
+</span>62 <span style=''>  def ?/@(attrib : Option[Attribute]): OptionalDslBuilder = 
+</span>63 <span style=''>    </span><span style='background: #AEF1AE'>tree./@(attrib)</span><span style=''>
+</span>64 <span style=''>
+</span>65 <span style=''>  /**
+</span>66 <span style=''>   * Optionally add a single attribute, when None no attribute will be added
+</span>67 <span style=''>   */
+</span>68 <span style=''>  def addOptionalAttribute(attrib : Option[Attribute]): OptionalDslBuilder = 
+</span>69 <span style=''>    </span><span style='background: #F0ADAD'>tree./@(attrib)</span><span style=''>
+</span>70 <span style=''>
+</span>71 <span style=''>  private def addNonEmptys(itemOrElems: Iterable[ItemOrElem] ): OptionalDslBuilder =
+</span>72 <span style=''>    </span><span style='background: #AEF1AE'>tree./(itemOrElems.filter{
+</span>73 <span style=''></span><span style='background: #AEF1AE'>      _.fold(i =&gt; true, t =&gt; !isEmptyTree(t))
+</span>74 <span style=''></span><span style='background: #AEF1AE'>    })</span><span style=''>
+</span>75 <span style=''>
+</span>76 <span style=''>  /**
+</span>77 <span style=''>   * Adds items and filters out empty trees.
+</span>78 <span style=''>   */
+</span>79 <span style=''>  def addNonEmpty( itemOrElems: =&gt; Iterable[ItemOrElem] ): OptionalDslBuilder =
+</span>80 <span style=''>    </span><span style='background: #AEF1AE'>addNonEmptys(itemOrElems)</span><span style=''>
+</span>81 <span style=''>
+</span>82 <span style=''>  /**
+</span>83 <span style=''>   * Adds items and filters out empty trees.
+</span>84 <span style=''>   */ 
+</span>85 <span style=''>  def addNonEmpty( itemOrElems: ItemOrElem * ): OptionalDslBuilder =
+</span>86 <span style=''>    </span><span style='background: #AEF1AE'>addNonEmptys(itemOrElems)</span><span style=''>
+</span>87 <span style=''>
+</span>88 <span style=''>  /**
+</span>89 <span style=''>   * Optionally add a child, when None no child will be added
+</span>90 <span style=''>   */
+</span>91 <span style=''>  def ?/( itemOrElem : OptionalDslBuilder ): OptionalDslBuilder = 
+</span>92 <span style=''>    </span><span style='background: #AEF1AE'>tree./(itemOrElem.toOptionalTree)</span><span style=''>
+</span>93 <span style=''>
+</span>94 <span style=''>  /**
+</span>95 <span style=''>   * Optionally add a child, when None no child will be added
+</span>96 <span style=''>   */
+</span>97 <span style=''>  def addOptionalChild( itemOrElem : OptionalDslBuilder ): OptionalDslBuilder = 
+</span>98 <span style=''>    </span><span style='background: #AEF1AE'>tree./(itemOrElem.toOptionalTree)</span><span style=''>
+</span>99 <span style=''>
+</span>100 <span style=''>  /**
+</span>101 <span style=''>   * Optionally add a number of children, when empty no child will be added
+</span>102 <span style=''>   */
+</span>103 <span style=''>  def addOptionalChildren( items: =&gt; Iterable[OptionalDslBuilder] ): OptionalDslBuilder =
+</span>104 <span style=''>    </span><span style='background: #AEF1AE'>addOptionals(items)</span><span style=''>
+</span>105 <span style=''>
+</span>106 <span style=''>  /**
+</span>107 <span style=''>   * Optionally add a number of children, when empty no child will be added
+</span>108 <span style=''>   */
+</span>109 <span style=''>  def addOptionalChildren( items: OptionalDslBuilder * ): OptionalDslBuilder =
+</span>110 <span style=''>    </span><span style='background: #AEF1AE'>addOptionals(items)</span><span style=''>
+</span>111 <span style=''>
+</span>112 <span style=''>  private def addOptionals( items: =&gt; Iterable[OptionalDslBuilder] ): OptionalDslBuilder =
+</span>113 <span style=''>    </span><span style='background: #AEF1AE'>tree.addOptionals(items.map(_.toOptionalTree))</span><span style=''>
+</span>114 <span style=''>
+</span>115 <span style=''>  /**
+</span>116 <span style=''>   * Optionally add a number of children, when empty no child will be added
+</span>117 <span style=''>   */
+</span>118 <span style=''>  def ?/( itemOrElem: OptionalDslBuilder *): OptionalDslBuilder =
+</span>119 <span style=''>    </span><span style='background: #AEF1AE'>addOptionals(itemOrElem)</span><span style=''>
+</span>120 <span style=''>
+</span>121 <span style=''>  /**
+</span>122 <span style=''>   * Optionally add a number of children, when empty no child will be added
+</span>123 <span style=''>   */
+</span>124 <span style=''>  def ?/( itemOrElem : =&gt; Iterable[OptionalDslBuilder] ): OptionalDslBuilder = 
+</span>125 <span style=''>    </span><span style='background: #AEF1AE'>addOptionals(itemOrElem)</span><span style=''>
+</span>126 <span style=''>
+</span>127 <span style=''>  /**
+</span>128 <span style=''>   * sets the tree to a single Text node child, replacing all others, calling this forces the resulting OptionalDslBuilder to be non empty
+</span>129 <span style=''>   */
+</span>130 <span style=''>  def ?~&gt;( value : String ): OptionalDslBuilder = // note ~&gt; is used not -&gt; as it will then get in the way of the tupler
+</span>131 <span style=''>    </span><span style='background: #AEF1AE'>tree.~&gt;(value)</span><span style=''>
+</span>132 <span style=''>
+</span>133 <span style=''>  /**
+</span>134 <span style=''>   * see ?~&gt;
+</span>135 <span style=''>   */ 
+</span>136 <span style=''>  def setNonOptionalValue( value : String ): OptionalDslBuilder = </span><span style='background: #AEF1AE'>?~&gt;(value)</span><span style=''>
+</span>137 <span style=''>
+</span>138 <span style=''>  /**
+</span>139 <span style=''>   * Optionally sets the tree to a single Text node child, replacing all others, None will not change the current node.
+</span>140 <span style=''>   * 
+</span>141 <span style=''>   * {{{
+</span>142 <span style=''>   *    &lt;(Elem(&quot;root&quot;l)) ~&gt; None
+</span>143 <span style=''>   * }}}
+</span>144 <span style=''>   *
+</span>145 <span style=''>   * would leave an empty &lt;root/&gt;
+</span>146 <span style=''>   */
+</span>147 <span style=''>  def ?~&gt;( value : Option[String] ): OptionalDslBuilder = 
+</span>148 <span style=''>    </span><span style='background: #AEF1AE'>tree.~&gt;(value)</span><span style=''>
+</span>149 <span style=''>
+</span>150 <span style=''>  /**
+</span>151 <span style=''>   * see ~&gt; Option[String]
+</span>152 <span style=''>   */
+</span>153 <span style=''>  def setOptionalValue( value : Option[String] ): OptionalDslBuilder = </span><span style='background: #AEF1AE'>?~&gt;(value)</span><span style=''>
+</span>154 <span style=''>
+</span>155 <span style=''>  /**
+</span>156 <span style=''>   * If all of the underly Elem is empty - no children or attributes then it returns None.
+</span>157 <span style=''>   *
+</span>158 <span style=''>   * NB xsi:nil still counts as an attribute as it has an intended meaning. 
+</span>159 <span style=''>   */ 
+</span>160 <span style=''>  def toOptionalTree: Option[XmlTree] = 
+</span>161 <span style=''>    if (</span><span style='background: #AEF1AE'>isEmptyTree(tree)</span><span style=''>)
+</span>162 <span style=''>      </span><span style='background: #AEF1AE'>None</span><span style=''>
+</span>163 <span style=''>    else
+</span>164 <span style=''>      </span><span style='background: #AEF1AE'>Some(tree)</span><span style=''>
+</span>165 <span style=''>
+</span>166 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          25
+        </td>
+        <td>
+          2562
+        </td>
+        <td>
+          692
+          -
+          692
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.XmlTypesImplicits.fromParserDefault
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.xml.ScalesXml.fromParserDefault
+        </td>
+      </tr><tr>
+        <td>
+          25
+        </td>
+        <td>
+          2563
+        </td>
+        <td>
+          688
+          -
+          699
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.Elem.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.xml.Elem.apply(qname, scales.xml.Elem.apply$default$2, scales.xml.Elem.apply$default$3)(scales.xml.ScalesXml.fromParserDefault)
+        </td>
+      </tr><tr>
+        <td>
+          25
+        </td>
+        <td>
+          2564
+        </td>
+        <td>
+          667
+          -
+          700
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.dsl.DslBuilder.elem2tree
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          DslBuilder.elem2tree(scales.xml.Elem.apply(qname, scales.xml.Elem.apply$default$2, scales.xml.Elem.apply$default$3)(scales.xml.ScalesXml.fromParserDefault))
+        </td>
+      </tr><tr>
+        <td>
+          25
+        </td>
+        <td>
+          2565
+        </td>
+        <td>
+          644
+          -
+          701
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.dsl.OptionalDslBuilder.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new OptionalDslBuilder(DslBuilder.elem2tree(scales.xml.Elem.apply(qname, scales.xml.Elem.apply$default$2, scales.xml.Elem.apply$default$3)(scales.xml.ScalesXml.fromParserDefault)))
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          2566
+        </td>
+        <td>
+          833
+          -
+          859
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.dsl.DslBuilder.elem2tree
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          DslBuilder.elem2tree(elem)
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          2567
+        </td>
+        <td>
+          810
+          -
+          860
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.dsl.OptionalDslBuilder.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new OptionalDslBuilder(DslBuilder.elem2tree(elem))
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          2568
+        </td>
+        <td>
+          955
+          -
+          983
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.dsl.OptionalDslBuilder.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new OptionalDslBuilder(tree)
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          2569
+        </td>
+        <td>
+          1352
+          -
+          1362
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.dsl.DslBuilder.toTree
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          dsl.toTree
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          2570
+        </td>
+        <td>
+          1329
+          -
+          1363
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.dsl.OptionalDslBuilder.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new OptionalDslBuilder(dsl.toTree)
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          2571
+        </td>
+        <td>
+          1469
+          -
+          1485
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.dsl.DslBuilder./@
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.ScalesXml.fromTreeToDsl(OptionalDslBuilder.this.tree)./@(attribs)
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          2572
+        </td>
+        <td>
+          1469
+          -
+          1485
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scales.xml.dsl.OptionalDslBuilder.dslToOptional
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          OptionalDslBuilder.this.dslToOptional(scales.xml.ScalesXml.fromTreeToDsl(OptionalDslBuilder.this.tree)./@(attribs))
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          2573
+        </td>
+        <td>
+          1609
+          -
+          1625
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.dsl.DslBuilder./@
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.ScalesXml.fromTreeToDsl(OptionalDslBuilder.this.tree)./@(attribs)
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          2574
+        </td>
+        <td>
+          1609
+          -
+          1625
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scales.xml.dsl.OptionalDslBuilder.dslToOptional
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          OptionalDslBuilder.this.dslToOptional(scales.xml.ScalesXml.fromTreeToDsl(OptionalDslBuilder.this.tree)./@(attribs))
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          2575
+        </td>
+        <td>
+          1781
+          -
+          1796
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.dsl.DslBuilder./@
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.ScalesXml.fromTreeToDsl(OptionalDslBuilder.this.tree)./@(attrib)
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          2576
+        </td>
+        <td>
+          1781
+          -
+          1796
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scales.xml.dsl.OptionalDslBuilder.dslToOptional
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          OptionalDslBuilder.this.dslToOptional(scales.xml.ScalesXml.fromTreeToDsl(OptionalDslBuilder.this.tree)./@(attrib))
+        </td>
+      </tr><tr>
+        <td>
+          69
+        </td>
+        <td>
+          2577
+        </td>
+        <td>
+          1969
+          -
+          1984
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.dsl.DslBuilder./@
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.xml.ScalesXml.fromTreeToDsl(OptionalDslBuilder.this.tree)./@(attrib)
+        </td>
+      </tr><tr>
+        <td>
+          69
+        </td>
+        <td>
+          2578
+        </td>
+        <td>
+          1969
+          -
+          1984
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scales.xml.dsl.OptionalDslBuilder.dslToOptional
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          OptionalDslBuilder.this.dslToOptional(scales.xml.ScalesXml.fromTreeToDsl(OptionalDslBuilder.this.tree)./@(attrib))
+        </td>
+      </tr><tr>
+        <td>
+          72
+        </td>
+        <td>
+          2579
+        </td>
+        <td>
+          2075
+          -
+          2079
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.dsl.OptionalDslBuilder.tree
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          OptionalDslBuilder.this.tree
+        </td>
+      </tr><tr>
+        <td>
+          72
+        </td>
+        <td>
+          2583
+        </td>
+        <td>
+          2082
+          -
+          2153
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.TraversableLike.filter
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          itemOrElems.filter(((x$1: scales.xml.ItemOrElem) =&gt; x$1.fold[Boolean](((i: scales.xml.XmlItem) =&gt; true), ((t: scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]) =&gt; scales.xml.`package`.isEmptyTree(t).unary_!))))
+        </td>
+      </tr><tr>
+        <td>
+          72
+        </td>
+        <td>
+          2584
+        </td>
+        <td>
+          2075
+          -
+          2154
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.dsl.DslBuilder./
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.ScalesXml.fromTreeToDsl(OptionalDslBuilder.this.tree)./(itemOrElems.filter(((x$1: scales.xml.ItemOrElem) =&gt; x$1.fold[Boolean](((i: scales.xml.XmlItem) =&gt; true), ((t: scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]) =&gt; scales.xml.`package`.isEmptyTree(t).unary_!)))))
+        </td>
+      </tr><tr>
+        <td>
+          72
+        </td>
+        <td>
+          2585
+        </td>
+        <td>
+          2075
+          -
+          2154
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scales.xml.dsl.OptionalDslBuilder.dslToOptional
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          OptionalDslBuilder.this.dslToOptional(scales.xml.ScalesXml.fromTreeToDsl(OptionalDslBuilder.this.tree)./(itemOrElems.filter(((x$1: scales.xml.ItemOrElem) =&gt; x$1.fold[Boolean](((i: scales.xml.XmlItem) =&gt; true), ((t: scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]) =&gt; scales.xml.`package`.isEmptyTree(t).unary_!))))))
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          2580
+        </td>
+        <td>
+          2120
+          -
+          2124
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          2581
+        </td>
+        <td>
+          2131
+          -
+          2146
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.`package`.isEmptyTree(t).unary_!
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          2582
+        </td>
+        <td>
+          2108
+          -
+          2147
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.EitherLike.fold
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$1.fold[Boolean](((i: scales.xml.XmlItem) =&gt; true), ((t: scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]) =&gt; scales.xml.`package`.isEmptyTree(t).unary_!))
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          2586
+        </td>
+        <td>
+          2297
+          -
+          2322
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.dsl.OptionalDslBuilder.addNonEmptys
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          OptionalDslBuilder.this.addNonEmptys(itemOrElems)
+        </td>
+      </tr><tr>
+        <td>
+          86
+        </td>
+        <td>
+          2587
+        </td>
+        <td>
+          2455
+          -
+          2480
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.dsl.OptionalDslBuilder.addNonEmptys
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          OptionalDslBuilder.this.addNonEmptys(itemOrElems)
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          2588
+        </td>
+        <td>
+          2627
+          -
+          2631
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.dsl.OptionalDslBuilder.tree
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          OptionalDslBuilder.this.tree
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          2589
+        </td>
+        <td>
+          2634
+          -
+          2659
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.dsl.OptionalDslBuilder.toOptionalTree
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          itemOrElem.toOptionalTree
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          2590
+        </td>
+        <td>
+          2627
+          -
+          2660
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.dsl.DslBuilder./
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.ScalesXml.fromTreeToDsl(OptionalDslBuilder.this.tree)./(itemOrElem.toOptionalTree)
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          2591
+        </td>
+        <td>
+          2627
+          -
+          2660
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scales.xml.dsl.OptionalDslBuilder.dslToOptional
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          OptionalDslBuilder.this.dslToOptional(scales.xml.ScalesXml.fromTreeToDsl(OptionalDslBuilder.this.tree)./(itemOrElem.toOptionalTree))
+        </td>
+      </tr><tr>
+        <td>
+          98
+        </td>
+        <td>
+          2592
+        </td>
+        <td>
+          2821
+          -
+          2825
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.dsl.OptionalDslBuilder.tree
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          OptionalDslBuilder.this.tree
+        </td>
+      </tr><tr>
+        <td>
+          98
+        </td>
+        <td>
+          2593
+        </td>
+        <td>
+          2828
+          -
+          2853
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.dsl.OptionalDslBuilder.toOptionalTree
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          itemOrElem.toOptionalTree
+        </td>
+      </tr><tr>
+        <td>
+          98
+        </td>
+        <td>
+          2594
+        </td>
+        <td>
+          2821
+          -
+          2854
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.dsl.DslBuilder./
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.ScalesXml.fromTreeToDsl(OptionalDslBuilder.this.tree)./(itemOrElem.toOptionalTree)
+        </td>
+      </tr><tr>
+        <td>
+          98
+        </td>
+        <td>
+          2595
+        </td>
+        <td>
+          2821
+          -
+          2854
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scales.xml.dsl.OptionalDslBuilder.dslToOptional
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          OptionalDslBuilder.this.dslToOptional(scales.xml.ScalesXml.fromTreeToDsl(OptionalDslBuilder.this.tree)./(itemOrElem.toOptionalTree))
+        </td>
+      </tr><tr>
+        <td>
+          104
+        </td>
+        <td>
+          2596
+        </td>
+        <td>
+          3038
+          -
+          3057
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.dsl.OptionalDslBuilder.addOptionals
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          OptionalDslBuilder.this.addOptionals(items)
+        </td>
+      </tr><tr>
+        <td>
+          110
+        </td>
+        <td>
+          2597
+        </td>
+        <td>
+          3230
+          -
+          3249
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.dsl.OptionalDslBuilder.addOptionals
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          OptionalDslBuilder.this.addOptionals(items)
+        </td>
+      </tr><tr>
+        <td>
+          113
+        </td>
+        <td>
+          2598
+        </td>
+        <td>
+          3346
+          -
+          3350
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.dsl.OptionalDslBuilder.tree
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          OptionalDslBuilder.this.tree
+        </td>
+      </tr><tr>
+        <td>
+          113
+        </td>
+        <td>
+          2599
+        </td>
+        <td>
+          3374
+          -
+          3390
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.dsl.OptionalDslBuilder.toOptionalTree
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$2.toOptionalTree
+        </td>
+      </tr><tr>
+        <td>
+          113
+        </td>
+        <td>
+          2600
+        </td>
+        <td>
+          3373
+          -
+          3373
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.Iterable.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.Iterable.canBuildFrom[Option[scales.xml.XmlTree]]
+        </td>
+      </tr><tr>
+        <td>
+          113
+        </td>
+        <td>
+          2601
+        </td>
+        <td>
+          3364
+          -
+          3391
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableLike.map
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          items.map[Option[scales.xml.XmlTree], Iterable[Option[scales.xml.XmlTree]]](((x$2: scales.xml.dsl.OptionalDslBuilder) =&gt; x$2.toOptionalTree))(collection.this.Iterable.canBuildFrom[Option[scales.xml.XmlTree]])
+        </td>
+      </tr><tr>
+        <td>
+          113
+        </td>
+        <td>
+          2602
+        </td>
+        <td>
+          3346
+          -
+          3392
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.dsl.DslBuilder.addOptionals
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.ScalesXml.fromTreeToDsl(OptionalDslBuilder.this.tree).addOptionals(items.map[Option[scales.xml.XmlTree], Iterable[Option[scales.xml.XmlTree]]](((x$2: scales.xml.dsl.OptionalDslBuilder) =&gt; x$2.toOptionalTree))(collection.this.Iterable.canBuildFrom[Option[scales.xml.XmlTree]]))
+        </td>
+      </tr><tr>
+        <td>
+          113
+        </td>
+        <td>
+          2603
+        </td>
+        <td>
+          3346
+          -
+          3392
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scales.xml.dsl.OptionalDslBuilder.dslToOptional
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          OptionalDslBuilder.this.dslToOptional(scales.xml.ScalesXml.fromTreeToDsl(OptionalDslBuilder.this.tree).addOptionals(items.map[Option[scales.xml.XmlTree], Iterable[Option[scales.xml.XmlTree]]](((x$2: scales.xml.dsl.OptionalDslBuilder) =&gt; x$2.toOptionalTree))(collection.this.Iterable.canBuildFrom[Option[scales.xml.XmlTree]])))
+        </td>
+      </tr><tr>
+        <td>
+          119
+        </td>
+        <td>
+          2604
+        </td>
+        <td>
+          3552
+          -
+          3576
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.dsl.OptionalDslBuilder.addOptionals
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          OptionalDslBuilder.this.addOptionals(itemOrElem)
+        </td>
+      </tr><tr>
+        <td>
+          125
+        </td>
+        <td>
+          2605
+        </td>
+        <td>
+          3750
+          -
+          3774
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.dsl.OptionalDslBuilder.addOptionals
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          OptionalDslBuilder.this.addOptionals(itemOrElem)
+        </td>
+      </tr><tr>
+        <td>
+          131
+        </td>
+        <td>
+          2606
+        </td>
+        <td>
+          4052
+          -
+          4066
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.dsl.DslBuilder.~&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.ScalesXml.fromTreeToDsl(OptionalDslBuilder.this.tree).~&gt;(value)
+        </td>
+      </tr><tr>
+        <td>
+          131
+        </td>
+        <td>
+          2607
+        </td>
+        <td>
+          4052
+          -
+          4066
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scales.xml.dsl.OptionalDslBuilder.dslToOptional
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          OptionalDslBuilder.this.dslToOptional(scales.xml.ScalesXml.fromTreeToDsl(OptionalDslBuilder.this.tree).~&gt;(value))
+        </td>
+      </tr><tr>
+        <td>
+          136
+        </td>
+        <td>
+          2608
+        </td>
+        <td>
+          4160
+          -
+          4170
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.dsl.OptionalDslBuilder.?~&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          OptionalDslBuilder.this.?~&gt;(value)
+        </td>
+      </tr><tr>
+        <td>
+          148
+        </td>
+        <td>
+          2609
+        </td>
+        <td>
+          4463
+          -
+          4477
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.dsl.DslBuilder.~&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.ScalesXml.fromTreeToDsl(OptionalDslBuilder.this.tree).~&gt;(value)
+        </td>
+      </tr><tr>
+        <td>
+          148
+        </td>
+        <td>
+          2610
+        </td>
+        <td>
+          4463
+          -
+          4477
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scales.xml.dsl.OptionalDslBuilder.dslToOptional
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          OptionalDslBuilder.this.dslToOptional(scales.xml.ScalesXml.fromTreeToDsl(OptionalDslBuilder.this.tree).~&gt;(value))
+        </td>
+      </tr><tr>
+        <td>
+          153
+        </td>
+        <td>
+          2611
+        </td>
+        <td>
+          4589
+          -
+          4599
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.dsl.OptionalDslBuilder.?~&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          OptionalDslBuilder.this.?~&gt;(value)
+        </td>
+      </tr><tr>
+        <td>
+          161
+        </td>
+        <td>
+          2612
+        </td>
+        <td>
+          4848
+          -
+          4852
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.dsl.OptionalDslBuilder.tree
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          OptionalDslBuilder.this.tree
+        </td>
+      </tr><tr>
+        <td>
+          161
+        </td>
+        <td>
+          2613
+        </td>
+        <td>
+          4836
+          -
+          4853
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.XmlUtils.isEmptyTree
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.`package`.isEmptyTree(OptionalDslBuilder.this.tree)
+        </td>
+      </tr><tr>
+        <td>
+          162
+        </td>
+        <td>
+          2614
+        </td>
+        <td>
+          4861
+          -
+          4865
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          162
+        </td>
+        <td>
+          2615
+        </td>
+        <td>
+          4861
+          -
+          4865
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          164
+        </td>
+        <td>
+          2616
+        </td>
+        <td>
+          4886
+          -
+          4890
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.dsl.OptionalDslBuilder.tree
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          OptionalDslBuilder.this.tree
+        </td>
+      </tr><tr>
+        <td>
+          164
+        </td>
+        <td>
+          2617
+        </td>
+        <td>
+          4881
+          -
+          4891
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[scales.xml.XmlTree](OptionalDslBuilder.this.tree)
+        </td>
+      </tr><tr>
+        <td>
+          164
+        </td>
+        <td>
+          2618
+        </td>
+        <td>
+          4881
+          -
+          4891
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[scales.xml.XmlTree](OptionalDslBuilder.this.tree)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

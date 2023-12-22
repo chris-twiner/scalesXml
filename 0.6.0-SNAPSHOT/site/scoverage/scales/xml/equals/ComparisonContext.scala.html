@@ -1,0 +1,2393 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/xml/equals/ComparisonContext.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.xml.equals
+</span>2 <span style=''>
+</span>3 <span style=''>import scales.xml.{PullType, QName, Elem, Attribs, Attributes, Attribute, XmlItem, XmlPath, EndElem, XCC, Misc, Miscs}
+</span>4 <span style=''>import scales.xml.serializers.NamespaceContext
+</span>5 <span style=''>
+</span>6 <span style=''>import scala.collection.immutable.Map
+</span>7 <span style=''>
+</span>8 <span style=''>import BasicPaths._
+</span>9 <span style=''>
+</span>10 <span style=''>/**
+</span>11 <span style=''> * ComparisonContext represents both the path to a given comparison and the namespace declarations which are relevant for it.
+</span>12 <span style=''> *
+</span>13 <span style=''> * @param streamPosition is incremented for each processed item in the stream, allowing a simple take to get the difference in terms of the stream, the developer can then use this with toDifferenceAsStream to capture the difference. It is only provided when a difference is found within a stream and not during the difference analysis.
+</span>14 <span style=''> */
+</span>15 <span style=''>class ComparisonContext private (private val lnc : NamespaceContext = null, 
+</span>16 <span style=''>				 private val rnc : NamespaceContext = null, 
+</span>17 <span style=''>	 val path : BasicPath, private val parent : ComparisonContext = null, val streamPosition : Int = 0) {
+</span>18 <span style=''>
+</span>19 <span style=''>  def withPosition( newStreamPosition : Int ) = 
+</span>20 <span style=''>    </span><span style='background: #AEF1AE'>new ComparisonContext(lnc, rnc, path, parent, newStreamPosition)</span><span style=''>
+</span>21 <span style=''>
+</span>22 <span style=''>  /**
+</span>23 <span style=''>   * Provides a stream for the given T up to the difference represented by this context.  Callers are responsible for handling any IO handles or capturing an original stream.
+</span>24 <span style=''>   */
+</span>25 <span style=''>  def toDifferenceAsStream[T](t : T, filter : Iterator[PullType] =&gt; Iterator[PullType] = LogicalFilters.joinTextAndCData(_))(implicit tv : T =&gt; StreamComparable[T]) : Stream[PullType] = </span><span style='background: #AEF1AE'>filter( tv(t).underlyingIterator ).take(streamPosition).toStream</span><span style=''>
+</span>26 <span style=''>
+</span>27 <span style=''>  import ComparisonContext.emptyWithDefault
+</span>28 <span style=''>
+</span>29 <span style=''>  def leftNamespaceContext : Option[NamespaceContext] = 
+</span>30 <span style=''>    </span><span style='background: #AEF1AE'>Option(lnc)</span><span style=''>
+</span>31 <span style=''>
+</span>32 <span style=''>  def rightNamespaceContext : Option[NamespaceContext] = 
+</span>33 <span style=''>    </span><span style='background: #AEF1AE'>Option(rnc)</span><span style=''>
+</span>34 <span style=''>
+</span>35 <span style=''>  /**
+</span>36 <span style=''>   * Pushes a new elem on the stack, modifying the parents counts as it goes
+</span>37 <span style=''>   */ 
+</span>38 <span style=''>  def startElems( leftElem : Elem, rightElem : Elem ) : ComparisonContext = 
+</span>39 <span style=''>    </span><span style='background: #AEF1AE'>new ComparisonContext(
+</span>40 <span style=''></span><span style='background: #AEF1AE'>      scales.xml.doElement(leftElem, 
+</span>41 <span style=''></span><span style='background: #AEF1AE'>			   if (lnc eq null) 
+</span>42 <span style=''></span><span style='background: #AEF1AE'>			     emptyWithDefault
+</span>43 <span style=''></span><span style='background: #AEF1AE'>			   else
+</span>44 <span style=''></span><span style='background: #AEF1AE'>			     lnc.mappings)
+</span>45 <span style=''></span><span style='background: #AEF1AE'>    , scales.xml.doElement(rightElem, 
+</span>46 <span style=''></span><span style='background: #AEF1AE'>			   if (rnc eq null) 
+</span>47 <span style=''></span><span style='background: #AEF1AE'>			     emptyWithDefault
+</span>48 <span style=''></span><span style='background: #AEF1AE'>			   else
+</span>49 <span style=''></span><span style='background: #AEF1AE'>			     rnc.mappings)
+</span>50 <span style=''></span><span style='background: #AEF1AE'>    , if (path.isEmpty)
+</span>51 <span style=''></span><span style='background: #AEF1AE'>	scales.utils.one((leftElem.name, Map[String, Int]()))
+</span>52 <span style=''></span><span style='background: #AEF1AE'>      else {
+</span>53 <span style=''></span><span style='background: #AEF1AE'>	val qname = leftElem.name
+</span>54 <span style=''></span><span style='background: #AEF1AE'>
+</span>55 <span style=''></span><span style='background: #AEF1AE'>	val (h :: r) = path
+</span>56 <span style=''></span><span style='background: #AEF1AE'>	val qn = qname.qualifiedName
+</span>57 <span style=''></span><span style='background: #AEF1AE'>	val count = h._2.get(qn).getOrElse(0)
+</span>58 <span style=''></span><span style='background: #AEF1AE'>	(qname, Map[String, Int]()) :: 
+</span>59 <span style=''></span><span style='background: #AEF1AE'>	(h._1, h._2.updated(qn, count + 1)) :: r
+</span>60 <span style=''></span><span style='background: #AEF1AE'>      }
+</span>61 <span style=''></span><span style='background: #AEF1AE'>    , this)</span><span style=''>
+</span>62 <span style=''>
+</span>63 <span style=''>  /**
+</span>64 <span style=''>   * Produces an XPath like string.  Make this a full one?
+</span>65 <span style=''>   */ 
+</span>66 <span style=''>  def pathString : String = {
+</span>67 <span style=''>    var str = </span><span style='background: #AEF1AE'>&quot;&quot;</span><span style=''>
+</span>68 <span style=''>    var l = </span><span style='background: #AEF1AE'>path</span><span style=''>//.reverse
+</span>69 <span style=''>    while( </span><span style='background: #AEF1AE'>! l.isEmpty</span><span style=''> ) </span><span style='background: #AEF1AE'>{
+</span>70 <span style=''></span><span style='background: #AEF1AE'>      val head :: tail = l
+</span>71 <span style=''></span><span style='background: #AEF1AE'>      l = tail
+</span>72 <span style=''></span><span style='background: #AEF1AE'>
+</span>73 <span style=''></span><span style='background: #AEF1AE'>      val qn = head._1.qualifiedName
+</span>74 <span style=''></span><span style='background: #AEF1AE'>      val count =
+</span>75 <span style=''></span><span style='background: #AEF1AE'>	if (tail.isEmpty) 1 
+</span>76 <span style=''></span><span style='background: #AEF1AE'>	else {
+</span>77 <span style=''></span><span style='background: #AEF1AE'>          val nhead :: rest = tail
+</span>78 <span style=''></span><span style='background: #AEF1AE'>	  nhead._2(qn)
+</span>79 <span style=''></span><span style='background: #AEF1AE'>	}
+</span>80 <span style=''></span><span style='background: #AEF1AE'>      
+</span>81 <span style=''></span><span style='background: #AEF1AE'>      str = &quot;/&quot;+ qn + &quot;[&quot;+ count +&quot;]&quot; + str
+</span>82 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>83 <span style=''>    str
+</span>84 <span style=''>  }
+</span>85 <span style=''>
+</span>86 <span style=''>  /**
+</span>87 <span style=''>   * path.tail, pops the head off as it moves up, counts are not changed
+</span>88 <span style=''>   */ 
+</span>89 <span style=''>  def endElem : ComparisonContext = 
+</span>90 <span style=''>    if (</span><span style='background: #AEF1AE'>parent eq null</span><span style=''>)
+</span>91 <span style=''>      </span><span style='background: #F0ADAD'>scales.utils.error(&quot;Cannot call endElem on a root context&quot;)</span><span style=''>
+</span>92 <span style=''>    else
+</span>93 <span style=''>      // the path's count must be kept, everything else should come from the 
+</span>94 <span style=''>      // parent
+</span>95 <span style=''>      </span><span style='background: #AEF1AE'>new ComparisonContext(parent.lnc, parent.rnc, path.tail, parent.parent)</span><span style=''>
+</span>96 <span style=''>  
+</span>97 <span style=''>  def parentContext : Option[ComparisonContext] = 
+</span>98 <span style=''>    </span><span style='background: #AEF1AE'>Option(parent)</span><span style=''>
+</span>99 <span style=''>}
+</span>100 <span style=''>
+</span>101 <span style=''>object ComparisonContext {
+</span>102 <span style=''>  protected[xml] val emptyWithDefault = </span><span style='background: #AEF1AE'>Map(&quot;&quot;-&gt;&quot;&quot;)</span><span style=''>
+</span>103 <span style=''>
+</span>104 <span style=''>  /**
+</span>105 <span style=''>   * Creates a new context with the given starting path
+</span>106 <span style=''>   */ 
+</span>107 <span style=''>  def apply(path : BasicPath) : ComparisonContext =
+</span>108 <span style=''>    </span><span style='background: #AEF1AE'>new ComparisonContext(null, null, path, null)</span><span style=''>
+</span>109 <span style=''>
+</span>110 <span style=''>  def apply() : ComparisonContext =
+</span>111 <span style=''>    </span><span style='background: #AEF1AE'>new ComparisonContext(null, null, Nil, null)</span><span style=''>
+</span>112 <span style=''>
+</span>113 <span style=''>  val empty = </span><span style='background: #AEF1AE'>apply()</span><span style=''>
+</span>114 <span style=''>
+</span>115 <span style=''>  def unapply( c : ComparisonContext ) : Option[(Option[NamespaceContext], Option[NamespaceContext], BasicPath, Option[ComparisonContext])] = 
+</span>116 <span style=''>    </span><span style='background: #AEF1AE'>Some(c.leftNamespaceContext, c.rightNamespaceContext, c.path,
+</span>117 <span style=''></span><span style='background: #AEF1AE'>	 c.parentContext)</span><span style=''>
+</span>118 <span style=''>}
+</span>119 <span style=''>
+</span>120 <span style=''>/**
+</span>121 <span style=''> * Provides an immplicit to easily access the head QName in a path
+</span>122 <span style=''> */ 
+</span>123 <span style=''>trait ComparisonContextImplicits {
+</span>124 <span style=''>  
+</span>125 <span style=''>  implicit object BasicPathNames extends scales.xml.xpath.Names[BasicPath] {
+</span>126 <span style=''>    def name(implicit t : BasicPath) : Option[scales.xml.QName] = 
+</span>127 <span style=''>      </span><span style='background: #AEF1AE'>t.headOption.map( _._1 )</span><span style=''>
+</span>128 <span style=''>  }
+</span>129 <span style=''>
+</span>130 <span style=''>  implicit object ComparisonContextNames extends scales.xml.xpath.Names[ComparisonContext] {
+</span>131 <span style=''>    def name(implicit t : ComparisonContext) : Option[scales.xml.QName] = 
+</span>132 <span style=''>      </span><span style='background: #AEF1AE'>t.path.headOption.map( _._1 )</span><span style=''>
+</span>133 <span style=''>  }
+</span>134 <span style=''>
+</span>135 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          2618
+        </td>
+        <td>
+          1032
+          -
+          1035
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.ComparisonContext.lnc
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ComparisonContext.this.lnc
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          2619
+        </td>
+        <td>
+          1037
+          -
+          1040
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.ComparisonContext.rnc
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ComparisonContext.this.rnc
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          2620
+        </td>
+        <td>
+          1042
+          -
+          1046
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.ComparisonContext.path
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ComparisonContext.this.path
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          2621
+        </td>
+        <td>
+          1048
+          -
+          1054
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.ComparisonContext.parent
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ComparisonContext.this.parent
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          2622
+        </td>
+        <td>
+          1010
+          -
+          1074
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.ComparisonContext.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new ComparisonContext(ComparisonContext.this.lnc, ComparisonContext.this.rnc, ComparisonContext.this.path, ComparisonContext.this.parent, newStreamPosition)
+        </td>
+      </tr><tr>
+        <td>
+          25
+        </td>
+        <td>
+          2623
+        </td>
+        <td>
+          1457
+          -
+          1481
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.StreamComparable.underlyingIterator
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          tv.apply(t).underlyingIterator
+        </td>
+      </tr><tr>
+        <td>
+          25
+        </td>
+        <td>
+          2624
+        </td>
+        <td>
+          1489
+          -
+          1503
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.ComparisonContext.streamPosition
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ComparisonContext.this.streamPosition
+        </td>
+      </tr><tr>
+        <td>
+          25
+        </td>
+        <td>
+          2625
+        </td>
+        <td>
+          1449
+          -
+          1513
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.Iterator.toStream
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          filter.apply(tv.apply(t).underlyingIterator).take(ComparisonContext.this.streamPosition).toStream
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          2626
+        </td>
+        <td>
+          1628
+          -
+          1631
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.ComparisonContext.lnc
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ComparisonContext.this.lnc
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          2627
+        </td>
+        <td>
+          1621
+          -
+          1632
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Option.apply[scales.xml.serializers.NamespaceContext](ComparisonContext.this.lnc)
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          2628
+        </td>
+        <td>
+          1703
+          -
+          1706
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.ComparisonContext.rnc
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ComparisonContext.this.rnc
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          2629
+        </td>
+        <td>
+          1696
+          -
+          1707
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Option.apply[scales.xml.serializers.NamespaceContext](ComparisonContext.this.rnc)
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          2655
+        </td>
+        <td>
+          1880
+          -
+          2448
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.ComparisonContext.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new ComparisonContext(scales.xml.`package`.doElement(leftElem, if (ComparisonContext.this.lnc.eq(null))
+  ComparisonContext.emptyWithDefault
+else
+  ComparisonContext.this.lnc.mappings), scales.xml.`package`.doElement(rightElem, if (ComparisonContext.this.rnc.eq(null))
+  ComparisonContext.emptyWithDefault
+else
+  ComparisonContext.this.rnc.mappings), if (ComparisonContext.this.path.isEmpty)
+  scales.utils.`package`.one[(scales.xml.QName, scala.collection.immutable.Map[String,Int])](scala.Tuple2.apply[scales.xml.QName, scala.collection.immutable.Map[String,Int]](leftElem.name, scala.collection.immutable.Map.apply[String, Int]()))
+else
+  {
+    val qname: scales.xml.QName = leftElem.name;
+    &lt;synthetic&gt; &lt;artifact&gt; private[this] val x$2: (scales.xml.equals.BasicPaths.BasicPathA, List[scales.xml.equals.BasicPaths.BasicPathA]) = (ComparisonContext.this.path: scales.xml.equals.BasicPaths.BasicPath @unchecked) match {
+      case (head: scales.xml.equals.BasicPaths.BasicPathA, tl: List[scales.xml.equals.BasicPaths.BasicPathA])scala.collection.immutable.::[scales.xml.equals.BasicPaths.BasicPathA]((h @ _), (r @ _)) =&gt; scala.Tuple2.apply[scales.xml.equals.BasicPaths.BasicPathA, List[scales.xml.equals.BasicPaths.BasicPathA]](h, r)
+    };
+    val h: scales.xml.equals.BasicPaths.BasicPathA = x$2._1;
+    val r: List[scales.xml.equals.BasicPaths.BasicPathA] = x$2._2;
+    val qn: String = qname.qualifiedName;
+    val count: Int = h._2.get(qn).getOrElse[Int](0);
+    {
+      &lt;synthetic&gt; &lt;artifact&gt; val x$4: (scales.xml.QName, scala.collection.immutable.Map[String,Int]) = scala.Tuple2.apply[scales.xml.QName, scala.collection.immutable.Map[String,Int]](qname, scala.collection.immutable.Map.apply[String, Int]());
+      {
+  &lt;synthetic&gt; &lt;artifact&gt; val x$3: (scales.xml.QName, scala.collection.immutable.Map[String,Int]) = scala.Tuple2.apply[scales.xml.QName, scala.collection.immutable.Map[String,Int]](h._1, h._2.updated[Int](qn, count.+(1)));
+  r.::[scales.xml.equals.BasicPaths.BasicPathA](x$3)
+}.::[scales.xml.equals.BasicPaths.BasicPathA](x$4)
+    }
+  }, this, equals.this.ComparisonContext.&lt;init&gt;$default$5)
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          2635
+        </td>
+        <td>
+          1909
+          -
+          2022
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.XmlPrinter.doElement
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.`package`.doElement(leftElem, if (ComparisonContext.this.lnc.eq(null))
+  ComparisonContext.emptyWithDefault
+else
+  ComparisonContext.this.lnc.mappings)
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          2630
+        </td>
+        <td>
+          1951
+          -
+          1962
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ComparisonContext.this.lnc.eq(null)
+        </td>
+      </tr><tr>
+        <td>
+          42
+        </td>
+        <td>
+          2631
+        </td>
+        <td>
+          1973
+          -
+          1989
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.ComparisonContext.emptyWithDefault
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ComparisonContext.emptyWithDefault
+        </td>
+      </tr><tr>
+        <td>
+          42
+        </td>
+        <td>
+          2632
+        </td>
+        <td>
+          1973
+          -
+          1989
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.equals.ComparisonContext.emptyWithDefault
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ComparisonContext.emptyWithDefault
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          2633
+        </td>
+        <td>
+          2009
+          -
+          2021
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.NamespaceContext.mappings
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ComparisonContext.this.lnc.mappings
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          2634
+        </td>
+        <td>
+          2009
+          -
+          2021
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.serializers.NamespaceContext.mappings
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ComparisonContext.this.lnc.mappings
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          2641
+        </td>
+        <td>
+          2029
+          -
+          2143
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.XmlPrinter.doElement
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.`package`.doElement(rightElem, if (ComparisonContext.this.rnc.eq(null))
+  ComparisonContext.emptyWithDefault
+else
+  ComparisonContext.this.rnc.mappings)
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          2636
+        </td>
+        <td>
+          2072
+          -
+          2083
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ComparisonContext.this.rnc.eq(null)
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          2637
+        </td>
+        <td>
+          2094
+          -
+          2110
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.ComparisonContext.emptyWithDefault
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ComparisonContext.emptyWithDefault
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          2638
+        </td>
+        <td>
+          2094
+          -
+          2110
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.equals.ComparisonContext.emptyWithDefault
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ComparisonContext.emptyWithDefault
+        </td>
+      </tr><tr>
+        <td>
+          49
+        </td>
+        <td>
+          2639
+        </td>
+        <td>
+          2130
+          -
+          2142
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.NamespaceContext.mappings
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ComparisonContext.this.rnc.mappings
+        </td>
+      </tr><tr>
+        <td>
+          49
+        </td>
+        <td>
+          2640
+        </td>
+        <td>
+          2130
+          -
+          2142
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.serializers.NamespaceContext.mappings
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ComparisonContext.this.rnc.mappings
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          2642
+        </td>
+        <td>
+          2154
+          -
+          2166
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.SeqLike.isEmpty
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ComparisonContext.this.path.isEmpty
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          2643
+        </td>
+        <td>
+          2187
+          -
+          2200
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Elem.name
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          leftElem.name
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          2644
+        </td>
+        <td>
+          2202
+          -
+          2220
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.generic.GenMapFactory.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.collection.immutable.Map.apply[String, Int]()
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          2645
+        </td>
+        <td>
+          2186
+          -
+          2221
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[scales.xml.QName, scala.collection.immutable.Map[String,Int]](leftElem.name, scala.collection.immutable.Map.apply[String, Int]())
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          2646
+        </td>
+        <td>
+          2169
+          -
+          2222
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.one
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.one[(scales.xml.QName, scala.collection.immutable.Map[String,Int])](scala.Tuple2.apply[scales.xml.QName, scala.collection.immutable.Map[String,Int]](leftElem.name, scala.collection.immutable.Map.apply[String, Int]()))
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          2647
+        </td>
+        <td>
+          2169
+          -
+          2222
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.one
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.one[(scales.xml.QName, scala.collection.immutable.Map[String,Int])](scala.Tuple2.apply[scales.xml.QName, scala.collection.immutable.Map[String,Int]](leftElem.name, scala.collection.immutable.Map.apply[String, Int]()))
+        </td>
+      </tr><tr>
+        <td>
+          52
+        </td>
+        <td>
+          2654
+        </td>
+        <td>
+          2234
+          -
+          2436
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val qname: scales.xml.QName = leftElem.name;
+  &lt;synthetic&gt; &lt;artifact&gt; private[this] val x$2: (scales.xml.equals.BasicPaths.BasicPathA, List[scales.xml.equals.BasicPaths.BasicPathA]) = (ComparisonContext.this.path: scales.xml.equals.BasicPaths.BasicPath @unchecked) match {
+    case (head: scales.xml.equals.BasicPaths.BasicPathA, tl: List[scales.xml.equals.BasicPaths.BasicPathA])scala.collection.immutable.::[scales.xml.equals.BasicPaths.BasicPathA]((h @ _), (r @ _)) =&gt; scala.Tuple2.apply[scales.xml.equals.BasicPaths.BasicPathA, List[scales.xml.equals.BasicPaths.BasicPathA]](h, r)
+  };
+  val h: scales.xml.equals.BasicPaths.BasicPathA = x$2._1;
+  val r: List[scales.xml.equals.BasicPaths.BasicPathA] = x$2._2;
+  val qn: String = qname.qualifiedName;
+  val count: Int = h._2.get(qn).getOrElse[Int](0);
+  {
+    &lt;synthetic&gt; &lt;artifact&gt; val x$4: (scales.xml.QName, scala.collection.immutable.Map[String,Int]) = scala.Tuple2.apply[scales.xml.QName, scala.collection.immutable.Map[String,Int]](qname, scala.collection.immutable.Map.apply[String, Int]());
+    {
+  &lt;synthetic&gt; &lt;artifact&gt; val x$3: (scales.xml.QName, scala.collection.immutable.Map[String,Int]) = scala.Tuple2.apply[scales.xml.QName, scala.collection.immutable.Map[String,Int]](h._1, h._2.updated[Int](qn, count.+(1)));
+  r.::[scales.xml.equals.BasicPaths.BasicPathA](x$3)
+}.::[scales.xml.equals.BasicPaths.BasicPathA](x$4)
+  }
+}
+        </td>
+      </tr><tr>
+        <td>
+          53
+        </td>
+        <td>
+          2648
+        </td>
+        <td>
+          2249
+          -
+          2262
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Elem.name
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          leftElem.name
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          2649
+        </td>
+        <td>
+          2270
+          -
+          2270
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$2._1
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          2650
+        </td>
+        <td>
+          2275
+          -
+          2275
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$2._2
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          2651
+        </td>
+        <td>
+          2295
+          -
+          2314
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.QName.qualifiedName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          qname.qualifiedName
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          2652
+        </td>
+        <td>
+          2328
+          -
+          2353
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.getOrElse
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          h._2.get(qn).getOrElse[Int](0)
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          2653
+        </td>
+        <td>
+          2355
+          -
+          2428
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.List.::
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  &lt;synthetic&gt; &lt;artifact&gt; val x$3: (scales.xml.QName, scala.collection.immutable.Map[String,Int]) = scala.Tuple2.apply[scales.xml.QName, scala.collection.immutable.Map[String,Int]](h._1, h._2.updated[Int](qn, count.+(1)));
+  r.::[scales.xml.equals.BasicPaths.BasicPathA](x$3)
+}.::[scales.xml.equals.BasicPaths.BasicPathA](x$4)
+        </td>
+      </tr><tr>
+        <td>
+          67
+        </td>
+        <td>
+          2656
+        </td>
+        <td>
+          2566
+          -
+          2568
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;&quot;
+        </td>
+      </tr><tr>
+        <td>
+          68
+        </td>
+        <td>
+          2657
+        </td>
+        <td>
+          2581
+          -
+          2585
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.ComparisonContext.path
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ComparisonContext.this.path
+        </td>
+      </tr><tr>
+        <td>
+          69
+        </td>
+        <td>
+          2658
+        </td>
+        <td>
+          2607
+          -
+          2618
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          l.isEmpty.unary_!
+        </td>
+      </tr><tr>
+        <td>
+          69
+        </td>
+        <td>
+          2670
+        </td>
+        <td>
+          2621
+          -
+          2621
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.ComparisonContext.while$1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          while$1()
+        </td>
+      </tr><tr>
+        <td>
+          69
+        </td>
+        <td>
+          2671
+        </td>
+        <td>
+          2621
+          -
+          2861
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  {
+    &lt;synthetic&gt; &lt;artifact&gt; private[this] val x$5: (scales.xml.equals.BasicPaths.BasicPathA, List[scales.xml.equals.BasicPaths.BasicPathA]) = (l: scales.xml.equals.BasicPaths.BasicPath @unchecked) match {
+      case (head: scales.xml.equals.BasicPaths.BasicPathA, tl: List[scales.xml.equals.BasicPaths.BasicPathA])scala.collection.immutable.::[scales.xml.equals.BasicPaths.BasicPathA]((head @ _), (tail @ _)) =&gt; scala.Tuple2.apply[scales.xml.equals.BasicPaths.BasicPathA, List[scales.xml.equals.BasicPaths.BasicPathA]](head, tail)
+    };
+    val head: scales.xml.equals.BasicPaths.BasicPathA = x$5._1;
+    val tail: List[scales.xml.equals.BasicPaths.BasicPathA] = x$5._2;
+    l = tail;
+    val qn: String = head._1.qualifiedName;
+    val count: Int = if (tail.isEmpty)
+      1
+    else
+      {
+        &lt;synthetic&gt; &lt;artifact&gt; private[this] val x$6: (scales.xml.equals.BasicPaths.BasicPathA, List[scales.xml.equals.BasicPaths.BasicPathA]) = (tail: List[scales.xml.equals.BasicPaths.BasicPathA] @unchecked) match {
+          case (head: scales.xml.equals.BasicPaths.BasicPathA, tl: List[scales.xml.equals.BasicPaths.BasicPathA])scala.collection.immutable.::[scales.xml.equals.BasicPaths.BasicPathA]((nhead @ _), (rest @ _)) =&gt; scala.Tuple2.apply[scales.xml.equals.BasicPaths.BasicPathA, List[scales.xml.equals.BasicPaths.BasicPathA]](nhead, rest)
+        };
+        val nhead: scales.xml.equals.BasicPaths.BasicPathA = x$6._1;
+        val rest: List[scales.xml.equals.BasicPaths.BasicPathA] = x$6._2;
+        nhead._2.apply(qn)
+      };
+    str = &quot;/&quot;.+(qn).+(&quot;[&quot;).+(count).+(&quot;]&quot;).+(str)
+  };
+  while$1()
+}
+        </td>
+      </tr><tr>
+        <td>
+          69
+        </td>
+        <td>
+          2672
+        </td>
+        <td>
+          2600
+          -
+          2600
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          69
+        </td>
+        <td>
+          2673
+        </td>
+        <td>
+          2600
+          -
+          2600
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          2659
+        </td>
+        <td>
+          2633
+          -
+          2633
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$5._1
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          2660
+        </td>
+        <td>
+          2641
+          -
+          2641
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$5._2
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          2661
+        </td>
+        <td>
+          2681
+          -
+          2702
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.QName.qualifiedName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          head._1.qualifiedName
+        </td>
+      </tr><tr>
+        <td>
+          75
+        </td>
+        <td>
+          2662
+        </td>
+        <td>
+          2726
+          -
+          2738
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.SeqLike.isEmpty
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          tail.isEmpty
+        </td>
+      </tr><tr>
+        <td>
+          75
+        </td>
+        <td>
+          2663
+        </td>
+        <td>
+          2740
+          -
+          2741
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          75
+        </td>
+        <td>
+          2664
+        </td>
+        <td>
+          2740
+          -
+          2741
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          76
+        </td>
+        <td>
+          2668
+        </td>
+        <td>
+          2749
+          -
+          2804
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  &lt;synthetic&gt; &lt;artifact&gt; private[this] val x$6: (scales.xml.equals.BasicPaths.BasicPathA, List[scales.xml.equals.BasicPaths.BasicPathA]) = (tail: List[scales.xml.equals.BasicPaths.BasicPathA] @unchecked) match {
+    case (head: scales.xml.equals.BasicPaths.BasicPathA, tl: List[scales.xml.equals.BasicPaths.BasicPathA])scala.collection.immutable.::[scales.xml.equals.BasicPaths.BasicPathA]((nhead @ _), (rest @ _)) =&gt; scala.Tuple2.apply[scales.xml.equals.BasicPaths.BasicPathA, List[scales.xml.equals.BasicPaths.BasicPathA]](nhead, rest)
+  };
+  val nhead: scales.xml.equals.BasicPaths.BasicPathA = x$6._1;
+  val rest: List[scales.xml.equals.BasicPaths.BasicPathA] = x$6._2;
+  nhead._2.apply(qn)
+}
+        </td>
+      </tr><tr>
+        <td>
+          77
+        </td>
+        <td>
+          2665
+        </td>
+        <td>
+          2765
+          -
+          2765
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$6._1
+        </td>
+      </tr><tr>
+        <td>
+          77
+        </td>
+        <td>
+          2666
+        </td>
+        <td>
+          2774
+          -
+          2774
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$6._2
+        </td>
+      </tr><tr>
+        <td>
+          78
+        </td>
+        <td>
+          2667
+        </td>
+        <td>
+          2789
+          -
+          2801
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.MapLike.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          nhead._2.apply(qn)
+        </td>
+      </tr><tr>
+        <td>
+          81
+        </td>
+        <td>
+          2669
+        </td>
+        <td>
+          2824
+          -
+          2855
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;/&quot;.+(qn).+(&quot;[&quot;).+(count).+(&quot;]&quot;).+(str)
+        </td>
+      </tr><tr>
+        <td>
+          90
+        </td>
+        <td>
+          2674
+        </td>
+        <td>
+          3006
+          -
+          3020
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ComparisonContext.this.parent.eq(null)
+        </td>
+      </tr><tr>
+        <td>
+          91
+        </td>
+        <td>
+          2675
+        </td>
+        <td>
+          3028
+          -
+          3087
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.iteratee.Iteratees.error
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.utils.`package`.error(&quot;Cannot call endElem on a root context&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          91
+        </td>
+        <td>
+          2676
+        </td>
+        <td>
+          3028
+          -
+          3087
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.iteratee.Iteratees.error
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.utils.`package`.error(&quot;Cannot call endElem on a root context&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          95
+        </td>
+        <td>
+          2677
+        </td>
+        <td>
+          3219
+          -
+          3229
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.ComparisonContext.lnc
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ComparisonContext.this.parent.lnc
+        </td>
+      </tr><tr>
+        <td>
+          95
+        </td>
+        <td>
+          2678
+        </td>
+        <td>
+          3231
+          -
+          3241
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.ComparisonContext.rnc
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ComparisonContext.this.parent.rnc
+        </td>
+      </tr><tr>
+        <td>
+          95
+        </td>
+        <td>
+          2679
+        </td>
+        <td>
+          3243
+          -
+          3252
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.TraversableLike.tail
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ComparisonContext.this.path.tail
+        </td>
+      </tr><tr>
+        <td>
+          95
+        </td>
+        <td>
+          2680
+        </td>
+        <td>
+          3254
+          -
+          3267
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.ComparisonContext.parent
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ComparisonContext.this.parent.parent
+        </td>
+      </tr><tr>
+        <td>
+          95
+        </td>
+        <td>
+          2681
+        </td>
+        <td>
+          3197
+          -
+          3268
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.ComparisonContext.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new ComparisonContext(ComparisonContext.this.parent.lnc, ComparisonContext.this.parent.rnc, ComparisonContext.this.path.tail, ComparisonContext.this.parent.parent, equals.this.ComparisonContext.&lt;init&gt;$default$5)
+        </td>
+      </tr><tr>
+        <td>
+          95
+        </td>
+        <td>
+          2682
+        </td>
+        <td>
+          3197
+          -
+          3268
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.equals.ComparisonContext.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new ComparisonContext(ComparisonContext.this.parent.lnc, ComparisonContext.this.parent.rnc, ComparisonContext.this.path.tail, ComparisonContext.this.parent.parent, equals.this.ComparisonContext.&lt;init&gt;$default$5)
+        </td>
+      </tr><tr>
+        <td>
+          98
+        </td>
+        <td>
+          2683
+        </td>
+        <td>
+          3334
+          -
+          3340
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.ComparisonContext.parent
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ComparisonContext.this.parent
+        </td>
+      </tr><tr>
+        <td>
+          98
+        </td>
+        <td>
+          2684
+        </td>
+        <td>
+          3327
+          -
+          3341
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Option.apply[scales.xml.equals.ComparisonContext](ComparisonContext.this.parent)
+        </td>
+      </tr><tr>
+        <td>
+          102
+        </td>
+        <td>
+          2685
+        </td>
+        <td>
+          3416
+          -
+          3422
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.ArrowAssoc.-&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.ArrowAssoc[String](&quot;&quot;).-&gt;[String](&quot;&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          102
+        </td>
+        <td>
+          2686
+        </td>
+        <td>
+          3412
+          -
+          3423
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.generic.GenMapFactory.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.collection.immutable.Map.apply[String, String](scala.Predef.ArrowAssoc[String](&quot;&quot;).-&gt;[String](&quot;&quot;))
+        </td>
+      </tr><tr>
+        <td>
+          108
+        </td>
+        <td>
+          2687
+        </td>
+        <td>
+          3572
+          -
+          3576
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          108
+        </td>
+        <td>
+          2688
+        </td>
+        <td>
+          3578
+          -
+          3582
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          108
+        </td>
+        <td>
+          2689
+        </td>
+        <td>
+          3590
+          -
+          3594
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          108
+        </td>
+        <td>
+          2690
+        </td>
+        <td>
+          3550
+          -
+          3595
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.ComparisonContext.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new ComparisonContext(null, null, path, null, equals.this.ComparisonContext.&lt;init&gt;$default$5)
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          2691
+        </td>
+        <td>
+          3659
+          -
+          3663
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          2692
+        </td>
+        <td>
+          3665
+          -
+          3669
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          2693
+        </td>
+        <td>
+          3671
+          -
+          3674
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.immutable.Nil
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.collection.immutable.Nil
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          2694
+        </td>
+        <td>
+          3676
+          -
+          3680
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          2695
+        </td>
+        <td>
+          3637
+          -
+          3681
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.ComparisonContext.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new ComparisonContext(null, null, scala.collection.immutable.Nil, null, equals.this.ComparisonContext.&lt;init&gt;$default$5)
+        </td>
+      </tr><tr>
+        <td>
+          113
+        </td>
+        <td>
+          2696
+        </td>
+        <td>
+          3697
+          -
+          3704
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.ComparisonContext.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ComparisonContext.this.apply()
+        </td>
+      </tr><tr>
+        <td>
+          116
+        </td>
+        <td>
+          2697
+        </td>
+        <td>
+          3858
+          -
+          3880
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.ComparisonContext.leftNamespaceContext
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          c.leftNamespaceContext
+        </td>
+      </tr><tr>
+        <td>
+          116
+        </td>
+        <td>
+          2698
+        </td>
+        <td>
+          3882
+          -
+          3905
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.ComparisonContext.rightNamespaceContext
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          c.rightNamespaceContext
+        </td>
+      </tr><tr>
+        <td>
+          116
+        </td>
+        <td>
+          2699
+        </td>
+        <td>
+          3907
+          -
+          3913
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.ComparisonContext.path
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          c.path
+        </td>
+      </tr><tr>
+        <td>
+          116
+        </td>
+        <td>
+          2701
+        </td>
+        <td>
+          3853
+          -
+          3933
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple4.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple4.apply[Option[scales.xml.serializers.NamespaceContext], Option[scales.xml.serializers.NamespaceContext], scales.xml.equals.BasicPaths.BasicPath, Option[scales.xml.equals.ComparisonContext]](c.leftNamespaceContext, c.rightNamespaceContext, c.path, c.parentContext)
+        </td>
+      </tr><tr>
+        <td>
+          116
+        </td>
+        <td>
+          2702
+        </td>
+        <td>
+          3853
+          -
+          3933
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[(Option[scales.xml.serializers.NamespaceContext], Option[scales.xml.serializers.NamespaceContext], scales.xml.equals.BasicPaths.BasicPath, Option[scales.xml.equals.ComparisonContext])](scala.Tuple4.apply[Option[scales.xml.serializers.NamespaceContext], Option[scales.xml.serializers.NamespaceContext], scales.xml.equals.BasicPaths.BasicPath, Option[scales.xml.equals.ComparisonContext]](c.leftNamespaceContext, c.rightNamespaceContext, c.path, c.parentContext))
+        </td>
+      </tr><tr>
+        <td>
+          117
+        </td>
+        <td>
+          2700
+        </td>
+        <td>
+          3917
+          -
+          3932
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.ComparisonContext.parentContext
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          c.parentContext
+        </td>
+      </tr><tr>
+        <td>
+          127
+        </td>
+        <td>
+          2703
+        </td>
+        <td>
+          4219
+          -
+          4223
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$7._1
+        </td>
+      </tr><tr>
+        <td>
+          127
+        </td>
+        <td>
+          2704
+        </td>
+        <td>
+          4201
+          -
+          4225
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.map
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          t.headOption.map[scales.xml.QName](((x$7: scales.xml.equals.BasicPaths.BasicPathA) =&gt; x$7._1))
+        </td>
+      </tr><tr>
+        <td>
+          132
+        </td>
+        <td>
+          2705
+        </td>
+        <td>
+          4428
+          -
+          4432
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$8._1
+        </td>
+      </tr><tr>
+        <td>
+          132
+        </td>
+        <td>
+          2706
+        </td>
+        <td>
+          4405
+          -
+          4434
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.map
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          t.path.headOption.map[scales.xml.QName](((x$8: scales.xml.equals.BasicPaths.BasicPathA) =&gt; x$8._1))
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

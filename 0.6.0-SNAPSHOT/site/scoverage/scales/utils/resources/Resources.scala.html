@@ -1,0 +1,1319 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/utils/resources/Resources.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.utils.resources
+</span>2 <span style=''>
+</span>3 <span style=''>trait IsClosed {
+</span>4 <span style=''>  def isClosed : Boolean
+</span>5 <span style=''>}
+</span>6 <span style=''>
+</span>7 <span style=''>/**
+</span>8 <span style=''> * Mostly exists for pulling but it is general
+</span>9 <span style=''> * 
+</span>10 <span style=''> * We want to enable bracketing and a more orderly shutdown of resources from the input streams.
+</span>11 <span style=''> * Whilst the resource is closed automatically its not very helpful if you don't want to close it.
+</span>12 <span style=''> * Due to Sun bug: 6539065 we have to wrap the actual close.  This allows us to decide IF we want to close.
+</span>13 <span style=''> *
+</span>14 <span style=''> * So we cover three use cases here:
+</span>15 <span style=''> * * Enumeratees can bracket, if so desired
+</span>16 <span style=''> * * Streams of xml can be continuously plied for more xml messages
+</span>17 <span style=''> * * Users who want to manually close early can do so too.
+</span>18 <span style=''> *
+</span>19 <span style=''> * As a note this fits very closely to the scala-arm stuff, which I happily use in another project.  But it has
+</span>20 <span style=''> * two specific seperate use cases:
+</span>21 <span style=''> * * XmlPulls should be joinable as iterators ++ should ensure that the resources are closed
+</span>22 <span style=''> * * Additionally, however, closing on the resulting XmlPull should close the lot.
+</span>23 <span style=''> * 
+</span>24 <span style=''> * So we either override the ++ to behave differently or we abstract away using of the stream from closing it.
+</span>25 <span style=''> *
+</span>26 <span style=''> */ 
+</span>27 <span style=''>trait CloseOnNeed extends IsClosed { 
+</span>28 <span style=''>  parent =&gt;
+</span>29 <span style=''>
+</span>30 <span style=''>  protected def doClose : Unit 
+</span>31 <span style=''>
+</span>32 <span style=''>  private[utils] var closed = </span><span style='background: #AEF1AE'>false</span><span style=''>
+</span>33 <span style=''>
+</span>34 <span style=''>  def isClosed = </span><span style='background: #AEF1AE'>closed</span><span style=''>
+</span>35 <span style=''>
+</span>36 <span style=''>  /**
+</span>37 <span style=''>   * Close the underlying something, but only do it once.
+</span>38 <span style=''>   *
+</span>39 <span style=''>   * This allows closing of an xml input stream directly after the end doc, but without disturbing
+</span>40 <span style=''>   * the normal model.
+</span>41 <span style=''>   */ 
+</span>42 <span style=''>  def closeResource =
+</span>43 <span style=''>    if (</span><span style='background: #AEF1AE'>!closed</span><span style=''>) </span><span style='background: #AEF1AE'>{
+</span>44 <span style=''></span><span style='background: #AEF1AE'>      closed = true;
+</span>45 <span style=''></span><span style='background: #AEF1AE'>      doClose
+</span>46 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''> else </span><span style='background: #F0ADAD'>()</span><span style=''>
+</span>47 <span style=''>  
+</span>48 <span style=''>  def ++( close2 : CloseOnNeed ) : CloseOnNeed = </span><span style='background: #AEF1AE'>new</span><span style=''> CloseOnNeed {
+</span>49 <span style=''>    added =&gt;
+</span>50 <span style=''>  
+</span>51 <span style=''>    def doClose = </span><span style='background: #F0ADAD'>()</span><span style=''>
+</span>52 <span style=''>     
+</span>53 <span style=''>    override def closeResource = 
+</span>54 <span style=''>      if (</span><span style='background: #AEF1AE'>!closed</span><span style=''>) </span><span style='background: #AEF1AE'>{
+</span>55 <span style=''></span><span style='background: #AEF1AE'>	closed = true;
+</span>56 <span style=''></span><span style='background: #AEF1AE'>	parent.closeResource
+</span>57 <span style=''></span><span style='background: #AEF1AE'>	close2.closeResource
+</span>58 <span style=''></span><span style='background: #AEF1AE'>      }</span><span style=''> else </span><span style='background: #F0ADAD'>()</span><span style=''>
+</span>59 <span style=''>
+</span>60 <span style=''>    // flip it back to stop from endlessly repeating ourselves
+</span>61 <span style=''>    override def ++(close3 : CloseOnNeed) = {
+</span>62 <span style=''>      </span><span style='background: #AEF1AE'>close3 ++ this</span><span style=''>
+</span>63 <span style=''>    }
+</span>64 <span style=''>  }
+</span>65 <span style=''>}
+</span>66 <span style=''>
+</span>67 <span style=''>/**
+</span>68 <span style=''> * Simple pool interface
+</span>69 <span style=''> */ 
+</span>70 <span style=''>trait Pool[T] {
+</span>71 <span style=''>  def grab : T 
+</span>72 <span style=''>
+</span>73 <span style=''>  def giveBack( t : T ) : Unit
+</span>74 <span style=''>}
+</span>75 <span style=''>
+</span>76 <span style=''>/**
+</span>77 <span style=''> * Thread safe unbounded pool, if more objects are required it will simple create them.  The optional parameter reduceSize tries to help clean up a bit when an excessive amount is created but does not act as a semaphore
+</span>78 <span style=''> */ 
+</span>79 <span style=''>trait SimpleUnboundedPool[T] extends Pool[T] with Loaner[T] with Creator[T] {
+</span>80 <span style=''>  val reduceSize : Int = </span><span style='background: #AEF1AE'>30</span><span style=''>
+</span>81 <span style=''>  
+</span>82 <span style=''>  val size = </span><span style='background: #AEF1AE'>new java.util.concurrent.atomic.AtomicInteger(0)</span><span style=''>
+</span>83 <span style=''>
+</span>84 <span style=''>  private[this] val cache = </span><span style='background: #AEF1AE'>new java.util.concurrent.ConcurrentLinkedQueue[T]()</span><span style=''>;
+</span>85 <span style=''>
+</span>86 <span style=''>  def grab = {
+</span>87 <span style=''>    val res = </span><span style='background: #AEF1AE'>cache.poll</span><span style=''>
+</span>88 <span style=''>    if (</span><span style='background: #AEF1AE'>res != null</span><span style=''>) </span><span style='background: #AEF1AE'>res</span><span style=''>
+</span>89 <span style=''>    else </span><span style='background: #AEF1AE'>doCreate</span><span style=''>
+</span>90 <span style=''>  }
+</span>91 <span style=''>
+</span>92 <span style=''>  def giveBack( t : T ) {
+</span>93 <span style=''>    if (</span><span style='background: #AEF1AE'>size.get &gt; reduceSize</span><span style=''>) </span><span style='background: #F0ADAD'>size.decrementAndGet</span><span style=''>
+</span>94 <span style=''>    else </span><span style='background: #AEF1AE'>cache.add(t)</span><span style=''>
+</span>95 <span style=''>  }
+</span>96 <span style=''>
+</span>97 <span style=''>  final def doCreate = {
+</span>98 <span style=''>    </span><span style='background: #AEF1AE'>size.getAndIncrement()</span><span style=''>
+</span>99 <span style=''>    </span><span style='background: #AEF1AE'>create</span><span style=''>
+</span>100 <span style=''>  }
+</span>101 <span style=''>
+</span>102 <span style=''>  /**
+</span>103 <span style=''>   * Performs a loan for you
+</span>104 <span style=''>   */ 
+</span>105 <span style=''>  def loan[X]( tThunk : T =&gt; X ) : X = {
+</span>106 <span style=''>    var t = </span><span style='background: #AEF1AE'>null.asInstanceOf[T]</span><span style=''>
+</span>107 <span style=''>    try {
+</span>108 <span style=''>      </span><span style='background: #AEF1AE'>t = grab // can throw
+</span>109 <span style=''></span><span style='background: #AEF1AE'>      tThunk(t)</span><span style=''>
+</span>110 <span style=''>    } finally {
+</span>111 <span style=''>      </span><span style='background: #AEF1AE'>if (t != null) giveBack(t)</span><span style=''>
+</span>112 <span style=''>    }
+</span>113 <span style=''>  }
+</span>114 <span style=''>
+</span>115 <span style=''>}
+</span>116 <span style=''>
+</span>117 <span style=''>trait Loaner[T] {
+</span>118 <span style=''>  
+</span>119 <span style=''>  /**
+</span>120 <span style=''>   * Performs a loan for you
+</span>121 <span style=''>   */ 
+</span>122 <span style=''>  def loan[X]( tThunk : T =&gt; X ) : X 
+</span>123 <span style=''>}
+</span>124 <span style=''>
+</span>125 <span style=''>/**
+</span>126 <span style=''> * Simple factory interface
+</span>127 <span style=''> */ 
+</span>128 <span style=''>trait Creator[T] {
+</span>129 <span style=''>  def create : T
+</span>130 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          1896
+        </td>
+        <td>
+          1211
+          -
+          1216
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          34
+        </td>
+        <td>
+          1897
+        </td>
+        <td>
+          1235
+          -
+          1241
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.resources.CloseOnNeed.closed
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          CloseOnNeed.this.closed
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          1898
+        </td>
+        <td>
+          1471
+          -
+          1478
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          CloseOnNeed.this.closed.unary_!
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          1901
+        </td>
+        <td>
+          1480
+          -
+          1522
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  CloseOnNeed.this.closed_=(true);
+  CloseOnNeed.this.doClose
+}
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          1899
+        </td>
+        <td>
+          1488
+          -
+          1501
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.resources.CloseOnNeed.closed_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          CloseOnNeed.this.closed_=(true)
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          1900
+        </td>
+        <td>
+          1509
+          -
+          1516
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.resources.CloseOnNeed.doClose
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          CloseOnNeed.this.doClose
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          1902
+        </td>
+        <td>
+          1528
+          -
+          1530
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          1903
+        </td>
+        <td>
+          1528
+          -
+          1530
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          1913
+        </td>
+        <td>
+          1583
+          -
+          1586
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.resources.CloseOnNeed.$anon.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          1904
+        </td>
+        <td>
+          1635
+          -
+          1637
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          1905
+        </td>
+        <td>
+          1688
+          -
+          1695
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.closed.unary_!
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          1909
+        </td>
+        <td>
+          1697
+          -
+          1766
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  $anon.this.closed_=(true);
+  CloseOnNeed.this.closeResource;
+  close2.closeResource
+}
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          1906
+        </td>
+        <td>
+          1700
+          -
+          1713
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.resources.CloseOnNeed.closed_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.closed_=(true)
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          1907
+        </td>
+        <td>
+          1716
+          -
+          1736
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.resources.CloseOnNeed.closeResource
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          CloseOnNeed.this.closeResource
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          1908
+        </td>
+        <td>
+          1738
+          -
+          1758
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.resources.CloseOnNeed.closeResource
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          close2.closeResource
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          1910
+        </td>
+        <td>
+          1772
+          -
+          1774
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          1911
+        </td>
+        <td>
+          1772
+          -
+          1774
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          62
+        </td>
+        <td>
+          1912
+        </td>
+        <td>
+          1891
+          -
+          1905
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.resources.CloseOnNeed.++
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          close3.++(this)
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          1914
+        </td>
+        <td>
+          2352
+          -
+          2354
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          30
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          1915
+        </td>
+        <td>
+          2371
+          -
+          2419
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.concurrent.atomic.AtomicInteger.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new java.util.concurrent.atomic.AtomicInteger(0)
+        </td>
+      </tr><tr>
+        <td>
+          84
+        </td>
+        <td>
+          1916
+        </td>
+        <td>
+          2449
+          -
+          2500
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.concurrent.ConcurrentLinkedQueue.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new java.util.concurrent.ConcurrentLinkedQueue[T]()
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          1917
+        </td>
+        <td>
+          2532
+          -
+          2542
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.concurrent.ConcurrentLinkedQueue.poll
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SimpleUnboundedPool.this.cache.poll()
+        </td>
+      </tr><tr>
+        <td>
+          88
+        </td>
+        <td>
+          1918
+        </td>
+        <td>
+          2551
+          -
+          2562
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Any.!=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          res.!=(null)
+        </td>
+      </tr><tr>
+        <td>
+          88
+        </td>
+        <td>
+          1919
+        </td>
+        <td>
+          2564
+          -
+          2567
+        </td>
+        <td>
+          Ident
+        </td>
+        <td>
+          scales.utils.resources.SimpleUnboundedPool.res
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          res
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          1920
+        </td>
+        <td>
+          2577
+          -
+          2585
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.resources.SimpleUnboundedPool.doCreate
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SimpleUnboundedPool.this.doCreate
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          1921
+        </td>
+        <td>
+          2577
+          -
+          2585
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.resources.SimpleUnboundedPool.doCreate
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SimpleUnboundedPool.this.doCreate
+        </td>
+      </tr><tr>
+        <td>
+          93
+        </td>
+        <td>
+          1922
+        </td>
+        <td>
+          2636
+          -
+          2646
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.resources.SimpleUnboundedPool.reduceSize
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SimpleUnboundedPool.this.reduceSize
+        </td>
+      </tr><tr>
+        <td>
+          93
+        </td>
+        <td>
+          1923
+        </td>
+        <td>
+          2625
+          -
+          2646
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SimpleUnboundedPool.this.size.get().&gt;(SimpleUnboundedPool.this.reduceSize)
+        </td>
+      </tr><tr>
+        <td>
+          93
+        </td>
+        <td>
+          1924
+        </td>
+        <td>
+          2648
+          -
+          2668
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.concurrent.atomic.AtomicInteger.decrementAndGet
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          SimpleUnboundedPool.this.size.decrementAndGet()
+        </td>
+      </tr><tr>
+        <td>
+          93
+        </td>
+        <td>
+          1925
+        </td>
+        <td>
+          2653
+          -
+          2653
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          93
+        </td>
+        <td>
+          1926
+        </td>
+        <td>
+          2648
+          -
+          2668
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          {
+  SimpleUnboundedPool.this.size.decrementAndGet();
+  ()
+}
+        </td>
+      </tr><tr>
+        <td>
+          94
+        </td>
+        <td>
+          1927
+        </td>
+        <td>
+          2678
+          -
+          2690
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.concurrent.ConcurrentLinkedQueue.add
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SimpleUnboundedPool.this.cache.add(t)
+        </td>
+      </tr><tr>
+        <td>
+          94
+        </td>
+        <td>
+          1928
+        </td>
+        <td>
+          2687
+          -
+          2687
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          94
+        </td>
+        <td>
+          1929
+        </td>
+        <td>
+          2678
+          -
+          2690
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  SimpleUnboundedPool.this.cache.add(t);
+  ()
+}
+        </td>
+      </tr><tr>
+        <td>
+          98
+        </td>
+        <td>
+          1930
+        </td>
+        <td>
+          2725
+          -
+          2747
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.concurrent.atomic.AtomicInteger.getAndIncrement
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SimpleUnboundedPool.this.size.getAndIncrement()
+        </td>
+      </tr><tr>
+        <td>
+          99
+        </td>
+        <td>
+          1931
+        </td>
+        <td>
+          2752
+          -
+          2758
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.resources.Creator.create
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SimpleUnboundedPool.this.create
+        </td>
+      </tr><tr>
+        <td>
+          106
+        </td>
+        <td>
+          1932
+        </td>
+        <td>
+          2859
+          -
+          2863
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          106
+        </td>
+        <td>
+          1933
+        </td>
+        <td>
+          2859
+          -
+          2879
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          null.asInstanceOf[T]
+        </td>
+      </tr><tr>
+        <td>
+          107
+        </td>
+        <td>
+          1936
+        </td>
+        <td>
+          2896
+          -
+          2933
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  t = SimpleUnboundedPool.this.grab;
+  tThunk.apply(t)
+}
+        </td>
+      </tr><tr>
+        <td>
+          108
+        </td>
+        <td>
+          1934
+        </td>
+        <td>
+          2900
+          -
+          2904
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.resources.SimpleUnboundedPool.grab
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SimpleUnboundedPool.this.grab
+        </td>
+      </tr><tr>
+        <td>
+          109
+        </td>
+        <td>
+          1935
+        </td>
+        <td>
+          2924
+          -
+          2933
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          tThunk.apply(t)
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          1937
+        </td>
+        <td>
+          2960
+          -
+          2969
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Any.!=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          t.!=(null)
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          1938
+        </td>
+        <td>
+          2971
+          -
+          2982
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.resources.SimpleUnboundedPool.giveBack
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SimpleUnboundedPool.this.giveBack(t)
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          1939
+        </td>
+        <td>
+          2971
+          -
+          2982
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.resources.SimpleUnboundedPool.giveBack
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SimpleUnboundedPool.this.giveBack(t)
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          1940
+        </td>
+        <td>
+          2956
+          -
+          2956
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          1941
+        </td>
+        <td>
+          2956
+          -
+          2956
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          1942
+        </td>
+        <td>
+          2956
+          -
+          2982
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (t.!=(null))
+  SimpleUnboundedPool.this.giveBack(t)
+else
+  ()
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

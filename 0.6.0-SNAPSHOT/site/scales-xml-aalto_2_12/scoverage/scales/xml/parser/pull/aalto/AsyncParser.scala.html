@@ -1,0 +1,5153 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/xml/parser/pull/aalto/AsyncParser.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.xml.parser.pull.aalto
+</span>2 <span style=''>
+</span>3 <span style=''>import scales.xml._
+</span>4 <span style=''>import scales.utils._
+</span>5 <span style=''>import io._
+</span>6 <span style=''>import resources._
+</span>7 <span style=''>import com.fasterxml.aalto._
+</span>8 <span style=''>import AsyncXMLStreamReader.EVENT_INCOMPLETE
+</span>9 <span style=''>
+</span>10 <span style=''>import javax.xml.stream.XMLStreamConstants.END_DOCUMENT
+</span>11 <span style=''>import scales.xml.parser.pull.PullUtils
+</span>12 <span style=''>import scalaz.EphemeralStream
+</span>13 <span style=''>import scalaz.iteratee.{Enumerator, Input, Iteratee}
+</span>14 <span style=''>import EphemeralStream.emptyEphemeralStream
+</span>15 <span style=''>import scalaz.iteratee.Input.{Element, Eof}
+</span>16 <span style=''>import scalaz.iteratee.Iteratee.iteratee
+</span>17 <span style=''>import scalaz.iteratee.StepT.{Cont, Done}
+</span>18 <span style=''>import scales.xml.parser.strategies.{MemoryOptimisationStrategy, OptimisationToken}
+</span>19 <span style=''>
+</span>20 <span style=''>/**
+</span>21 <span style=''> * An AynscParser, a DataChunk is fed in via nextInput which, in turn, returns an Input[EphmeralStream[PullType]] of events.
+</span>22 <span style=''> * When the Input is El then the stream may be evaluated to get all available events, and will return empty when no more for that data chunk is available.
+</span>23 <span style=''> * 
+</span>24 <span style=''> * See nextInput for more info.
+</span>25 <span style=''> */
+</span>26 <span style=''>abstract class AsyncParser(implicit xmlVersion : XmlVersion) extends CloseOnNeed with DocLike {
+</span>27 <span style=''>
+</span>28 <span style=''>  protected type Token &lt;: OptimisationToken
+</span>29 <span style=''>
+</span>30 <span style=''>  protected val strategy : MemoryOptimisationStrategy[Token]
+</span>31 <span style=''>
+</span>32 <span style=''>  protected val feeder : AsyncByteArrayFeeder
+</span>33 <span style=''>
+</span>34 <span style=''>  protected val token : Token
+</span>35 <span style=''>
+</span>36 <span style=''>  protected val parser : AsyncXMLStreamReader[AsyncByteArrayFeeder]
+</span>37 <span style=''>
+</span>38 <span style=''>  /**
+</span>39 <span style=''>   * Closes the feeder and parser
+</span>40 <span style=''>   */ 
+</span>41 <span style=''>  protected def doClose = { 
+</span>42 <span style=''>    </span><span style='background: #AEF1AE'>feeder.endOfInput</span><span style=''>
+</span>43 <span style=''>    </span><span style='background: #AEF1AE'>parser.close</span><span style=''>
+</span>44 <span style=''>  }
+</span>45 <span style=''>
+</span>46 <span style=''>  // to capture the miscs.
+</span>47 <span style=''>  private[this] var docImpl = </span><span style='background: #AEF1AE'>EmptyDoc()</span><span style=''>
+</span>48 <span style=''>
+</span>49 <span style=''>  protected def copyProlog(p : Prolog) { 
+</span>50 <span style=''>    docImpl = </span><span style='background: #AEF1AE'>docImpl.copy( prolog = p )</span><span style=''>
+</span>51 <span style=''>  }
+</span>52 <span style=''>
+</span>53 <span style=''>  protected def addPrologMisc(m : PullType) { 
+</span>54 <span style=''>    </span><span style='background: #AEF1AE'>copyProlog( 
+</span>55 <span style=''></span><span style='background: #AEF1AE'>      prolog.copy(
+</span>56 <span style=''></span><span style='background: #AEF1AE'>	misc = prolog.misc :+ PullUtils.getMisc(m, &quot;prolog&quot;) 
+</span>57 <span style=''></span><span style='background: #AEF1AE'>      )
+</span>58 <span style=''></span><span style='background: #AEF1AE'>    )</span><span style=''>
+</span>59 <span style=''>  }
+</span>60 <span style=''>
+</span>61 <span style=''>  protected def addEndMisc(m : PullType) { 
+</span>62 <span style=''>    docImpl = </span><span style='background: #AEF1AE'>docImpl.copy( 
+</span>63 <span style=''></span><span style='background: #AEF1AE'>      end = end.copy( 
+</span>64 <span style=''></span><span style='background: #AEF1AE'>	      misc = end.misc :+ PullUtils.getMisc(m, &quot;endMisc&quot;)
+</span>65 <span style=''></span><span style='background: #AEF1AE'>      )
+</span>66 <span style=''></span><span style='background: #AEF1AE'>    )</span><span style=''>
+</span>67 <span style=''>  }
+</span>68 <span style=''>
+</span>69 <span style=''>  def prolog = </span><span style='background: #AEF1AE'>docImpl.prolog</span><span style=''>
+</span>70 <span style=''>  def end = </span><span style='background: #AEF1AE'>docImpl.end</span><span style=''>
+</span>71 <span style=''>
+</span>72 <span style=''>  protected var depth = </span><span style='background: #AEF1AE'>-1</span><span style=''>
+</span>73 <span style=''>  protected var started = </span><span style='background: #AEF1AE'>false</span><span style=''>
+</span>74 <span style=''>
+</span>75 <span style=''>  //private var empties = 0
+</span>76 <span style=''>
+</span>77 <span style=''>  /**
+</span>78 <span style=''>   * The document element has been reached
+</span>79 <span style=''>   */ 
+</span>80 <span style=''>  def startedElementProcessing = </span><span style='background: #F0ADAD'>started</span><span style=''>
+</span>81 <span style=''>  
+</span>82 <span style=''>  protected val incompOrEnd : PullType = </span><span style='background: #AEF1AE'>Left(Text(&quot;I am incomplete or doc end&quot;))</span><span style=''>
+</span>83 <span style=''>
+</span>84 <span style=''>  protected val eventHandler = (x : Int) =&gt; {
+</span>85 <span style=''>    if (</span><span style='background: #AEF1AE'>x == EVENT_INCOMPLETE || </span><span style='background: #F0ADAD'>x == END_DOCUMENT</span><span style=''>)
+</span>86 <span style=''>      </span><span style='background: #AEF1AE'>incompOrEnd</span><span style=''>
+</span>87 <span style=''>    else
+</span>88 <span style=''>      </span><span style='background: #F0ADAD'>error(&quot;Got an unexpected event type &quot; + x +&quot; cannot proceed.&quot;)</span><span style=''> 
+</span>89 <span style=''>  }
+</span>90 <span style=''>
+</span>91 <span style=''>  /**
+</span>92 <span style=''>   * Pushes through Misc items in either prolog or the epilog
+</span>93 <span style=''>   */
+</span>94 <span style=''>  protected def pumpMisc() : Input[PullType] = {
+</span>95 <span style=''>
+</span>96 <span style=''>    val (event, num, odepth, oprolog) = PullUtils.pumpEvent(parser, strategy, token, prolog, depth)(eventHandler)
+</span>97 <span style=''>
+</span>98 <span style=''>    </span><span style='background: #AEF1AE'>depth = odepth</span><span style=''>
+</span>99 <span style=''>
+</span>100 <span style=''>    if (</span><span style='background: #AEF1AE'>oprolog != prolog</span><span style=''>) {
+</span>101 <span style=''>      // doc start
+</span>102 <span style=''>      </span><span style='background: #F0ADAD'>copyProlog( oprolog )</span><span style=''> 
+</span>103 <span style=''>    }
+</span>104 <span style=''>    // FUCKING MISC MUST RETURN EMPTY FOR ALL - OPTION SHIT!!!
+</span>105 <span style=''>    if (</span><span style='background: #AEF1AE'>num == END_DOCUMENT</span><span style=''>) </span><span style='background: #F0ADAD'>{
+</span>106 <span style=''></span><span style='background: #F0ADAD'>      // EOF - let the iter deal 
+</span>107 <span style=''></span><span style='background: #F0ADAD'>      //println(&quot;closing&quot;)
+</span>108 <span style=''></span><span style='background: #F0ADAD'>      closeResource
+</span>109 <span style=''></span><span style='background: #F0ADAD'>      //Some(EOF[T])
+</span>110 <span style=''></span><span style='background: #F0ADAD'>      Eof[PullType]
+</span>111 <span style=''></span><span style='background: #F0ADAD'>    }</span><span style=''> else </span><span style='background: #AEF1AE'>if (num == EVENT_INCOMPLETE) {
+</span>112 <span style=''></span><span style='background: #AEF1AE'>      //println(&quot;event incomplete &quot;)
+</span>113 <span style=''></span><span style='background: #AEF1AE'>      Input.Empty[PullType]//None//pumpInMisc
+</span>114 <span style=''></span><span style='background: #AEF1AE'>    } else if (odepth == -1) {
+</span>115 <span style=''></span><span style='background: #AEF1AE'>      // still misc
+</span>116 <span style=''></span><span style='background: #AEF1AE'>      //println(&quot;didn't get out of misc , none??&quot;)
+</span>117 <span style=''></span><span style='background: #AEF1AE'>      
+</span>118 <span style=''></span><span style='background: #AEF1AE'>      if (event.isLeft &amp;&amp; (event.left.get eq PullUtils.dtdDummy)) {
+</span>119 <span style=''></span><span style='background: #AEF1AE'>	</span><span style='background: #F0ADAD'>copyProlog( prolog.copy(dtd = Some(
+</span>120 <span style=''></span><span style='background: #F0ADAD'>	  DTD(&quot;&quot;, &quot;&quot;, &quot;&quot;) // DTD has funnyness TODO find out what it looks like
+</span>121 <span style=''></span><span style='background: #F0ADAD'>        )))</span><span style='background: #AEF1AE'>
+</span>122 <span style=''></span><span style='background: #AEF1AE'>      } else {
+</span>123 <span style=''></span><span style='background: #AEF1AE'>	if (!started)
+</span>124 <span style=''></span><span style='background: #AEF1AE'>	  addPrologMisc(event)
+</span>125 <span style=''></span><span style='background: #AEF1AE'>	else
+</span>126 <span style=''></span><span style='background: #AEF1AE'>	  addEndMisc(event)	      
+</span>127 <span style=''></span><span style='background: #AEF1AE'>      }
+</span>128 <span style=''></span><span style='background: #AEF1AE'>
+</span>129 <span style=''></span><span style='background: #AEF1AE'>      Input.Empty[PullType]//None
+</span>130 <span style=''></span><span style='background: #AEF1AE'>    } else {
+</span>131 <span style=''></span><span style='background: #AEF1AE'>      //println(&quot;actually started with first event&quot;)
+</span>132 <span style=''></span><span style='background: #AEF1AE'>      started = true
+</span>133 <span style=''></span><span style='background: #AEF1AE'>      // pump actual first event - yay !!, next depth -1 is endmisc
+</span>134 <span style=''></span><span style='background: #AEF1AE'>      Element(event)
+</span>135 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>136 <span style=''>  }
+</span>137 <span style=''>
+</span>138 <span style=''>  protected def pump() : Input[PullType] = {
+</span>139 <span style=''>    if (</span><span style='background: #AEF1AE'>feeder.needMoreInput</span><span style=''>) </span><span style='background: #F0ADAD'>{
+</span>140 <span style=''></span><span style='background: #F0ADAD'>      //println(&quot;needed more but we still pumped&quot;)
+</span>141 <span style=''></span><span style='background: #F0ADAD'>    }</span><span style=''>
+</span>142 <span style=''>
+</span>143 <span style=''>    // don't have to re-read, let it push what it has
+</span>144 <span style=''>    if (</span><span style='background: #AEF1AE'>depth == -1</span><span style=''>) </span><span style='background: #AEF1AE'>{
+</span>145 <span style=''></span><span style='background: #AEF1AE'>      //println(&quot;pumping misc&quot;)
+</span>146 <span style=''></span><span style='background: #AEF1AE'>      var r = pumpMisc()
+</span>147 <span style=''></span><span style='background: #AEF1AE'>      // keep going if there are more events to process and are still in misc
+</span>148 <span style=''></span><span style='background: #AEF1AE'>      while(!feeder.needMoreInput &amp;&amp; r(el = E =&gt; false, empty = true, eof = </span><span style='background: #F0ADAD'>false</span><span style='background: #AEF1AE'>)) {
+</span>149 <span style=''></span><span style='background: #AEF1AE'>        r = pumpMisc()
+</span>150 <span style=''></span><span style='background: #AEF1AE'>      }
+</span>151 <span style=''></span><span style='background: #AEF1AE'>      r
+</span>152 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''> else </span><span style='background: #AEF1AE'>{
+</span>153 <span style=''></span><span style='background: #AEF1AE'>      // 2nd &gt; events
+</span>154 <span style=''></span><span style='background: #AEF1AE'>      val (event, num, odepth, oprolog) = PullUtils.pumpEvent(parser, strategy, token, prolog, depth)(eventHandler)
+</span>155 <span style=''></span><span style='background: #AEF1AE'>
+</span>156 <span style=''></span><span style='background: #AEF1AE'>      depth = odepth
+</span>157 <span style=''></span><span style='background: #AEF1AE'>
+</span>158 <span style=''></span><span style='background: #AEF1AE'>      if (num == END_DOCUMENT) </span><span style='background: #F0ADAD'>{
+</span>159 <span style=''></span><span style='background: #F0ADAD'>        // EOF - let the iter deal -- should not occur here though, only when depth == -1
+</span>160 <span style=''></span><span style='background: #F0ADAD'>        //println(&quot;closing in pump&quot;)
+</span>161 <span style=''></span><span style='background: #F0ADAD'>        closeResource
+</span>162 <span style=''></span><span style='background: #F0ADAD'>        //Some(EOF[T])
+</span>163 <span style=''></span><span style='background: #F0ADAD'>        Eof[PullType]
+</span>164 <span style=''></span><span style='background: #F0ADAD'>      }</span><span style='background: #AEF1AE'> else if (num == EVENT_INCOMPLETE) {
+</span>165 <span style=''></span><span style='background: #AEF1AE'>        // let the iter attempt to deal
+</span>166 <span style=''></span><span style='background: #AEF1AE'>        //empties += 1
+</span>167 <span style=''></span><span style='background: #AEF1AE'>        //Some(IterV.Empty[T])
+</span>168 <span style=''></span><span style='background: #AEF1AE'>        Input.Empty[PullType]
+</span>169 <span style=''></span><span style='background: #AEF1AE'>      } else {
+</span>170 <span style=''></span><span style='background: #AEF1AE'>        // actual data present, odepth -1 is looked at for the next iter
+</span>171 <span style=''></span><span style='background: #AEF1AE'>        //Some(El(event))
+</span>172 <span style=''></span><span style='background: #AEF1AE'>        Element(event)
+</span>173 <span style=''></span><span style='background: #AEF1AE'>      }
+</span>174 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>175 <span style=''>  }
+</span>176 <span style=''>
+</span>177 <span style=''>  // keep going until we get needs more input
+</span>178 <span style=''>  protected def nextStream(): EphemeralStream[PullType] = {
+</span>179 <span style=''>    if (</span><span style='background: #AEF1AE'>isClosed || feeder.needMoreInput</span><span style=''>) { // keep num around?
+</span>180 <span style=''>    //  println(&quot;got to nextStream and empty&quot;)
+</span>181 <span style=''>      </span><span style='background: #AEF1AE'>emptyEphemeralStream</span><span style=''>
+</span>182 <span style=''>    } else </span><span style='background: #AEF1AE'>{
+</span>183 <span style=''></span><span style='background: #AEF1AE'>	// push one more off
+</span>184 <span style=''></span><span style='background: #AEF1AE'>      val pumped = pump
+</span>185 <span style=''></span><span style='background: #AEF1AE'>      pumped(
+</span>186 <span style=''></span><span style='background: #AEF1AE'>	el = e =&gt; {
+</span>187 <span style=''></span><span style='background: #AEF1AE'>//	  println(&quot;got some &quot;+e)
+</span>188 <span style=''></span><span style='background: #AEF1AE'>	  EphemeralStream.cons[PullType](e, nextStream())
+</span>189 <span style=''></span><span style='background: #AEF1AE'>	},
+</span>190 <span style=''></span><span style='background: #AEF1AE'>	empty = {
+</span>191 <span style=''></span><span style='background: #AEF1AE'>//	  println(&quot;pumped all we have&quot;)
+</span>192 <span style=''></span><span style='background: #AEF1AE'>	  emptyEphemeralStream
+</span>193 <span style=''></span><span style='background: #AEF1AE'>	},
+</span>194 <span style=''></span><span style='background: #AEF1AE'>	eof = {
+</span>195 <span style=''></span><span style='background: #AEF1AE'>//	  println(&quot;eof from pump but returned empty&quot;)
+</span>196 <span style=''></span><span style='background: #AEF1AE'>	  </span><span style='background: #F0ADAD'>emptyEphemeralStream</span><span style='background: #AEF1AE'> // next run will pick it up
+</span>197 <span style=''></span><span style='background: #AEF1AE'>	}
+</span>198 <span style=''></span><span style='background: #AEF1AE'>      ) // 
+</span>199 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>200 <span style=''>  }
+</span>201 <span style=''>  /**
+</span>202 <span style=''>   * Given a DataChunk will return the next available data stream.
+</span>203 <span style=''>   * Returns EOF when the Parser is closed, Empty when more DataChunks are needed.
+</span>204 <span style=''>   * Returning El[EphemeralStream[PullType]] provides a stream which will lazily evalulate all available Xml Events from this DataChunk.
+</span>205 <span style=''>   *
+</span>206 <span style=''>   *
+</span>207 <span style=''>   * NOTEs (see Aalto-xml feeder.feedInput for details on this):
+</span>208 <span style=''>   * 1) All existing events from the last El should be consumed before calling nextInput again
+</span>209 <span style=''>   * 2) The DataChunk passed in should not be re-used until the stream returns empty (or Empty/EOF is returned).
+</span>210 <span style=''>   */ 
+</span>211 <span style=''>  def nextInput(d: DataChunk): Input[EphemeralStream[PullType]] = {
+</span>212 <span style=''>    //println(&quot;called nextInput&quot;)
+</span>213 <span style=''>
+</span>214 <span style=''>    if (</span><span style='background: #AEF1AE'>d.isEmpty</span><span style=''>) {
+</span>215 <span style=''>      //println(&quot;fed empty&quot;)
+</span>216 <span style=''>      </span><span style='background: #AEF1AE'>Input.Empty[EphemeralStream[PullType]]</span><span style=''>
+</span>217 <span style=''>    } else 
+</span>218 <span style=''>      </span><span style='background: #AEF1AE'>if (isClosed || d.isEOF) {
+</span>219 <span style=''></span><span style='background: #AEF1AE'>        if (d.isEOF) {
+</span>220 <span style=''></span><span style='background: #AEF1AE'>          //println(&quot;Data was eof&quot;)
+</span>221 <span style=''></span><span style='background: #AEF1AE'>          closeResource
+</span>222 <span style=''></span><span style='background: #AEF1AE'>        }
+</span>223 <span style=''></span><span style='background: #AEF1AE'>        Eof[EphemeralStream[PullType]]
+</span>224 <span style=''></span><span style='background: #AEF1AE'>      } else {
+</span>225 <span style=''></span><span style='background: #AEF1AE'>        if (!feeder.needMoreInput) {
+</span>226 <span style=''></span><span style='background: #AEF1AE'>          </span><span style='background: #F0ADAD'>error(&quot;The stream from the previous call to nextInput was not evaluated &quot;)</span><span style='background: #AEF1AE'>
+</span>227 <span style=''></span><span style='background: #AEF1AE'>        }
+</span>228 <span style=''></span><span style='background: #AEF1AE'>
+</span>229 <span style=''></span><span style='background: #AEF1AE'>        //println(&quot;pushing &quot;+d)
+</span>230 <span style=''></span><span style='background: #AEF1AE'>        feeder.feedInput(d.array, d.offset, d.length)
+</span>231 <span style=''></span><span style='background: #AEF1AE'>
+</span>232 <span style=''></span><span style='background: #AEF1AE'>        val res = nextStream()
+</span>233 <span style=''></span><span style='background: #AEF1AE'>
+</span>234 <span style=''></span><span style='background: #AEF1AE'>        if (res.isEmpty) { // let the enumerator deal with it
+</span>235 <span style=''></span><span style='background: #AEF1AE'>          //println(&quot;empty after feeding&quot;)
+</span>236 <span style=''></span><span style='background: #AEF1AE'>          Input.Empty[EphemeralStream[PullType]]
+</span>237 <span style=''></span><span style='background: #AEF1AE'>        } else // it may have empty after the call
+</span>238 <span style=''></span><span style='background: #AEF1AE'>          Element[EphemeralStream[PullType]](res)
+</span>239 <span style=''></span><span style='background: #AEF1AE'>
+</span>240 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>241 <span style=''>  }
+</span>242 <span style=''>
+</span>243 <span style=''>  /**
+</span>244 <span style=''>   * Provides a ResumableIter that converts DataChunks via a parser into a stream of PullTypes.  Returns Done when there are results from the pushed chunks.
+</span>245 <span style=''>   *
+</span>246 <span style=''>   * Calls AsyncParser parse
+</span>247 <span style=''>   */  
+</span>248 <span style=''>  def iteratee: ResumableIter[DataChunk, EphemeralStream[PullType]] =
+</span>249 <span style=''>    </span><span style='background: #AEF1AE'>AsyncParser.parse(this)</span><span style=''>
+</span>250 <span style=''>  
+</span>251 <span style=''>}
+</span>252 <span style=''>
+</span>253 <span style=''>object AsyncParser {
+</span>254 <span style=''>
+</span>255 <span style=''>  /**
+</span>256 <span style=''>   * Provides a ResumableIter that converts DataChunks via a parser into a stream of PullTypes.  Returns Done when there are results from the pushed chunks.
+</span>257 <span style=''>   */
+</span>258 <span style=''>  def parse(parser: AsyncParser): ResumableIter[DataChunk, EphemeralStream[PullType]] = {
+</span>259 <span style=''>
+</span>260 <span style=''>    def EOF: ResumableStep[DataChunk, EphemeralStream[PullType]] = {
+</span>261 <span style=''>      </span><span style='background: #AEF1AE'>parser.closeResource</span><span style=''>
+</span>262 <span style=''>
+</span>263 <span style=''>      //println(&quot;closing against EOF from parse&quot;)
+</span>264 <span style=''>      </span><span style='background: #AEF1AE'>Done(</span><span style='background: #F0ADAD'>(emptyEphemeralStream,
+</span>265 <span style=''></span><span style='background: #F0ADAD'>        iteratee(Cont(
+</span>266 <span style=''></span><span style='background: #F0ADAD'>          error(&quot;Called the continuation on a closed parser&quot;)
+</span>267 <span style=''></span><span style='background: #F0ADAD'>        )))</span><span style='background: #AEF1AE'>, Eof[DataChunk])</span><span style=''>
+</span>268 <span style=''>    }
+</span>269 <span style=''>
+</span>270 <span style=''>//    def emptyness : ResumableStep[DataChunk, EphemeralStream[PullType]] =
+</span>271 <span style=''>  //    Done((emptyEphemeralStream, iteratee( Cont(step))), Input.Empty[DataChunk])
+</span>272 <span style=''>
+</span>273 <span style=''>    def step(s: Input[DataChunk]): ResumableIter[DataChunk, EphemeralStream[PullType]] =
+</span>274 <span style=''>      </span><span style='background: #AEF1AE'>iteratee(
+</span>275 <span style=''></span><span style='background: #AEF1AE'>        s(el = e =&gt; {
+</span>276 <span style=''></span><span style='background: #AEF1AE'>            //println(&quot;Did get a large chunk &quot;+e)
+</span>277 <span style=''></span><span style='background: #AEF1AE'>            val r = parser.nextInput(e)
+</span>278 <span style=''></span><span style='background: #AEF1AE'>            r( el = es =&gt; {
+</span>279 <span style=''></span><span style='background: #AEF1AE'>            //println(&quot;got el with es &quot; + es.isEmpty + &quot; feeder &quot; + parser.feeder.needMoreInput)
+</span>280 <span style=''></span><span style='background: #AEF1AE'>                Done((es,
+</span>281 <span style=''></span><span style='background: #AEF1AE'>                  iteratee(Cont(
+</span>282 <span style=''></span><span style='background: #AEF1AE'>                    step
+</span>283 <span style=''></span><span style='background: #AEF1AE'>                    ))), Input.Empty[DataChunk])
+</span>284 <span style=''></span><span style='background: #AEF1AE'>                },
+</span>285 <span style=''></span><span style='background: #AEF1AE'>                empty =
+</span>286 <span style=''></span><span style='background: #AEF1AE'>                  //println(&quot;empty from input&quot;)
+</span>287 <span style=''></span><span style='background: #AEF1AE'>                  //emptyness
+</span>288 <span style=''></span><span style='background: #AEF1AE'>                  Cont(step)
+</span>289 <span style=''></span><span style='background: #AEF1AE'>                ,
+</span>290 <span style=''></span><span style='background: #AEF1AE'>                eof = EOF
+</span>291 <span style=''></span><span style='background: #AEF1AE'>            )
+</span>292 <span style=''></span><span style='background: #AEF1AE'>          },
+</span>293 <span style=''></span><span style='background: #AEF1AE'>          empty = {
+</span>294 <span style=''></span><span style='background: #AEF1AE'>            //println(&quot;empty input&quot;)
+</span>295 <span style=''></span><span style='background: #AEF1AE'>            //emptyness
+</span>296 <span style=''></span><span style='background: #AEF1AE'>            //Done((EphemeralStream.empty, Cont(step)), IterV.Empty[DataChunk]) // nothing that can be done on empty
+</span>297 <span style=''></span><span style='background: #AEF1AE'>            Cont(step)
+</span>298 <span style=''></span><span style='background: #AEF1AE'>          },
+</span>299 <span style=''></span><span style='background: #AEF1AE'>          eof = EOF
+</span>300 <span style=''></span><span style='background: #AEF1AE'>        )
+</span>301 <span style=''></span><span style='background: #AEF1AE'>      )</span><span style=''>
+</span>302 <span style=''>
+</span>303 <span style=''>    </span><span style='background: #AEF1AE'>iteratee( Cont(step) )</span><span style=''>
+</span>304 <span style=''>  }
+</span>305 <span style=''>
+</span>306 <span style=''>
+</span>307 <span style=''>  /**
+</span>308 <span style=''>   * Creates a parser based on the input channel provided
+</span>309 <span style=''>   */
+</span>310 <span style=''>  def apply[TokenT &lt;: OptimisationToken]( optimisationStrategy : MemoryOptimisationStrategy[TokenT] = defaultOptimisation, parsers : Pool[AsyncXMLInputFactory] = AsyncXMLInputFactoryPool )( implicit xmlVersion : XmlVersion ) : AsyncParser = </span><span style='background: #AEF1AE'>new</span><span style=''> AsyncParser(){
+</span>311 <span style=''>    type Token = TokenT
+</span>312 <span style=''>    val strategy = optimisationStrategy
+</span>313 <span style=''>    
+</span>314 <span style=''>    import PullUtils.weAreInAParser
+</span>315 <span style=''>    val token = </span><span style='background: #AEF1AE'>strategy.createToken</span><span style=''>
+</span>316 <span style=''>
+</span>317 <span style=''>    val pf = </span><span style='background: #AEF1AE'>parsers.grab</span><span style=''>
+</span>318 <span style=''>
+</span>319 <span style=''>    val parser = </span><span style='background: #AEF1AE'>pf.createAsyncForByteArray()</span><span style=''>
+</span>320 <span style=''>    val feeder = </span><span style='background: #AEF1AE'>parser.getInputFeeder</span><span style=''>
+</span>321 <span style=''>
+</span>322 <span style=''>    /**
+</span>323 <span style=''>     * also handle the parsers pool
+</span>324 <span style=''>     */ 
+</span>325 <span style=''>    override protected def doClose = { 
+</span>326 <span style=''>      </span><span style='background: #AEF1AE'>super.doClose</span><span style=''>
+</span>327 <span style=''>      </span><span style='background: #AEF1AE'>parsers.giveBack(pf)</span><span style=''>
+</span>328 <span style=''>    }
+</span>329 <span style=''>
+</span>330 <span style=''>  }
+</span>331 <span style=''>
+</span>332 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          42
+        </td>
+        <td>
+          1
+        </td>
+        <td>
+          1376
+          -
+          1393
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.fasterxml.aalto.AsyncInputFeeder.endOfInput
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AsyncParser.this.feeder.endOfInput()
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          2
+        </td>
+        <td>
+          1398
+          -
+          1410
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.stream.XMLStreamReader.close
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AsyncParser.this.parser.close()
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          3
+        </td>
+        <td>
+          1473
+          -
+          1483
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.EmptyDoc.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.EmptyDoc.apply(scales.xml.EmptyDoc.apply$default$1, scales.xml.EmptyDoc.apply$default$2)
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          4
+        </td>
+        <td>
+          1541
+          -
+          1548
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.aalto.AsyncParser.docImpl
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AsyncParser.this.docImpl
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          5
+        </td>
+        <td>
+          1541
+          -
+          1567
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.EmptyDoc.copy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          qual$1.copy(x$1, x$2)
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          11
+        </td>
+        <td>
+          1624
+          -
+          1724
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.aalto.AsyncParser.copyProlog
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AsyncParser.this.copyProlog({
+  &lt;artifact&gt; val qual$1: scales.xml.Prolog = AsyncParser.this.prolog;
+  &lt;artifact&gt; val x$1: scales.xml.Miscs = AsyncParser.this.prolog.misc.:+[scales.xml.Misc, scales.xml.Miscs](scales.xml.parser.pull.PullUtils.getMisc(m, &quot;prolog&quot;))(collection.this.Seq.canBuildFrom[scales.xml.Misc]);
+  &lt;artifact&gt; val x$2: scales.xml.Declaration = qual$1.copy$default$1;
+  &lt;artifact&gt; val x$3: Option[scales.xml.DTD] = qual$1.copy$default$3;
+  qual$1.copy(x$2, x$1, x$3)
+})
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          6
+        </td>
+        <td>
+          1643
+          -
+          1649
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.aalto.AsyncParser.prolog
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AsyncParser.this.prolog
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          10
+        </td>
+        <td>
+          1643
+          -
+          1718
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Prolog.copy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          qual$1.copy(x$2, x$1, x$3)
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          7
+        </td>
+        <td>
+          1679
+          -
+          1709
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.PullUtils.getMisc
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.parser.pull.PullUtils.getMisc(m, &quot;prolog&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          8
+        </td>
+        <td>
+          1676
+          -
+          1676
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.Seq.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.Seq.canBuildFrom[scales.xml.Misc]
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          9
+        </td>
+        <td>
+          1664
+          -
+          1709
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.SeqLike.:+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AsyncParser.this.prolog.misc.:+[scales.xml.Misc, scales.xml.Miscs](scales.xml.parser.pull.PullUtils.getMisc(m, &quot;prolog&quot;))(collection.this.Seq.canBuildFrom[scales.xml.Misc])
+        </td>
+      </tr><tr>
+        <td>
+          62
+        </td>
+        <td>
+          12
+        </td>
+        <td>
+          1788
+          -
+          1795
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.aalto.AsyncParser.docImpl
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AsyncParser.this.docImpl
+        </td>
+      </tr><tr>
+        <td>
+          62
+        </td>
+        <td>
+          17
+        </td>
+        <td>
+          1788
+          -
+          1897
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.EmptyDoc.copy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          qual$1.copy(x$2, x$1)
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          16
+        </td>
+        <td>
+          1815
+          -
+          1891
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.EndMisc.copy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AsyncParser.this.end.copy(AsyncParser.this.end.misc.:+[scales.xml.Misc, scales.xml.Miscs](scales.xml.parser.pull.PullUtils.getMisc(m, &quot;endMisc&quot;))(collection.this.Seq.canBuildFrom[scales.xml.Misc]))
+        </td>
+      </tr><tr>
+        <td>
+          64
+        </td>
+        <td>
+          13
+        </td>
+        <td>
+          1852
+          -
+          1883
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.PullUtils.getMisc
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.parser.pull.PullUtils.getMisc(m, &quot;endMisc&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          64
+        </td>
+        <td>
+          14
+        </td>
+        <td>
+          1849
+          -
+          1849
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.Seq.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.Seq.canBuildFrom[scales.xml.Misc]
+        </td>
+      </tr><tr>
+        <td>
+          64
+        </td>
+        <td>
+          15
+        </td>
+        <td>
+          1840
+          -
+          1883
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.SeqLike.:+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AsyncParser.this.end.misc.:+[scales.xml.Misc, scales.xml.Miscs](scales.xml.parser.pull.PullUtils.getMisc(m, &quot;endMisc&quot;))(collection.this.Seq.canBuildFrom[scales.xml.Misc])
+        </td>
+      </tr><tr>
+        <td>
+          69
+        </td>
+        <td>
+          18
+        </td>
+        <td>
+          1918
+          -
+          1932
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.EmptyDoc.prolog
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AsyncParser.this.docImpl.prolog
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          19
+        </td>
+        <td>
+          1945
+          -
+          1956
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.EmptyDoc.end
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AsyncParser.this.docImpl.end
+        </td>
+      </tr><tr>
+        <td>
+          72
+        </td>
+        <td>
+          20
+        </td>
+        <td>
+          1982
+          -
+          1984
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          -1
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          21
+        </td>
+        <td>
+          2011
+          -
+          2016
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          22
+        </td>
+        <td>
+          2136
+          -
+          2143
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.aalto.AsyncParser.started
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          AsyncParser.this.started
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          23
+        </td>
+        <td>
+          2193
+          -
+          2227
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Text.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Text.apply(&quot;I am incomplete or doc end&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          24
+        </td>
+        <td>
+          2188
+          -
+          2228
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Left.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Left.apply[scales.xml.Text, Nothing](scales.xml.Text.apply(&quot;I am incomplete or doc end&quot;))
+        </td>
+      </tr><tr>
+        <td>
+          85
+        </td>
+        <td>
+          25
+        </td>
+        <td>
+          2289
+          -
+          2305
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          257
+        </td>
+      </tr><tr>
+        <td>
+          85
+        </td>
+        <td>
+          26
+        </td>
+        <td>
+          2309
+          -
+          2326
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          x.==(8)
+        </td>
+      </tr><tr>
+        <td>
+          85
+        </td>
+        <td>
+          27
+        </td>
+        <td>
+          2284
+          -
+          2326
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.||
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x.==(257).||(x.==(8))
+        </td>
+      </tr><tr>
+        <td>
+          86
+        </td>
+        <td>
+          28
+        </td>
+        <td>
+          2334
+          -
+          2345
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.aalto.AsyncParser.incompOrEnd
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AsyncParser.this.incompOrEnd
+        </td>
+      </tr><tr>
+        <td>
+          86
+        </td>
+        <td>
+          29
+        </td>
+        <td>
+          2334
+          -
+          2345
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.parser.pull.aalto.AsyncParser.incompOrEnd
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AsyncParser.this.incompOrEnd
+        </td>
+      </tr><tr>
+        <td>
+          88
+        </td>
+        <td>
+          30
+        </td>
+        <td>
+          2367
+          -
+          2422
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;Got an unexpected event type &quot;.+(x).+(&quot; cannot proceed.&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          88
+        </td>
+        <td>
+          31
+        </td>
+        <td>
+          2361
+          -
+          2423
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.iteratee.Iteratees.error
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.utils.`package`.error(&quot;Got an unexpected event type &quot;.+(x).+(&quot; cannot proceed.&quot;))
+        </td>
+      </tr><tr>
+        <td>
+          88
+        </td>
+        <td>
+          32
+        </td>
+        <td>
+          2361
+          -
+          2423
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.iteratee.Iteratees.error
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.utils.`package`.error(&quot;Got an unexpected event type &quot;.+(x).+(&quot; cannot proceed.&quot;))
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          33
+        </td>
+        <td>
+          2563
+          -
+          2563
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple4._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$1._1
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          34
+        </td>
+        <td>
+          2570
+          -
+          2570
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple4._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$1._2
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          35
+        </td>
+        <td>
+          2575
+          -
+          2575
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple4._3
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$1._3
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          36
+        </td>
+        <td>
+          2583
+          -
+          2583
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple4._4
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$1._4
+        </td>
+      </tr><tr>
+        <td>
+          98
+        </td>
+        <td>
+          37
+        </td>
+        <td>
+          2673
+          -
+          2687
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.aalto.AsyncParser.depth_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AsyncParser.this.depth_=(odepth)
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          38
+        </td>
+        <td>
+          2708
+          -
+          2714
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.aalto.AsyncParser.prolog
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AsyncParser.this.prolog
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          39
+        </td>
+        <td>
+          2697
+          -
+          2714
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.!=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          oprolog.!=(AsyncParser.this.prolog)
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          42
+        </td>
+        <td>
+          2693
+          -
+          2693
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          43
+        </td>
+        <td>
+          2693
+          -
+          2693
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          102
+        </td>
+        <td>
+          40
+        </td>
+        <td>
+          2743
+          -
+          2764
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.aalto.AsyncParser.copyProlog
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          AsyncParser.this.copyProlog(oprolog)
+        </td>
+      </tr><tr>
+        <td>
+          102
+        </td>
+        <td>
+          41
+        </td>
+        <td>
+          2743
+          -
+          2764
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.parser.pull.aalto.AsyncParser.copyProlog
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          AsyncParser.this.copyProlog(oprolog)
+        </td>
+      </tr><tr>
+        <td>
+          105
+        </td>
+        <td>
+          44
+        </td>
+        <td>
+          2843
+          -
+          2862
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          num.==(8)
+        </td>
+      </tr><tr>
+        <td>
+          105
+        </td>
+        <td>
+          47
+        </td>
+        <td>
+          2864
+          -
+          2993
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          {
+  AsyncParser.this.closeResource;
+  scalaz.iteratee.Input.Eof.apply[scales.xml.PullType]
+}
+        </td>
+      </tr><tr>
+        <td>
+          108
+        </td>
+        <td>
+          45
+        </td>
+        <td>
+          2933
+          -
+          2946
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.resources.CloseOnNeed.closeResource
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          AsyncParser.this.closeResource
+        </td>
+      </tr><tr>
+        <td>
+          110
+        </td>
+        <td>
+          46
+        </td>
+        <td>
+          2974
+          -
+          2987
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scalaz.iteratee.Input.Eof.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scalaz.iteratee.Input.Eof.apply[scales.xml.PullType]
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          48
+        </td>
+        <td>
+          3003
+          -
+          3026
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          num.==(257)
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          73
+        </td>
+        <td>
+          2999
+          -
+          3724
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (num.==(257))
+  scalaz.iteratee.Input.Empty.apply[scales.xml.PullType]
+else
+  if (odepth.==(-1))
+    {
+      if (event.isLeft.&amp;&amp;(event.left.get.eq(scales.xml.parser.pull.PullUtils.dtdDummy)))
+        AsyncParser.this.copyProlog({
+          &lt;artifact&gt; val qual$1: scales.xml.Prolog = AsyncParser.this.prolog;
+          &lt;artifact&gt; val x$1: Some[scales.xml.DTD] = scala.Some.apply[scales.xml.DTD](scales.xml.DTD.apply(&quot;&quot;, &quot;&quot;, &quot;&quot;));
+          &lt;artifact&gt; val x$2: scales.xml.Declaration = qual$1.copy$default$1;
+          &lt;artifact&gt; val x$3: scales.xml.Miscs = qual$1.copy$default$2;
+          qual$1.copy(x$2, x$3, x$1)
+        })
+      else
+        if (AsyncParser.this.started.unary_!)
+          AsyncParser.this.addPrologMisc(event)
+        else
+          AsyncParser.this.addEndMisc(event);
+      scalaz.iteratee.Input.Empty.apply[scales.xml.PullType]
+    }
+  else
+    {
+      AsyncParser.this.started_=(true);
+      scalaz.iteratee.Input.Element.apply[scales.xml.PullType](event)
+    }
+        </td>
+      </tr><tr>
+        <td>
+          113
+        </td>
+        <td>
+          49
+        </td>
+        <td>
+          3073
+          -
+          3094
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scalaz.iteratee.Input.Empty.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.Input.Empty.apply[scales.xml.PullType]
+        </td>
+      </tr><tr>
+        <td>
+          113
+        </td>
+        <td>
+          50
+        </td>
+        <td>
+          3073
+          -
+          3094
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scalaz.iteratee.Input.Empty.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.Input.Empty.apply[scales.xml.PullType]
+        </td>
+      </tr><tr>
+        <td>
+          114
+        </td>
+        <td>
+          51
+        </td>
+        <td>
+          3128
+          -
+          3140
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          odepth.==(-1)
+        </td>
+      </tr><tr>
+        <td>
+          114
+        </td>
+        <td>
+          68
+        </td>
+        <td>
+          3142
+          -
+          3548
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  if (event.isLeft.&amp;&amp;(event.left.get.eq(scales.xml.parser.pull.PullUtils.dtdDummy)))
+    AsyncParser.this.copyProlog({
+      &lt;artifact&gt; val qual$1: scales.xml.Prolog = AsyncParser.this.prolog;
+      &lt;artifact&gt; val x$1: Some[scales.xml.DTD] = scala.Some.apply[scales.xml.DTD](scales.xml.DTD.apply(&quot;&quot;, &quot;&quot;, &quot;&quot;));
+      &lt;artifact&gt; val x$2: scales.xml.Declaration = qual$1.copy$default$1;
+      &lt;artifact&gt; val x$3: scales.xml.Miscs = qual$1.copy$default$2;
+      qual$1.copy(x$2, x$3, x$1)
+    })
+  else
+    if (AsyncParser.this.started.unary_!)
+      AsyncParser.this.addPrologMisc(event)
+    else
+      AsyncParser.this.addEndMisc(event);
+  scalaz.iteratee.Input.Empty.apply[scales.xml.PullType]
+}
+        </td>
+      </tr><tr>
+        <td>
+          114
+        </td>
+        <td>
+          72
+        </td>
+        <td>
+          3124
+          -
+          3724
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (odepth.==(-1))
+  {
+    if (event.isLeft.&amp;&amp;(event.left.get.eq(scales.xml.parser.pull.PullUtils.dtdDummy)))
+      AsyncParser.this.copyProlog({
+        &lt;artifact&gt; val qual$1: scales.xml.Prolog = AsyncParser.this.prolog;
+        &lt;artifact&gt; val x$1: Some[scales.xml.DTD] = scala.Some.apply[scales.xml.DTD](scales.xml.DTD.apply(&quot;&quot;, &quot;&quot;, &quot;&quot;));
+        &lt;artifact&gt; val x$2: scales.xml.Declaration = qual$1.copy$default$1;
+        &lt;artifact&gt; val x$3: scales.xml.Miscs = qual$1.copy$default$2;
+        qual$1.copy(x$2, x$3, x$1)
+      })
+    else
+      if (AsyncParser.this.started.unary_!)
+        AsyncParser.this.addPrologMisc(event)
+      else
+        AsyncParser.this.addEndMisc(event);
+    scalaz.iteratee.Input.Empty.apply[scales.xml.PullType]
+  }
+else
+  {
+    AsyncParser.this.started_=(true);
+    scalaz.iteratee.Input.Element.apply[scales.xml.PullType](event)
+  }
+        </td>
+      </tr><tr>
+        <td>
+          118
+        </td>
+        <td>
+          52
+        </td>
+        <td>
+          3267
+          -
+          3285
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.PullUtils.dtdDummy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.parser.pull.PullUtils.dtdDummy
+        </td>
+      </tr><tr>
+        <td>
+          118
+        </td>
+        <td>
+          53
+        </td>
+        <td>
+          3249
+          -
+          3285
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          event.left.get.eq(scales.xml.parser.pull.PullUtils.dtdDummy)
+        </td>
+      </tr><tr>
+        <td>
+          118
+        </td>
+        <td>
+          54
+        </td>
+        <td>
+          3232
+          -
+          3286
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          event.isLeft.&amp;&amp;(event.left.get.eq(scales.xml.parser.pull.PullUtils.dtdDummy))
+        </td>
+      </tr><tr>
+        <td>
+          119
+        </td>
+        <td>
+          55
+        </td>
+        <td>
+          3303
+          -
+          3309
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.aalto.AsyncParser.prolog
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          AsyncParser.this.prolog
+        </td>
+      </tr><tr>
+        <td>
+          119
+        </td>
+        <td>
+          57
+        </td>
+        <td>
+          3321
+          -
+          3409
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Some.apply[scales.xml.DTD](scales.xml.DTD.apply(&quot;&quot;, &quot;&quot;, &quot;&quot;))
+        </td>
+      </tr><tr>
+        <td>
+          119
+        </td>
+        <td>
+          58
+        </td>
+        <td>
+          3303
+          -
+          3410
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Prolog.copy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          qual$1.copy(x$2, x$3, x$1)
+        </td>
+      </tr><tr>
+        <td>
+          119
+        </td>
+        <td>
+          59
+        </td>
+        <td>
+          3291
+          -
+          3411
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.aalto.AsyncParser.copyProlog
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          AsyncParser.this.copyProlog({
+  &lt;artifact&gt; val qual$1: scales.xml.Prolog = AsyncParser.this.prolog;
+  &lt;artifact&gt; val x$1: Some[scales.xml.DTD] = scala.Some.apply[scales.xml.DTD](scales.xml.DTD.apply(&quot;&quot;, &quot;&quot;, &quot;&quot;));
+  &lt;artifact&gt; val x$2: scales.xml.Declaration = qual$1.copy$default$1;
+  &lt;artifact&gt; val x$3: scales.xml.Miscs = qual$1.copy$default$2;
+  qual$1.copy(x$2, x$3, x$1)
+})
+        </td>
+      </tr><tr>
+        <td>
+          119
+        </td>
+        <td>
+          60
+        </td>
+        <td>
+          3291
+          -
+          3411
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.parser.pull.aalto.AsyncParser.copyProlog
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          AsyncParser.this.copyProlog({
+  &lt;artifact&gt; val qual$1: scales.xml.Prolog = AsyncParser.this.prolog;
+  &lt;artifact&gt; val x$1: Some[scales.xml.DTD] = scala.Some.apply[scales.xml.DTD](scales.xml.DTD.apply(&quot;&quot;, &quot;&quot;, &quot;&quot;));
+  &lt;artifact&gt; val x$2: scales.xml.Declaration = qual$1.copy$default$1;
+  &lt;artifact&gt; val x$3: scales.xml.Miscs = qual$1.copy$default$2;
+  qual$1.copy(x$2, x$3, x$1)
+})
+        </td>
+      </tr><tr>
+        <td>
+          120
+        </td>
+        <td>
+          56
+        </td>
+        <td>
+          3330
+          -
+          3345
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.DTD.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.xml.DTD.apply(&quot;&quot;, &quot;&quot;, &quot;&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          123
+        </td>
+        <td>
+          61
+        </td>
+        <td>
+          3432
+          -
+          3440
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AsyncParser.this.started.unary_!
+        </td>
+      </tr><tr>
+        <td>
+          123
+        </td>
+        <td>
+          66
+        </td>
+        <td>
+          3428
+          -
+          3492
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (AsyncParser.this.started.unary_!)
+  AsyncParser.this.addPrologMisc(event)
+else
+  AsyncParser.this.addEndMisc(event)
+        </td>
+      </tr><tr>
+        <td>
+          124
+        </td>
+        <td>
+          62
+        </td>
+        <td>
+          3445
+          -
+          3465
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.aalto.AsyncParser.addPrologMisc
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AsyncParser.this.addPrologMisc(event)
+        </td>
+      </tr><tr>
+        <td>
+          124
+        </td>
+        <td>
+          63
+        </td>
+        <td>
+          3445
+          -
+          3465
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.parser.pull.aalto.AsyncParser.addPrologMisc
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AsyncParser.this.addPrologMisc(event)
+        </td>
+      </tr><tr>
+        <td>
+          126
+        </td>
+        <td>
+          64
+        </td>
+        <td>
+          3475
+          -
+          3492
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.aalto.AsyncParser.addEndMisc
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AsyncParser.this.addEndMisc(event)
+        </td>
+      </tr><tr>
+        <td>
+          126
+        </td>
+        <td>
+          65
+        </td>
+        <td>
+          3475
+          -
+          3492
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.parser.pull.aalto.AsyncParser.addEndMisc
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AsyncParser.this.addEndMisc(event)
+        </td>
+      </tr><tr>
+        <td>
+          129
+        </td>
+        <td>
+          67
+        </td>
+        <td>
+          3515
+          -
+          3536
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scalaz.iteratee.Input.Empty.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.Input.Empty.apply[scales.xml.PullType]
+        </td>
+      </tr><tr>
+        <td>
+          130
+        </td>
+        <td>
+          71
+        </td>
+        <td>
+          3554
+          -
+          3724
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  AsyncParser.this.started_=(true);
+  scalaz.iteratee.Input.Element.apply[scales.xml.PullType](event)
+}
+        </td>
+      </tr><tr>
+        <td>
+          132
+        </td>
+        <td>
+          69
+        </td>
+        <td>
+          3615
+          -
+          3629
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.aalto.AsyncParser.started_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AsyncParser.this.started_=(true)
+        </td>
+      </tr><tr>
+        <td>
+          134
+        </td>
+        <td>
+          70
+        </td>
+        <td>
+          3704
+          -
+          3718
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.Input.Element.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.Input.Element.apply[scales.xml.PullType](event)
+        </td>
+      </tr><tr>
+        <td>
+          139
+        </td>
+        <td>
+          74
+        </td>
+        <td>
+          3783
+          -
+          3803
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.fasterxml.aalto.AsyncInputFeeder.needMoreInput
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AsyncParser.this.feeder.needMoreInput()
+        </td>
+      </tr><tr>
+        <td>
+          139
+        </td>
+        <td>
+          75
+        </td>
+        <td>
+          3805
+          -
+          3863
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          139
+        </td>
+        <td>
+          76
+        </td>
+        <td>
+          3805
+          -
+          3863
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          139
+        </td>
+        <td>
+          77
+        </td>
+        <td>
+          3779
+          -
+          3779
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          139
+        </td>
+        <td>
+          78
+        </td>
+        <td>
+          3779
+          -
+          3779
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          144
+        </td>
+        <td>
+          79
+        </td>
+        <td>
+          3927
+          -
+          3938
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AsyncParser.this.depth.==(-1)
+        </td>
+      </tr><tr>
+        <td>
+          144
+        </td>
+        <td>
+          93
+        </td>
+        <td>
+          3940
+          -
+          4207
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  var r: scalaz.iteratee.Input[scales.xml.PullType] = AsyncParser.this.pumpMisc();
+  while$1(){
+    if (AsyncParser.this.feeder.needMoreInput().unary_!.&amp;&amp;({
+      &lt;artifact&gt; val qual$1: scalaz.iteratee.Input[scales.xml.PullType] = r;
+      &lt;artifact&gt; val x$1: (=&gt; scales.xml.PullType) =&gt; Boolean = ((E: =&gt; scales.xml.PullType) =&gt; false);
+      &lt;artifact&gt; val x$2: () =&gt; Boolean = (() =&gt; true);
+      &lt;artifact&gt; val x$3: () =&gt; Boolean = (() =&gt; false);
+      qual$1.apply[Boolean](x$2.apply(), x$1, x$3.apply())
+    }))
+      {
+        r = AsyncParser.this.pumpMisc();
+        while$1()
+      }
+    else
+      ()
+  };
+  r
+}
+        </td>
+      </tr><tr>
+        <td>
+          146
+        </td>
+        <td>
+          80
+        </td>
+        <td>
+          3988
+          -
+          3998
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.aalto.AsyncParser.pumpMisc
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AsyncParser.this.pumpMisc()
+        </td>
+      </tr><tr>
+        <td>
+          148
+        </td>
+        <td>
+          81
+        </td>
+        <td>
+          4126
+          -
+          4131
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          148
+        </td>
+        <td>
+          82
+        </td>
+        <td>
+          4141
+          -
+          4145
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          148
+        </td>
+        <td>
+          83
+        </td>
+        <td>
+          4153
+          -
+          4158
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          148
+        </td>
+        <td>
+          84
+        </td>
+        <td>
+          4141
+          -
+          4141
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function0.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$2.apply()
+        </td>
+      </tr><tr>
+        <td>
+          148
+        </td>
+        <td>
+          85
+        </td>
+        <td>
+          4153
+          -
+          4153
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function0.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          x$3.apply()
+        </td>
+      </tr><tr>
+        <td>
+          148
+        </td>
+        <td>
+          86
+        </td>
+        <td>
+          4114
+          -
+          4159
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.Input.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          qual$1.apply[Boolean](x$2.apply(), x$1, x$3.apply())
+        </td>
+      </tr><tr>
+        <td>
+          148
+        </td>
+        <td>
+          87
+        </td>
+        <td>
+          4089
+          -
+          4159
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AsyncParser.this.feeder.needMoreInput().unary_!.&amp;&amp;({
+  &lt;artifact&gt; val qual$1: scalaz.iteratee.Input[scales.xml.PullType] = r;
+  &lt;artifact&gt; val x$1: (=&gt; scales.xml.PullType) =&gt; Boolean = ((E: =&gt; scales.xml.PullType) =&gt; false);
+  &lt;artifact&gt; val x$2: () =&gt; Boolean = (() =&gt; true);
+  &lt;artifact&gt; val x$3: () =&gt; Boolean = (() =&gt; false);
+  qual$1.apply[Boolean](x$2.apply(), x$1, x$3.apply())
+})
+        </td>
+      </tr><tr>
+        <td>
+          148
+        </td>
+        <td>
+          90
+        </td>
+        <td>
+          4171
+          -
+          4185
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  r = AsyncParser.this.pumpMisc();
+  while$1()
+}
+        </td>
+      </tr><tr>
+        <td>
+          148
+        </td>
+        <td>
+          91
+        </td>
+        <td>
+          4083
+          -
+          4083
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          148
+        </td>
+        <td>
+          92
+        </td>
+        <td>
+          4083
+          -
+          4083
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          149
+        </td>
+        <td>
+          88
+        </td>
+        <td>
+          4175
+          -
+          4185
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.aalto.AsyncParser.pumpMisc
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AsyncParser.this.pumpMisc()
+        </td>
+      </tr><tr>
+        <td>
+          149
+        </td>
+        <td>
+          89
+        </td>
+        <td>
+          4173
+          -
+          4173
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.aalto.AsyncParser.while$1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          while$1()
+        </td>
+      </tr><tr>
+        <td>
+          152
+        </td>
+        <td>
+          109
+        </td>
+        <td>
+          4213
+          -
+          4921
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  &lt;synthetic&gt; &lt;artifact&gt; private[this] val x$2: (scales.xml.PullType, Int, Int, scales.xml.Prolog) = (scales.xml.parser.pull.PullUtils.pumpEvent[AsyncParser.this.Token](AsyncParser.this.parser, AsyncParser.this.strategy, AsyncParser.this.token, AsyncParser.this.prolog, AsyncParser.this.depth)(AsyncParser.this.eventHandler): (scales.xml.PullType, Int, Int, scales.xml.Prolog) @unchecked) match {
+    case (_1: scales.xml.PullType, _2: Int, _3: Int, _4: scales.xml.Prolog)(scales.xml.PullType, Int, Int, scales.xml.Prolog)((event @ _), (num @ _), (odepth @ _), (oprolog @ _)) =&gt; scala.Tuple4.apply[scales.xml.PullType, Int, Int, scales.xml.Prolog](event, num, odepth, oprolog)
+  };
+  val event: scales.xml.PullType = x$2._1;
+  val num: Int = x$2._2;
+  val odepth: Int = x$2._3;
+  val oprolog: scales.xml.Prolog = x$2._4;
+  AsyncParser.this.depth_=(odepth);
+  if (num.==(8))
+    {
+      AsyncParser.this.closeResource;
+      scalaz.iteratee.Input.Eof.apply[scales.xml.PullType]
+    }
+  else
+    if (num.==(257))
+      scalaz.iteratee.Input.Empty.apply[scales.xml.PullType]
+    else
+      scalaz.iteratee.Input.Element.apply[scales.xml.PullType](event)
+}
+        </td>
+      </tr><tr>
+        <td>
+          154
+        </td>
+        <td>
+          94
+        </td>
+        <td>
+          4248
+          -
+          4248
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple4._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$2._1
+        </td>
+      </tr><tr>
+        <td>
+          154
+        </td>
+        <td>
+          95
+        </td>
+        <td>
+          4255
+          -
+          4255
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple4._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$2._2
+        </td>
+      </tr><tr>
+        <td>
+          154
+        </td>
+        <td>
+          96
+        </td>
+        <td>
+          4260
+          -
+          4260
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple4._3
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$2._3
+        </td>
+      </tr><tr>
+        <td>
+          154
+        </td>
+        <td>
+          97
+        </td>
+        <td>
+          4268
+          -
+          4268
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple4._4
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$2._4
+        </td>
+      </tr><tr>
+        <td>
+          156
+        </td>
+        <td>
+          98
+        </td>
+        <td>
+          4360
+          -
+          4374
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.aalto.AsyncParser.depth_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AsyncParser.this.depth_=(odepth)
+        </td>
+      </tr><tr>
+        <td>
+          158
+        </td>
+        <td>
+          99
+        </td>
+        <td>
+          4386
+          -
+          4405
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          num.==(8)
+        </td>
+      </tr><tr>
+        <td>
+          158
+        </td>
+        <td>
+          102
+        </td>
+        <td>
+          4407
+          -
+          4610
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          {
+  AsyncParser.this.closeResource;
+  scalaz.iteratee.Input.Eof.apply[scales.xml.PullType]
+}
+        </td>
+      </tr><tr>
+        <td>
+          161
+        </td>
+        <td>
+          100
+        </td>
+        <td>
+          4544
+          -
+          4557
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.resources.CloseOnNeed.closeResource
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          AsyncParser.this.closeResource
+        </td>
+      </tr><tr>
+        <td>
+          163
+        </td>
+        <td>
+          101
+        </td>
+        <td>
+          4589
+          -
+          4602
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scalaz.iteratee.Input.Eof.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scalaz.iteratee.Input.Eof.apply[scales.xml.PullType]
+        </td>
+      </tr><tr>
+        <td>
+          164
+        </td>
+        <td>
+          103
+        </td>
+        <td>
+          4620
+          -
+          4643
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          num.==(257)
+        </td>
+      </tr><tr>
+        <td>
+          164
+        </td>
+        <td>
+          108
+        </td>
+        <td>
+          4616
+          -
+          4915
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (num.==(257))
+  scalaz.iteratee.Input.Empty.apply[scales.xml.PullType]
+else
+  scalaz.iteratee.Input.Element.apply[scales.xml.PullType](event)
+        </td>
+      </tr><tr>
+        <td>
+          168
+        </td>
+        <td>
+          104
+        </td>
+        <td>
+          4749
+          -
+          4770
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scalaz.iteratee.Input.Empty.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.Input.Empty.apply[scales.xml.PullType]
+        </td>
+      </tr><tr>
+        <td>
+          168
+        </td>
+        <td>
+          105
+        </td>
+        <td>
+          4749
+          -
+          4770
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scalaz.iteratee.Input.Empty.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.Input.Empty.apply[scales.xml.PullType]
+        </td>
+      </tr><tr>
+        <td>
+          172
+        </td>
+        <td>
+          106
+        </td>
+        <td>
+          4893
+          -
+          4907
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.Input.Element.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.Input.Element.apply[scales.xml.PullType](event)
+        </td>
+      </tr><tr>
+        <td>
+          172
+        </td>
+        <td>
+          107
+        </td>
+        <td>
+          4893
+          -
+          4907
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scalaz.iteratee.Input.Element.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.Input.Element.apply[scales.xml.PullType](event)
+        </td>
+      </tr><tr>
+        <td>
+          179
+        </td>
+        <td>
+          110
+        </td>
+        <td>
+          5053
+          -
+          5073
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.fasterxml.aalto.AsyncInputFeeder.needMoreInput
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AsyncParser.this.feeder.needMoreInput()
+        </td>
+      </tr><tr>
+        <td>
+          179
+        </td>
+        <td>
+          111
+        </td>
+        <td>
+          5041
+          -
+          5073
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.||
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AsyncParser.this.isClosed.||(AsyncParser.this.feeder.needMoreInput())
+        </td>
+      </tr><tr>
+        <td>
+          181
+        </td>
+        <td>
+          112
+        </td>
+        <td>
+          5150
+          -
+          5170
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scalaz.EphemeralStream.emptyEphemeralStream
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.EphemeralStream.emptyEphemeralStream[scales.xml.PullType]
+        </td>
+      </tr><tr>
+        <td>
+          181
+        </td>
+        <td>
+          113
+        </td>
+        <td>
+          5150
+          -
+          5170
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scalaz.EphemeralStream.emptyEphemeralStream
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.EphemeralStream.emptyEphemeralStream[scales.xml.PullType]
+        </td>
+      </tr><tr>
+        <td>
+          182
+        </td>
+        <td>
+          122
+        </td>
+        <td>
+          5182
+          -
+          5544
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val pumped: scalaz.iteratee.Input[scales.xml.PullType] = AsyncParser.this.pump();
+  {
+    &lt;artifact&gt; val x$1: (=&gt; scales.xml.PullType) =&gt; scalaz.EphemeralStream[scales.xml.PullType] = ((e: =&gt; scales.xml.PullType) =&gt; scalaz.EphemeralStream.cons[scales.xml.PullType](e, AsyncParser.this.nextStream()));
+    &lt;artifact&gt; val x$2: () =&gt; scalaz.EphemeralStream[scales.xml.PullType] = (() =&gt; scalaz.EphemeralStream.emptyEphemeralStream[scales.xml.PullType]);
+    &lt;artifact&gt; val x$3: () =&gt; scalaz.EphemeralStream[scales.xml.PullType] = (() =&gt; scalaz.EphemeralStream.emptyEphemeralStream[scales.xml.PullType]);
+    pumped.apply[scalaz.EphemeralStream[scales.xml.PullType]](x$2.apply(), x$1, x$3.apply())
+  }
+}
+        </td>
+      </tr><tr>
+        <td>
+          184
+        </td>
+        <td>
+          114
+        </td>
+        <td>
+          5225
+          -
+          5229
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.aalto.AsyncParser.pump
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AsyncParser.this.pump()
+        </td>
+      </tr><tr>
+        <td>
+          185
+        </td>
+        <td>
+          121
+        </td>
+        <td>
+          5236
+          -
+          5534
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.Input.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          pumped.apply[scalaz.EphemeralStream[scales.xml.PullType]](x$2.apply(), x$1, x$3.apply())
+        </td>
+      </tr><tr>
+        <td>
+          188
+        </td>
+        <td>
+          115
+        </td>
+        <td>
+          5322
+          -
+          5334
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.aalto.AsyncParser.nextStream
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AsyncParser.this.nextStream()
+        </td>
+      </tr><tr>
+        <td>
+          188
+        </td>
+        <td>
+          116
+        </td>
+        <td>
+          5288
+          -
+          5335
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.EphemeralStream.cons
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.EphemeralStream.cons[scales.xml.PullType](e, AsyncParser.this.nextStream())
+        </td>
+      </tr><tr>
+        <td>
+          192
+        </td>
+        <td>
+          117
+        </td>
+        <td>
+          5389
+          -
+          5409
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scalaz.EphemeralStream.emptyEphemeralStream
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.EphemeralStream.emptyEphemeralStream[scales.xml.PullType]
+        </td>
+      </tr><tr>
+        <td>
+          192
+        </td>
+        <td>
+          119
+        </td>
+        <td>
+          5389
+          -
+          5389
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function0.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$2.apply()
+        </td>
+      </tr><tr>
+        <td>
+          196
+        </td>
+        <td>
+          118
+        </td>
+        <td>
+          5475
+          -
+          5495
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scalaz.EphemeralStream.emptyEphemeralStream
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scalaz.EphemeralStream.emptyEphemeralStream[scales.xml.PullType]
+        </td>
+      </tr><tr>
+        <td>
+          196
+        </td>
+        <td>
+          120
+        </td>
+        <td>
+          5475
+          -
+          5475
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function0.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          x$3.apply()
+        </td>
+      </tr><tr>
+        <td>
+          214
+        </td>
+        <td>
+          123
+        </td>
+        <td>
+          6243
+          -
+          6252
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.io.DataChunk.isEmpty
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          d.isEmpty
+        </td>
+      </tr><tr>
+        <td>
+          216
+        </td>
+        <td>
+          124
+        </td>
+        <td>
+          6291
+          -
+          6329
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scalaz.iteratee.Input.Empty.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.Input.Empty.apply[scalaz.EphemeralStream[scales.xml.PullType]]
+        </td>
+      </tr><tr>
+        <td>
+          216
+        </td>
+        <td>
+          125
+        </td>
+        <td>
+          6291
+          -
+          6329
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scalaz.iteratee.Input.Empty.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.Input.Empty.apply[scalaz.EphemeralStream[scales.xml.PullType]]
+        </td>
+      </tr><tr>
+        <td>
+          218
+        </td>
+        <td>
+          126
+        </td>
+        <td>
+          6364
+          -
+          6371
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.io.DataChunk.isEOF
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          d.isEOF
+        </td>
+      </tr><tr>
+        <td>
+          218
+        </td>
+        <td>
+          127
+        </td>
+        <td>
+          6352
+          -
+          6371
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.||
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AsyncParser.this.isClosed.||(d.isEOF)
+        </td>
+      </tr><tr>
+        <td>
+          218
+        </td>
+        <td>
+          134
+        </td>
+        <td>
+          6373
+          -
+          6514
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  if (d.isEOF)
+    AsyncParser.this.closeResource
+  else
+    ();
+  scalaz.iteratee.Input.Eof.apply[scalaz.EphemeralStream[scales.xml.PullType]]
+}
+        </td>
+      </tr><tr>
+        <td>
+          218
+        </td>
+        <td>
+          151
+        </td>
+        <td>
+          6348
+          -
+          7035
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (AsyncParser.this.isClosed.||(d.isEOF))
+  {
+    if (d.isEOF)
+      AsyncParser.this.closeResource
+    else
+      ();
+    scalaz.iteratee.Input.Eof.apply[scalaz.EphemeralStream[scales.xml.PullType]]
+  }
+else
+  {
+    if (AsyncParser.this.feeder.needMoreInput().unary_!)
+      scales.utils.`package`.error(&quot;The stream from the previous call to nextInput was not evaluated &quot;)
+    else
+      ();
+    AsyncParser.this.feeder.feedInput(d.array, d.offset, d.length);
+    val res: scalaz.EphemeralStream[scales.xml.PullType] = AsyncParser.this.nextStream();
+    if (res.isEmpty)
+      scalaz.iteratee.Input.Empty.apply[scalaz.EphemeralStream[scales.xml.PullType]]
+    else
+      scalaz.iteratee.Input.Element.apply[scalaz.EphemeralStream[scales.xml.PullType]](res)
+  }
+        </td>
+      </tr><tr>
+        <td>
+          219
+        </td>
+        <td>
+          128
+        </td>
+        <td>
+          6387
+          -
+          6394
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.io.DataChunk.isEOF
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          d.isEOF
+        </td>
+      </tr><tr>
+        <td>
+          219
+        </td>
+        <td>
+          131
+        </td>
+        <td>
+          6383
+          -
+          6383
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          219
+        </td>
+        <td>
+          132
+        </td>
+        <td>
+          6383
+          -
+          6383
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          221
+        </td>
+        <td>
+          129
+        </td>
+        <td>
+          6444
+          -
+          6457
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.resources.CloseOnNeed.closeResource
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AsyncParser.this.closeResource
+        </td>
+      </tr><tr>
+        <td>
+          221
+        </td>
+        <td>
+          130
+        </td>
+        <td>
+          6444
+          -
+          6457
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.resources.CloseOnNeed.closeResource
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AsyncParser.this.closeResource
+        </td>
+      </tr><tr>
+        <td>
+          223
+        </td>
+        <td>
+          133
+        </td>
+        <td>
+          6476
+          -
+          6506
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scalaz.iteratee.Input.Eof.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.Input.Eof.apply[scalaz.EphemeralStream[scales.xml.PullType]]
+        </td>
+      </tr><tr>
+        <td>
+          224
+        </td>
+        <td>
+          150
+        </td>
+        <td>
+          6520
+          -
+          7035
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  if (AsyncParser.this.feeder.needMoreInput().unary_!)
+    scales.utils.`package`.error(&quot;The stream from the previous call to nextInput was not evaluated &quot;)
+  else
+    ();
+  AsyncParser.this.feeder.feedInput(d.array, d.offset, d.length);
+  val res: scalaz.EphemeralStream[scales.xml.PullType] = AsyncParser.this.nextStream();
+  if (res.isEmpty)
+    scalaz.iteratee.Input.Empty.apply[scalaz.EphemeralStream[scales.xml.PullType]]
+  else
+    scalaz.iteratee.Input.Element.apply[scalaz.EphemeralStream[scales.xml.PullType]](res)
+}
+        </td>
+      </tr><tr>
+        <td>
+          225
+        </td>
+        <td>
+          135
+        </td>
+        <td>
+          6534
+          -
+          6555
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AsyncParser.this.feeder.needMoreInput().unary_!
+        </td>
+      </tr><tr>
+        <td>
+          225
+        </td>
+        <td>
+          138
+        </td>
+        <td>
+          6530
+          -
+          6530
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          225
+        </td>
+        <td>
+          139
+        </td>
+        <td>
+          6530
+          -
+          6530
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          226
+        </td>
+        <td>
+          136
+        </td>
+        <td>
+          6569
+          -
+          6643
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.iteratee.Iteratees.error
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.utils.`package`.error(&quot;The stream from the previous call to nextInput was not evaluated &quot;)
+        </td>
+      </tr><tr>
+        <td>
+          226
+        </td>
+        <td>
+          137
+        </td>
+        <td>
+          6569
+          -
+          6643
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.iteratee.Iteratees.error
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.utils.`package`.error(&quot;The stream from the previous call to nextInput was not evaluated &quot;)
+        </td>
+      </tr><tr>
+        <td>
+          230
+        </td>
+        <td>
+          140
+        </td>
+        <td>
+          6712
+          -
+          6719
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.io.DataChunk.array
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          d.array
+        </td>
+      </tr><tr>
+        <td>
+          230
+        </td>
+        <td>
+          141
+        </td>
+        <td>
+          6721
+          -
+          6729
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.io.DataChunk.offset
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          d.offset
+        </td>
+      </tr><tr>
+        <td>
+          230
+        </td>
+        <td>
+          142
+        </td>
+        <td>
+          6731
+          -
+          6739
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.io.DataChunk.length
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          d.length
+        </td>
+      </tr><tr>
+        <td>
+          230
+        </td>
+        <td>
+          143
+        </td>
+        <td>
+          6695
+          -
+          6740
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.fasterxml.aalto.AsyncByteArrayFeeder.feedInput
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AsyncParser.this.feeder.feedInput(d.array, d.offset, d.length)
+        </td>
+      </tr><tr>
+        <td>
+          232
+        </td>
+        <td>
+          144
+        </td>
+        <td>
+          6760
+          -
+          6772
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.aalto.AsyncParser.nextStream
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AsyncParser.this.nextStream()
+        </td>
+      </tr><tr>
+        <td>
+          234
+        </td>
+        <td>
+          145
+        </td>
+        <td>
+          6786
+          -
+          6797
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scalaz.EphemeralStream.isEmpty
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          res.isEmpty
+        </td>
+      </tr><tr>
+        <td>
+          236
+        </td>
+        <td>
+          146
+        </td>
+        <td>
+          6889
+          -
+          6927
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scalaz.iteratee.Input.Empty.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.Input.Empty.apply[scalaz.EphemeralStream[scales.xml.PullType]]
+        </td>
+      </tr><tr>
+        <td>
+          236
+        </td>
+        <td>
+          147
+        </td>
+        <td>
+          6889
+          -
+          6927
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scalaz.iteratee.Input.Empty.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.Input.Empty.apply[scalaz.EphemeralStream[scales.xml.PullType]]
+        </td>
+      </tr><tr>
+        <td>
+          238
+        </td>
+        <td>
+          148
+        </td>
+        <td>
+          6989
+          -
+          7028
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.Input.Element.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.Input.Element.apply[scalaz.EphemeralStream[scales.xml.PullType]](res)
+        </td>
+      </tr><tr>
+        <td>
+          238
+        </td>
+        <td>
+          149
+        </td>
+        <td>
+          6989
+          -
+          7028
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scalaz.iteratee.Input.Element.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.Input.Element.apply[scalaz.EphemeralStream[scales.xml.PullType]](res)
+        </td>
+      </tr><tr>
+        <td>
+          249
+        </td>
+        <td>
+          152
+        </td>
+        <td>
+          7320
+          -
+          7343
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.aalto.AsyncParser.parse
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AsyncParser.parse(this)
+        </td>
+      </tr><tr>
+        <td>
+          261
+        </td>
+        <td>
+          153
+        </td>
+        <td>
+          7707
+          -
+          7727
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.resources.CloseOnNeed.closeResource
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          parser.closeResource
+        </td>
+      </tr><tr>
+        <td>
+          264
+        </td>
+        <td>
+          154
+        </td>
+        <td>
+          7791
+          -
+          7811
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scalaz.EphemeralStream.emptyEphemeralStream
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scalaz.EphemeralStream.emptyEphemeralStream[scales.xml.PullType]
+        </td>
+      </tr><tr>
+        <td>
+          264
+        </td>
+        <td>
+          158
+        </td>
+        <td>
+          7790
+          -
+          7909
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Tuple2.apply[scalaz.EphemeralStream[scales.xml.PullType], scalaz.iteratee.Iteratee[scales.utils.io.DataChunk,Nothing]](scalaz.EphemeralStream.emptyEphemeralStream[scales.xml.PullType], scalaz.iteratee.Iteratee.iteratee[scales.utils.io.DataChunk, Nothing](scalaz.iteratee.StepT.Cont.apply[scales.utils.io.DataChunk, scalaz.Id.Id, Nothing](scales.utils.`package`.error(&quot;Called the continuation on a closed parser&quot;))))
+        </td>
+      </tr><tr>
+        <td>
+          264
+        </td>
+        <td>
+          160
+        </td>
+        <td>
+          7785
+          -
+          7926
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Done.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.StepT.Done.apply[scales.utils.io.DataChunk, scalaz.Id.Id, (scalaz.EphemeralStream[scales.xml.PullType], scalaz.iteratee.Iteratee[scales.utils.io.DataChunk, _])](scala.Tuple2.apply[scalaz.EphemeralStream[scales.xml.PullType], scalaz.iteratee.Iteratee[scales.utils.io.DataChunk,Nothing]](scalaz.EphemeralStream.emptyEphemeralStream[scales.xml.PullType], scalaz.iteratee.Iteratee.iteratee[scales.utils.io.DataChunk, Nothing](scalaz.iteratee.StepT.Cont.apply[scales.utils.io.DataChunk, scalaz.Id.Id, Nothing](scales.utils.`package`.error(&quot;Called the continuation on a closed parser&quot;)))), scalaz.iteratee.Input.Eof.apply[scales.utils.io.DataChunk])
+        </td>
+      </tr><tr>
+        <td>
+          265
+        </td>
+        <td>
+          156
+        </td>
+        <td>
+          7830
+          -
+          7907
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Cont.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scalaz.iteratee.StepT.Cont.apply[scales.utils.io.DataChunk, scalaz.Id.Id, Nothing](scales.utils.`package`.error(&quot;Called the continuation on a closed parser&quot;))
+        </td>
+      </tr><tr>
+        <td>
+          265
+        </td>
+        <td>
+          157
+        </td>
+        <td>
+          7821
+          -
+          7908
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.IterateeFunctions.iteratee
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scalaz.iteratee.Iteratee.iteratee[scales.utils.io.DataChunk, Nothing](scalaz.iteratee.StepT.Cont.apply[scales.utils.io.DataChunk, scalaz.Id.Id, Nothing](scales.utils.`package`.error(&quot;Called the continuation on a closed parser&quot;)))
+        </td>
+      </tr><tr>
+        <td>
+          266
+        </td>
+        <td>
+          155
+        </td>
+        <td>
+          7846
+          -
+          7897
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.iteratee.Iteratees.error
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.utils.`package`.error(&quot;Called the continuation on a closed parser&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          267
+        </td>
+        <td>
+          159
+        </td>
+        <td>
+          7911
+          -
+          7925
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scalaz.iteratee.Input.Eof.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.Input.Eof.apply[scales.utils.io.DataChunk]
+        </td>
+      </tr><tr>
+        <td>
+          274
+        </td>
+        <td>
+          178
+        </td>
+        <td>
+          8190
+          -
+          9062
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.IterateeFunctions.iteratee
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.Iteratee.iteratee[scales.utils.io.DataChunk, (scalaz.EphemeralStream[scales.xml.PullType], scalaz.iteratee.Iteratee[scales.utils.io.DataChunk, _])]({
+  &lt;artifact&gt; val x$4: (=&gt; scales.utils.io.DataChunk) =&gt; scales.utils.ResumableStep[scales.utils.io.DataChunk,scalaz.EphemeralStream[scales.xml.PullType]] = ((e: =&gt; scales.utils.io.DataChunk) =&gt; {
+    val r: scalaz.iteratee.Input[scalaz.EphemeralStream[scales.xml.PullType]] = parser.nextInput(e);
+    {
+      &lt;artifact&gt; val x$1: (=&gt; scalaz.EphemeralStream[scales.xml.PullType]) =&gt; scalaz.iteratee.StepT[scales.utils.io.DataChunk,scalaz.Id.Id,(scalaz.EphemeralStream[scales.xml.PullType], scalaz.iteratee.Iteratee[scales.utils.io.DataChunk, _])] = ((es: =&gt; scalaz.EphemeralStream[scales.xml.PullType]) =&gt; scalaz.iteratee.StepT.Done.apply[scales.utils.io.DataChunk, scalaz.Id.Id, (scalaz.EphemeralStream[scales.xml.PullType], scalaz.iteratee.Iteratee[scales.utils.io.DataChunk, _])](scala.Tuple2.apply[scalaz.EphemeralStream[scales.xml.PullType], scalaz.iteratee.Iteratee[scales.utils.io.DataChunk,(scalaz.EphemeralStream[scales.xml.PullType], scalaz.iteratee.Iteratee[scales.utils.io.DataChunk, _])]](es, scalaz.iteratee.Iteratee.iteratee[scales.utils.io.DataChunk, (scalaz.EphemeralStream[scales.xml.PullType], scalaz.iteratee.Iteratee[scales.utils.io.DataChunk, _])](scalaz.iteratee.StepT.Cont.apply[scales.utils.io.DataChunk, scalaz.Id.Id, (scalaz.EphemeralStream[scales.xml.PullType], scalaz.iteratee.Iteratee[scales.utils.io.DataChunk, _])]({
+        ((s: scalaz.iteratee.Input[scales.utils.io.DataChunk]) =&gt; step(s))
+      }))), scalaz.iteratee.Input.Empty.apply[scales.utils.io.DataChunk]));
+      &lt;artifact&gt; val x$2: () =&gt; scalaz.iteratee.StepT[scales.utils.io.DataChunk,scalaz.Id.Id,(scalaz.EphemeralStream[scales.xml.PullType], scalaz.iteratee.Iteratee[scales.utils.io.DataChunk, _])] = (() =&gt; scalaz.iteratee.StepT.Cont.apply[scales.utils.io.DataChunk, scalaz.Id.Id, (scalaz.EphemeralStream[scales.xml.PullType], scalaz.iteratee.Iteratee[scales.utils.io.DataChunk, _])]({
+        ((s: scalaz.iteratee.Input[scales.utils.io.DataChunk]) =&gt; step(s))
+      }));
+      &lt;artifact&gt; val x$3: () =&gt; scales.utils.ResumableStep[scales.utils.io.DataChunk,scalaz.EphemeralStream[scales.xml.PullType]] = (() =&gt; EOF);
+      r.apply[scales.utils.ResumableStep[scales.utils.io.DataChunk,scalaz.EphemeralStream[scales.xml.PullType]]](x$2.apply(), x$1, x$3.apply())
+    }
+  });
+  &lt;artifact&gt; val x$5: () =&gt; scalaz.iteratee.StepT[scales.utils.io.DataChunk,scalaz.Id.Id,(scalaz.EphemeralStream[scales.xml.PullType], scalaz.iteratee.Iteratee[scales.utils.io.DataChunk, _])] = (() =&gt; scalaz.iteratee.StepT.Cont.apply[scales.utils.io.DataChunk, scalaz.Id.Id, (scalaz.EphemeralStream[scales.xml.PullType], scalaz.iteratee.Iteratee[scales.utils.io.DataChunk, _])]({
+    ((s: scalaz.iteratee.Input[scales.utils.io.DataChunk]) =&gt; step(s))
+  }));
+  &lt;artifact&gt; val x$6: () =&gt; scales.utils.ResumableStep[scales.utils.io.DataChunk,scalaz.EphemeralStream[scales.xml.PullType]] = (() =&gt; EOF);
+  s.apply[scales.utils.ResumableStep[scales.utils.io.DataChunk,scalaz.EphemeralStream[scales.xml.PullType]]](x$5.apply(), x$4, x$6.apply())
+})
+        </td>
+      </tr><tr>
+        <td>
+          275
+        </td>
+        <td>
+          177
+        </td>
+        <td>
+          8208
+          -
+          9054
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.Input.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          s.apply[scales.utils.ResumableStep[scales.utils.io.DataChunk,scalaz.EphemeralStream[scales.xml.PullType]]](x$5.apply(), x$4, x$6.apply())
+        </td>
+      </tr><tr>
+        <td>
+          277
+        </td>
+        <td>
+          161
+        </td>
+        <td>
+          8292
+          -
+          8311
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.aalto.AsyncParser.nextInput
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          parser.nextInput(e)
+        </td>
+      </tr><tr>
+        <td>
+          278
+        </td>
+        <td>
+          172
+        </td>
+        <td>
+          8324
+          -
+          8777
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.Input.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          r.apply[scales.utils.ResumableStep[scales.utils.io.DataChunk,scalaz.EphemeralStream[scales.xml.PullType]]](x$2.apply(), x$1, x$3.apply())
+        </td>
+      </tr><tr>
+        <td>
+          280
+        </td>
+        <td>
+          165
+        </td>
+        <td>
+          8458
+          -
+          8544
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[scalaz.EphemeralStream[scales.xml.PullType], scalaz.iteratee.Iteratee[scales.utils.io.DataChunk,(scalaz.EphemeralStream[scales.xml.PullType], scalaz.iteratee.Iteratee[scales.utils.io.DataChunk, _])]](es, scalaz.iteratee.Iteratee.iteratee[scales.utils.io.DataChunk, (scalaz.EphemeralStream[scales.xml.PullType], scalaz.iteratee.Iteratee[scales.utils.io.DataChunk, _])](scalaz.iteratee.StepT.Cont.apply[scales.utils.io.DataChunk, scalaz.Id.Id, (scalaz.EphemeralStream[scales.xml.PullType], scalaz.iteratee.Iteratee[scales.utils.io.DataChunk, _])]({
+  ((s: scalaz.iteratee.Input[scales.utils.io.DataChunk]) =&gt; step(s))
+})))
+        </td>
+      </tr><tr>
+        <td>
+          280
+        </td>
+        <td>
+          167
+        </td>
+        <td>
+          8453
+          -
+          8569
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Done.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.StepT.Done.apply[scales.utils.io.DataChunk, scalaz.Id.Id, (scalaz.EphemeralStream[scales.xml.PullType], scalaz.iteratee.Iteratee[scales.utils.io.DataChunk, _])](scala.Tuple2.apply[scalaz.EphemeralStream[scales.xml.PullType], scalaz.iteratee.Iteratee[scales.utils.io.DataChunk,(scalaz.EphemeralStream[scales.xml.PullType], scalaz.iteratee.Iteratee[scales.utils.io.DataChunk, _])]](es, scalaz.iteratee.Iteratee.iteratee[scales.utils.io.DataChunk, (scalaz.EphemeralStream[scales.xml.PullType], scalaz.iteratee.Iteratee[scales.utils.io.DataChunk, _])](scalaz.iteratee.StepT.Cont.apply[scales.utils.io.DataChunk, scalaz.Id.Id, (scalaz.EphemeralStream[scales.xml.PullType], scalaz.iteratee.Iteratee[scales.utils.io.DataChunk, _])]({
+  ((s: scalaz.iteratee.Input[scales.utils.io.DataChunk]) =&gt; step(s))
+}))), scalaz.iteratee.Input.Empty.apply[scales.utils.io.DataChunk])
+        </td>
+      </tr><tr>
+        <td>
+          281
+        </td>
+        <td>
+          163
+        </td>
+        <td>
+          8490
+          -
+          8542
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Cont.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.StepT.Cont.apply[scales.utils.io.DataChunk, scalaz.Id.Id, (scalaz.EphemeralStream[scales.xml.PullType], scalaz.iteratee.Iteratee[scales.utils.io.DataChunk, _])]({
+  ((s: scalaz.iteratee.Input[scales.utils.io.DataChunk]) =&gt; step(s))
+})
+        </td>
+      </tr><tr>
+        <td>
+          281
+        </td>
+        <td>
+          164
+        </td>
+        <td>
+          8481
+          -
+          8543
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.IterateeFunctions.iteratee
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.Iteratee.iteratee[scales.utils.io.DataChunk, (scalaz.EphemeralStream[scales.xml.PullType], scalaz.iteratee.Iteratee[scales.utils.io.DataChunk, _])](scalaz.iteratee.StepT.Cont.apply[scales.utils.io.DataChunk, scalaz.Id.Id, (scalaz.EphemeralStream[scales.xml.PullType], scalaz.iteratee.Iteratee[scales.utils.io.DataChunk, _])]({
+  ((s: scalaz.iteratee.Input[scales.utils.io.DataChunk]) =&gt; step(s))
+}))
+        </td>
+      </tr><tr>
+        <td>
+          282
+        </td>
+        <td>
+          162
+        </td>
+        <td>
+          8516
+          -
+          8520
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.aalto.AsyncParser.step
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          step(s)
+        </td>
+      </tr><tr>
+        <td>
+          283
+        </td>
+        <td>
+          166
+        </td>
+        <td>
+          8546
+          -
+          8568
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scalaz.iteratee.Input.Empty.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.Input.Empty.apply[scales.utils.io.DataChunk]
+        </td>
+      </tr><tr>
+        <td>
+          288
+        </td>
+        <td>
+          168
+        </td>
+        <td>
+          8714
+          -
+          8718
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.aalto.AsyncParser.step
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          step(s)
+        </td>
+      </tr><tr>
+        <td>
+          288
+        </td>
+        <td>
+          169
+        </td>
+        <td>
+          8709
+          -
+          8719
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Cont.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.StepT.Cont.apply[scales.utils.io.DataChunk, scalaz.Id.Id, (scalaz.EphemeralStream[scales.xml.PullType], scalaz.iteratee.Iteratee[scales.utils.io.DataChunk, _])]({
+  ((s: scalaz.iteratee.Input[scales.utils.io.DataChunk]) =&gt; step(s))
+})
+        </td>
+      </tr><tr>
+        <td>
+          288
+        </td>
+        <td>
+          170
+        </td>
+        <td>
+          8713
+          -
+          8713
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function0.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$2.apply()
+        </td>
+      </tr><tr>
+        <td>
+          290
+        </td>
+        <td>
+          171
+        </td>
+        <td>
+          8760
+          -
+          8760
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function0.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          x$3.apply()
+        </td>
+      </tr><tr>
+        <td>
+          297
+        </td>
+        <td>
+          173
+        </td>
+        <td>
+          9006
+          -
+          9010
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.aalto.AsyncParser.step
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          step(s)
+        </td>
+      </tr><tr>
+        <td>
+          297
+        </td>
+        <td>
+          174
+        </td>
+        <td>
+          9001
+          -
+          9011
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Cont.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.StepT.Cont.apply[scales.utils.io.DataChunk, scalaz.Id.Id, (scalaz.EphemeralStream[scales.xml.PullType], scalaz.iteratee.Iteratee[scales.utils.io.DataChunk, _])]({
+  ((s: scalaz.iteratee.Input[scales.utils.io.DataChunk]) =&gt; step(s))
+})
+        </td>
+      </tr><tr>
+        <td>
+          297
+        </td>
+        <td>
+          175
+        </td>
+        <td>
+          9005
+          -
+          9005
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function0.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$5.apply()
+        </td>
+      </tr><tr>
+        <td>
+          299
+        </td>
+        <td>
+          176
+        </td>
+        <td>
+          9041
+          -
+          9041
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function0.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$6.apply()
+        </td>
+      </tr><tr>
+        <td>
+          303
+        </td>
+        <td>
+          179
+        </td>
+        <td>
+          9083
+          -
+          9087
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.aalto.AsyncParser.step
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          step(s)
+        </td>
+      </tr><tr>
+        <td>
+          303
+        </td>
+        <td>
+          180
+        </td>
+        <td>
+          9078
+          -
+          9088
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Cont.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.StepT.Cont.apply[scales.utils.io.DataChunk, scalaz.Id.Id, (scalaz.EphemeralStream[scales.xml.PullType], scalaz.iteratee.Iteratee[scales.utils.io.DataChunk, _])]({
+  ((s: scalaz.iteratee.Input[scales.utils.io.DataChunk]) =&gt; step(s))
+})
+        </td>
+      </tr><tr>
+        <td>
+          303
+        </td>
+        <td>
+          181
+        </td>
+        <td>
+          9068
+          -
+          9090
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.IterateeFunctions.iteratee
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.Iteratee.iteratee[scales.utils.io.DataChunk, (scalaz.EphemeralStream[scales.xml.PullType], scalaz.iteratee.Iteratee[scales.utils.io.DataChunk, _])](scalaz.iteratee.StepT.Cont.apply[scales.utils.io.DataChunk, scalaz.Id.Id, (scalaz.EphemeralStream[scales.xml.PullType], scalaz.iteratee.Iteratee[scales.utils.io.DataChunk, _])]({
+  ((s: scalaz.iteratee.Input[scales.utils.io.DataChunk]) =&gt; step(s))
+}))
+        </td>
+      </tr><tr>
+        <td>
+          310
+        </td>
+        <td>
+          190
+        </td>
+        <td>
+          9408
+          -
+          9411
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.aalto.AsyncParser.$anon.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          315
+        </td>
+        <td>
+          182
+        </td>
+        <td>
+          9557
+          -
+          9557
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.PullUtils.weAreInAParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.parser.pull.PullUtils.weAreInAParser
+        </td>
+      </tr><tr>
+        <td>
+          315
+        </td>
+        <td>
+          183
+        </td>
+        <td>
+          9548
+          -
+          9568
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.parser.strategies.MemoryOptimisationStrategy.createToken
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.strategy.createToken(xmlVersion, scales.xml.parser.pull.PullUtils.weAreInAParser)
+        </td>
+      </tr><tr>
+        <td>
+          317
+        </td>
+        <td>
+          184
+        </td>
+        <td>
+          9583
+          -
+          9595
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.resources.Pool.grab
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          parsers.grab
+        </td>
+      </tr><tr>
+        <td>
+          319
+        </td>
+        <td>
+          185
+        </td>
+        <td>
+          9614
+          -
+          9642
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.fasterxml.aalto.AsyncXMLInputFactory.createAsyncForByteArray
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.pf.createAsyncForByteArray()
+        </td>
+      </tr><tr>
+        <td>
+          320
+        </td>
+        <td>
+          186
+        </td>
+        <td>
+          9660
+          -
+          9681
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.fasterxml.aalto.AsyncXMLStreamReader.getInputFeeder
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.parser.getInputFeeder()
+        </td>
+      </tr><tr>
+        <td>
+          326
+        </td>
+        <td>
+          187
+        </td>
+        <td>
+          9782
+          -
+          9795
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.aalto.AsyncParser.doClose
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.super.doClose
+        </td>
+      </tr><tr>
+        <td>
+          327
+        </td>
+        <td>
+          188
+        </td>
+        <td>
+          9819
+          -
+          9821
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.aalto.AsyncParser.$anon.pf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.pf
+        </td>
+      </tr><tr>
+        <td>
+          327
+        </td>
+        <td>
+          189
+        </td>
+        <td>
+          9802
+          -
+          9822
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.resources.Pool.giveBack
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          parsers.giveBack($anon.this.pf)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

@@ -1,0 +1,1922 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/xml/parser/strategies/OptimisingStrategies.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.xml.parser.strategies
+</span>2 <span style=''>
+</span>3 <span style=''>import scales.utils._
+</span>4 <span style=''>import scales.xml._
+</span>5 <span style=''>
+</span>6 <span style=''>import scales.xml.impl.{NotFromParser, FromParser}
+</span>7 <span style=''>
+</span>8 <span style=''>import scales.xml.impl.TreeProxies
+</span>9 <span style=''>
+</span>10 <span style=''>trait OptimisingStrategiesImplicits {
+</span>11 <span style=''>
+</span>12 <span style=''>}
+</span>13 <span style=''>
+</span>14 <span style=''>/**
+</span>15 <span style=''> * Simple marker for per parse optimisation oppurtunties
+</span>16 <span style=''> */
+</span>17 <span style=''>trait OptimisationToken {
+</span>18 <span style=''>  implicit val ver : XmlVersion
+</span>19 <span style=''>  implicit val fromParser : FromParser
+</span>20 <span style=''>}
+</span>21 <span style=''>
+</span>22 <span style=''>class BaseToken(implicit val ver : XmlVersion, val fromParser : FromParser) extends OptimisationToken
+</span>23 <span style=''>
+</span>24 <span style=''>/**
+</span>25 <span style=''> * Memory usage in DOMs is often dominated by repeated elements.  Xerces and co use string tables to optimise memory usage, with DTM a key example.
+</span>26 <span style=''> *
+</span>27 <span style=''> * Performing lookups is expensive so the strategies can have selective levels of lookup.  Developers may therefore choose appropriate levels that best fit their trade-off between space and time.
+</span>28 <span style=''> *
+</span>29 <span style=''> * There will, of course, be temporary garbage created for such a scheme but it should pay off for larger messages.
+</span>30 <span style=''> *
+</span>31 <span style=''> */ 
+</span>32 <span style=''>trait MemoryOptimisationStrategy[Token &lt;: OptimisationToken] {
+</span>33 <span style=''>
+</span>34 <span style=''>  def createToken(implicit ver : XmlVersion, fromParser : FromParser) : Token
+</span>35 <span style=''>
+</span>36 <span style=''>  /**
+</span>37 <span style=''>   * It is expected that certain attributes have fixed values, ie. booleans or based on schema enums etc, this function allows such optimisations.
+</span>38 <span style=''>   *
+</span>39 <span style=''>   * The qname will have been obtained via a call to either noNamespaceQName, unprefixedQName or prefixedQName, so any optimisations provided by them can be leveraged.
+</span>40 <span style=''>   *
+</span>41 <span style=''>   */ 
+</span>42 <span style=''>  def attribute( qname : AttributeQName, value : String, token : Token) : Attribute = </span><span style='background: #AEF1AE'>Attribute(qname,value)</span><span style=''>
+</span>43 <span style=''>
+</span>44 <span style=''>  def noNamespaceQName( local : String, token : Token) : NoNamespaceQName = {
+</span>45 <span style=''>    import token._
+</span>46 <span style=''>    </span><span style='background: #AEF1AE'>NoNamespaceQName(local)</span><span style=''>
+</span>47 <span style=''>  }
+</span>48 <span style=''>
+</span>49 <span style=''>  def unprefixedQName( local : String, uri : String, token : Token) : UnprefixedQName =  {
+</span>50 <span style=''>    import token._
+</span>51 <span style=''>    </span><span style='background: #AEF1AE'>UnprefixedQName(local, Namespace(uri))</span><span style=''>
+</span>52 <span style=''>  }
+</span>53 <span style=''>
+</span>54 <span style=''>  def prefixedQName( local : String, uri : String, prefix : String, token : Token) : PrefixedQName =  {
+</span>55 <span style=''>    import token._
+</span>56 <span style=''>    </span><span style='background: #AEF1AE'>PrefixedQName(local, Namespace(uri).prefixed(prefix))</span><span style=''>
+</span>57 <span style=''>  }
+</span>58 <span style=''>
+</span>59 <span style=''>  /**
+</span>60 <span style=''>   * For files without large (and varied) attribute counts per repeated element it may represent significant space savings to optimise against the entire Elem itself.
+</span>61 <span style=''>   *
+</span>62 <span style=''>   * The Elements QName is garaunteed to be the last QName evaluated via the QName functions (i.e. Attributes are done first then the Elems QName)  
+</span>63 <span style=''>   */ 
+</span>64 <span style=''>  def elem( name : QName, attributes : Attributes, namespaces : Map[String, String], token : Token) : Elem =  {
+</span>65 <span style=''>    import token._
+</span>66 <span style=''>    </span><span style='background: #AEF1AE'>Elem(name, attributes, namespaces)</span><span style=''>
+</span>67 <span style=''>  }
+</span>68 <span style=''>}
+</span>69 <span style=''>
+</span>70 <span style=''>trait BaseTokenF {
+</span>71 <span style=''>
+</span>72 <span style=''>  def createToken(implicit ver : XmlVersion, fromParser : FromParser) : BaseToken = </span><span style='background: #F0ADAD'>new BaseToken()</span><span style=''>
+</span>73 <span style=''>
+</span>74 <span style=''>}
+</span>75 <span style=''>
+</span>76 <span style=''>/**
+</span>77 <span style=''> * Performs no optimisation at all
+</span>78 <span style=''> */ 
+</span>79 <span style=''>object NoOptimisation extends PathOptimisationStrategy[BaseToken] with BaseTokenF
+</span>80 <span style=''>
+</span>81 <span style=''>/**
+</span>82 <span style=''> * Certain paths may be repeated (based on QNames of parents etc) and known to be by the developer, its also possible that the developer simply is not interested in this path.
+</span>83 <span style=''> *
+</span>84 <span style=''> * Developers may also customise the creation of paths, for example adding starting children, replacing the XmlChildren implementation or replacing entire subtrees.
+</span>85 <span style=''> */
+</span>86 <span style=''>trait PathOptimisationStrategy[Token &lt;: OptimisationToken] extends MemoryOptimisationStrategy[Token] {
+</span>87 <span style=''>  
+</span>88 <span style=''>  /**
+</span>89 <span style=''>   * By default calls TreeProxies.elementEnd.  Replacing entire subtrees can be performed here.
+</span>90 <span style=''>   */ 
+</span>91 <span style=''>  def elementEnd( xml : TreeProxies, token : Token) {
+</span>92 <span style=''>    </span><span style='background: #AEF1AE'>xml.elementEnd</span><span style=''>
+</span>93 <span style=''>  }
+</span>94 <span style=''>
+</span>95 <span style=''>  /**
+</span>96 <span style=''>   * Start a new &quot;tree&quot;, pushing the elem to TreeProxies
+</span>97 <span style=''>   */ 
+</span>98 <span style=''>  def beginSubTree( stack : TreeProxies, elem : Elem, token : Token) {
+</span>99 <span style=''>    </span><span style='background: #AEF1AE'>stack.beginSub(elem, XmlBuilder())</span><span style=''>
+</span>100 <span style=''>  }
+</span>101 <span style=''>}
+</span>102 <span style=''>
+</span>103 <span style=''>import scales.xml.impl.FullEqualQNameKey
+</span>104 <span style=''>
+</span>105 <span style=''>class QNameToken(implicit val ver : XmlVersion, val fromParser : FromParser) extends OptimisationToken {
+</span>106 <span style=''>  val qkey = </span><span style='background: #AEF1AE'>new FullEqualQNameKey()</span><span style=''>
+</span>107 <span style=''>
+</span>108 <span style=''>  // the following reduce init costs was 6% of garbage and 3% of runtime on avg
+</span>109 <span style=''>
+</span>110 <span style=''>  val noNsQ = (k : FullEqualQNameKey) =&gt; </span><span style='background: #AEF1AE'>NoNamespaceQName(k.local)</span><span style=''>
+</span>111 <span style=''>  val unQ = (k : FullEqualQNameKey) =&gt; </span><span style='background: #AEF1AE'>UnprefixedQName(k.local, Namespace(k.namespace))</span><span style=''>
+</span>112 <span style=''>  val pQ = (k : FullEqualQNameKey) =&gt; </span><span style='background: #AEF1AE'>PrefixedQName(k.local, Namespace(k.namespace).prefixed(k.prefix))</span><span style=''>
+</span>113 <span style=''>  
+</span>114 <span style=''>}
+</span>115 <span style=''>
+</span>116 <span style=''>trait QNameTokenF {
+</span>117 <span style=''>  def createToken(implicit ver : XmlVersion, fromParser : FromParser) = </span><span style='background: #AEF1AE'>new QNameToken()</span><span style=''>
+</span>118 <span style=''>}
+</span>119 <span style=''>
+</span>120 <span style=''>/**
+</span>121 <span style=''> * Threadsafe global cache, assumption is most applications would benefit from this 
+</span>122 <span style=''> */
+</span>123 <span style=''>trait QNameOptimisationT[Token &lt;: QNameToken] extends MemoryOptimisationStrategy[Token] {
+</span>124 <span style=''>
+</span>125 <span style=''>  import java.util.concurrent.ConcurrentHashMap
+</span>126 <span style=''>
+</span>127 <span style=''>  val qNameCache = </span><span style='background: #AEF1AE'>new ConcurrentHashMap[ FullEqualQNameKey, QName ]</span><span style=''>
+</span>128 <span style=''>  
+</span>129 <span style=''>  /**
+</span>130 <span style=''>   * The creation costs can also be reduced
+</span>131 <span style=''>   */ 
+</span>132 <span style=''>  override def noNamespaceQName( local : String, token : Token) : NoNamespaceQName = {
+</span>133 <span style=''>    val qt = token
+</span>134 <span style=''>    import qt._
+</span>135 <span style=''>    </span><span style='background: #AEF1AE'>value( qkey.setNoNamespaceQName(local) )( noNsQ )</span><span style=''>
+</span>136 <span style=''>  }
+</span>137 <span style=''>
+</span>138 <span style=''>  override def unprefixedQName( local : String, uri : String, token : Token) : UnprefixedQName = {
+</span>139 <span style=''>    val qt = token
+</span>140 <span style=''>    import qt._
+</span>141 <span style=''>    </span><span style='background: #AEF1AE'>value( qkey.setUnprefixedQName(local, uri) )( unQ )</span><span style=''>
+</span>142 <span style=''>  }
+</span>143 <span style=''>
+</span>144 <span style=''>  override def prefixedQName( local : String, uri : String, prefix : String, token : Token) : PrefixedQName = {
+</span>145 <span style=''>    val qt = token
+</span>146 <span style=''>    import qt._
+</span>147 <span style=''>    </span><span style='background: #AEF1AE'>value( qkey.setPrefixedQName( local, uri, prefix) )( pQ )</span><span style=''>
+</span>148 <span style=''>  }
+</span>149 <span style=''>
+</span>150 <span style=''>  def value[T &lt;: QName](key : FullEqualQNameKey)( newT : FullEqualQNameKey =&gt; T ) : T = {
+</span>151 <span style=''>    var value = </span><span style='background: #AEF1AE'>qNameCache.get(key)</span><span style=''>
+</span>152 <span style=''>    if (</span><span style='background: #AEF1AE'>value == null</span><span style=''>) </span><span style='background: #AEF1AE'>{
+</span>153 <span style=''></span><span style='background: #AEF1AE'>      value = newT(key)
+</span>154 <span style=''></span><span style='background: #AEF1AE'>      val res = qNameCache.putIfAbsent(key.copy, value)// copy because now it needs to be frozen
+</span>155 <span style=''></span><span style='background: #AEF1AE'>      value = if (res == null) value else </span><span style='background: #F0ADAD'>res</span><span style='background: #AEF1AE'>
+</span>156 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>157 <span style=''>    </span><span style='background: #AEF1AE'>value.asInstanceOf[T]</span><span style=''>
+</span>158 <span style=''>  }
+</span>159 <span style=''>
+</span>160 <span style=''>}
+</span>161 <span style=''>
+</span>162 <span style=''>/**
+</span>163 <span style=''> * The default as it will equal or better Scala Xml memory consumption at a performance gain.
+</span>164 <span style=''> *
+</span>165 <span style=''> * For the lowest memory consumption possible, for example where memory is more important than raw performance, see QNameElemTreeOptimisation
+</span>166 <span style=''> *
+</span>167 <span style=''> * @see scales.xml.strategies.QNameElemTreeOptimisation
+</span>168 <span style=''> */
+</span>169 <span style=''>object QNameMemoryOptimisation extends PathOptimisationStrategy[QNameToken] with QNameOptimisationT[QNameToken] with QNameTokenF
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          42
+        </td>
+        <td>
+          4540
+        </td>
+        <td>
+          1524
+          -
+          1546
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Attribute.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Attribute.apply(qname, value)
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          4541
+        </td>
+        <td>
+          1665
+          -
+          1665
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.strategies.OptimisationToken.ver
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          token.ver
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          4542
+        </td>
+        <td>
+          1665
+          -
+          1665
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.strategies.OptimisationToken.fromParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          token.fromParser
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          4543
+        </td>
+        <td>
+          1649
+          -
+          1672
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.NoNamespaceQName.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.NoNamespaceQName.apply(local)(token.ver, token.fromParser)
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          4544
+        </td>
+        <td>
+          1824
+          -
+          1824
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.strategies.OptimisationToken.ver
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          token.ver
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          4545
+        </td>
+        <td>
+          1824
+          -
+          1824
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.strategies.OptimisationToken.fromParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          token.fromParser
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          4546
+        </td>
+        <td>
+          1815
+          -
+          1829
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.Namespace.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Namespace.apply(uri)(token.ver, token.fromParser)
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          4547
+        </td>
+        <td>
+          1807
+          -
+          1807
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.strategies.OptimisationToken.ver
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          token.ver
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          4548
+        </td>
+        <td>
+          1807
+          -
+          1807
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.strategies.OptimisationToken.fromParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          token.fromParser
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          4549
+        </td>
+        <td>
+          1792
+          -
+          1830
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.UnprefixedQName.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.UnprefixedQName.apply(local, scales.xml.Namespace.apply(uri)(token.ver, token.fromParser))(token.ver, token.fromParser)
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          4550
+        </td>
+        <td>
+          1993
+          -
+          1993
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.strategies.OptimisationToken.ver
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          token.ver
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          4551
+        </td>
+        <td>
+          1993
+          -
+          1993
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.strategies.OptimisationToken.fromParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          token.fromParser
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          4552
+        </td>
+        <td>
+          2007
+          -
+          2007
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.strategies.OptimisationToken.ver
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          token.ver
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          4553
+        </td>
+        <td>
+          2007
+          -
+          2007
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.strategies.OptimisationToken.fromParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          token.fromParser
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          4554
+        </td>
+        <td>
+          1984
+          -
+          2015
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.Namespace.prefixed
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Namespace.apply(uri)(token.ver, token.fromParser).prefixed(prefix)(token.ver, token.fromParser)
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          4555
+        </td>
+        <td>
+          1976
+          -
+          1976
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.strategies.OptimisationToken.ver
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          token.ver
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          4556
+        </td>
+        <td>
+          1976
+          -
+          1976
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.strategies.OptimisationToken.fromParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          token.fromParser
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          4557
+        </td>
+        <td>
+          1963
+          -
+          2016
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.PrefixedQName.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.PrefixedQName.apply(local, scales.xml.Namespace.apply(uri)(token.ver, token.fromParser).prefixed(prefix)(token.ver, token.fromParser))(token.ver, token.fromParser)
+        </td>
+      </tr><tr>
+        <td>
+          66
+        </td>
+        <td>
+          4558
+        </td>
+        <td>
+          2495
+          -
+          2495
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.strategies.OptimisationToken.fromParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          token.fromParser
+        </td>
+      </tr><tr>
+        <td>
+          66
+        </td>
+        <td>
+          4559
+        </td>
+        <td>
+          2491
+          -
+          2525
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.Elem.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Elem.apply(name, attributes, namespaces)(token.fromParser)
+        </td>
+      </tr><tr>
+        <td>
+          72
+        </td>
+        <td>
+          4560
+        </td>
+        <td>
+          2637
+          -
+          2652
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.parser.strategies.BaseToken.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new BaseToken()(ver, fromParser)
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          4561
+        </td>
+        <td>
+          3409
+          -
+          3423
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.TreeProxies.elementEnd
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          xml.elementEnd()
+        </td>
+      </tr><tr>
+        <td>
+          99
+        </td>
+        <td>
+          4562
+        </td>
+        <td>
+          3595
+          -
+          3607
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.XmlTypes.XmlBuilder
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.`package`.XmlBuilder()
+        </td>
+      </tr><tr>
+        <td>
+          99
+        </td>
+        <td>
+          4563
+        </td>
+        <td>
+          3574
+          -
+          3608
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.TreeProxies.beginSub
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          stack.beginSub(elem, scales.xml.`package`.XmlBuilder())
+        </td>
+      </tr><tr>
+        <td>
+          106
+        </td>
+        <td>
+          4564
+        </td>
+        <td>
+          3776
+          -
+          3799
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new scales.xml.impl.FullEqualQNameKey()
+        </td>
+      </tr><tr>
+        <td>
+          110
+        </td>
+        <td>
+          4565
+        </td>
+        <td>
+          3940
+          -
+          3947
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.local
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          k.local
+        </td>
+      </tr><tr>
+        <td>
+          110
+        </td>
+        <td>
+          4566
+        </td>
+        <td>
+          3939
+          -
+          3939
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.strategies.QNameToken.ver
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          QNameToken.this.ver
+        </td>
+      </tr><tr>
+        <td>
+          110
+        </td>
+        <td>
+          4567
+        </td>
+        <td>
+          3939
+          -
+          3939
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.strategies.QNameToken.fromParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          QNameToken.this.fromParser
+        </td>
+      </tr><tr>
+        <td>
+          110
+        </td>
+        <td>
+          4568
+        </td>
+        <td>
+          3923
+          -
+          3948
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.NoNamespaceQName.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.NoNamespaceQName.apply(k.local)(QNameToken.this.ver, QNameToken.this.fromParser)
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          4569
+        </td>
+        <td>
+          4004
+          -
+          4011
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.local
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          k.local
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          4570
+        </td>
+        <td>
+          4023
+          -
+          4034
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.namespace
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          k.namespace
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          4571
+        </td>
+        <td>
+          4022
+          -
+          4022
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.strategies.QNameToken.ver
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          QNameToken.this.ver
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          4572
+        </td>
+        <td>
+          4022
+          -
+          4022
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.strategies.QNameToken.fromParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          QNameToken.this.fromParser
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          4573
+        </td>
+        <td>
+          4013
+          -
+          4035
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.Namespace.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Namespace.apply(k.namespace)(QNameToken.this.ver, QNameToken.this.fromParser)
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          4574
+        </td>
+        <td>
+          4003
+          -
+          4003
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.strategies.QNameToken.ver
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          QNameToken.this.ver
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          4575
+        </td>
+        <td>
+          4003
+          -
+          4003
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.strategies.QNameToken.fromParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          QNameToken.this.fromParser
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          4576
+        </td>
+        <td>
+          3988
+          -
+          4036
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.UnprefixedQName.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.UnprefixedQName.apply(k.local, scales.xml.Namespace.apply(k.namespace)(QNameToken.this.ver, QNameToken.this.fromParser))(QNameToken.this.ver, QNameToken.this.fromParser)
+        </td>
+      </tr><tr>
+        <td>
+          112
+        </td>
+        <td>
+          4577
+        </td>
+        <td>
+          4089
+          -
+          4096
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.local
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          k.local
+        </td>
+      </tr><tr>
+        <td>
+          112
+        </td>
+        <td>
+          4578
+        </td>
+        <td>
+          4108
+          -
+          4119
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.namespace
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          k.namespace
+        </td>
+      </tr><tr>
+        <td>
+          112
+        </td>
+        <td>
+          4579
+        </td>
+        <td>
+          4107
+          -
+          4107
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.strategies.QNameToken.ver
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          QNameToken.this.ver
+        </td>
+      </tr><tr>
+        <td>
+          112
+        </td>
+        <td>
+          4580
+        </td>
+        <td>
+          4107
+          -
+          4107
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.strategies.QNameToken.fromParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          QNameToken.this.fromParser
+        </td>
+      </tr><tr>
+        <td>
+          112
+        </td>
+        <td>
+          4581
+        </td>
+        <td>
+          4130
+          -
+          4138
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.prefix
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          k.prefix
+        </td>
+      </tr><tr>
+        <td>
+          112
+        </td>
+        <td>
+          4582
+        </td>
+        <td>
+          4129
+          -
+          4129
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.strategies.QNameToken.ver
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          QNameToken.this.ver
+        </td>
+      </tr><tr>
+        <td>
+          112
+        </td>
+        <td>
+          4583
+        </td>
+        <td>
+          4129
+          -
+          4129
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.strategies.QNameToken.fromParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          QNameToken.this.fromParser
+        </td>
+      </tr><tr>
+        <td>
+          112
+        </td>
+        <td>
+          4584
+        </td>
+        <td>
+          4098
+          -
+          4139
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.Namespace.prefixed
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Namespace.apply(k.namespace)(QNameToken.this.ver, QNameToken.this.fromParser).prefixed(k.prefix)(QNameToken.this.ver, QNameToken.this.fromParser)
+        </td>
+      </tr><tr>
+        <td>
+          112
+        </td>
+        <td>
+          4585
+        </td>
+        <td>
+          4088
+          -
+          4088
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.strategies.QNameToken.ver
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          QNameToken.this.ver
+        </td>
+      </tr><tr>
+        <td>
+          112
+        </td>
+        <td>
+          4586
+        </td>
+        <td>
+          4088
+          -
+          4088
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.strategies.QNameToken.fromParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          QNameToken.this.fromParser
+        </td>
+      </tr><tr>
+        <td>
+          112
+        </td>
+        <td>
+          4587
+        </td>
+        <td>
+          4075
+          -
+          4140
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.PrefixedQName.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.PrefixedQName.apply(k.local, scales.xml.Namespace.apply(k.namespace)(QNameToken.this.ver, QNameToken.this.fromParser).prefixed(k.prefix)(QNameToken.this.ver, QNameToken.this.fromParser))(QNameToken.this.ver, QNameToken.this.fromParser)
+        </td>
+      </tr><tr>
+        <td>
+          117
+        </td>
+        <td>
+          4588
+        </td>
+        <td>
+          4239
+          -
+          4255
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.parser.strategies.QNameToken.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new QNameToken()(ver, fromParser)
+        </td>
+      </tr><tr>
+        <td>
+          127
+        </td>
+        <td>
+          4589
+        </td>
+        <td>
+          4511
+          -
+          4560
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.concurrent.ConcurrentHashMap.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new java.util.concurrent.ConcurrentHashMap[scales.xml.impl.FullEqualQNameKey,scales.xml.QName]()
+        </td>
+      </tr><tr>
+        <td>
+          135
+        </td>
+        <td>
+          4590
+        </td>
+        <td>
+          4754
+          -
+          4785
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.setNoNamespaceQName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          qt.qkey.setNoNamespaceQName(local)
+        </td>
+      </tr><tr>
+        <td>
+          135
+        </td>
+        <td>
+          4591
+        </td>
+        <td>
+          4789
+          -
+          4794
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.strategies.QNameToken.noNsQ
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          qt.noNsQ
+        </td>
+      </tr><tr>
+        <td>
+          135
+        </td>
+        <td>
+          4592
+        </td>
+        <td>
+          4747
+          -
+          4796
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.strategies.QNameOptimisationT.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          QNameOptimisationT.this.value[scales.xml.NoNamespaceQName](qt.qkey.setNoNamespaceQName(local))(qt.noNsQ)
+        </td>
+      </tr><tr>
+        <td>
+          141
+        </td>
+        <td>
+          4593
+        </td>
+        <td>
+          4947
+          -
+          4982
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.setUnprefixedQName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          qt.qkey.setUnprefixedQName(local, uri)
+        </td>
+      </tr><tr>
+        <td>
+          141
+        </td>
+        <td>
+          4594
+        </td>
+        <td>
+          4986
+          -
+          4989
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.strategies.QNameToken.unQ
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          qt.unQ
+        </td>
+      </tr><tr>
+        <td>
+          141
+        </td>
+        <td>
+          4595
+        </td>
+        <td>
+          4940
+          -
+          4991
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.strategies.QNameOptimisationT.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          QNameOptimisationT.this.value[scales.xml.UnprefixedQName](qt.qkey.setUnprefixedQName(local, uri))(qt.unQ)
+        </td>
+      </tr><tr>
+        <td>
+          147
+        </td>
+        <td>
+          4596
+        </td>
+        <td>
+          5155
+          -
+          5197
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.setPrefixedQName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          qt.qkey.setPrefixedQName(local, uri, prefix)
+        </td>
+      </tr><tr>
+        <td>
+          147
+        </td>
+        <td>
+          4597
+        </td>
+        <td>
+          5201
+          -
+          5203
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.strategies.QNameToken.pQ
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          qt.pQ
+        </td>
+      </tr><tr>
+        <td>
+          147
+        </td>
+        <td>
+          4598
+        </td>
+        <td>
+          5148
+          -
+          5205
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.strategies.QNameOptimisationT.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          QNameOptimisationT.this.value[scales.xml.PrefixedQName{final val prefix: Some[String]}](qt.qkey.setPrefixedQName(local, uri, prefix))(qt.pQ)
+        </td>
+      </tr><tr>
+        <td>
+          151
+        </td>
+        <td>
+          4599
+        </td>
+        <td>
+          5317
+          -
+          5336
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.concurrent.ConcurrentHashMap.get
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          QNameOptimisationT.this.qNameCache.get(key)
+        </td>
+      </tr><tr>
+        <td>
+          152
+        </td>
+        <td>
+          4600
+        </td>
+        <td>
+          5345
+          -
+          5358
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          value.==(null)
+        </td>
+      </tr><tr>
+        <td>
+          152
+        </td>
+        <td>
+          4607
+        </td>
+        <td>
+          5360
+          -
+          5534
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  value = newT.apply(key);
+  val res: scales.xml.QName = QNameOptimisationT.this.qNameCache.putIfAbsent(key.copy, value);
+  value = if (res.==(null))
+    value
+  else
+    res
+}
+        </td>
+      </tr><tr>
+        <td>
+          152
+        </td>
+        <td>
+          4608
+        </td>
+        <td>
+          5341
+          -
+          5341
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          152
+        </td>
+        <td>
+          4609
+        </td>
+        <td>
+          5341
+          -
+          5341
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          153
+        </td>
+        <td>
+          4601
+        </td>
+        <td>
+          5376
+          -
+          5385
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          newT.apply(key)
+        </td>
+      </tr><tr>
+        <td>
+          154
+        </td>
+        <td>
+          4602
+        </td>
+        <td>
+          5425
+          -
+          5433
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.copy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          key.copy
+        </td>
+      </tr><tr>
+        <td>
+          154
+        </td>
+        <td>
+          4603
+        </td>
+        <td>
+          5402
+          -
+          5441
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.concurrent.ConcurrentHashMap.putIfAbsent
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          QNameOptimisationT.this.qNameCache.putIfAbsent(key.copy, value)
+        </td>
+      </tr><tr>
+        <td>
+          155
+        </td>
+        <td>
+          4604
+        </td>
+        <td>
+          5501
+          -
+          5512
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          res.==(null)
+        </td>
+      </tr><tr>
+        <td>
+          155
+        </td>
+        <td>
+          4605
+        </td>
+        <td>
+          5514
+          -
+          5519
+        </td>
+        <td>
+          Ident
+        </td>
+        <td>
+          scales.xml.parser.strategies.QNameOptimisationT.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          value
+        </td>
+      </tr><tr>
+        <td>
+          155
+        </td>
+        <td>
+          4606
+        </td>
+        <td>
+          5525
+          -
+          5528
+        </td>
+        <td>
+          Ident
+        </td>
+        <td>
+          scales.xml.parser.strategies.QNameOptimisationT.res
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          res
+        </td>
+      </tr><tr>
+        <td>
+          157
+        </td>
+        <td>
+          4610
+        </td>
+        <td>
+          5539
+          -
+          5560
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          value.asInstanceOf[T]
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

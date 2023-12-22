@@ -1,0 +1,5754 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/xml/parser/pull/PullIterator.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.xml.parser.pull
+</span>2 <span style=''>
+</span>3 <span style=''>import javax.xml.stream._
+</span>4 <span style=''>import scales.utils._
+</span>5 <span style=''>import scales.xml.parser._
+</span>6 <span style=''>
+</span>7 <span style=''>import strategies.{MemoryOptimisationStrategy, OptimisationToken}
+</span>8 <span style=''>
+</span>9 <span style=''>import scales.xml.impl.{FromParser, IsFromParser}
+</span>10 <span style=''>
+</span>11 <span style=''>import scales.xml.{
+</span>12 <span style=''>  PullType,
+</span>13 <span style=''>  CData,
+</span>14 <span style=''>  Comment,
+</span>15 <span style=''>  Elem,
+</span>16 <span style=''>  PI,
+</span>17 <span style=''>  Text,
+</span>18 <span style=''>  EndElem,
+</span>19 <span style=''>  Misc,
+</span>20 <span style=''>  Attributes,
+</span>21 <span style=''>  ScalesXml,
+</span>22 <span style=''>  Prolog,
+</span>23 <span style=''>  EndMisc,
+</span>24 <span style=''>  DTD,
+</span>25 <span style=''>  Declaration,
+</span>26 <span style=''>  AttributeQName,
+</span>27 <span style=''>  DocLike,
+</span>28 <span style=''>  Xml11, Xml10,
+</span>29 <span style=''>  emptyAttributes
+</span>30 <span style=''>  }
+</span>31 <span style=''>
+</span>32 <span style=''>/**
+</span>33 <span style=''> * Basis for xmlpulls, an Iterator[PullType]
+</span>34 <span style=''> */
+</span>35 <span style=''>trait XmlPull extends Iterator[PullType] with DocLike {
+</span>36 <span style=''>
+</span>37 <span style=''>  type Token &lt;: OptimisationToken
+</span>38 <span style=''>
+</span>39 <span style=''>  implicit val weAreInAParser : FromParser = </span><span style='background: #AEF1AE'>IsFromParser</span><span style=''>
+</span>40 <span style=''>
+</span>41 <span style=''>  import ScalesXml.defaultVersion
+</span>42 <span style=''>
+</span>43 <span style=''>  protected[xml] val parser: XMLStreamReader
+</span>44 <span style=''>  protected[xml] val resourceCloser: () =&gt; Unit
+</span>45 <span style=''>
+</span>46 <span style=''>  protected[xml] def internalClose </span><span style='background: #AEF1AE'>{}</span><span style=''>
+</span>47 <span style=''>
+</span>48 <span style=''>  /**
+</span>49 <span style=''>   * Why is this on a pull parser?  Simple answer is by default it costs little,
+</span>50 <span style=''>   * and by selection the user can optimise whole streams at an early and central place.  Optimising the stream in onQNames or another iteratee or in user code seems to go against the definition of a good design.
+</span>51 <span style=''>   */ 
+</span>52 <span style=''>  protected[xml] val strategy : MemoryOptimisationStrategy[Token]
+</span>53 <span style=''>  protected[xml] val token : Token
+</span>54 <span style=''>
+</span>55 <span style=''>  private[xml] var current: PullType = </span><span style='background: #AEF1AE'>null</span><span style=''>
+</span>56 <span style=''>
+</span>57 <span style=''>  /*
+</span>58 <span style=''>     * DocLike parts follow
+</span>59 <span style=''>     */
+</span>60 <span style=''>
+</span>61 <span style=''>  private[xml] var vprolog: Prolog = </span><span style='background: #AEF1AE'>Prolog()</span><span style=''>
+</span>62 <span style=''>  private[xml] var emisc: EndMisc = </span><span style='background: #AEF1AE'>EndMisc()</span><span style=''>
+</span>63 <span style=''>
+</span>64 <span style=''>  def prolog = </span><span style='background: #AEF1AE'>vprolog</span><span style=''>
+</span>65 <span style=''>  def end = </span><span style='background: #AEF1AE'>emisc</span><span style=''>
+</span>66 <span style=''>
+</span>67 <span style=''>  /**
+</span>68 <span style=''>   * If the depth is -1 then we haven't hit an element yet, and
+</span>69 <span style=''>   * start should keep pumping until that happens.
+</span>70 <span style=''>   *
+</span>71 <span style=''>   * If the depth is -1 after processing the end root (haveRoot), then we keep pumping into the endMisc
+</span>72 <span style=''>   */
+</span>73 <span style=''>  protected[xml] var depth = </span><span style='background: #AEF1AE'>-1</span><span style=''>
+</span>74 <span style=''>  protected[xml] var haveRoot = </span><span style='background: #AEF1AE'>false</span><span style=''>
+</span>75 <span style=''>
+</span>76 <span style=''>  /**
+</span>77 <span style=''>   * Pumps until the first elem, always collecting the prolog
+</span>78 <span style=''>   */
+</span>79 <span style=''>  protected[xml] def start = {
+</span>80 <span style=''>    while (</span><span style='background: #AEF1AE'>depth == -1</span><span style=''>) </span><span style='background: #AEF1AE'>{
+</span>81 <span style=''></span><span style='background: #AEF1AE'>      current = pumpEvent
+</span>82 <span style=''></span><span style='background: #AEF1AE'>      if (current.isLeft &amp;&amp; (current.left.get eq PullUtils.dtdDummy)) {
+</span>83 <span style=''></span><span style='background: #AEF1AE'>        </span><span style='background: #F0ADAD'>vprolog = vprolog.copy(dtd = Some(
+</span>84 <span style=''></span><span style='background: #F0ADAD'>          DTD(&quot;&quot;, &quot;&quot;, &quot;&quot;) // DTD has funnyness TODO find out what it looks like
+</span>85 <span style=''></span><span style='background: #F0ADAD'>          ))</span><span style='background: #AEF1AE'>
+</span>86 <span style=''></span><span style='background: #AEF1AE'>      }
+</span>87 <span style=''></span><span style='background: #AEF1AE'>
+</span>88 <span style=''></span><span style='background: #AEF1AE'>      if (depth == -1) {
+</span>89 <span style=''></span><span style='background: #AEF1AE'>        vprolog = vprolog.copy(misc = vprolog.misc :+ PullUtils.getMisc(current, &quot;prolog&quot;))
+</span>90 <span style=''></span><span style='background: #AEF1AE'>      }
+</span>91 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>92 <span style=''>  }
+</span>93 <span style=''>
+</span>94 <span style=''>  final val it = this: Iterator[PullType]
+</span>95 <span style=''>
+</span>96 <span style=''>  def hasNext = </span><span style='background: #AEF1AE'>current ne null</span><span style=''>
+</span>97 <span style=''>
+</span>98 <span style=''>  def next: PullType = {
+</span>99 <span style=''>    val c = </span><span style='background: #AEF1AE'>current</span><span style=''> // cache current
+</span>100 <span style=''>    if (</span><span style='background: #AEF1AE'>current eq null</span><span style=''>) </span><span style='background: #F0ADAD'>throw new NoSuchElementException(&quot;The end of the document has been reached&quot;)</span><span style=''>
+</span>101 <span style=''>
+</span>102 <span style=''>    </span><span style='background: #AEF1AE'>current = pumpEvent</span><span style=''> // pump for the next
+</span>103 <span style=''>    if (</span><span style='background: #AEF1AE'>(current ne null) &amp;&amp; current.isRight &amp;&amp; depth == -1</span><span style=''>) </span><span style='background: #AEF1AE'>{
+</span>104 <span style=''></span><span style='background: #AEF1AE'>      // we are now into the end doc, no more events will be pumped
+</span>105 <span style=''></span><span style='background: #AEF1AE'>      var ends = pumpEvent
+</span>106 <span style=''></span><span style='background: #AEF1AE'>      while (ends ne null) {
+</span>107 <span style=''></span><span style='background: #AEF1AE'>        emisc = emisc.copy(misc = emisc.misc :+ PullUtils.getMisc(ends, &quot;document end Misc&quot;))
+</span>108 <span style=''></span><span style='background: #AEF1AE'>        ends = pumpEvent
+</span>109 <span style=''></span><span style='background: #AEF1AE'>      }
+</span>110 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>111 <span style=''>
+</span>112 <span style=''>    c // return cached
+</span>113 <span style=''>  }
+</span>114 <span style=''>
+</span>115 <span style=''>  protected[xml] def pumpEvent: PullType = {
+</span>116 <span style=''>    if (</span><span style='background: #AEF1AE'>!parser.hasNext</span><span style=''>) </span><span style='background: #AEF1AE'>return null</span><span style=''>
+</span>117 <span style=''>
+</span>118 <span style=''>    var nextEvent = </span><span style='background: #AEF1AE'>XMLStreamConstants.END_DOCUMENT</span><span style=''>
+</span>119 <span style=''>    try {
+</span>120 <span style=''>      </span><span style='background: #AEF1AE'>val (event, num, odepth, oprolog) = PullUtils.pumpEvent(parser, strategy, token, vprolog, depth){_ =&gt; pumpEvent}
+</span>121 <span style=''></span><span style='background: #AEF1AE'>      nextEvent = num
+</span>122 <span style=''></span><span style='background: #AEF1AE'>      depth = odepth
+</span>123 <span style=''></span><span style='background: #AEF1AE'>      vprolog = oprolog
+</span>124 <span style=''></span><span style='background: #AEF1AE'>      event</span><span style=''>
+</span>125 <span style=''>    } finally {
+</span>126 <span style=''>      // should we close it? 
+</span>127 <span style=''>      </span><span style='background: #AEF1AE'>if (nextEvent == XMLStreamConstants.END_DOCUMENT) {
+</span>128 <span style=''></span><span style='background: #AEF1AE'>        internalClose
+</span>129 <span style=''></span><span style='background: #AEF1AE'>      }</span><span style=''>
+</span>130 <span style=''>    }
+</span>131 <span style=''>  }
+</span>132 <span style=''>}
+</span>133 <span style=''>
+</span>134 <span style=''>object PullUtils {
+</span>135 <span style=''>
+</span>136 <span style=''>  private[xml] val dtdDummy = </span><span style='background: #AEF1AE'>PI(&quot;onlyforme&quot;, &quot;init&quot;)</span><span style=''>
+</span>137 <span style=''>
+</span>138 <span style=''>  implicit val weAreInAParser : FromParser = </span><span style='background: #AEF1AE'>IsFromParser</span><span style=''>
+</span>139 <span style=''>
+</span>140 <span style=''>  def getMisc(c: PullType, in: String): Misc =
+</span>141 <span style=''>    </span><span style='background: #AEF1AE'>c.fold[Misc](e =&gt; e match {
+</span>142 <span style=''></span><span style='background: #AEF1AE'>      case ev: Comment =&gt; Left(ev)
+</span>143 <span style=''></span><span style='background: #AEF1AE'>      case ev: PI =&gt; Right(ev)
+</span>144 <span style=''></span><span style='background: #AEF1AE'>      case _ =&gt; </span><span style='background: #F0ADAD'>error(&quot;Got an event (&quot; + e + &quot;) that should not be in the &quot; + in)</span><span style='background: #AEF1AE'>
+</span>145 <span style=''></span><span style='background: #AEF1AE'>    }, f =&gt; </span><span style='background: #F0ADAD'>error(&quot;End element found in &quot; + in + &quot; &quot; + c)</span><span style='background: #AEF1AE'>)</span><span style=''>
+</span>146 <span style=''>  // it must be a left and a comment or pi
+</span>147 <span style=''>
+</span>148 <span style=''>  def getAttributes[Token &lt;: OptimisationToken]( parser: XMLStreamReader, strategy : MemoryOptimisationStrategy[Token], token : Token ): Attributes = {
+</span>149 <span style=''>    import ScalesXml.toQName
+</span>150 <span style=''>
+</span>151 <span style=''>    val count = </span><span style='background: #AEF1AE'>parser.getAttributeCount()</span><span style=''>
+</span>152 <span style=''>    var i = </span><span style='background: #AEF1AE'>0</span><span style=''>
+</span>153 <span style=''>    var map = </span><span style='background: #AEF1AE'>emptyAttributes</span><span style=''>
+</span>154 <span style=''>    while (</span><span style='background: #AEF1AE'>i &lt; count</span><span style=''>) </span><span style='background: #AEF1AE'>{
+</span>155 <span style=''></span><span style='background: #AEF1AE'>      val jqname = parser.getAttributeName(i)
+</span>156 <span style=''></span><span style='background: #AEF1AE'>      val pre = jqname.getPrefix
+</span>157 <span style=''></span><span style='background: #AEF1AE'>      val local = jqname.getLocalPart
+</span>158 <span style=''></span><span style='background: #AEF1AE'>      // attr qnames must be either prefixed or no namespace
+</span>159 <span style=''></span><span style='background: #AEF1AE'>      val aqname: AttributeQName =
+</span>160 <span style=''></span><span style='background: #AEF1AE'>        if ((pre eq null) || (pre.length == 0))
+</span>161 <span style=''></span><span style='background: #AEF1AE'>          // no namespace
+</span>162 <span style=''></span><span style='background: #AEF1AE'>          strategy.noNamespaceQName(local, token) // Right)
+</span>163 <span style=''></span><span style='background: #AEF1AE'>        else
+</span>164 <span style=''></span><span style='background: #AEF1AE'>          strategy.prefixedQName(local, jqname.getNamespaceURI, pre, token) // Left )
+</span>165 <span style=''></span><span style='background: #AEF1AE'>
+</span>166 <span style=''></span><span style='background: #AEF1AE'>      map = map unsafePlus 
+</span>167 <span style=''></span><span style='background: #AEF1AE'>	strategy.attribute(aqname, 
+</span>168 <span style=''></span><span style='background: #AEF1AE'>		       parser.getAttributeValue(i), token)
+</span>169 <span style=''></span><span style='background: #AEF1AE'>
+</span>170 <span style=''></span><span style='background: #AEF1AE'>      i += 1
+</span>171 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>172 <span style=''>    map
+</span>173 <span style=''>  }
+</span>174 <span style=''>
+</span>175 <span style=''>  def getNamespaces[Token &lt;: OptimisationToken]( parser: XMLStreamReader, strategy : MemoryOptimisationStrategy[Token], token : Token ): Map[String, String] = {
+</span>176 <span style=''>    val count = </span><span style='background: #AEF1AE'>parser.getNamespaceCount()</span><span style=''>
+</span>177 <span style=''>    var i = </span><span style='background: #AEF1AE'>0</span><span style=''>
+</span>178 <span style=''>    var map = </span><span style='background: #AEF1AE'>Map[String, String]()</span><span style=''>
+</span>179 <span style=''>    while (</span><span style='background: #AEF1AE'>i &lt; count</span><span style=''>) </span><span style='background: #AEF1AE'>{
+</span>180 <span style=''></span><span style='background: #AEF1AE'>      val pre = parser.getNamespacePrefix(i)
+</span>181 <span style=''></span><span style='background: #AEF1AE'>      if (pre ne null) {
+</span>182 <span style=''></span><span style='background: #AEF1AE'>        map += (pre -&gt; parser.getNamespaceURI(i))
+</span>183 <span style=''></span><span style='background: #AEF1AE'>      } // else nothing, the element will define it, question is should we accept it here as it was defined as such!!??
+</span>184 <span style=''></span><span style='background: #AEF1AE'>      i += 1
+</span>185 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>186 <span style=''>    map
+</span>187 <span style=''>  }
+</span>188 <span style=''>
+</span>189 <span style=''>  def getElemQName[Token &lt;: OptimisationToken]( parser: XMLStreamReader, strategy : MemoryOptimisationStrategy[Token], token : Token ) = {
+</span>190 <span style=''>    // elems can have all three, prefixed, ns and none
+</span>191 <span style=''>/*    val jqname = parser.getName()
+</span>192 <span style=''>    val ns = jqname.getNamespaceURI
+</span>193 <span style=''>    val pre = jqname.getPrefix
+</span>194 <span style=''>    val local = jqname.getLocalPart
+</span>195 <span style=''>*/
+</span>196 <span style=''>    val ns = </span><span style='background: #AEF1AE'>parser.getNamespaceURI</span><span style=''>
+</span>197 <span style=''>    val pre = </span><span style='background: #AEF1AE'>parser.getPrefix</span><span style=''>
+</span>198 <span style=''>    val local = </span><span style='background: #AEF1AE'>parser.getLocalName</span><span style=''>
+</span>199 <span style=''>
+</span>200 <span style=''>    if (</span><span style='background: #AEF1AE'>(pre eq null) || (pre.length == 0)</span><span style=''>) {
+</span>201 <span style=''>	// ns only or none
+</span>202 <span style=''>      </span><span style='background: #AEF1AE'>if ((ns eq null) || (ns.length == 0))
+</span>203 <span style=''></span><span style='background: #AEF1AE'>        strategy.noNamespaceQName(local, token)
+</span>204 <span style=''></span><span style='background: #AEF1AE'>      else
+</span>205 <span style=''></span><span style='background: #AEF1AE'>	strategy.unprefixedQName(local, ns, token)</span><span style=''>
+</span>206 <span style=''>    } else
+</span>207 <span style=''>      </span><span style='background: #AEF1AE'>strategy.prefixedQName(local, ns, pre, token)</span><span style=''>
+</span>208 <span style=''>    
+</span>209 <span style=''>  }
+</span>210 <span style=''>
+</span>211 <span style=''>  def pumpEvent[Token &lt;: OptimisationToken]( parser: XMLStreamReader, strategy : MemoryOptimisationStrategy[Token], token : Token, prolog : Prolog, idepth : Int )(otherEventHandler : Int =&gt; PullType) : (PullType, Int, Int, Prolog) = {
+</span>212 <span style=''>    var depth = idepth
+</span>213 <span style=''>    var vprolog = prolog
+</span>214 <span style=''>
+</span>215 <span style=''>    var nextEvent = </span><span style='background: #AEF1AE'>XMLStreamConstants.END_DOCUMENT</span><span style=''> // use this in the case of error from calling next as well, blow it up but try to shut down
+</span>216 <span style=''>    nextEvent = </span><span style='background: #AEF1AE'>parser.next</span><span style=''>
+</span>217 <span style=''>
+</span>218 <span style=''>    val event: PullType = nextEvent match {
+</span>219 <span style=''>      case XMLStreamConstants.START_ELEMENT </span><span style='background: #AEF1AE'>=&gt; 
+</span>220 <span style=''></span><span style='background: #AEF1AE'>	depth += 1
+</span>221 <span style=''></span><span style='background: #AEF1AE'>      strategy.elem(getElemQName(parser, strategy, token), getAttributes(parser, strategy, token), getNamespaces(parser, strategy, token), token)</span><span style=''>
+</span>222 <span style=''>
+</span>223 <span style=''>      case XMLStreamConstants.END_ELEMENT </span><span style='background: #AEF1AE'>=&gt; depth -= 1; EndElem(getElemQName(parser, strategy, token), getNamespaces(parser, strategy, token))</span><span style=''>
+</span>224 <span style=''>      case XMLStreamConstants.CHARACTERS =&gt; </span><span style='background: #AEF1AE'>Text(parser.getText)</span><span style=''>
+</span>225 <span style=''>      case XMLStreamConstants.CDATA =&gt; </span><span style='background: #AEF1AE'>CData(parser.getText)</span><span style=''>
+</span>226 <span style=''>      case XMLStreamConstants.COMMENT =&gt; </span><span style='background: #AEF1AE'>Comment(parser.getText)</span><span style=''>
+</span>227 <span style=''>      case XMLStreamConstants.PROCESSING_INSTRUCTION =&gt; </span><span style='background: #AEF1AE'>PI(parser.getPITarget(), parser.getPIData())</span><span style=''>
+</span>228 <span style=''>      case XMLStreamConstants.SPACE =&gt; </span><span style='background: #F0ADAD'>Text(parser.getText)</span><span style=''> // jdk impl never calls but to be safe we should grab it
+</span>229 <span style=''>      case XMLStreamConstants.START_DOCUMENT =&gt; </span><span style='background: #AEF1AE'>{
+</span>230 <span style=''></span><span style='background: #AEF1AE'>        // get the encoding etc
+</span>231 <span style=''></span><span style='background: #AEF1AE'>	// NB the asynch variety can also call this, if no more events are available then it returns the waiting object.
+</span>232 <span style=''></span><span style='background: #AEF1AE'>        val ec = parser.getCharacterEncodingScheme()
+</span>233 <span style=''></span><span style='background: #AEF1AE'>
+</span>234 <span style=''></span><span style='background: #AEF1AE'>        vprolog = vprolog.copy(decl = Declaration(
+</span>235 <span style=''></span><span style='background: #AEF1AE'>          version = if (parser.getVersion() == &quot;1.1&quot;)
+</span>236 <span style=''></span><span style='background: #AEF1AE'>            </span><span style='background: #F0ADAD'>Xml11</span><span style='background: #AEF1AE'> else Xml10,
+</span>237 <span style=''></span><span style='background: #AEF1AE'>          encoding = if (ec eq null) </span><span style='background: #F0ADAD'>defaultCharset</span><span style='background: #AEF1AE'> else java.nio.charset.Charset.forName(ec), // TODO what do we do about unsupported, throwing is probably fine, but it irritates, if we can get here the parser at least supports it, even if we can't write to it
+</span>238 <span style=''></span><span style='background: #AEF1AE'>          standalone = parser.isStandalone()))
+</span>239 <span style=''></span><span style='background: #AEF1AE'>
+</span>240 <span style=''></span><span style='background: #AEF1AE'>        val (nev, nex, nde, vvp) = pumpEvent(parser, strategy, token, vprolog, depth)(otherEventHandler) // we don't want to handle this
+</span>241 <span style=''></span><span style='background: #AEF1AE'>
+</span>242 <span style=''></span><span style='background: #AEF1AE'>	// reset to keep the correct values
+</span>243 <span style=''></span><span style='background: #AEF1AE'>	nextEvent = nex
+</span>244 <span style=''></span><span style='background: #AEF1AE'>	depth = nde
+</span>245 <span style=''></span><span style='background: #AEF1AE'>	vprolog = vvp
+</span>246 <span style=''></span><span style='background: #AEF1AE'>	nev
+</span>247 <span style=''></span><span style='background: #AEF1AE'>      }</span><span style=''>
+</span>248 <span style=''>      case XMLStreamConstants.DTD =&gt; </span><span style='background: #F0ADAD'>dtdDummy</span><span style=''> // push it through in start
+</span>249 <span style=''>
+</span>250 <span style=''>      // we don't really want to handle other types?
+</span>251 <span style=''>      case _ =&gt; </span><span style='background: #AEF1AE'>otherEventHandler(nextEvent)</span><span style=''>
+</span>252 <span style=''>    }
+</span>253 <span style=''>    </span><span style='background: #AEF1AE'>(event, nextEvent, depth, vprolog)</span><span style=''>
+</span>254 <span style=''>  }
+</span>255 <span style=''>  
+</span>256 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          4061
+        </td>
+        <td>
+          647
+          -
+          659
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.IsFromParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.impl.IsFromParser
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          4062
+        </td>
+        <td>
+          825
+          -
+          827
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          4063
+        </td>
+        <td>
+          1277
+          -
+          1281
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          61
+        </td>
+        <td>
+          4064
+        </td>
+        <td>
+          1362
+          -
+          1370
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Prolog.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Prolog.apply(scales.xml.Prolog.apply$default$1, scales.xml.Prolog.apply$default$2, scales.xml.Prolog.apply$default$3)
+        </td>
+      </tr><tr>
+        <td>
+          62
+        </td>
+        <td>
+          4065
+        </td>
+        <td>
+          1407
+          -
+          1416
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.EndMisc.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.EndMisc.apply(scales.xml.EndMisc.apply$default$1)
+        </td>
+      </tr><tr>
+        <td>
+          64
+        </td>
+        <td>
+          4066
+        </td>
+        <td>
+          1433
+          -
+          1440
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPull.vprolog
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPull.this.vprolog
+        </td>
+      </tr><tr>
+        <td>
+          65
+        </td>
+        <td>
+          4067
+        </td>
+        <td>
+          1453
+          -
+          1458
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPull.emisc
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPull.this.emisc
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          4068
+        </td>
+        <td>
+          1725
+          -
+          1727
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          -1
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          4069
+        </td>
+        <td>
+          1760
+          -
+          1765
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          4070
+        </td>
+        <td>
+          1883
+          -
+          1894
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPull.this.depth.==(-1)
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          4096
+        </td>
+        <td>
+          1896
+          -
+          1896
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPull.while$1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          while$1()
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          4097
+        </td>
+        <td>
+          1896
+          -
+          2271
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  {
+    XmlPull.this.current_=(XmlPull.this.pumpEvent);
+    if (XmlPull.this.current.isLeft.&amp;&amp;(XmlPull.this.current.left.get.eq(PullUtils.dtdDummy)))
+      XmlPull.this.vprolog_=({
+        &lt;artifact&gt; val qual$1: scales.xml.Prolog = XmlPull.this.vprolog;
+        &lt;artifact&gt; val x$1: Some[scales.xml.DTD] = scala.Some.apply[scales.xml.DTD](scales.xml.DTD.apply(&quot;&quot;, &quot;&quot;, &quot;&quot;));
+        &lt;artifact&gt; val x$2: scales.xml.Declaration = qual$1.copy$default$1;
+        &lt;artifact&gt; val x$3: scales.xml.Miscs = qual$1.copy$default$2;
+        qual$1.copy(x$2, x$3, x$1)
+      })
+    else
+      ();
+    if (XmlPull.this.depth.==(-1))
+      XmlPull.this.vprolog_=({
+        &lt;artifact&gt; val qual$2: scales.xml.Prolog = XmlPull.this.vprolog;
+        &lt;artifact&gt; val x$4: scales.xml.Miscs = XmlPull.this.vprolog.misc.:+[scales.xml.Misc, scales.xml.Miscs](PullUtils.getMisc(XmlPull.this.current, &quot;prolog&quot;))(collection.this.Seq.canBuildFrom[scales.xml.Misc]);
+        &lt;artifact&gt; val x$5: scales.xml.Declaration = qual$2.copy$default$1;
+        &lt;artifact&gt; val x$6: Option[scales.xml.DTD] = qual$2.copy$default$3;
+        qual$2.copy(x$5, x$4, x$6)
+      })
+    else
+      ()
+  };
+  while$1()
+}
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          4098
+        </td>
+        <td>
+          1876
+          -
+          1876
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          4099
+        </td>
+        <td>
+          1876
+          -
+          1876
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          81
+        </td>
+        <td>
+          4071
+        </td>
+        <td>
+          1914
+          -
+          1923
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPull.pumpEvent
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPull.this.pumpEvent
+        </td>
+      </tr><tr>
+        <td>
+          81
+        </td>
+        <td>
+          4072
+        </td>
+        <td>
+          1904
+          -
+          1923
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPull.current_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPull.this.current_=(XmlPull.this.pumpEvent)
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          4073
+        </td>
+        <td>
+          1973
+          -
+          1991
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.PullUtils.dtdDummy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          PullUtils.dtdDummy
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          4074
+        </td>
+        <td>
+          1953
+          -
+          1991
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPull.this.current.left.get.eq(PullUtils.dtdDummy)
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          4075
+        </td>
+        <td>
+          1934
+          -
+          1992
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPull.this.current.isLeft.&amp;&amp;(XmlPull.this.current.left.get.eq(PullUtils.dtdDummy))
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          4082
+        </td>
+        <td>
+          1930
+          -
+          1930
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          4083
+        </td>
+        <td>
+          1930
+          -
+          1930
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          83
+        </td>
+        <td>
+          4076
+        </td>
+        <td>
+          2014
+          -
+          2021
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPull.vprolog
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          XmlPull.this.vprolog
+        </td>
+      </tr><tr>
+        <td>
+          83
+        </td>
+        <td>
+          4078
+        </td>
+        <td>
+          2033
+          -
+          2130
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Some.apply[scales.xml.DTD](scales.xml.DTD.apply(&quot;&quot;, &quot;&quot;, &quot;&quot;))
+        </td>
+      </tr><tr>
+        <td>
+          83
+        </td>
+        <td>
+          4079
+        </td>
+        <td>
+          2014
+          -
+          2131
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Prolog.copy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          qual$1.copy(x$2, x$3, x$1)
+        </td>
+      </tr><tr>
+        <td>
+          83
+        </td>
+        <td>
+          4080
+        </td>
+        <td>
+          2004
+          -
+          2131
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPull.vprolog_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          XmlPull.this.vprolog_=({
+  &lt;artifact&gt; val qual$1: scales.xml.Prolog = XmlPull.this.vprolog;
+  &lt;artifact&gt; val x$1: Some[scales.xml.DTD] = scala.Some.apply[scales.xml.DTD](scales.xml.DTD.apply(&quot;&quot;, &quot;&quot;, &quot;&quot;));
+  &lt;artifact&gt; val x$2: scales.xml.Declaration = qual$1.copy$default$1;
+  &lt;artifact&gt; val x$3: scales.xml.Miscs = qual$1.copy$default$2;
+  qual$1.copy(x$2, x$3, x$1)
+})
+        </td>
+      </tr><tr>
+        <td>
+          83
+        </td>
+        <td>
+          4081
+        </td>
+        <td>
+          2004
+          -
+          2131
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPull.vprolog_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          XmlPull.this.vprolog_=({
+  &lt;artifact&gt; val qual$1: scales.xml.Prolog = XmlPull.this.vprolog;
+  &lt;artifact&gt; val x$1: Some[scales.xml.DTD] = scala.Some.apply[scales.xml.DTD](scales.xml.DTD.apply(&quot;&quot;, &quot;&quot;, &quot;&quot;));
+  &lt;artifact&gt; val x$2: scales.xml.Declaration = qual$1.copy$default$1;
+  &lt;artifact&gt; val x$3: scales.xml.Miscs = qual$1.copy$default$2;
+  qual$1.copy(x$2, x$3, x$1)
+})
+        </td>
+      </tr><tr>
+        <td>
+          84
+        </td>
+        <td>
+          4077
+        </td>
+        <td>
+          2049
+          -
+          2064
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.DTD.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.xml.DTD.apply(&quot;&quot;, &quot;&quot;, &quot;&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          88
+        </td>
+        <td>
+          4084
+        </td>
+        <td>
+          2151
+          -
+          2162
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPull.this.depth.==(-1)
+        </td>
+      </tr><tr>
+        <td>
+          88
+        </td>
+        <td>
+          4094
+        </td>
+        <td>
+          2147
+          -
+          2147
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          88
+        </td>
+        <td>
+          4095
+        </td>
+        <td>
+          2147
+          -
+          2147
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          4085
+        </td>
+        <td>
+          2184
+          -
+          2191
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPull.vprolog
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPull.this.vprolog
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          4086
+        </td>
+        <td>
+          2238
+          -
+          2245
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPull.current
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPull.this.current
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          4087
+        </td>
+        <td>
+          2247
+          -
+          2255
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;prolog&quot;
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          4088
+        </td>
+        <td>
+          2220
+          -
+          2256
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.PullUtils.getMisc
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          PullUtils.getMisc(XmlPull.this.current, &quot;prolog&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          4089
+        </td>
+        <td>
+          2217
+          -
+          2217
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.Seq.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.Seq.canBuildFrom[scales.xml.Misc]
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          4090
+        </td>
+        <td>
+          2204
+          -
+          2256
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.SeqLike.:+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPull.this.vprolog.misc.:+[scales.xml.Misc, scales.xml.Miscs](PullUtils.getMisc(XmlPull.this.current, &quot;prolog&quot;))(collection.this.Seq.canBuildFrom[scales.xml.Misc])
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          4091
+        </td>
+        <td>
+          2184
+          -
+          2257
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Prolog.copy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          qual$2.copy(x$5, x$4, x$6)
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          4092
+        </td>
+        <td>
+          2174
+          -
+          2257
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPull.vprolog_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPull.this.vprolog_=({
+  &lt;artifact&gt; val qual$2: scales.xml.Prolog = XmlPull.this.vprolog;
+  &lt;artifact&gt; val x$4: scales.xml.Miscs = XmlPull.this.vprolog.misc.:+[scales.xml.Misc, scales.xml.Miscs](PullUtils.getMisc(XmlPull.this.current, &quot;prolog&quot;))(collection.this.Seq.canBuildFrom[scales.xml.Misc]);
+  &lt;artifact&gt; val x$5: scales.xml.Declaration = qual$2.copy$default$1;
+  &lt;artifact&gt; val x$6: Option[scales.xml.DTD] = qual$2.copy$default$3;
+  qual$2.copy(x$5, x$4, x$6)
+})
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          4093
+        </td>
+        <td>
+          2174
+          -
+          2257
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPull.vprolog_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPull.this.vprolog_=({
+  &lt;artifact&gt; val qual$2: scales.xml.Prolog = XmlPull.this.vprolog;
+  &lt;artifact&gt; val x$4: scales.xml.Miscs = XmlPull.this.vprolog.misc.:+[scales.xml.Misc, scales.xml.Miscs](PullUtils.getMisc(XmlPull.this.current, &quot;prolog&quot;))(collection.this.Seq.canBuildFrom[scales.xml.Misc]);
+  &lt;artifact&gt; val x$5: scales.xml.Declaration = qual$2.copy$default$1;
+  &lt;artifact&gt; val x$6: Option[scales.xml.DTD] = qual$2.copy$default$3;
+  qual$2.copy(x$5, x$4, x$6)
+})
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          4100
+        </td>
+        <td>
+          2336
+          -
+          2351
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.ne
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPull.this.current.ne(null)
+        </td>
+      </tr><tr>
+        <td>
+          99
+        </td>
+        <td>
+          4101
+        </td>
+        <td>
+          2390
+          -
+          2397
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPull.current
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPull.this.current
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          4102
+        </td>
+        <td>
+          2423
+          -
+          2438
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPull.this.current.eq(null)
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          4103
+        </td>
+        <td>
+          2440
+          -
+          2516
+        </td>
+        <td>
+          Throw
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          throw new scala.`package`.NoSuchElementException(&quot;The end of the document has been reached&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          4104
+        </td>
+        <td>
+          2440
+          -
+          2516
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          throw new scala.`package`.NoSuchElementException(&quot;The end of the document has been reached&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          4105
+        </td>
+        <td>
+          2419
+          -
+          2419
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          4106
+        </td>
+        <td>
+          2419
+          -
+          2419
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          102
+        </td>
+        <td>
+          4107
+        </td>
+        <td>
+          2532
+          -
+          2541
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPull.pumpEvent
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPull.this.pumpEvent
+        </td>
+      </tr><tr>
+        <td>
+          102
+        </td>
+        <td>
+          4108
+        </td>
+        <td>
+          2522
+          -
+          2541
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPull.current_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPull.this.current_=(XmlPull.this.pumpEvent)
+        </td>
+      </tr><tr>
+        <td>
+          103
+        </td>
+        <td>
+          4109
+        </td>
+        <td>
+          2583
+          -
+          2587
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          103
+        </td>
+        <td>
+          4110
+        </td>
+        <td>
+          2592
+          -
+          2607
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.util.Either.isRight
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPull.this.current.isRight
+        </td>
+      </tr><tr>
+        <td>
+          103
+        </td>
+        <td>
+          4111
+        </td>
+        <td>
+          2611
+          -
+          2622
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPull.this.depth.==(-1)
+        </td>
+      </tr><tr>
+        <td>
+          103
+        </td>
+        <td>
+          4112
+        </td>
+        <td>
+          2571
+          -
+          2622
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPull.this.current.ne(null).&amp;&amp;(XmlPull.this.current.isRight).&amp;&amp;(XmlPull.this.depth.==(-1))
+        </td>
+      </tr><tr>
+        <td>
+          103
+        </td>
+        <td>
+          4125
+        </td>
+        <td>
+          2624
+          -
+          2882
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  var ends: scales.xml.PullType = XmlPull.this.pumpEvent;
+  while$2(){
+    if (ends.ne(null))
+      {
+        {
+          XmlPull.this.emisc_=(XmlPull.this.emisc.copy(XmlPull.this.emisc.misc.:+[scales.xml.Misc, scales.xml.Miscs](PullUtils.getMisc(ends, &quot;document end Misc&quot;))(collection.this.Seq.canBuildFrom[scales.xml.Misc])));
+          ends = XmlPull.this.pumpEvent
+        };
+        while$2()
+      }
+    else
+      ()
+  }
+}
+        </td>
+      </tr><tr>
+        <td>
+          103
+        </td>
+        <td>
+          4126
+        </td>
+        <td>
+          2567
+          -
+          2567
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          103
+        </td>
+        <td>
+          4127
+        </td>
+        <td>
+          2567
+          -
+          2567
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          105
+        </td>
+        <td>
+          4113
+        </td>
+        <td>
+          2711
+          -
+          2720
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPull.pumpEvent
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPull.this.pumpEvent
+        </td>
+      </tr><tr>
+        <td>
+          106
+        </td>
+        <td>
+          4114
+        </td>
+        <td>
+          2734
+          -
+          2746
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.ne
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ends.ne(null)
+        </td>
+      </tr><tr>
+        <td>
+          106
+        </td>
+        <td>
+          4121
+        </td>
+        <td>
+          2748
+          -
+          2748
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPull.while$2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          while$2()
+        </td>
+      </tr><tr>
+        <td>
+          106
+        </td>
+        <td>
+          4122
+        </td>
+        <td>
+          2748
+          -
+          2876
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  {
+    XmlPull.this.emisc_=(XmlPull.this.emisc.copy(XmlPull.this.emisc.misc.:+[scales.xml.Misc, scales.xml.Miscs](PullUtils.getMisc(ends, &quot;document end Misc&quot;))(collection.this.Seq.canBuildFrom[scales.xml.Misc])));
+    ends = XmlPull.this.pumpEvent
+  };
+  while$2()
+}
+        </td>
+      </tr><tr>
+        <td>
+          106
+        </td>
+        <td>
+          4123
+        </td>
+        <td>
+          2727
+          -
+          2727
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          106
+        </td>
+        <td>
+          4124
+        </td>
+        <td>
+          2727
+          -
+          2727
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          107
+        </td>
+        <td>
+          4115
+        </td>
+        <td>
+          2798
+          -
+          2842
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.PullUtils.getMisc
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          PullUtils.getMisc(ends, &quot;document end Misc&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          107
+        </td>
+        <td>
+          4116
+        </td>
+        <td>
+          2795
+          -
+          2795
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.Seq.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.Seq.canBuildFrom[scales.xml.Misc]
+        </td>
+      </tr><tr>
+        <td>
+          107
+        </td>
+        <td>
+          4117
+        </td>
+        <td>
+          2784
+          -
+          2842
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.SeqLike.:+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPull.this.emisc.misc.:+[scales.xml.Misc, scales.xml.Miscs](PullUtils.getMisc(ends, &quot;document end Misc&quot;))(collection.this.Seq.canBuildFrom[scales.xml.Misc])
+        </td>
+      </tr><tr>
+        <td>
+          107
+        </td>
+        <td>
+          4118
+        </td>
+        <td>
+          2766
+          -
+          2843
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.EndMisc.copy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPull.this.emisc.copy(XmlPull.this.emisc.misc.:+[scales.xml.Misc, scales.xml.Miscs](PullUtils.getMisc(ends, &quot;document end Misc&quot;))(collection.this.Seq.canBuildFrom[scales.xml.Misc]))
+        </td>
+      </tr><tr>
+        <td>
+          107
+        </td>
+        <td>
+          4119
+        </td>
+        <td>
+          2758
+          -
+          2843
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPull.emisc_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPull.this.emisc_=(XmlPull.this.emisc.copy(XmlPull.this.emisc.misc.:+[scales.xml.Misc, scales.xml.Miscs](PullUtils.getMisc(ends, &quot;document end Misc&quot;))(collection.this.Seq.canBuildFrom[scales.xml.Misc])))
+        </td>
+      </tr><tr>
+        <td>
+          108
+        </td>
+        <td>
+          4120
+        </td>
+        <td>
+          2859
+          -
+          2868
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPull.pumpEvent
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPull.this.pumpEvent
+        </td>
+      </tr><tr>
+        <td>
+          116
+        </td>
+        <td>
+          4128
+        </td>
+        <td>
+          2965
+          -
+          2980
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPull.this.parser.hasNext().unary_!
+        </td>
+      </tr><tr>
+        <td>
+          116
+        </td>
+        <td>
+          4129
+        </td>
+        <td>
+          2989
+          -
+          2993
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          116
+        </td>
+        <td>
+          4130
+        </td>
+        <td>
+          2982
+          -
+          2993
+        </td>
+        <td>
+          Return
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPull.pumpEvent
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          return null
+        </td>
+      </tr><tr>
+        <td>
+          116
+        </td>
+        <td>
+          4131
+        </td>
+        <td>
+          2961
+          -
+          2961
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          116
+        </td>
+        <td>
+          4132
+        </td>
+        <td>
+          2961
+          -
+          2961
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          118
+        </td>
+        <td>
+          4133
+        </td>
+        <td>
+          3015
+          -
+          3046
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          8
+        </td>
+      </tr><tr>
+        <td>
+          119
+        </td>
+        <td>
+          4140
+        </td>
+        <td>
+          3063
+          -
+          3254
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  &lt;synthetic&gt; &lt;artifact&gt; private[this] val x$2: (scales.xml.PullType, Int, Int, scales.xml.Prolog) = (PullUtils.pumpEvent[XmlPull.this.Token](XmlPull.this.parser, XmlPull.this.strategy, XmlPull.this.token, XmlPull.this.vprolog, XmlPull.this.depth)(((x$1: Int) =&gt; XmlPull.this.pumpEvent)): (scales.xml.PullType, Int, Int, scales.xml.Prolog) @unchecked) match {
+    case (_1: scales.xml.PullType, _2: Int, _3: Int, _4: scales.xml.Prolog)(scales.xml.PullType, Int, Int, scales.xml.Prolog)((event @ _), (num @ _), (odepth @ _), (oprolog @ _)) =&gt; scala.Tuple4.apply[scales.xml.PullType, Int, Int, scales.xml.Prolog](event, num, odepth, oprolog)
+  };
+  val event: scales.xml.PullType = x$2._1;
+  val num: Int = x$2._2;
+  val odepth: Int = x$2._3;
+  val oprolog: scales.xml.Prolog = x$2._4;
+  nextEvent = num;
+  XmlPull.this.depth_=(odepth);
+  XmlPull.this.vprolog_=(oprolog);
+  event
+}
+        </td>
+      </tr><tr>
+        <td>
+          120
+        </td>
+        <td>
+          4134
+        </td>
+        <td>
+          3068
+          -
+          3068
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple4._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$2._1
+        </td>
+      </tr><tr>
+        <td>
+          120
+        </td>
+        <td>
+          4135
+        </td>
+        <td>
+          3075
+          -
+          3075
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple4._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$2._2
+        </td>
+      </tr><tr>
+        <td>
+          120
+        </td>
+        <td>
+          4136
+        </td>
+        <td>
+          3080
+          -
+          3080
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple4._3
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$2._3
+        </td>
+      </tr><tr>
+        <td>
+          120
+        </td>
+        <td>
+          4137
+        </td>
+        <td>
+          3088
+          -
+          3088
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple4._4
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$2._4
+        </td>
+      </tr><tr>
+        <td>
+          122
+        </td>
+        <td>
+          4138
+        </td>
+        <td>
+          3204
+          -
+          3218
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPull.depth_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPull.this.depth_=(odepth)
+        </td>
+      </tr><tr>
+        <td>
+          123
+        </td>
+        <td>
+          4139
+        </td>
+        <td>
+          3225
+          -
+          3242
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPull.vprolog_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPull.this.vprolog_=(oprolog)
+        </td>
+      </tr><tr>
+        <td>
+          127
+        </td>
+        <td>
+          4141
+        </td>
+        <td>
+          3311
+          -
+          3355
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          nextEvent.==(8)
+        </td>
+      </tr><tr>
+        <td>
+          127
+        </td>
+        <td>
+          4144
+        </td>
+        <td>
+          3307
+          -
+          3307
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          127
+        </td>
+        <td>
+          4145
+        </td>
+        <td>
+          3307
+          -
+          3307
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          127
+        </td>
+        <td>
+          4146
+        </td>
+        <td>
+          3307
+          -
+          3388
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (nextEvent.==(8))
+  XmlPull.this.internalClose
+else
+  ()
+        </td>
+      </tr><tr>
+        <td>
+          128
+        </td>
+        <td>
+          4142
+        </td>
+        <td>
+          3367
+          -
+          3380
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPull.internalClose
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPull.this.internalClose
+        </td>
+      </tr><tr>
+        <td>
+          128
+        </td>
+        <td>
+          4143
+        </td>
+        <td>
+          3367
+          -
+          3380
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPull.internalClose
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPull.this.internalClose
+        </td>
+      </tr><tr>
+        <td>
+          136
+        </td>
+        <td>
+          4147
+        </td>
+        <td>
+          3455
+          -
+          3466
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;onlyforme&quot;
+        </td>
+      </tr><tr>
+        <td>
+          136
+        </td>
+        <td>
+          4148
+        </td>
+        <td>
+          3468
+          -
+          3474
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;init&quot;
+        </td>
+      </tr><tr>
+        <td>
+          136
+        </td>
+        <td>
+          4149
+        </td>
+        <td>
+          3454
+          -
+          3454
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.PullUtils.weAreInAParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          PullUtils.this.weAreInAParser
+        </td>
+      </tr><tr>
+        <td>
+          136
+        </td>
+        <td>
+          4150
+        </td>
+        <td>
+          3452
+          -
+          3475
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.PI.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.PI.apply(&quot;onlyforme&quot;, &quot;init&quot;)(PullUtils.this.weAreInAParser)
+        </td>
+      </tr><tr>
+        <td>
+          138
+        </td>
+        <td>
+          4151
+        </td>
+        <td>
+          3522
+          -
+          3534
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.IsFromParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.impl.IsFromParser
+        </td>
+      </tr><tr>
+        <td>
+          141
+        </td>
+        <td>
+          4161
+        </td>
+        <td>
+          3587
+          -
+          3821
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Either.fold
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          c.fold[scales.xml.Misc](((e: scales.xml.XmlEvent) =&gt; e match {
+  case (ev @ (_: scales.xml.Comment)) =&gt; scala.`package`.Left.apply[scales.xml.Comment, Nothing](ev)
+  case (ev @ (_: scales.xml.PI)) =&gt; scala.`package`.Right.apply[Nothing, scales.xml.PI](ev)
+  case _ =&gt; scales.utils.`package`.error(&quot;Got an event (&quot;.+(e).+(&quot;) that should not be in the &quot;).+(in))
+}), ((f: scales.xml.EndElem) =&gt; scales.utils.`package`.error(&quot;End element found in &quot;.+(in).+(&quot; &quot;).+(c))))
+        </td>
+      </tr><tr>
+        <td>
+          142
+        </td>
+        <td>
+          4152
+        </td>
+        <td>
+          3641
+          -
+          3649
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Left.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Left.apply[scales.xml.Comment, Nothing](ev)
+        </td>
+      </tr><tr>
+        <td>
+          142
+        </td>
+        <td>
+          4153
+        </td>
+        <td>
+          3641
+          -
+          3649
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.util.Left.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Left.apply[scales.xml.Comment, Nothing](ev)
+        </td>
+      </tr><tr>
+        <td>
+          143
+        </td>
+        <td>
+          4154
+        </td>
+        <td>
+          3671
+          -
+          3680
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Right.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Right.apply[Nothing, scales.xml.PI](ev)
+        </td>
+      </tr><tr>
+        <td>
+          143
+        </td>
+        <td>
+          4155
+        </td>
+        <td>
+          3671
+          -
+          3680
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.util.Right.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Right.apply[Nothing, scales.xml.PI](ev)
+        </td>
+      </tr><tr>
+        <td>
+          144
+        </td>
+        <td>
+          4156
+        </td>
+        <td>
+          3703
+          -
+          3761
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;Got an event (&quot;.+(e).+(&quot;) that should not be in the &quot;).+(in)
+        </td>
+      </tr><tr>
+        <td>
+          144
+        </td>
+        <td>
+          4157
+        </td>
+        <td>
+          3697
+          -
+          3762
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.iteratee.Iteratees.error
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.utils.`package`.error(&quot;Got an event (&quot;.+(e).+(&quot;) that should not be in the &quot;).+(in))
+        </td>
+      </tr><tr>
+        <td>
+          144
+        </td>
+        <td>
+          4158
+        </td>
+        <td>
+          3697
+          -
+          3762
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.iteratee.Iteratees.error
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.utils.`package`.error(&quot;Got an event (&quot;.+(e).+(&quot;) that should not be in the &quot;).+(in))
+        </td>
+      </tr><tr>
+        <td>
+          145
+        </td>
+        <td>
+          4159
+        </td>
+        <td>
+          3781
+          -
+          3819
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;End element found in &quot;.+(in).+(&quot; &quot;).+(c)
+        </td>
+      </tr><tr>
+        <td>
+          145
+        </td>
+        <td>
+          4160
+        </td>
+        <td>
+          3775
+          -
+          3820
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.iteratee.Iteratees.error
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.utils.`package`.error(&quot;End element found in &quot;.+(in).+(&quot; &quot;).+(c))
+        </td>
+      </tr><tr>
+        <td>
+          151
+        </td>
+        <td>
+          4162
+        </td>
+        <td>
+          4064
+          -
+          4090
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.stream.XMLStreamReader.getAttributeCount
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          parser.getAttributeCount()
+        </td>
+      </tr><tr>
+        <td>
+          152
+        </td>
+        <td>
+          4163
+        </td>
+        <td>
+          4103
+          -
+          4104
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          153
+        </td>
+        <td>
+          4164
+        </td>
+        <td>
+          4119
+          -
+          4134
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.XmlTypes.emptyAttributes
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.`package`.emptyAttributes
+        </td>
+      </tr><tr>
+        <td>
+          154
+        </td>
+        <td>
+          4165
+        </td>
+        <td>
+          4146
+          -
+          4155
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&lt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          i.&lt;(count)
+        </td>
+      </tr><tr>
+        <td>
+          154
+        </td>
+        <td>
+          4181
+        </td>
+        <td>
+          4157
+          -
+          4157
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.PullUtils.while$3
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          while$3()
+        </td>
+      </tr><tr>
+        <td>
+          154
+        </td>
+        <td>
+          4182
+        </td>
+        <td>
+          4157
+          -
+          4727
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  {
+    val jqname: javax.xml.namespace.QName = parser.getAttributeName(i);
+    val pre: String = jqname.getPrefix();
+    val local: String = jqname.getLocalPart();
+    val aqname: scales.xml.AttributeQName = if (pre.eq(null).||(pre.length().==(0)))
+      strategy.noNamespaceQName(local, token)
+    else
+      strategy.prefixedQName(local, jqname.getNamespaceURI(), pre, token);
+    map = map.unsafePlus(strategy.attribute(aqname, parser.getAttributeValue(i), token));
+    i = i.+(1)
+  };
+  while$3()
+}
+        </td>
+      </tr><tr>
+        <td>
+          154
+        </td>
+        <td>
+          4183
+        </td>
+        <td>
+          4139
+          -
+          4139
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          154
+        </td>
+        <td>
+          4184
+        </td>
+        <td>
+          4139
+          -
+          4139
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          155
+        </td>
+        <td>
+          4166
+        </td>
+        <td>
+          4178
+          -
+          4204
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.stream.XMLStreamReader.getAttributeName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          parser.getAttributeName(i)
+        </td>
+      </tr><tr>
+        <td>
+          156
+        </td>
+        <td>
+          4167
+        </td>
+        <td>
+          4221
+          -
+          4237
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.namespace.QName.getPrefix
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          jqname.getPrefix()
+        </td>
+      </tr><tr>
+        <td>
+          157
+        </td>
+        <td>
+          4168
+        </td>
+        <td>
+          4256
+          -
+          4275
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.namespace.QName.getLocalPart
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          jqname.getLocalPart()
+        </td>
+      </tr><tr>
+        <td>
+          160
+        </td>
+        <td>
+          4169
+        </td>
+        <td>
+          4392
+          -
+          4396
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          160
+        </td>
+        <td>
+          4170
+        </td>
+        <td>
+          4402
+          -
+          4417
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          pre.length().==(0)
+        </td>
+      </tr><tr>
+        <td>
+          160
+        </td>
+        <td>
+          4171
+        </td>
+        <td>
+          4384
+          -
+          4418
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.||
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          pre.eq(null).||(pre.length().==(0))
+        </td>
+      </tr><tr>
+        <td>
+          162
+        </td>
+        <td>
+          4172
+        </td>
+        <td>
+          4456
+          -
+          4495
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.strategies.MemoryOptimisationStrategy.noNamespaceQName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          strategy.noNamespaceQName(local, token)
+        </td>
+      </tr><tr>
+        <td>
+          162
+        </td>
+        <td>
+          4173
+        </td>
+        <td>
+          4456
+          -
+          4495
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.parser.strategies.MemoryOptimisationStrategy.noNamespaceQName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          strategy.noNamespaceQName(local, token)
+        </td>
+      </tr><tr>
+        <td>
+          164
+        </td>
+        <td>
+          4174
+        </td>
+        <td>
+          4559
+          -
+          4581
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.namespace.QName.getNamespaceURI
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          jqname.getNamespaceURI()
+        </td>
+      </tr><tr>
+        <td>
+          164
+        </td>
+        <td>
+          4175
+        </td>
+        <td>
+          4529
+          -
+          4594
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.strategies.MemoryOptimisationStrategy.prefixedQName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          strategy.prefixedQName(local, jqname.getNamespaceURI(), pre, token)
+        </td>
+      </tr><tr>
+        <td>
+          164
+        </td>
+        <td>
+          4176
+        </td>
+        <td>
+          4529
+          -
+          4594
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.parser.strategies.MemoryOptimisationStrategy.prefixedQName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          strategy.prefixedQName(local, jqname.getNamespaceURI(), pre, token)
+        </td>
+      </tr><tr>
+        <td>
+          166
+        </td>
+        <td>
+          4179
+        </td>
+        <td>
+          4618
+          -
+          4707
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.ListSet.unsafePlus
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          map.unsafePlus(strategy.attribute(aqname, parser.getAttributeValue(i), token))
+        </td>
+      </tr><tr>
+        <td>
+          167
+        </td>
+        <td>
+          4178
+        </td>
+        <td>
+          4635
+          -
+          4707
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.strategies.MemoryOptimisationStrategy.attribute
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          strategy.attribute(aqname, parser.getAttributeValue(i), token)
+        </td>
+      </tr><tr>
+        <td>
+          168
+        </td>
+        <td>
+          4177
+        </td>
+        <td>
+          4672
+          -
+          4699
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.stream.XMLStreamReader.getAttributeValue
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          parser.getAttributeValue(i)
+        </td>
+      </tr><tr>
+        <td>
+          170
+        </td>
+        <td>
+          4180
+        </td>
+        <td>
+          4715
+          -
+          4721
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          i.+(1)
+        </td>
+      </tr><tr>
+        <td>
+          176
+        </td>
+        <td>
+          4185
+        </td>
+        <td>
+          4918
+          -
+          4944
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.stream.XMLStreamReader.getNamespaceCount
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          parser.getNamespaceCount()
+        </td>
+      </tr><tr>
+        <td>
+          177
+        </td>
+        <td>
+          4186
+        </td>
+        <td>
+          4957
+          -
+          4958
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          178
+        </td>
+        <td>
+          4187
+        </td>
+        <td>
+          4973
+          -
+          4994
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.generic.GenMapFactory.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.Map.apply[String, String]()
+        </td>
+      </tr><tr>
+        <td>
+          179
+        </td>
+        <td>
+          4188
+        </td>
+        <td>
+          5006
+          -
+          5015
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&lt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          i.&lt;(count)
+        </td>
+      </tr><tr>
+        <td>
+          179
+        </td>
+        <td>
+          4198
+        </td>
+        <td>
+          5017
+          -
+          5017
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.PullUtils.while$4
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          while$4()
+        </td>
+      </tr><tr>
+        <td>
+          179
+        </td>
+        <td>
+          4199
+        </td>
+        <td>
+          5017
+          -
+          5277
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  {
+    val pre: String = parser.getNamespacePrefix(i);
+    if (pre.ne(null))
+      map = map.+[String](scala.Predef.ArrowAssoc[String](pre).-&gt;[String](parser.getNamespaceURI(i)))
+    else
+      ();
+    i = i.+(1)
+  };
+  while$4()
+}
+        </td>
+      </tr><tr>
+        <td>
+          179
+        </td>
+        <td>
+          4200
+        </td>
+        <td>
+          4999
+          -
+          4999
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          179
+        </td>
+        <td>
+          4201
+        </td>
+        <td>
+          4999
+          -
+          4999
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          180
+        </td>
+        <td>
+          4189
+        </td>
+        <td>
+          5035
+          -
+          5063
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.stream.XMLStreamReader.getNamespacePrefix
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          parser.getNamespacePrefix(i)
+        </td>
+      </tr><tr>
+        <td>
+          181
+        </td>
+        <td>
+          4190
+        </td>
+        <td>
+          5074
+          -
+          5085
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.ne
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          pre.ne(null)
+        </td>
+      </tr><tr>
+        <td>
+          181
+        </td>
+        <td>
+          4195
+        </td>
+        <td>
+          5070
+          -
+          5070
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          181
+        </td>
+        <td>
+          4196
+        </td>
+        <td>
+          5070
+          -
+          5070
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          182
+        </td>
+        <td>
+          4191
+        </td>
+        <td>
+          5112
+          -
+          5137
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.stream.XMLStreamReader.getNamespaceURI
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          parser.getNamespaceURI(i)
+        </td>
+      </tr><tr>
+        <td>
+          182
+        </td>
+        <td>
+          4192
+        </td>
+        <td>
+          5105
+          -
+          5137
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.ArrowAssoc.-&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.ArrowAssoc[String](pre).-&gt;[String](parser.getNamespaceURI(i))
+        </td>
+      </tr><tr>
+        <td>
+          182
+        </td>
+        <td>
+          4193
+        </td>
+        <td>
+          5097
+          -
+          5138
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.Map.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          map.+[String](scala.Predef.ArrowAssoc[String](pre).-&gt;[String](parser.getNamespaceURI(i)))
+        </td>
+      </tr><tr>
+        <td>
+          182
+        </td>
+        <td>
+          4194
+        </td>
+        <td>
+          5097
+          -
+          5138
+        </td>
+        <td>
+          Assign
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          map = map.+[String](scala.Predef.ArrowAssoc[String](pre).-&gt;[String](parser.getNamespaceURI(i)))
+        </td>
+      </tr><tr>
+        <td>
+          184
+        </td>
+        <td>
+          4197
+        </td>
+        <td>
+          5265
+          -
+          5271
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          i.+(1)
+        </td>
+      </tr><tr>
+        <td>
+          196
+        </td>
+        <td>
+          4202
+        </td>
+        <td>
+          5640
+          -
+          5662
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.stream.XMLStreamReader.getNamespaceURI
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          parser.getNamespaceURI()
+        </td>
+      </tr><tr>
+        <td>
+          197
+        </td>
+        <td>
+          4203
+        </td>
+        <td>
+          5677
+          -
+          5693
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.stream.XMLStreamReader.getPrefix
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          parser.getPrefix()
+        </td>
+      </tr><tr>
+        <td>
+          198
+        </td>
+        <td>
+          4204
+        </td>
+        <td>
+          5710
+          -
+          5729
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.stream.XMLStreamReader.getLocalName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          parser.getLocalName()
+        </td>
+      </tr><tr>
+        <td>
+          200
+        </td>
+        <td>
+          4205
+        </td>
+        <td>
+          5747
+          -
+          5751
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          200
+        </td>
+        <td>
+          4206
+        </td>
+        <td>
+          5757
+          -
+          5772
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          pre.length().==(0)
+        </td>
+      </tr><tr>
+        <td>
+          200
+        </td>
+        <td>
+          4207
+        </td>
+        <td>
+          5739
+          -
+          5773
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.||
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          pre.eq(null).||(pre.length().==(0))
+        </td>
+      </tr><tr>
+        <td>
+          202
+        </td>
+        <td>
+          4208
+        </td>
+        <td>
+          5814
+          -
+          5818
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          202
+        </td>
+        <td>
+          4209
+        </td>
+        <td>
+          5824
+          -
+          5838
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ns.length().==(0)
+        </td>
+      </tr><tr>
+        <td>
+          202
+        </td>
+        <td>
+          4210
+        </td>
+        <td>
+          5807
+          -
+          5839
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.||
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ns.eq(null).||(ns.length().==(0))
+        </td>
+      </tr><tr>
+        <td>
+          202
+        </td>
+        <td>
+          4215
+        </td>
+        <td>
+          5803
+          -
+          5943
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (ns.eq(null).||(ns.length().==(0)))
+  strategy.noNamespaceQName(local, token)
+else
+  strategy.unprefixedQName(local, ns, token)
+        </td>
+      </tr><tr>
+        <td>
+          203
+        </td>
+        <td>
+          4211
+        </td>
+        <td>
+          5849
+          -
+          5888
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.strategies.MemoryOptimisationStrategy.noNamespaceQName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          strategy.noNamespaceQName(local, token)
+        </td>
+      </tr><tr>
+        <td>
+          203
+        </td>
+        <td>
+          4212
+        </td>
+        <td>
+          5849
+          -
+          5888
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.parser.strategies.MemoryOptimisationStrategy.noNamespaceQName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          strategy.noNamespaceQName(local, token)
+        </td>
+      </tr><tr>
+        <td>
+          205
+        </td>
+        <td>
+          4213
+        </td>
+        <td>
+          5901
+          -
+          5943
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.strategies.MemoryOptimisationStrategy.unprefixedQName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          strategy.unprefixedQName(local, ns, token)
+        </td>
+      </tr><tr>
+        <td>
+          205
+        </td>
+        <td>
+          4214
+        </td>
+        <td>
+          5901
+          -
+          5943
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.parser.strategies.MemoryOptimisationStrategy.unprefixedQName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          strategy.unprefixedQName(local, ns, token)
+        </td>
+      </tr><tr>
+        <td>
+          207
+        </td>
+        <td>
+          4216
+        </td>
+        <td>
+          5961
+          -
+          6006
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.strategies.MemoryOptimisationStrategy.prefixedQName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          strategy.prefixedQName(local, ns, pre, token)
+        </td>
+      </tr><tr>
+        <td>
+          207
+        </td>
+        <td>
+          4217
+        </td>
+        <td>
+          5961
+          -
+          6006
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.parser.strategies.MemoryOptimisationStrategy.prefixedQName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          strategy.prefixedQName(local, ns, pre, token)
+        </td>
+      </tr><tr>
+        <td>
+          215
+        </td>
+        <td>
+          4218
+        </td>
+        <td>
+          6321
+          -
+          6352
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          8
+        </td>
+      </tr><tr>
+        <td>
+          216
+        </td>
+        <td>
+          4219
+        </td>
+        <td>
+          6461
+          -
+          6472
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.stream.XMLStreamReader.next
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          parser.next()
+        </td>
+      </tr><tr>
+        <td>
+          219
+        </td>
+        <td>
+          4226
+        </td>
+        <td>
+          6562
+          -
+          6723
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  depth = depth.+(1);
+  xml.this.`package`.toLeft(strategy.elem(PullUtils.this.getElemQName[Token](parser, strategy, token), PullUtils.this.getAttributes[Token](parser, strategy, token), PullUtils.this.getNamespaces[Token](parser, strategy, token), token))
+}
+        </td>
+      </tr><tr>
+        <td>
+          220
+        </td>
+        <td>
+          4220
+        </td>
+        <td>
+          6567
+          -
+          6577
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          depth.+(1)
+        </td>
+      </tr><tr>
+        <td>
+          221
+        </td>
+        <td>
+          4221
+        </td>
+        <td>
+          6598
+          -
+          6635
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.PullUtils.getElemQName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          PullUtils.this.getElemQName[Token](parser, strategy, token)
+        </td>
+      </tr><tr>
+        <td>
+          221
+        </td>
+        <td>
+          4222
+        </td>
+        <td>
+          6637
+          -
+          6675
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.PullUtils.getAttributes
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          PullUtils.this.getAttributes[Token](parser, strategy, token)
+        </td>
+      </tr><tr>
+        <td>
+          221
+        </td>
+        <td>
+          4223
+        </td>
+        <td>
+          6677
+          -
+          6715
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.PullUtils.getNamespaces
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          PullUtils.this.getNamespaces[Token](parser, strategy, token)
+        </td>
+      </tr><tr>
+        <td>
+          221
+        </td>
+        <td>
+          4224
+        </td>
+        <td>
+          6584
+          -
+          6723
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.strategies.MemoryOptimisationStrategy.elem
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          strategy.elem(PullUtils.this.getElemQName[Token](parser, strategy, token), PullUtils.this.getAttributes[Token](parser, strategy, token), PullUtils.this.getNamespaces[Token](parser, strategy, token), token)
+        </td>
+      </tr><tr>
+        <td>
+          221
+        </td>
+        <td>
+          4225
+        </td>
+        <td>
+          6584
+          -
+          6723
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPulls.toLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          xml.this.`package`.toLeft(strategy.elem(PullUtils.this.getElemQName[Token](parser, strategy, token), PullUtils.this.getAttributes[Token](parser, strategy, token), PullUtils.this.getNamespaces[Token](parser, strategy, token), token))
+        </td>
+      </tr><tr>
+        <td>
+          223
+        </td>
+        <td>
+          4227
+        </td>
+        <td>
+          6770
+          -
+          6780
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.-
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          depth.-(1)
+        </td>
+      </tr><tr>
+        <td>
+          223
+        </td>
+        <td>
+          4228
+        </td>
+        <td>
+          6790
+          -
+          6827
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.PullUtils.getElemQName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          PullUtils.this.getElemQName[Token](parser, strategy, token)
+        </td>
+      </tr><tr>
+        <td>
+          223
+        </td>
+        <td>
+          4229
+        </td>
+        <td>
+          6829
+          -
+          6867
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.PullUtils.getNamespaces
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          PullUtils.this.getNamespaces[Token](parser, strategy, token)
+        </td>
+      </tr><tr>
+        <td>
+          223
+        </td>
+        <td>
+          4230
+        </td>
+        <td>
+          6782
+          -
+          6868
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.EndElem.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.EndElem.apply(PullUtils.this.getElemQName[Token](parser, strategy, token), PullUtils.this.getNamespaces[Token](parser, strategy, token))
+        </td>
+      </tr><tr>
+        <td>
+          223
+        </td>
+        <td>
+          4231
+        </td>
+        <td>
+          6782
+          -
+          6868
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPulls.toRight
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          xml.this.`package`.toRight(scales.xml.EndElem.apply(PullUtils.this.getElemQName[Token](parser, strategy, token), PullUtils.this.getNamespaces[Token](parser, strategy, token)))
+        </td>
+      </tr><tr>
+        <td>
+          223
+        </td>
+        <td>
+          4232
+        </td>
+        <td>
+          6767
+          -
+          6868
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  depth = depth.-(1);
+  xml.this.`package`.toRight(scales.xml.EndElem.apply(PullUtils.this.getElemQName[Token](parser, strategy, token), PullUtils.this.getNamespaces[Token](parser, strategy, token)))
+}
+        </td>
+      </tr><tr>
+        <td>
+          224
+        </td>
+        <td>
+          4233
+        </td>
+        <td>
+          6918
+          -
+          6932
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.stream.XMLStreamReader.getText
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          parser.getText()
+        </td>
+      </tr><tr>
+        <td>
+          224
+        </td>
+        <td>
+          4234
+        </td>
+        <td>
+          6913
+          -
+          6933
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Text.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Text.apply(parser.getText())
+        </td>
+      </tr><tr>
+        <td>
+          224
+        </td>
+        <td>
+          4235
+        </td>
+        <td>
+          6913
+          -
+          6933
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPulls.toLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          xml.this.`package`.toLeft(scales.xml.Text.apply(parser.getText()))
+        </td>
+      </tr><tr>
+        <td>
+          224
+        </td>
+        <td>
+          4236
+        </td>
+        <td>
+          6913
+          -
+          6933
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPulls.toLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          xml.this.`package`.toLeft(scales.xml.Text.apply(parser.getText()))
+        </td>
+      </tr><tr>
+        <td>
+          225
+        </td>
+        <td>
+          4237
+        </td>
+        <td>
+          6979
+          -
+          6993
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.stream.XMLStreamReader.getText
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          parser.getText()
+        </td>
+      </tr><tr>
+        <td>
+          225
+        </td>
+        <td>
+          4238
+        </td>
+        <td>
+          6978
+          -
+          6978
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.PullUtils.weAreInAParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          PullUtils.this.weAreInAParser
+        </td>
+      </tr><tr>
+        <td>
+          225
+        </td>
+        <td>
+          4239
+        </td>
+        <td>
+          6973
+          -
+          6994
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.CData.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.CData.apply(parser.getText())(PullUtils.this.weAreInAParser)
+        </td>
+      </tr><tr>
+        <td>
+          225
+        </td>
+        <td>
+          4240
+        </td>
+        <td>
+          6973
+          -
+          6994
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPulls.toLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          xml.this.`package`.toLeft(scales.xml.CData.apply(parser.getText())(PullUtils.this.weAreInAParser))
+        </td>
+      </tr><tr>
+        <td>
+          225
+        </td>
+        <td>
+          4241
+        </td>
+        <td>
+          6973
+          -
+          6994
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPulls.toLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          xml.this.`package`.toLeft(scales.xml.CData.apply(parser.getText())(PullUtils.this.weAreInAParser))
+        </td>
+      </tr><tr>
+        <td>
+          226
+        </td>
+        <td>
+          4242
+        </td>
+        <td>
+          7044
+          -
+          7058
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.stream.XMLStreamReader.getText
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          parser.getText()
+        </td>
+      </tr><tr>
+        <td>
+          226
+        </td>
+        <td>
+          4243
+        </td>
+        <td>
+          7043
+          -
+          7043
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.PullUtils.weAreInAParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          PullUtils.this.weAreInAParser
+        </td>
+      </tr><tr>
+        <td>
+          226
+        </td>
+        <td>
+          4244
+        </td>
+        <td>
+          7036
+          -
+          7059
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.Comment.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Comment.apply(parser.getText())(PullUtils.this.weAreInAParser)
+        </td>
+      </tr><tr>
+        <td>
+          226
+        </td>
+        <td>
+          4245
+        </td>
+        <td>
+          7036
+          -
+          7059
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPulls.toLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          xml.this.`package`.toLeft(scales.xml.Comment.apply(parser.getText())(PullUtils.this.weAreInAParser))
+        </td>
+      </tr><tr>
+        <td>
+          226
+        </td>
+        <td>
+          4246
+        </td>
+        <td>
+          7036
+          -
+          7059
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPulls.toLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          xml.this.`package`.toLeft(scales.xml.Comment.apply(parser.getText())(PullUtils.this.weAreInAParser))
+        </td>
+      </tr><tr>
+        <td>
+          227
+        </td>
+        <td>
+          4247
+        </td>
+        <td>
+          7119
+          -
+          7139
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.stream.XMLStreamReader.getPITarget
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          parser.getPITarget()
+        </td>
+      </tr><tr>
+        <td>
+          227
+        </td>
+        <td>
+          4248
+        </td>
+        <td>
+          7141
+          -
+          7159
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.stream.XMLStreamReader.getPIData
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          parser.getPIData()
+        </td>
+      </tr><tr>
+        <td>
+          227
+        </td>
+        <td>
+          4249
+        </td>
+        <td>
+          7118
+          -
+          7118
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.PullUtils.weAreInAParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          PullUtils.this.weAreInAParser
+        </td>
+      </tr><tr>
+        <td>
+          227
+        </td>
+        <td>
+          4250
+        </td>
+        <td>
+          7116
+          -
+          7160
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.PI.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.PI.apply(parser.getPITarget(), parser.getPIData())(PullUtils.this.weAreInAParser)
+        </td>
+      </tr><tr>
+        <td>
+          227
+        </td>
+        <td>
+          4251
+        </td>
+        <td>
+          7116
+          -
+          7160
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPulls.toLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          xml.this.`package`.toLeft(scales.xml.PI.apply(parser.getPITarget(), parser.getPIData())(PullUtils.this.weAreInAParser))
+        </td>
+      </tr><tr>
+        <td>
+          227
+        </td>
+        <td>
+          4252
+        </td>
+        <td>
+          7116
+          -
+          7160
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPulls.toLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          xml.this.`package`.toLeft(scales.xml.PI.apply(parser.getPITarget(), parser.getPIData())(PullUtils.this.weAreInAParser))
+        </td>
+      </tr><tr>
+        <td>
+          228
+        </td>
+        <td>
+          4253
+        </td>
+        <td>
+          7205
+          -
+          7219
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.stream.XMLStreamReader.getText
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          parser.getText()
+        </td>
+      </tr><tr>
+        <td>
+          228
+        </td>
+        <td>
+          4254
+        </td>
+        <td>
+          7200
+          -
+          7220
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Text.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.xml.Text.apply(parser.getText())
+        </td>
+      </tr><tr>
+        <td>
+          228
+        </td>
+        <td>
+          4255
+        </td>
+        <td>
+          7200
+          -
+          7220
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPulls.toLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          xml.this.`package`.toLeft(scales.xml.Text.apply(parser.getText()))
+        </td>
+      </tr><tr>
+        <td>
+          228
+        </td>
+        <td>
+          4256
+        </td>
+        <td>
+          7200
+          -
+          7220
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPulls.toLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          xml.this.`package`.toLeft(scales.xml.Text.apply(parser.getText()))
+        </td>
+      </tr><tr>
+        <td>
+          229
+        </td>
+        <td>
+          4275
+        </td>
+        <td>
+          7326
+          -
+          8205
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val ec: String = parser.getCharacterEncodingScheme();
+  vprolog = {
+    &lt;artifact&gt; val qual$1: scales.xml.Prolog = vprolog;
+    &lt;artifact&gt; val x$1: scales.xml.Declaration = scales.xml.Declaration.apply(if (parser.getVersion().==(&quot;1.1&quot;))
+      scales.xml.Xml11
+    else
+      scales.xml.Xml10, if (ec.eq(null))
+      scales.utils.`package`.defaultCharset
+    else
+      java.nio.charset.Charset.forName(ec), parser.isStandalone());
+    &lt;artifact&gt; val x$2: scales.xml.Miscs = qual$1.copy$default$2;
+    &lt;artifact&gt; val x$3: Option[scales.xml.DTD] = qual$1.copy$default$3;
+    qual$1.copy(x$1, x$2, x$3)
+  };
+  &lt;synthetic&gt; &lt;artifact&gt; private[this] val x$3: (scales.xml.PullType, Int, Int, scales.xml.Prolog) = (PullUtils.this.pumpEvent[Token](parser, strategy, token, vprolog, depth)(otherEventHandler): (scales.xml.PullType, Int, Int, scales.xml.Prolog) @unchecked) match {
+    case (_1: scales.xml.PullType, _2: Int, _3: Int, _4: scales.xml.Prolog)(scales.xml.PullType, Int, Int, scales.xml.Prolog)((nev @ _), (nex @ _), (nde @ _), (vvp @ _)) =&gt; scala.Tuple4.apply[scales.xml.PullType, Int, Int, scales.xml.Prolog](nev, nex, nde, vvp)
+  };
+  val nev: scales.xml.PullType = x$3._1;
+  val nex: Int = x$3._2;
+  val nde: Int = x$3._3;
+  val vvp: scales.xml.Prolog = x$3._4;
+  nextEvent = nex;
+  depth = nde;
+  vprolog = vvp;
+  nev
+}
+        </td>
+      </tr><tr>
+        <td>
+          232
+        </td>
+        <td>
+          4257
+        </td>
+        <td>
+          7491
+          -
+          7526
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.stream.XMLStreamReader.getCharacterEncodingScheme
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          parser.getCharacterEncodingScheme()
+        </td>
+      </tr><tr>
+        <td>
+          234
+        </td>
+        <td>
+          4269
+        </td>
+        <td>
+          7566
+          -
+          7970
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Declaration.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Declaration.apply(if (parser.getVersion().==(&quot;1.1&quot;))
+  scales.xml.Xml11
+else
+  scales.xml.Xml10, if (ec.eq(null))
+  scales.utils.`package`.defaultCharset
+else
+  java.nio.charset.Charset.forName(ec), parser.isStandalone())
+        </td>
+      </tr><tr>
+        <td>
+          234
+        </td>
+        <td>
+          4270
+        </td>
+        <td>
+          7546
+          -
+          7971
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Prolog.copy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          qual$1.copy(x$1, x$2, x$3)
+        </td>
+      </tr><tr>
+        <td>
+          235
+        </td>
+        <td>
+          4258
+        </td>
+        <td>
+          7603
+          -
+          7631
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          parser.getVersion().==(&quot;1.1&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          236
+        </td>
+        <td>
+          4259
+        </td>
+        <td>
+          7645
+          -
+          7650
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Xml11
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.xml.Xml11
+        </td>
+      </tr><tr>
+        <td>
+          236
+        </td>
+        <td>
+          4260
+        </td>
+        <td>
+          7645
+          -
+          7650
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.Xml11
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.xml.Xml11
+        </td>
+      </tr><tr>
+        <td>
+          236
+        </td>
+        <td>
+          4261
+        </td>
+        <td>
+          7656
+          -
+          7661
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Xml10
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Xml10
+        </td>
+      </tr><tr>
+        <td>
+          236
+        </td>
+        <td>
+          4262
+        </td>
+        <td>
+          7656
+          -
+          7661
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.Xml10
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Xml10
+        </td>
+      </tr><tr>
+        <td>
+          237
+        </td>
+        <td>
+          4263
+        </td>
+        <td>
+          7688
+          -
+          7698
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ec.eq(null)
+        </td>
+      </tr><tr>
+        <td>
+          237
+        </td>
+        <td>
+          4264
+        </td>
+        <td>
+          7700
+          -
+          7714
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.defaultCharset
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.utils.`package`.defaultCharset
+        </td>
+      </tr><tr>
+        <td>
+          237
+        </td>
+        <td>
+          4265
+        </td>
+        <td>
+          7700
+          -
+          7714
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.defaultCharset
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.utils.`package`.defaultCharset
+        </td>
+      </tr><tr>
+        <td>
+          237
+        </td>
+        <td>
+          4266
+        </td>
+        <td>
+          7720
+          -
+          7756
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.nio.charset.Charset.forName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          java.nio.charset.Charset.forName(ec)
+        </td>
+      </tr><tr>
+        <td>
+          237
+        </td>
+        <td>
+          4267
+        </td>
+        <td>
+          7720
+          -
+          7756
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          java.nio.charset.Charset.forName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          java.nio.charset.Charset.forName(ec)
+        </td>
+      </tr><tr>
+        <td>
+          238
+        </td>
+        <td>
+          4268
+        </td>
+        <td>
+          7948
+          -
+          7969
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.stream.XMLStreamReader.isStandalone
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          parser.isStandalone()
+        </td>
+      </tr><tr>
+        <td>
+          240
+        </td>
+        <td>
+          4271
+        </td>
+        <td>
+          7986
+          -
+          7986
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple4._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$3._1
+        </td>
+      </tr><tr>
+        <td>
+          240
+        </td>
+        <td>
+          4272
+        </td>
+        <td>
+          7991
+          -
+          7991
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple4._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$3._2
+        </td>
+      </tr><tr>
+        <td>
+          240
+        </td>
+        <td>
+          4273
+        </td>
+        <td>
+          7996
+          -
+          7996
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple4._3
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$3._3
+        </td>
+      </tr><tr>
+        <td>
+          240
+        </td>
+        <td>
+          4274
+        </td>
+        <td>
+          8001
+          -
+          8001
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple4._4
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$3._4
+        </td>
+      </tr><tr>
+        <td>
+          248
+        </td>
+        <td>
+          4276
+        </td>
+        <td>
+          8243
+          -
+          8251
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.PullUtils.dtdDummy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          PullUtils.this.dtdDummy
+        </td>
+      </tr><tr>
+        <td>
+          248
+        </td>
+        <td>
+          4277
+        </td>
+        <td>
+          8243
+          -
+          8251
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPulls.toLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          xml.this.`package`.toLeft(PullUtils.this.dtdDummy)
+        </td>
+      </tr><tr>
+        <td>
+          248
+        </td>
+        <td>
+          4278
+        </td>
+        <td>
+          8243
+          -
+          8251
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPulls.toLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          xml.this.`package`.toLeft(PullUtils.this.dtdDummy)
+        </td>
+      </tr><tr>
+        <td>
+          251
+        </td>
+        <td>
+          4279
+        </td>
+        <td>
+          8350
+          -
+          8378
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          otherEventHandler.apply(nextEvent)
+        </td>
+      </tr><tr>
+        <td>
+          251
+        </td>
+        <td>
+          4280
+        </td>
+        <td>
+          8350
+          -
+          8378
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          otherEventHandler.apply(nextEvent)
+        </td>
+      </tr><tr>
+        <td>
+          253
+        </td>
+        <td>
+          4281
+        </td>
+        <td>
+          8389
+          -
+          8423
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple4.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple4.apply[scales.xml.PullType, Int, Int, scales.xml.Prolog](event, nextEvent, depth, vprolog)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

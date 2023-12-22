@@ -1,0 +1,593 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/xml/xpath/Iterators.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.xml.xpath
+</span>2 <span style=''>
+</span>3 <span style=''>import scales.utils._
+</span>4 <span style=''>import collection.path.DirectionIterator
+</span>5 <span style=''>import scales.xml._
+</span>6 <span style=''>
+</span>7 <span style=''>/**
+</span>8 <span style=''> * Returns the ancestors / parents of the path
+</span>9 <span style=''> */ 
+</span>10 <span style=''>class Ancestors( val initial : XmlPath ) extends Iterable[XmlPath] {
+</span>11 <span style=''>  class ParentIterator( var path : XmlPath) extends Iterator[XmlPath] {
+</span>12 <span style=''>    def hasNext = </span><span style='background: #F0ADAD'>path.top.isRight</span><span style=''>
+</span>13 <span style=''>    def next = {
+</span>14 <span style=''>      </span><span style='background: #F0ADAD'>path = path.top.getRight</span><span style=''>
+</span>15 <span style=''>      </span><span style='background: #F0ADAD'>path</span><span style=''>
+</span>16 <span style=''>    }    
+</span>17 <span style=''>  }
+</span>18 <span style=''>  def iterator = </span><span style='background: #F0ADAD'>new ParentIterator(initial)</span><span style=''>
+</span>19 <span style=''>}
+</span>20 <span style=''>
+</span>21 <span style=''>/**
+</span>22 <span style=''> * Iterates over paths using the document order as per the following_:: axis.
+</span>23 <span style=''> * 
+</span>24 <span style=''> */
+</span>25 <span style=''>class Following( val initial : XmlPath ) extends Iterable[XmlPath] {
+</span>26 <span style=''>  
+</span>27 <span style=''>  protected val f = </span><span style='background: #F0ADAD'>following(initial)</span><span style=''>
+</span>28 <span style=''>
+</span>29 <span style=''>  def iterator = </span><span style='background: #F0ADAD'>f.map( (x : XmlPath) =&gt; new DirectionIterator[XmlItem, Elem, XCC](x, true)).getOrElse(Nil.iterator)</span><span style=''>
+</span>30 <span style=''>}
+</span>31 <span style=''>
+</span>32 <span style=''>/**
+</span>33 <span style=''> * Iterates over paths using reverse document order and, as per the preceding_:: axis, skips all ancestors.
+</span>34 <span style=''> */
+</span>35 <span style=''>class Preceding( val initial : XmlPath ) extends Iterable[XmlPath] {
+</span>36 <span style=''>  
+</span>37 <span style=''>  protected val p = </span><span style='background: #F0ADAD'>preceding(initial)</span><span style=''>
+</span>38 <span style=''>
+</span>39 <span style=''>  /**
+</span>40 <span style=''>   * Sets aren't safe here. We must use the original field not the preceding
+</span>41 <span style=''>   */ 
+</span>42 <span style=''>  protected val parents = </span><span style='background: #F0ADAD'>new Ancestors(initial)</span><span style=''>
+</span>43 <span style=''>
+</span>44 <span style=''>  def iterator = </span><span style='background: #F0ADAD'>p.map( (x : XmlPath) =&gt; new DirectionIterator[XmlItem, Elem, XCC](x, false).
+</span>45 <span style=''></span><span style='background: #F0ADAD'>    filterNot( i =&gt; parents.exists( t =&gt; comparePathsDirect(i,t) ) ) ).
+</span>46 <span style=''></span><span style='background: #F0ADAD'>    getOrElse(Nil.iterator)</span><span style=''>
+</span>47 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          12
+        </td>
+        <td>
+          5941
+        </td>
+        <td>
+          325
+          -
+          341
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.EitherLike.isRight
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ParentIterator.this.path.top.isRight
+        </td>
+      </tr><tr>
+        <td>
+          14
+        </td>
+        <td>
+          5942
+        </td>
+        <td>
+          372
+          -
+          389
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.EitherLike.getRight
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ParentIterator.this.path.top.getRight
+        </td>
+      </tr><tr>
+        <td>
+          14
+        </td>
+        <td>
+          5943
+        </td>
+        <td>
+          365
+          -
+          389
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.Ancestors.ParentIterator.path_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ParentIterator.this.path_=(ParentIterator.this.path.top.getRight)
+        </td>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          5944
+        </td>
+        <td>
+          396
+          -
+          400
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.xpath.Ancestors.ParentIterator.path
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ParentIterator.this.path
+        </td>
+      </tr><tr>
+        <td>
+          18
+        </td>
+        <td>
+          5945
+        </td>
+        <td>
+          451
+          -
+          458
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.xpath.Ancestors.initial
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Ancestors.this.initial
+        </td>
+      </tr><tr>
+        <td>
+          18
+        </td>
+        <td>
+          5946
+        </td>
+        <td>
+          432
+          -
+          459
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.Ancestors.ParentIterator.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new Ancestors.this.ParentIterator(Ancestors.this.initial)
+        </td>
+      </tr><tr>
+        <td>
+          27
+        </td>
+        <td>
+          5947
+        </td>
+        <td>
+          655
+          -
+          662
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.xpath.Following.initial
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Following.this.initial
+        </td>
+      </tr><tr>
+        <td>
+          27
+        </td>
+        <td>
+          5948
+        </td>
+        <td>
+          645
+          -
+          663
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Paths.following
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.utils.`package`.following[scales.xml.XmlItem, scales.xml.Elem, scales.xml.XCC](Following.this.initial)
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          5949
+        </td>
+        <td>
+          706
+          -
+          756
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.DirectionIterator.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new scales.utils.collection.path.DirectionIterator[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC](x, true)
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          5950
+        </td>
+        <td>
+          768
+          -
+          780
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.LinearSeqLike.iterator
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.collection.immutable.Nil.iterator
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          5951
+        </td>
+        <td>
+          682
+          -
+          781
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.getOrElse
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Following.this.f.map[scales.utils.collection.path.DirectionIterator[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](((x: scales.xml.XmlPath) =&gt; new scales.utils.collection.path.DirectionIterator[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC](x, true))).getOrElse[Iterator[scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]]](scala.collection.immutable.Nil.iterator)
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          5952
+        </td>
+        <td>
+          1003
+          -
+          1010
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.xpath.Preceding.initial
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Preceding.this.initial
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          5953
+        </td>
+        <td>
+          993
+          -
+          1011
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Paths.preceding
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.utils.`package`.preceding[scales.xml.XmlItem, scales.xml.Elem, scales.xml.XCC](Preceding.this.initial)
+        </td>
+      </tr><tr>
+        <td>
+          42
+        </td>
+        <td>
+          5954
+        </td>
+        <td>
+          1143
+          -
+          1150
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.xpath.Preceding.initial
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Preceding.this.initial
+        </td>
+      </tr><tr>
+        <td>
+          42
+        </td>
+        <td>
+          5955
+        </td>
+        <td>
+          1129
+          -
+          1151
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.Ancestors.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new Ancestors(Preceding.this.initial)
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          5956
+        </td>
+        <td>
+          1239
+          -
+          1244
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          5957
+        </td>
+        <td>
+          1288
+          -
+          1311
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Paths.comparePathsDirect
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.utils.`package`.comparePathsDirect[scales.xml.XmlItem, scales.xml.Elem, scales.xml.XCC](i, t)
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          5958
+        </td>
+        <td>
+          1267
+          -
+          1313
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.IterableLike.exists
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Preceding.this.parents.exists(((t: scales.xml.XmlPath) =&gt; scales.utils.`package`.comparePathsDirect[scales.xml.XmlItem, scales.xml.Elem, scales.xml.XCC](i, t)))
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          5959
+        </td>
+        <td>
+          1194
+          -
+          1315
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.Iterator.filterNot
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new scales.utils.collection.path.DirectionIterator[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC](x, false).filterNot(((i: scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]) =&gt; Preceding.this.parents.exists(((t: scales.xml.XmlPath) =&gt; scales.utils.`package`.comparePathsDirect[scales.xml.XmlItem, scales.xml.Elem, scales.xml.XCC](i, t)))))
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          5960
+        </td>
+        <td>
+          1333
+          -
+          1345
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.LinearSeqLike.iterator
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.collection.immutable.Nil.iterator
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          5961
+        </td>
+        <td>
+          1170
+          -
+          1346
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.getOrElse
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Preceding.this.p.map[Iterator[scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]]](((x: scales.xml.XmlPath) =&gt; new scales.utils.collection.path.DirectionIterator[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC](x, false).filterNot(((i: scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]) =&gt; Preceding.this.parents.exists(((t: scales.xml.XmlPath) =&gt; scales.utils.`package`.comparePathsDirect[scales.xml.XmlItem, scales.xml.Elem, scales.xml.XCC](i, t))))))).getOrElse[Iterator[scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]]](scala.collection.immutable.Nil.iterator)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

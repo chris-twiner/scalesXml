@@ -1,0 +1,1631 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/xml/equals/XmlEquals.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.xml.equals
+</span>2 <span style=''>
+</span>3 <span style=''>import scales.xml.{PullType, QName, Elem, Attribs, Attributes, Attribute, XmlItem, XmlPath, EndElem, XCC, Misc, Miscs}
+</span>4 <span style=''>
+</span>5 <span style=''>import scales.xml.serializers.NamespaceContext
+</span>6 <span style=''>
+</span>7 <span style=''>import scala.collection.immutable.Map
+</span>8 <span style=''>
+</span>9 <span style=''>import scalaz._
+</span>10 <span style=''>import Scalaz._
+</span>11 <span style=''>
+</span>12 <span style=''>object BasicPaths {
+</span>13 <span style=''>  // {ns}Local -&gt; count
+</span>14 <span style=''>  type BasicPathA = (QName, Map[String, Int])
+</span>15 <span style=''>  type BasicPath = List[BasicPathA] 
+</span>16 <span style=''>}
+</span>17 <span style=''>
+</span>18 <span style=''>import BasicPaths._
+</span>19 <span style=''>
+</span>20 <span style=''>/**
+</span>21 <span style=''> * Base functions for equality
+</span>22 <span style=''> */ 
+</span>23 <span style=''>trait XmlEquals {
+</span>24 <span style=''>
+</span>25 <span style=''>  /**
+</span>26 <span style=''>   * Allows comparison of Text nodes or Attribute values that contain QNames, i.e. prefix:value.  In order to perform this comparison both the left and right sides must have a NamespaceContext.
+</span>27 <span style=''>   */ 
+</span>28 <span style=''>  def qnamesEqual(context : ComparisonContext, str : String, str2 : String) = {
+</span>29 <span style=''>    // split both, if one has and the other not, then its false anyway
+</span>30 <span style=''>    val sp1 = </span><span style='background: #AEF1AE'>str.split(&quot;:&quot;)</span><span style=''>
+</span>31 <span style=''>    val sp2 = </span><span style='background: #AEF1AE'>str2.split(&quot;:&quot;)</span><span style=''>
+</span>32 <span style=''>    if (</span><span style='background: #AEF1AE'>sp1.size == 2 &amp;&amp; sp2.size == 2</span><span style=''>) {
+</span>33 <span style=''>      </span><span style='background: #AEF1AE'>sp1(1) == sp2(1) &amp;&amp; { // values match
+</span>34 <span style=''></span><span style='background: #AEF1AE'>	// look up prefixes
+</span>35 <span style=''></span><span style='background: #AEF1AE'>	(for{ lnc &lt;- context.leftNamespaceContext
+</span>36 <span style=''></span><span style='background: #AEF1AE'>	     rnc &lt;- context.rightNamespaceContext
+</span>37 <span style=''></span><span style='background: #AEF1AE'>	     lns &lt;- lnc.mappings.get(sp1(0))
+</span>38 <span style=''></span><span style='background: #AEF1AE'>	     rns &lt;- rnc.mappings.get(sp2(0))
+</span>39 <span style=''></span><span style='background: #AEF1AE'>	   } yield lns == rns
+</span>40 <span style=''></span><span style='background: #AEF1AE'>        ).
+</span>41 <span style=''></span><span style='background: #AEF1AE'>	getOrElse(false)
+</span>42 <span style=''></span><span style='background: #AEF1AE'>      }</span><span style=''>
+</span>43 <span style=''>    } else 
+</span>44 <span style=''>      </span><span style='background: #AEF1AE'>str == str2</span><span style=''>
+</span>45 <span style=''>  }
+</span>46 <span style=''>
+</span>47 <span style=''>  /**
+</span>48 <span style=''>   * Perform an actual token comparison (Text/CData and Attribute value relevant).
+</span>49 <span style=''>   */ 
+</span>50 <span style=''>  def compareTokens( context : ComparisonContext, qnameTokenComparison : Option[(ComparisonContext, String, String) =&gt; Boolean], str : String, str2 : String) =
+</span>51 <span style=''>    </span><span style='background: #AEF1AE'>qnameTokenComparison.
+</span>52 <span style=''></span><span style='background: #AEF1AE'>      map( f =&gt;
+</span>53 <span style=''></span><span style='background: #AEF1AE'>	f(context, str, str2)
+</span>54 <span style=''></span><span style='background: #AEF1AE'>	).
+</span>55 <span style=''></span><span style='background: #AEF1AE'>      getOrElse(str == str2)</span><span style=''>
+</span>56 <span style=''>
+</span>57 <span style=''>
+</span>58 <span style=''>  /**
+</span>59 <span style=''>   * Compare the xml object via the available XmlDifference type class
+</span>60 <span style=''>   */ 
+</span>61 <span style=''>  def compare[T : XmlComparison]( left : T, right : T) : Option[(XmlDifference[_], ComparisonContext)] =
+</span>62 <span style=''>    </span><span style='background: #AEF1AE'>implicitly[XmlComparison[T]].compare(true, ComparisonContext(), left, right)</span><span style=''>
+</span>63 <span style=''>
+</span>64 <span style=''>  /**
+</span>65 <span style=''>   * Compare the xml object via the available XmlDifference type class
+</span>66 <span style=''>   */ 
+</span>67 <span style=''>  def compare[T : XmlComparison]( context : ComparisonContext, left : T, right : T) : Option[(XmlDifference[_], ComparisonContext)] =
+</span>68 <span style=''>    </span><span style='background: #AEF1AE'>implicitly[XmlComparison[T]].compare(true, context, left, right)</span><span style=''>
+</span>69 <span style=''>}
+</span>70 <span style=''>
+</span>71 <span style=''>/**
+</span>72 <span style=''> * Make it available without dragging the rest of the world in
+</span>73 <span style=''> */ 
+</span>74 <span style=''>object XmlEquals extends XmlEquals {
+</span>75 <span style=''>}
+</span>76 <span style=''>
+</span>77 <span style=''>import XmlEquals._
+</span>78 <span style=''>
+</span>79 <span style=''>/**
+</span>80 <span style=''> * All default exact Xml Equal and XmlComparison trait instances.
+</span>81 <span style=''> *
+</span>82 <span style=''> * CData, Comments, PI are all kept as is, DTD, encoding and prolog etc are not.  Text nodes are not joined.  Use LogicalXmlEquals to focus more on content only. 
+</span>83 <span style=''> */ 
+</span>84 <span style=''>trait ExactXmlEquals 
+</span>85 <span style=''>  extends DefaultItemEquals
+</span>86 <span style=''>  with DefaultAttributeEquals
+</span>87 <span style=''>  with DefaultAttributesEquals 
+</span>88 <span style=''>  with DefaultElemEquals
+</span>89 <span style=''>  with ExactStreamEquals
+</span>90 <span style=''>  with QNameEquals
+</span>91 <span style=''>  with DefaultQNameToken {
+</span>92 <span style=''>}
+</span>93 <span style=''>
+</span>94 <span style=''>/**
+</span>95 <span style=''> * Provides simple access to ExactXmlEquals
+</span>96 <span style=''> */ 
+</span>97 <span style=''>object ExactXmlEquals extends ExactXmlEquals {}
+</span>98 <span style=''>
+</span>99 <span style=''>/**
+</span>100 <span style=''> * All CData nodes are converted to text nodes, adjoining Text nodes (including CData) are joined.
+</span>101 <span style=''> */
+</span>102 <span style=''>trait DefaultXmlEquals 
+</span>103 <span style=''>  extends DefaultItemEquals
+</span>104 <span style=''>  with DefaultAttributeEquals
+</span>105 <span style=''>  with DefaultAttributesEquals 
+</span>106 <span style=''>  with DefaultElemEquals
+</span>107 <span style=''>  with DefaultStreamEquals
+</span>108 <span style=''>  with QNameEquals
+</span>109 <span style=''>  with DefaultQNameToken
+</span>110 <span style=''>  with DefaultDocLikeEquals {
+</span>111 <span style=''>}
+</span>112 <span style=''>
+</span>113 <span style=''>object DefaultXmlEquals extends DefaultXmlEquals {}
+</span>114 <span style=''>
+</span>115 <span style=''>import scales.utils.collection.{path =&gt; upath}
+</span>116 <span style=''>
+</span>117 <span style=''>/**
+</span>118 <span style=''> * Makes the given path the top path
+</span>119 <span style=''> */ 
+</span>120 <span style=''>class PathAsPullTypeIterable( originalPath : XmlPath ) extends upath.AbstractPathIterator[XmlItem, Elem, XCC, PullType] {
+</span>121 <span style=''>
+</span>122 <span style=''>  def initialPath : XmlPath = </span><span style='background: #AEF1AE'>originalPath.copy( top = upath.Top() )</span><span style=''>
+</span>123 <span style=''>
+</span>124 <span style=''>  def event : PullType = </span><span style='background: #AEF1AE'>path.node.focus.fold(x=&gt;x,y=&gt;y.section)</span><span style=''>
+</span>125 <span style=''>
+</span>126 <span style=''>  def end = {
+</span>127 <span style=''>    val el = </span><span style='background: #AEF1AE'>path.tree.section</span><span style=''>
+</span>128 <span style=''>    </span><span style='background: #AEF1AE'>EndElem(el.name, el.namespaces)</span><span style=''> : PullType
+</span>129 <span style=''>  }
+</span>130 <span style=''> 
+</span>131 <span style=''>}
+</span>132 <span style=''>
+</span>133 <span style=''>/**
+</span>134 <span style=''> * For Iterator[PullType]s that actually are, lets help the inference and implicit lookup out
+</span>135 <span style=''> */ 
+</span>136 <span style=''>trait TheyReallyAreIterators {
+</span>137 <span style=''>  import scales.xml.{CloseablePull, XmlPull}
+</span>138 <span style=''>  implicit val closeablePullIsAn = (x : CloseablePull) =&gt; x : Iterator[PullType]
+</span>139 <span style=''>  implicit val xmlPullIsAn = (x : XmlPull) =&gt; x : Iterator[PullType]
+</span>140 <span style=''>}
+</span>141 <span style=''>
+</span>142 <span style=''>/**
+</span>143 <span style=''> * Collection of all implicit conversions to StreamComparables.
+</span>144 <span style=''> *
+</span>145 <span style=''> * NOTE: The results are only usable with compare / ===, and should not be used to serialize
+</span>146 <span style=''> */
+</span>147 <span style=''>trait StreamComparableImplicits extends TheyReallyAreIterators {
+</span>148 <span style=''>  import scales.xml.{CloseablePull, XmlPull, DocLike, Doc, XmlTree}
+</span>149 <span style=''>
+</span>150 <span style=''>  implicit val itrPlusDocAsAnIterator = (x : (Iterator[PullType], DocLike)) =&gt; </span><span style='background: #F0ADAD'>x._1</span><span style=''> : Iterator[PullType]
+</span>151 <span style=''>
+</span>152 <span style=''>  /**
+</span>153 <span style=''>   * Converts directly to a StreamComparable, its not generally a good idea to automagically  mix XmlPath as an Iterable with XmlPath as an Iterator, make it explicit if thats really desired. 
+</span>154 <span style=''>   */ 
+</span>155 <span style=''>  implicit val xmlPathToComparable : XmlPath =&gt; StreamComparable[XmlPath] = ( x : XmlPath ) =&gt; </span><span style='background: #AEF1AE'>new StreamComparable[XmlPath](x)(t =&gt; new PathAsPullTypeIterable(t))</span><span style=''>
+</span>156 <span style=''>
+</span>157 <span style=''>  /**
+</span>158 <span style=''>   * Converts XmlTree and DslBuilder (when used with PullTypeConversionImplicits 
+</span>159 <span style=''>   */ 
+</span>160 <span style=''>  implicit def fromStreamToStreamComparable[T &lt;% Iterator[PullType]](t : T) : StreamComparable[T] = 
+</span>161 <span style=''>    </span><span style='background: #AEF1AE'>new StreamComparable(t)</span><span style=''>
+</span>162 <span style=''>
+</span>163 <span style=''>  /**
+</span>164 <span style=''>   * One off for (Iterator, DocLike)
+</span>165 <span style=''>   */ 
+</span>166 <span style=''>  implicit def itrDocLikeToStreamComparable[T &lt;% Iterator[PullType]](t : (T, DocLike)) : StreamComparable[T] = </span><span style='background: #F0ADAD'>new StreamComparable( t._1 )</span><span style=''>
+</span>167 <span style=''>
+</span>168 <span style=''>  /**
+</span>169 <span style=''>   * Wrapper for Docs
+</span>170 <span style=''>   */
+</span>171 <span style=''>  implicit def docWrapper(implicit bodyComp : XmlComparison[XmlTree]) : DocLikeWrapper[Doc] = </span><span style='background: #AEF1AE'>new DocLikeWrapperBase[Doc, XmlTree]( identity, _.rootElem, bodyComp )</span><span style=''>
+</span>172 <span style=''>
+</span>173 <span style=''>  /**
+</span>174 <span style=''>   * Wrapper for XmlPull
+</span>175 <span style=''>   */ 
+</span>176 <span style=''>  implicit def xmlPullWrapper(implicit bodyComp : XmlComparison[Iterator[PullType]]) : DocLikeWrapper[XmlPull] = </span><span style='background: #F0ADAD'>new DocLikeWrapperBase[XmlPull, Iterator[PullType]]( identity, identity, bodyComp )</span><span style=''>
+</span>177 <span style=''>
+</span>178 <span style=''>  /**
+</span>179 <span style=''>   * Wrapper for CloseablePull
+</span>180 <span style=''>   */
+</span>181 <span style=''>  implicit def closeablePullWrapper(implicit bodyComp : XmlComparison[Iterator[PullType]]) : DocLikeWrapper[CloseablePull] = </span><span style='background: #F0ADAD'>new DocLikeWrapperBase[CloseablePull, Iterator[PullType]]( identity, identity, bodyComp )</span><span style=''>
+</span>182 <span style=''>
+</span>183 <span style=''>  /**
+</span>184 <span style=''>   * Wrapper for (Iterator, DocLike)
+</span>185 <span style=''>   */ 
+</span>186 <span style=''>  implicit def itrDocLikeWrapper(implicit bodyComp : XmlComparison[Iterator[PullType]]) : DocLikeWrapper[(Iterator[PullType], DocLike)] = </span><span style='background: #F0ADAD'>new DocLikeWrapperBase[(Iterator[PullType], DocLike), Iterator[PullType]]( _._2, _._1, bodyComp )</span><span style=''>
+</span>187 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          3076
+        </td>
+        <td>
+          849
+          -
+          863
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.split
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          str.split(&quot;:&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          3077
+        </td>
+        <td>
+          878
+          -
+          893
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.split
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          str2.split(&quot;:&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          3078
+        </td>
+        <td>
+          914
+          -
+          915
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          2
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          3079
+        </td>
+        <td>
+          919
+          -
+          932
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.refArrayOps[String](sp2).size.==(2)
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          3080
+        </td>
+        <td>
+          902
+          -
+          932
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.refArrayOps[String](sp1).size.==(2).&amp;&amp;(scala.Predef.refArrayOps[String](sp2).size.==(2))
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          3081
+        </td>
+        <td>
+          946
+          -
+          947
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          3082
+        </td>
+        <td>
+          952
+          -
+          958
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Array.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          sp2.apply(1)
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          3084
+        </td>
+        <td>
+          942
+          -
+          1222
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          sp1.apply(1).==(sp2.apply(1)).&amp;&amp;(context.leftNamespaceContext.flatMap[Boolean](((lnc: scales.xml.serializers.NamespaceContext) =&gt; context.rightNamespaceContext.flatMap[Boolean](((rnc: scales.xml.serializers.NamespaceContext) =&gt; lnc.mappings.get(sp1.apply(0)).flatMap[Boolean](((lns: String) =&gt; rnc.mappings.get(sp2.apply(0)).map[Boolean](((rns: String) =&gt; lns.==(rns))))))))).getOrElse[Boolean](false))
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          3085
+        </td>
+        <td>
+          942
+          -
+          1222
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          sp1.apply(1).==(sp2.apply(1)).&amp;&amp;(context.leftNamespaceContext.flatMap[Boolean](((lnc: scales.xml.serializers.NamespaceContext) =&gt; context.rightNamespaceContext.flatMap[Boolean](((rnc: scales.xml.serializers.NamespaceContext) =&gt; lnc.mappings.get(sp1.apply(0)).flatMap[Boolean](((lns: String) =&gt; rnc.mappings.get(sp2.apply(0)).map[Boolean](((rns: String) =&gt; lns.==(rns))))))))).getOrElse[Boolean](false))
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          3083
+        </td>
+        <td>
+          1002
+          -
+          1214
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.getOrElse
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          context.leftNamespaceContext.flatMap[Boolean](((lnc: scales.xml.serializers.NamespaceContext) =&gt; context.rightNamespaceContext.flatMap[Boolean](((rnc: scales.xml.serializers.NamespaceContext) =&gt; lnc.mappings.get(sp1.apply(0)).flatMap[Boolean](((lns: String) =&gt; rnc.mappings.get(sp2.apply(0)).map[Boolean](((rns: String) =&gt; lns.==(rns))))))))).getOrElse[Boolean](false)
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          3086
+        </td>
+        <td>
+          1241
+          -
+          1252
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          str.==(str2)
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          3087
+        </td>
+        <td>
+          1241
+          -
+          1252
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          str.==(str2)
+        </td>
+      </tr><tr>
+        <td>
+          53
+        </td>
+        <td>
+          3088
+        </td>
+        <td>
+          1557
+          -
+          1578
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function3.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          f.apply(context, str, str2)
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          3089
+        </td>
+        <td>
+          1599
+          -
+          1610
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          str.==(str2)
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          3090
+        </td>
+        <td>
+          1518
+          -
+          1611
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.getOrElse
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          qnameTokenComparison.map[Boolean](((f: (scales.xml.equals.ComparisonContext, String, String) =&gt; Boolean) =&gt; f.apply(context, str, str2))).getOrElse[Boolean](str.==(str2))
+        </td>
+      </tr><tr>
+        <td>
+          62
+        </td>
+        <td>
+          3091
+        </td>
+        <td>
+          1844
+          -
+          1848
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          62
+        </td>
+        <td>
+          3092
+        </td>
+        <td>
+          1850
+          -
+          1869
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.ComparisonContext.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ComparisonContext.apply()
+        </td>
+      </tr><tr>
+        <td>
+          62
+        </td>
+        <td>
+          3093
+        </td>
+        <td>
+          1807
+          -
+          1883
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.XmlComparison.compare
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.implicitly[scales.xml.equals.XmlComparison[T]](evidence$1).compare(true, ComparisonContext.apply(), left, right)
+        </td>
+      </tr><tr>
+        <td>
+          68
+        </td>
+        <td>
+          3094
+        </td>
+        <td>
+          2107
+          -
+          2171
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.XmlComparison.compare
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.implicitly[scales.xml.equals.XmlComparison[T]](evidence$2).compare(true, context, left, right)
+        </td>
+      </tr><tr>
+        <td>
+          122
+        </td>
+        <td>
+          3095
+        </td>
+        <td>
+          3536
+          -
+          3547
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Top.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.collection.path.Top.apply[scales.xml.XmlItem, scales.xml.Elem, scales.xml.XCC]()
+        </td>
+      </tr><tr>
+        <td>
+          122
+        </td>
+        <td>
+          3096
+        </td>
+        <td>
+          3524
+          -
+          3524
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scales.utils.collection.path.Path.copy$default$2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          PathAsPullTypeIterable.this.originalPath.copy$default$2[Nothing, Nothing, Nothing]
+        </td>
+      </tr><tr>
+        <td>
+          122
+        </td>
+        <td>
+          3097
+        </td>
+        <td>
+          3528
+          -
+          3528
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          classOf[scales.utils.EitherLike]
+        </td>
+      </tr><tr>
+        <td>
+          122
+        </td>
+        <td>
+          3098
+        </td>
+        <td>
+          3528
+          -
+          3528
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.reflect.ClassManifestFactory.classType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem])
+        </td>
+      </tr><tr>
+        <td>
+          122
+        </td>
+        <td>
+          3099
+        </td>
+        <td>
+          3528
+          -
+          3528
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          classOf[scales.utils.collection.Tree]
+        </td>
+      </tr><tr>
+        <td>
+          122
+        </td>
+        <td>
+          3100
+        </td>
+        <td>
+          3528
+          -
+          3528
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.reflect.ClassManifestFactory.classType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem])
+        </td>
+      </tr><tr>
+        <td>
+          122
+        </td>
+        <td>
+          3101
+        </td>
+        <td>
+          3528
+          -
+          3528
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.reflect.ClassManifestFactory.classType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem])
+        </td>
+      </tr><tr>
+        <td>
+          122
+        </td>
+        <td>
+          3102
+        </td>
+        <td>
+          3528
+          -
+          3528
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.reflect.NoManifest
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.reflect.NoManifest
+        </td>
+      </tr><tr>
+        <td>
+          122
+        </td>
+        <td>
+          3103
+        </td>
+        <td>
+          3528
+          -
+          3528
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.reflect.ClassManifestFactory.classType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest)
+        </td>
+      </tr><tr>
+        <td>
+          122
+        </td>
+        <td>
+          3104
+        </td>
+        <td>
+          3528
+          -
+          3528
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.reflect.ClassManifestFactory.classType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest))
+        </td>
+      </tr><tr>
+        <td>
+          122
+        </td>
+        <td>
+          3105
+        </td>
+        <td>
+          3528
+          -
+          3528
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.ImmutableArrayProxy.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.ImmutableArrayProxy.canBuildFrom[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest)))
+        </td>
+      </tr><tr>
+        <td>
+          122
+        </td>
+        <td>
+          3106
+        </td>
+        <td>
+          3528
+          -
+          3528
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.SeqLikeThing.immutableArrayProxyLikeThing
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.SeqLikeThing.immutableArrayProxyLikeThing[scales.xml.XCC[_], scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](collection.this.ImmutableArrayProxy.canBuildFrom[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest))))
+        </td>
+      </tr><tr>
+        <td>
+          122
+        </td>
+        <td>
+          3107
+        </td>
+        <td>
+          3511
+          -
+          3549
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.path.Path.copy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          PathAsPullTypeIterable.this.originalPath.copy[scales.xml.XmlItem, scales.xml.Elem, scales.xml.XCC](scales.utils.collection.path.Top.apply[scales.xml.XmlItem, scales.xml.Elem, scales.xml.XCC](), PathAsPullTypeIterable.this.originalPath.copy$default$2[Nothing, Nothing, Nothing])(collection.this.SeqLikeThing.immutableArrayProxyLikeThing[scales.xml.XCC[_], scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](collection.this.ImmutableArrayProxy.canBuildFrom[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest)))))
+        </td>
+      </tr><tr>
+        <td>
+          124
+        </td>
+        <td>
+          3108
+        </td>
+        <td>
+          3600
+          -
+          3601
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPulls.toLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          xml.this.`package`.toLeft(x)
+        </td>
+      </tr><tr>
+        <td>
+          124
+        </td>
+        <td>
+          3109
+        </td>
+        <td>
+          3605
+          -
+          3614
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.Tree.section
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          y.section
+        </td>
+      </tr><tr>
+        <td>
+          124
+        </td>
+        <td>
+          3110
+        </td>
+        <td>
+          3605
+          -
+          3614
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPulls.toLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          xml.this.`package`.toLeft(y.section)
+        </td>
+      </tr><tr>
+        <td>
+          124
+        </td>
+        <td>
+          3111
+        </td>
+        <td>
+          3576
+          -
+          3615
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.EitherLike.fold
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          PathAsPullTypeIterable.this.path.node.focus.fold[scala.util.Left[scales.xml.XmlEvent,Nothing]](((x: scales.xml.XmlItem) =&gt; xml.this.`package`.toLeft(x)), ((y: scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]) =&gt; xml.this.`package`.toLeft(y.section)))
+        </td>
+      </tr><tr>
+        <td>
+          127
+        </td>
+        <td>
+          3112
+        </td>
+        <td>
+          3644
+          -
+          3661
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.Tree.section
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          PathAsPullTypeIterable.this.path.tree().section
+        </td>
+      </tr><tr>
+        <td>
+          128
+        </td>
+        <td>
+          3113
+        </td>
+        <td>
+          3674
+          -
+          3681
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Elem.name
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          el.name
+        </td>
+      </tr><tr>
+        <td>
+          128
+        </td>
+        <td>
+          3114
+        </td>
+        <td>
+          3683
+          -
+          3696
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Elem.namespaces
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          el.namespaces
+        </td>
+      </tr><tr>
+        <td>
+          128
+        </td>
+        <td>
+          3115
+        </td>
+        <td>
+          3666
+          -
+          3697
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.EndElem.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.EndElem.apply(el.name, el.namespaces)
+        </td>
+      </tr><tr>
+        <td>
+          128
+        </td>
+        <td>
+          3116
+        </td>
+        <td>
+          3666
+          -
+          3697
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPulls.toRight
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          xml.this.`package`.toRight(scales.xml.EndElem.apply(el.name, el.namespaces))
+        </td>
+      </tr><tr>
+        <td>
+          150
+        </td>
+        <td>
+          3117
+        </td>
+        <td>
+          4431
+          -
+          4435
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          x._1
+        </td>
+      </tr><tr>
+        <td>
+          155
+        </td>
+        <td>
+          3118
+        </td>
+        <td>
+          4797
+          -
+          4826
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.PathAsPullTypeIterable.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new PathAsPullTypeIterable(t)
+        </td>
+      </tr><tr>
+        <td>
+          155
+        </td>
+        <td>
+          3119
+        </td>
+        <td>
+          4759
+          -
+          4827
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.StreamComparable.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new scales.xml.equals.StreamComparable[scales.xml.XmlPath](x)(((t: scales.xml.XmlPath) =&gt; new PathAsPullTypeIterable(t)))
+        </td>
+      </tr><tr>
+        <td>
+          161
+        </td>
+        <td>
+          3120
+        </td>
+        <td>
+          5029
+          -
+          5052
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.equals.StreamComparable.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new scales.xml.equals.StreamComparable[T](t)(evidence$3)
+        </td>
+      </tr><tr>
+        <td>
+          166
+        </td>
+        <td>
+          3121
+        </td>
+        <td>
+          5215
+          -
+          5243
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.equals.StreamComparable.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new scales.xml.equals.StreamComparable[T](t._1)(evidence$4)
+        </td>
+      </tr><tr>
+        <td>
+          171
+        </td>
+        <td>
+          3122
+        </td>
+        <td>
+          5411
+          -
+          5419
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.identity
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.identity[scales.xml.Doc](x)
+        </td>
+      </tr><tr>
+        <td>
+          171
+        </td>
+        <td>
+          3123
+        </td>
+        <td>
+          5421
+          -
+          5431
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Doc.rootElem
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$1.rootElem
+        </td>
+      </tr><tr>
+        <td>
+          171
+        </td>
+        <td>
+          3124
+        </td>
+        <td>
+          5373
+          -
+          5443
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.DocLikeWrapperBase.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new scales.xml.equals.DocLikeWrapperBase[scales.xml.Doc,scales.xml.XmlTree]({
+  ((x: scales.xml.Doc) =&gt; scala.Predef.identity[scales.xml.Doc](x))
+}, ((x$1: scales.xml.Doc) =&gt; x$1.rootElem), bodyComp)
+        </td>
+      </tr><tr>
+        <td>
+          176
+        </td>
+        <td>
+          3125
+        </td>
+        <td>
+          5649
+          -
+          5657
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.identity
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Predef.identity[scales.xml.XmlPull](x)
+        </td>
+      </tr><tr>
+        <td>
+          176
+        </td>
+        <td>
+          3126
+        </td>
+        <td>
+          5659
+          -
+          5667
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.identity
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Predef.identity[scales.xml.XmlPull](x)
+        </td>
+      </tr><tr>
+        <td>
+          176
+        </td>
+        <td>
+          3127
+        </td>
+        <td>
+          5596
+          -
+          5679
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.DocLikeWrapperBase.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new scales.xml.equals.DocLikeWrapperBase[scales.xml.XmlPull,Iterator[scales.xml.PullType]]({
+  ((x: scales.xml.XmlPull) =&gt; scala.Predef.identity[scales.xml.XmlPull](x))
+}, {
+  ((x: scales.xml.XmlPull) =&gt; scala.Predef.identity[scales.xml.XmlPull](x))
+}, bodyComp)
+        </td>
+      </tr><tr>
+        <td>
+          181
+        </td>
+        <td>
+          3128
+        </td>
+        <td>
+          5908
+          -
+          5916
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.identity
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Predef.identity[scales.xml.CloseablePull](x)
+        </td>
+      </tr><tr>
+        <td>
+          181
+        </td>
+        <td>
+          3129
+        </td>
+        <td>
+          5918
+          -
+          5926
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.identity
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Predef.identity[scales.xml.CloseablePull](x)
+        </td>
+      </tr><tr>
+        <td>
+          181
+        </td>
+        <td>
+          3130
+        </td>
+        <td>
+          5849
+          -
+          5938
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.DocLikeWrapperBase.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new scales.xml.equals.DocLikeWrapperBase[scales.xml.CloseablePull,Iterator[scales.xml.PullType]]({
+  ((x: scales.xml.CloseablePull) =&gt; scala.Predef.identity[scales.xml.CloseablePull](x))
+}, {
+  ((x: scales.xml.CloseablePull) =&gt; scala.Predef.identity[scales.xml.CloseablePull](x))
+}, bodyComp)
+        </td>
+      </tr><tr>
+        <td>
+          186
+        </td>
+        <td>
+          3131
+        </td>
+        <td>
+          6203
+          -
+          6207
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          x$2._2
+        </td>
+      </tr><tr>
+        <td>
+          186
+        </td>
+        <td>
+          3132
+        </td>
+        <td>
+          6209
+          -
+          6213
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          x$3._1
+        </td>
+      </tr><tr>
+        <td>
+          186
+        </td>
+        <td>
+          3133
+        </td>
+        <td>
+          6128
+          -
+          6225
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.DocLikeWrapperBase.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new scales.xml.equals.DocLikeWrapperBase[(Iterator[scales.xml.PullType], scales.xml.DocLike),Iterator[scales.xml.PullType]](((x$2: (Iterator[scales.xml.PullType], scales.xml.DocLike)) =&gt; x$2._2), ((x$3: (Iterator[scales.xml.PullType], scales.xml.DocLike)) =&gt; x$3._1), bodyComp)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

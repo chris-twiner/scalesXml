@@ -1,0 +1,5475 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/xml/xpath/XPathTypes.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.xml.xpath
+</span>2 <span style=''>
+</span>3 <span style=''>import scales.utils._
+</span>4 <span style=''>import scales.utils.collection.BuilderHelper
+</span>5 <span style=''>
+</span>6 <span style=''>import scala.collection.generic.CanBuildFrom
+</span>7 <span style=''>import scales.utils.one
+</span>8 <span style=''>import scales.xml.{Attribute, AttributeQName, Attributes, Elem, ScalesXml, UnprefixedQName, XCC, XmlItem, XmlPath, text}
+</span>9 <span style=''>import scales.xml.impl.EqualsHelpers
+</span>10 <span style=''>
+</span>11 <span style=''>/** Simple container for keeping relationship between the parent and attribute */
+</span>12 <span style=''>case class AttributePath(attribute: Attribute, parent: XmlPath)
+</span>13 <span style=''>
+</span>14 <span style=''>case class XmlPathComparisoms(path: XmlPath) {
+</span>15 <span style=''>  import ScalesXml.xmlpathText
+</span>16 <span style=''>  def ===(other: String) = </span><span style='background: #AEF1AE'>text(path) == other</span><span style=''>
+</span>17 <span style=''>}
+</span>18 <span style=''>
+</span>19 <span style=''>case class AttributePathComparisoms(path: AttributePath) {
+</span>20 <span style=''>  import ScalesXml.attribPathText
+</span>21 <span style=''>  def ===(other: String) = </span><span style='background: #F0ADAD'>text(path) == other</span><span style=''>
+</span>22 <span style=''>}
+</span>23 <span style=''>
+</span>24 <span style=''>/** Attributes that have been selected */
+</span>25 <span style=''>case class AttributePaths[PT &lt;: Iterable[XmlPath]](attributes: Iterable[AttributePath], path: XPathInfo, cbf: CanBuildFrom[PT, XmlPath, PT])(implicit helper: BuilderHelper[XmlPath, PT]) {
+</span>26 <span style=''>  import scales.xml.impl.EqualsHelpers.toQName
+</span>27 <span style=''>  /** Parents of the attributepaths */
+</span>28 <span style=''>  def \^(): XPath[PT] = </span><span style='background: #AEF1AE'>new XPath[PT](path.copy(nodes = List(attributes.map(_.parent))), cbf)</span><span style=''>
+</span>29 <span style=''>
+</span>30 <span style=''>  // the following are to provide similar chained predicates as expected by me and the spec
+</span>31 <span style=''>
+</span>32 <span style=''>  def *@(pred : AttributePath =&gt; Boolean) : AttributePaths[PT] =
+</span>33 <span style=''>    </span><span style='background: #AEF1AE'>AttributePaths(attributes.filter { pred(_) }, path, cbf)</span><span style=''>
+</span>34 <span style=''>
+</span>35 <span style=''>  /** Special case for AttributeQNames, only local and namespace match */
+</span>36 <span style=''>  def *@(attrQName : AttributeQName) : AttributePaths[PT] =
+</span>37 <span style=''>    </span><span style='background: #AEF1AE'>*@({ attributePath : AttributePath =&gt; toQName(attributePath.attribute.name) =:= toQName(attrQName) })</span><span style=''>
+</span>38 <span style=''>
+</span>39 <span style=''>  /** Loose match for UnprefixedQNames only, only matches local and namespace */
+</span>40 <span style=''>  def *@(qname : UnprefixedQName) : AttributePaths[PT] =
+</span>41 <span style=''>    </span><span style='background: #F0ADAD'>*@({ attributePath : AttributePath =&gt; toQName(attributePath.attribute.name) =:= qname })</span><span style=''>
+</span>42 <span style=''>
+</span>43 <span style=''>  /**
+</span>44 <span style=''>   * Some if there is one, else none
+</span>45 <span style=''>   */
+</span>46 <span style=''>  def one: Iterable[AttributePath] = if (</span><span style='background: #AEF1AE'>attributes.size != 1</span><span style=''>) </span><span style='background: #F0ADAD'>Nil</span><span style=''> else </span><span style='background: #AEF1AE'>scales.utils.one(attributes.head)</span><span style=''>
+</span>47 <span style=''>
+</span>48 <span style=''>  /**
+</span>49 <span style=''>   * Some if there is one, else calls handler (allows decisions based on more than one etc.
+</span>50 <span style=''>   */
+</span>51 <span style=''>  def oneOr(handler: Iterable[AttributePath] =&gt; Iterable[AttributePath]) = if (</span><span style='background: #F0ADAD'>attributes.size == 1</span><span style=''>) </span><span style='background: #F0ADAD'>scales.utils.one(attributes.head)</span><span style=''> else </span><span style='background: #F0ADAD'>handler(attributes)</span><span style=''>
+</span>52 <span style=''>
+</span>53 <span style=''>  def ===( textValue : =&gt; String ) = 
+</span>54 <span style=''>    </span><span style='background: #AEF1AE'>*@( a =&gt; a.attribute.value == textValue )</span><span style=''>
+</span>55 <span style=''>}
+</span>56 <span style=''>
+</span>57 <span style=''>/**
+</span>58 <span style=''> * XPaths need sorting upon unions etc, and duplicate filtering on \^ parents
+</span>59 <span style=''> */
+</span>60 <span style=''>case class XPathInfo(nodes: Iterable[Iterable[XmlPath]], mustBeSorted: Boolean = false, filterDuplicates: Boolean = false, initialNode: Boolean = false, eager : Boolean = false, direct : Boolean = false)
+</span>61 <span style=''>
+</span>62 <span style=''>/**
+</span>63 <span style=''> * In contrast to the specs reverse axis are not supported.  This puts
+</span>64 <span style=''> * an extra effort on the user for translating, but I don't agree with
+</span>65 <span style=''> * the design anyway.  It adds both ambiguity for an embedded dsl:
+</span>66 <span style=''> *
+</span>67 <span style=''> * //a:ShouldRedeclare/../text()[5]/preceding-sibling::text()[1]
+</span>68 <span style=''> *
+</span>69 <span style=''> * is in reverse order (above is previousSibling in Path), whereas
+</span>70 <span style=''> *
+</span>71 <span style=''> * (//a:ShouldRedeclare/../text()[5]/preceding-sibling::text())[1]
+</span>72 <span style=''> *
+</span>73 <span style=''> * is in doc order (the first text child of the parent).  Such an arbritary decision does nothing but irritate.  A simpler design as found in this implementation is that the user can simply use full scala data functions to reverse as needed.
+</span>74 <span style=''> *
+</span>75 <span style=''> * (Temptation is to provide the base type as SeqLike instead of Iterable as it should be in a sequence with a defined order, also then providing .reverse and friends)
+</span>76 <span style=''> */
+</span>77 <span style=''>class XPath[PT &lt;: Iterable[XmlPath]](val path: XPathInfo, val cbf: CanBuildFrom[PT, XmlPath, PT])(implicit val helper: BuilderHelper[XmlPath, PT]) extends ElementStep with OtherNodeTypes with AttributeAxis with SiblingsAxis with DocumentSplitters {
+</span>78 <span style=''>
+</span>79 <span style=''>  type T = PT
+</span>80 <span style=''>
+</span>81 <span style=''>  def newThis(xpathInfo: XPathInfo): XPath[T] =
+</span>82 <span style=''>    </span><span style='background: #AEF1AE'>new XPath[T](xpathInfo, cbf)</span><span style=''>
+</span>83 <span style=''>
+</span>84 <span style=''>  def empty: Iterable[XmlPath] = </span><span style='background: #AEF1AE'>helper.builder.result</span><span style=''>
+</span>85 <span style=''>  def just(only: XmlPath): Iterable[XmlPath] = </span><span style='background: #AEF1AE'>(helper.builder += only).result</span><span style=''>
+</span>86 <span style=''>
+</span>87 <span style=''>  /**
+</span>88 <span style=''>   * Allow working within the XPath, easily extend and test
+</span>89 <span style=''>   */
+</span>90 <span style=''>  def in(f: (XPath[T]) =&gt; XPath[T]): XPath[T] =
+</span>91 <span style=''>    </span><span style='background: #AEF1AE'>f(this)</span><span style=''>
+</span>92 <span style=''>
+</span>93 <span style=''>  /**
+</span>94 <span style=''>   * Allow working within the XPath, easily extend and test
+</span>95 <span style=''>   */
+</span>96 <span style=''>  def |&gt;(f: (XPath[T]) =&gt; XPath[T]) = </span><span style='background: #AEF1AE'>in(f)</span><span style=''>
+</span>97 <span style=''>
+</span>98 <span style=''>  /**
+</span>99 <span style=''>   * Some when its only one in the result set
+</span>100 <span style=''>   */
+</span>101 <span style=''>  def one: Iterable[XmlPath] = {
+</span>102 <span style=''>    val nodes = </span><span style='background: #AEF1AE'>ScalesXml.fromXPathToIterable(this)</span><span style=''>
+</span>103 <span style=''>    if (</span><span style='background: #AEF1AE'>nodes.size != 1</span><span style=''>) </span><span style='background: #F0ADAD'>Nil</span><span style=''>
+</span>104 <span style=''>    else </span><span style='background: #AEF1AE'>scales.utils.one(nodes.head)</span><span style=''>
+</span>105 <span style=''>  }
+</span>106 <span style=''>
+</span>107 <span style=''>  def oneOr(handler: XPath[T] =&gt; Iterable[XmlPath]) = {
+</span>108 <span style=''>    val nodes = </span><span style='background: #F0ADAD'>ScalesXml.fromXPathToIterable(this)</span><span style=''>
+</span>109 <span style=''>    if (</span><span style='background: #F0ADAD'>nodes.size == 1</span><span style=''>) </span><span style='background: #F0ADAD'>scales.utils.one(nodes.head)</span><span style=''>
+</span>110 <span style=''>    else </span><span style='background: #F0ADAD'>handler(this)</span><span style=''>
+</span>111 <span style=''>  }
+</span>112 <span style=''>
+</span>113 <span style=''>  /**
+</span>114 <span style=''>   * Union of the two paths, they must use the same type however
+</span>115 <span style=''>   *
+</span>116 <span style=''>   * x | x === x but only when apply fromXPathToIterable (default behaviour anyway)
+</span>117 <span style=''>   *
+</span>118 <span style=''>   * For attribute paths only ++ on an iterable is supported.
+</span>119 <span style=''>   */
+</span>120 <span style=''>  def |( other : XPath[T] ) : XPath[T] = 
+</span>121 <span style=''>    </span><span style='background: #AEF1AE'>new XPath(XPathInfo( 
+</span>122 <span style=''></span><span style='background: #AEF1AE'>      nodes = path.nodes ++ other.path.nodes, 
+</span>123 <span style=''></span><span style='background: #AEF1AE'>      mustBeSorted = true, filterDuplicates = true, initialNode = false, eager = path.eager | other.path.eager), cbf)</span><span style=''>
+</span>124 <span style=''>  
+</span>125 <span style=''>  // TODO figure out unions of other paths (namespaces / attributes)
+</span>126 <span style=''>}
+</span>127 <span style=''>
+</span>128 <span style=''>/**
+</span>129 <span style=''> * Pos and filter for a direct access does not flatmap.  The next / breaks the chain
+</span>130 <span style=''> */
+</span>131 <span style=''>class DirectXPath[PT &lt;: Iterable[XmlPath]](override val path: XPathInfo, override val cbf: CanBuildFrom[PT, XmlPath, PT])(implicit helper: BuilderHelper[XmlPath, PT]) extends XPath[PT](path, cbf) {
+</span>132 <span style=''>  override def process(newNodes: Iterable[Iterable[XmlPath]],  info : XPathInfo = path) = {
+</span>133 <span style=''>      </span><span style='background: #F0ADAD'>newThis(info.copy( nodes = newNodes ))</span><span style=''>
+</span>134 <span style=''>    }
+</span>135 <span style=''>}
+</span>136 <span style=''>
+</span>137 <span style=''>object Axis {
+</span>138 <span style=''>
+</span>139 <span style=''>  /**
+</span>140 <span style=''>   * eager recursive unpack, better performance when its eager
+</span>141 <span style=''>   */ 
+</span>142 <span style=''>  def eager_recUnpack(xmlPath: Iterable[XmlPath]): List[XmlPath] = {
+</span>143 <span style=''>    var res : List[XmlPath] = </span><span style='background: #AEF1AE'>Nil</span><span style=''>
+</span>144 <span style=''>
+</span>145 <span style=''>    val i = </span><span style='background: #AEF1AE'>xmlPath.iterator</span><span style=''>
+</span>146 <span style=''>    while(</span><span style='background: #AEF1AE'>i.hasNext</span><span style=''>) </span><span style='background: #AEF1AE'>{
+</span>147 <span style=''></span><span style='background: #AEF1AE'>      val child = i.next
+</span>148 <span style=''></span><span style='background: #AEF1AE'>      if (child.isItem) 
+</span>149 <span style=''></span><span style='background: #AEF1AE'>	res = child :: res
+</span>150 <span style=''></span><span style='background: #AEF1AE'>      else {
+</span>151 <span style=''></span><span style='background: #AEF1AE'>	// child first then its kids
+</span>152 <span style=''></span><span style='background: #AEF1AE'>	res = (child :: res ).reverse_::: (
+</span>153 <span style=''></span><span style='background: #AEF1AE'>	  eager_recUnpack(child: Iterable[XmlPath]) )
+</span>154 <span style=''></span><span style='background: #AEF1AE'>      }
+</span>155 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>156 <span style=''>    res
+</span>157 <span style=''>  }
+</span>158 <span style=''>
+</span>159 <span style=''>  /**
+</span>160 <span style=''>   * Possibly lazy recursive unpack, used by l_\\ and descendant
+</span>161 <span style=''>   */ 
+</span>162 <span style=''>  def lazy_recUnpack(axis : Axis)(xmlPath: Iterable[XmlPath]): Iterable[XmlPath] =
+</span>163 <span style=''>    </span><span style='background: #AEF1AE'>xmlPath.flatMap { child =&gt;
+</span>164 <span style=''></span><span style='background: #AEF1AE'>      if (child.isItem) axis.just(child) 
+</span>165 <span style=''></span><span style='background: #AEF1AE'>      else {
+</span>166 <span style=''></span><span style='background: #AEF1AE'>	// child first then its kids
+</span>167 <span style=''></span><span style='background: #AEF1AE'>	axis.just(child) ++
+</span>168 <span style=''></span><span style='background: #AEF1AE'>	lazy_recUnpack(axis)(child: Iterable[XmlPath])
+</span>169 <span style=''></span><span style='background: #AEF1AE'>      }		       
+</span>170 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>171 <span style=''>
+</span>172 <span style=''>}
+</span>173 <span style=''>
+</span>174 <span style=''>/**
+</span>175 <span style=''> * Base trait for XPath Axis, also provides common functionality
+</span>176 <span style=''> */ 
+</span>177 <span style=''>  trait Axis {
+</span>178 <span style=''>    import Axis._
+</span>179 <span style=''>
+</span>180 <span style=''>    type T &lt;: Iterable[XmlPath]
+</span>181 <span style=''>    val cbf: CanBuildFrom[T, XmlPath, T]
+</span>182 <span style=''>
+</span>183 <span style=''>    val path: XPathInfo
+</span>184 <span style=''>
+</span>185 <span style=''>    def newThis(xpathInfo: XPathInfo): XPath[T]
+</span>186 <span style=''>
+</span>187 <span style=''>    def process(newNodes: Iterable[Iterable[XmlPath]], info : XPathInfo = path) = {
+</span>188 <span style=''>      val nn =
+</span>189 <span style=''>	if (</span><span style='background: #AEF1AE'>path.eager</span><span style=''>) {
+</span>190 <span style=''>	  </span><span style='background: #AEF1AE'>if (newNodes.exists(_.isEmpty)) // look first
+</span>191 <span style=''></span><span style='background: #AEF1AE'>	    newNodes.filter(!_.isEmpty) 
+</span>192 <span style=''></span><span style='background: #AEF1AE'>	  else
+</span>193 <span style=''></span><span style='background: #AEF1AE'>	    newNodes</span><span style=''>
+</span>194 <span style=''>	} else </span><span style='background: #AEF1AE'>newNodes.filter(!_.isEmpty)</span><span style=''> // do it anyway
+</span>195 <span style=''>
+</span>196 <span style=''>      </span><span style='background: #AEF1AE'>newThis(info.copy( nodes = nn))</span><span style=''>
+</span>197 <span style=''>    }
+</span>198 <span style=''>
+</span>199 <span style=''>    def empty: Iterable[XmlPath]
+</span>200 <span style=''>    def just(only: XmlPath): Iterable[XmlPath]
+</span>201 <span style=''>
+</span>202 <span style=''>    /**
+</span>203 <span style=''>     * x prefixed to avoid disturbing the use of an xpath as an iterable
+</span>204 <span style=''>     */ 
+</span>205 <span style=''>    final def xflatMap(f : Iterable[XmlPath] =&gt; Iterable[Iterable[XmlPath]] ) =
+</span>206 <span style=''>      </span><span style='background: #AEF1AE'>process( path.nodes.flatMap( f ) )</span><span style=''>
+</span>207 <span style=''>
+</span>208 <span style=''>    final def xfilter( f : Iterable[XmlPath] =&gt; Boolean ) = 
+</span>209 <span style=''>      </span><span style='background: #AEF1AE'>process(path.nodes.filter( f ) )</span><span style=''>
+</span>210 <span style=''>
+</span>211 <span style=''>    protected final def xlast( onN : Int =&gt; Boolean ) : XPath[T] =
+</span>212 <span style=''>      </span><span style='background: #AEF1AE'>xfilter{ x =&gt; onN( x.size) }</span><span style=''>
+</span>213 <span style=''>
+</span>214 <span style=''>    /**
+</span>215 <span style=''>     * Equivalent to [last() &gt; n]
+</span>216 <span style=''>     */ 
+</span>217 <span style=''>    def last_&gt;(n : =&gt; Int): XPath[T] =
+</span>218 <span style=''>      </span><span style='background: #AEF1AE'>xlast( _ &gt; n )</span><span style=''>
+</span>219 <span style=''>
+</span>220 <span style=''>    /**
+</span>221 <span style=''>     * Equivalent to [last() &lt; n]
+</span>222 <span style=''>     */ 
+</span>223 <span style=''>    def last_&lt;(n : =&gt; Int): XPath[T] =
+</span>224 <span style=''>      </span><span style='background: #AEF1AE'>xlast( _ &lt; n )</span><span style=''>
+</span>225 <span style=''>
+</span>226 <span style=''>    /**
+</span>227 <span style=''>     * Equivalent to [last() = n]
+</span>228 <span style=''>     */ 
+</span>229 <span style=''>    def last_==(n : =&gt; Int): XPath[T] =
+</span>230 <span style=''>      </span><span style='background: #AEF1AE'>xlast( _ == n )</span><span style=''>
+</span>231 <span style=''>
+</span>232 <span style=''>    /**
+</span>233 <span style=''>     * Equivalent to position() = last()
+</span>234 <span style=''>     */ 
+</span>235 <span style=''>    def pos_eq_last : XPath[T] =
+</span>236 <span style=''>      </span><span style='background: #AEF1AE'>xmap { _.lastOption }</span><span style=''>
+</span>237 <span style=''>
+</span>238 <span style=''>    /**
+</span>239 <span style=''>     * Equivalent to [position() &gt; pos]
+</span>240 <span style=''>     */ 
+</span>241 <span style=''>    def pos_&gt;(pos : =&gt; Int): XPath[T] =
+</span>242 <span style=''>      </span><span style='background: #AEF1AE'>xflatMap { path =&gt;
+</span>243 <span style=''></span><span style='background: #AEF1AE'>	val n = path.drop(pos)
+</span>244 <span style=''></span><span style='background: #AEF1AE'>	if (n.isEmpty)
+</span>245 <span style=''></span><span style='background: #AEF1AE'>	  </span><span style='background: #F0ADAD'>empty</span><span style='background: #AEF1AE'>
+</span>246 <span style=''></span><span style='background: #AEF1AE'>	else
+</span>247 <span style=''></span><span style='background: #AEF1AE'>	  one(n)
+</span>248 <span style=''></span><span style='background: #AEF1AE'>      }</span><span style=''>
+</span>249 <span style=''>
+</span>250 <span style=''>    /**
+</span>251 <span style=''>     * Equivalent to [position() &lt; pos]
+</span>252 <span style=''>     */ 
+</span>253 <span style=''>    def pos_&lt;(pos : =&gt; Int): XPath[T] =
+</span>254 <span style=''>      </span><span style='background: #AEF1AE'>xflatMap { path =&gt;
+</span>255 <span style=''></span><span style='background: #AEF1AE'>	val n = path.take(pos-1)
+</span>256 <span style=''></span><span style='background: #AEF1AE'>        if (n.isEmpty)
+</span>257 <span style=''></span><span style='background: #AEF1AE'>	  </span><span style='background: #F0ADAD'>empty</span><span style='background: #AEF1AE'>
+</span>258 <span style=''></span><span style='background: #AEF1AE'>	else
+</span>259 <span style=''></span><span style='background: #AEF1AE'>	  one(n)
+</span>260 <span style=''></span><span style='background: #AEF1AE'>      }</span><span style=''>
+</span>261 <span style=''>    
+</span>262 <span style=''>    def pos_==(p: =&gt; Int) = </span><span style='background: #AEF1AE'>pos(p)</span><span style=''>
+</span>263 <span style=''>
+</span>264 <span style=''>    /**
+</span>265 <span style=''>     * 1 index based, per spec, but unsure if it should be
+</span>266 <span style=''>     */
+</span>267 <span style=''>    def pos(pos: =&gt; Int): XPath[T] = 
+</span>268 <span style=''>      </span><span style='background: #AEF1AE'>xflatMap { path =&gt;
+</span>269 <span style=''></span><span style='background: #AEF1AE'>	val n = path.take(pos)
+</span>270 <span style=''></span><span style='background: #AEF1AE'>		 
+</span>271 <span style=''></span><span style='background: #AEF1AE'>	if (n.size != pos) 
+</span>272 <span style=''></span><span style='background: #AEF1AE'>	  empty
+</span>273 <span style=''></span><span style='background: #AEF1AE'>	else 
+</span>274 <span style=''></span><span style='background: #AEF1AE'>	  one(just(n.last))               
+</span>275 <span style=''></span><span style='background: #AEF1AE'>      }</span><span style=''>
+</span>276 <span style=''>
+</span>277 <span style=''>    /** Parents of these paths */
+</span>278 <span style=''>    def \^ : XPath[T] =
+</span>279 <span style=''>      /* must process dups
+</span>280 <span style=''>       * flatten, only each elem should get through anyway
+</span>281 <span style=''>       */
+</span>282 <span style=''>      </span><span style='background: #AEF1AE'>process(path.nodes.flatMap { path =&gt;
+</span>283 <span style=''></span><span style='background: #AEF1AE'>	path.flatMap { x =&gt;
+</span>284 <span style=''></span><span style='background: #AEF1AE'>          if (x.top.isLeft) </span><span style='background: #F0ADAD'>empty</span><span style='background: #AEF1AE'>
+</span>285 <span style=''></span><span style='background: #AEF1AE'>          else one(just(x.top.right.get))
+</span>286 <span style=''></span><span style='background: #AEF1AE'>        }
+</span>287 <span style=''></span><span style='background: #AEF1AE'>      }, path.copy(initialNode = false, direct = false))</span><span style=''>
+</span>288 <span style=''>
+</span>289 <span style=''>    /** simply forwards the current context, element\item specific versions exist that step downwards in document order */
+</span>290 <span style=''>    def \ : XPath[T] =
+</span>291 <span style=''>      </span><span style='background: #AEF1AE'>newThis(path.copy(initialNode = false, direct = false))</span><span style=''>
+</span>292 <span style=''>
+</span>293 <span style=''>    /**
+</span>294 <span style=''>     * all children unpacked, normal xpath requires the context in E1/E2, which hugely complicates things, so \ is this, \+ is \ in the case where unpacking is needed
+</span>295 <span style=''>     * which just leaves \* varieties for elements.
+</span>296 <span style=''>     */
+</span>297 <span style=''>    def \+ : XPath[T] =
+</span>298 <span style=''>      </span><span style='background: #AEF1AE'>process(path.nodes.flatMap {
+</span>299 <span style=''></span><span style='background: #AEF1AE'>        _.flatMap { child =&gt;
+</span>300 <span style=''></span><span style='background: #AEF1AE'>          if (child.isItem) </span><span style='background: #F0ADAD'>just(child)</span><span style='background: #AEF1AE'>
+</span>301 <span style=''></span><span style='background: #AEF1AE'>          else one(child) //: Iterable[XmlPath] 
+</span>302 <span style=''></span><span style='background: #AEF1AE'>        }
+</span>303 <span style=''></span><span style='background: #AEF1AE'>      }, path.copy(initialNode = false, direct = false))</span><span style=''>
+</span>304 <span style=''>
+</span>305 <span style=''>    /**
+</span>306 <span style=''>     * All descendants, uses XPathInfo eager to choose an implementation
+</span>307 <span style=''>     */ 
+</span>308 <span style=''>    def \\ : XPath[T] = {
+</span>309 <span style=''>      val f = 
+</span>310 <span style=''>	if (</span><span style='background: #AEF1AE'>path.eager</span><span style=''>) </span><span style='background: #AEF1AE'>eager_recUnpack</span><span style=''> _
+</span>311 <span style=''>	else </span><span style='background: #AEF1AE'>lazy_recUnpack(this)</span><span style=''> _
+</span>312 <span style=''>
+</span>313 <span style=''>      </span><span style='background: #AEF1AE'>process(
+</span>314 <span style=''></span><span style='background: #AEF1AE'>        (if (path.initialNode) path.nodes // crazy initial expression thing 3.2 in http://www.w3.org/TR/xpath20/#id-path-expressions
+</span>315 <span style=''></span><span style='background: #AEF1AE'>        else List())
+</span>316 <span style=''></span><span style='background: #AEF1AE'>          ++ path.nodes.flatMap { f },
+</span>317 <span style=''></span><span style='background: #AEF1AE'>	 path.copy(initialNode = false, direct = false))</span><span style=''>
+</span>318 <span style=''>    }
+</span>319 <span style=''>
+</span>320 <span style=''>    
+</span>321 <span style=''>    final def xmap( f : Iterable[XmlPath] =&gt; Iterable[XmlPath] ) =
+</span>322 <span style=''>      </span><span style='background: #AEF1AE'>process(path.nodes.map{ f })</span><span style=''>
+</span>323 <span style=''>
+</span>324 <span style=''>    /** filter through the current matches */
+</span>325 <span style=''>    final def filter(pred: XmlPath =&gt; Boolean): XPath[T] =
+</span>326 <span style=''>      </span><span style='background: #AEF1AE'>xmap{ _.filter(pred) }</span><span style=''>
+</span>327 <span style=''>
+</span>328 <span style=''>    /**
+</span>329 <span style=''>     * simple test for string equality
+</span>330 <span style=''>     */ 
+</span>331 <span style=''>    final def ===( textValue : =&gt; String ) = 
+</span>332 <span style=''>      </span><span style='background: #AEF1AE'>filter(x =&gt; XmlPathText.text(x) == textValue)</span><span style=''>
+</span>333 <span style=''>  }
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          5961
+        </td>
+        <td>
+          574
+          -
+          593
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.`package`.text[scales.xml.XmlPath](XmlPathComparisoms.this.path)(scales.xml.ScalesXml.xmlpathText).==(other)
+        </td>
+      </tr><tr>
+        <td>
+          21
+        </td>
+        <td>
+          5962
+        </td>
+        <td>
+          717
+          -
+          736
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.xml.`package`.text[scales.xml.xpath.AttributePath](AttributePathComparisoms.this.path)(scales.xml.ScalesXml.attribPathText).==(other)
+        </td>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          5963
+        </td>
+        <td>
+          1132
+          -
+          1140
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.xpath.AttributePath.parent
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$1.parent
+        </td>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          5964
+        </td>
+        <td>
+          1131
+          -
+          1131
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.Iterable.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.Iterable.canBuildFrom[scales.xml.XmlPath]
+        </td>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          5965
+        </td>
+        <td>
+          1117
+          -
+          1141
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableLike.map
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AttributePaths.this.attributes.map[scales.xml.XmlPath, Iterable[scales.xml.XmlPath]](((x$1: scales.xml.xpath.AttributePath) =&gt; x$1.parent))(collection.this.Iterable.canBuildFrom[scales.xml.XmlPath])
+        </td>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          5966
+        </td>
+        <td>
+          1112
+          -
+          1142
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.List.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.collection.immutable.List.apply[Iterable[scales.xml.XmlPath]](AttributePaths.this.attributes.map[scales.xml.XmlPath, Iterable[scales.xml.XmlPath]](((x$1: scales.xml.xpath.AttributePath) =&gt; x$1.parent))(collection.this.Iterable.canBuildFrom[scales.xml.XmlPath]))
+        </td>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          5967
+        </td>
+        <td>
+          1094
+          -
+          1143
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.XPathInfo.copy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AttributePaths.this.path.copy(scala.collection.immutable.List.apply[Iterable[scales.xml.XmlPath]](AttributePaths.this.attributes.map[scales.xml.XmlPath, Iterable[scales.xml.XmlPath]](((x$1: scales.xml.xpath.AttributePath) =&gt; x$1.parent))(collection.this.Iterable.canBuildFrom[scales.xml.XmlPath])), AttributePaths.this.path.copy$default$2, AttributePaths.this.path.copy$default$3, AttributePaths.this.path.copy$default$4, AttributePaths.this.path.copy$default$5, AttributePaths.this.path.copy$default$6)
+        </td>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          5968
+        </td>
+        <td>
+          1145
+          -
+          1148
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.xpath.AttributePaths.cbf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AttributePaths.this.cbf
+        </td>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          5969
+        </td>
+        <td>
+          1080
+          -
+          1080
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.xpath.AttributePaths.helper
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AttributePaths.this.helper
+        </td>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          5970
+        </td>
+        <td>
+          1080
+          -
+          1149
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.xpath.XPath.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new scales.xml.xpath.XPath[PT](AttributePaths.this.path.copy(scala.collection.immutable.List.apply[Iterable[scales.xml.XmlPath]](AttributePaths.this.attributes.map[scales.xml.XmlPath, Iterable[scales.xml.XmlPath]](((x$1: scales.xml.xpath.AttributePath) =&gt; x$1.parent))(collection.this.Iterable.canBuildFrom[scales.xml.XmlPath])), AttributePaths.this.path.copy$default$2, AttributePaths.this.path.copy$default$3, AttributePaths.this.path.copy$default$4, AttributePaths.this.path.copy$default$5, AttributePaths.this.path.copy$default$6), AttributePaths.this.cbf)(AttributePaths.this.helper)
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          5971
+        </td>
+        <td>
+          1348
+          -
+          1355
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          pred.apply(x$2)
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          5972
+        </td>
+        <td>
+          1328
+          -
+          1357
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.TraversableLike.filter
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AttributePaths.this.attributes.filter(((x$2: scales.xml.xpath.AttributePath) =&gt; pred.apply(x$2)))
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          5973
+        </td>
+        <td>
+          1359
+          -
+          1363
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.xpath.AttributePaths.path
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AttributePaths.this.path
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          5974
+        </td>
+        <td>
+          1365
+          -
+          1368
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.xpath.AttributePaths.cbf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AttributePaths.this.cbf
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          5975
+        </td>
+        <td>
+          1327
+          -
+          1327
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.xpath.AttributePaths.helper
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AttributePaths.this.helper
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          5976
+        </td>
+        <td>
+          1313
+          -
+          1369
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.xpath.AttributePaths.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AttributePaths.apply[PT](AttributePaths.this.attributes.filter(((x$2: scales.xml.xpath.AttributePath) =&gt; pred.apply(x$2))), AttributePaths.this.path, AttributePaths.this.cbf)(AttributePaths.this.helper)
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          5977
+        </td>
+        <td>
+          1555
+          -
+          1583
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Attribute.name
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          attributePath.attribute.name
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          5978
+        </td>
+        <td>
+          1589
+          -
+          1607
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.EqualsHelpers.toQName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.impl.EqualsHelpers.toQName(attrQName)
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          5979
+        </td>
+        <td>
+          1547
+          -
+          1607
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.QName.=:=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.impl.EqualsHelpers.toQName(attributePath.attribute.name).=:=(scales.xml.impl.EqualsHelpers.toQName(attrQName))
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          5980
+        </td>
+        <td>
+          1509
+          -
+          1610
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.AttributePaths.*@
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AttributePaths.this.*@(((attributePath: scales.xml.xpath.AttributePath) =&gt; scales.xml.impl.EqualsHelpers.toQName(attributePath.attribute.name).=:=(scales.xml.impl.EqualsHelpers.toQName(attrQName))))
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          5981
+        </td>
+        <td>
+          1792
+          -
+          1839
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.QName.=:=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.xml.impl.EqualsHelpers.toQName(attributePath.attribute.name).=:=(qname)
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          5982
+        </td>
+        <td>
+          1754
+          -
+          1842
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.AttributePaths.*@
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          AttributePaths.this.*@(((attributePath: scales.xml.xpath.AttributePath) =&gt; scales.xml.impl.EqualsHelpers.toQName(attributePath.attribute.name).=:=(qname)))
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          5983
+        </td>
+        <td>
+          1934
+          -
+          1954
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.!=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AttributePaths.this.attributes.size.!=(1)
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          5984
+        </td>
+        <td>
+          1956
+          -
+          1959
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.immutable.Nil
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.collection.immutable.Nil
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          5985
+        </td>
+        <td>
+          1956
+          -
+          1959
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.collection.immutable.Nil
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.collection.immutable.Nil
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          5986
+        </td>
+        <td>
+          1982
+          -
+          1997
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.IterableLike.head
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AttributePaths.this.attributes.head
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          5987
+        </td>
+        <td>
+          1965
+          -
+          1998
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.one
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.one[scales.xml.xpath.AttributePath](AttributePaths.this.attributes.head)
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          5988
+        </td>
+        <td>
+          1965
+          -
+          1998
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.one
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.one[scales.xml.xpath.AttributePath](AttributePaths.this.attributes.head)
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          5989
+        </td>
+        <td>
+          2183
+          -
+          2203
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          AttributePaths.this.attributes.size.==(1)
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          5990
+        </td>
+        <td>
+          2222
+          -
+          2237
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.IterableLike.head
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          AttributePaths.this.attributes.head
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          5991
+        </td>
+        <td>
+          2205
+          -
+          2238
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.one
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.utils.`package`.one[scales.xml.xpath.AttributePath](AttributePaths.this.attributes.head)
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          5992
+        </td>
+        <td>
+          2205
+          -
+          2238
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.one
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.utils.`package`.one[scales.xml.xpath.AttributePath](AttributePaths.this.attributes.head)
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          5993
+        </td>
+        <td>
+          2252
+          -
+          2262
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.xpath.AttributePaths.attributes
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          AttributePaths.this.attributes
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          5994
+        </td>
+        <td>
+          2244
+          -
+          2263
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          handler.apply(AttributePaths.this.attributes)
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          5995
+        </td>
+        <td>
+          2244
+          -
+          2263
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          handler.apply(AttributePaths.this.attributes)
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          5996
+        </td>
+        <td>
+          2316
+          -
+          2346
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          a.attribute.value.==(textValue)
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          5997
+        </td>
+        <td>
+          2307
+          -
+          2348
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.AttributePaths.*@
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AttributePaths.this.*@(((a: scales.xml.xpath.AttributePath) =&gt; a.attribute.value.==(textValue)))
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          5998
+        </td>
+        <td>
+          3825
+          -
+          3828
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.xpath.XPath.cbf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XPath.this.cbf
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          5999
+        </td>
+        <td>
+          3801
+          -
+          3801
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.xpath.XPath.helper
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XPath.this.helper
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          6000
+        </td>
+        <td>
+          3801
+          -
+          3829
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.xpath.XPath.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new scales.xml.xpath.XPath[XPath.this.T](xpathInfo, XPath.this.cbf)(XPath.this.helper)
+        </td>
+      </tr><tr>
+        <td>
+          84
+        </td>
+        <td>
+          6001
+        </td>
+        <td>
+          3864
+          -
+          3885
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.mutable.Builder.result
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XPath.this.helper.builder.result()
+        </td>
+      </tr><tr>
+        <td>
+          85
+        </td>
+        <td>
+          6002
+        </td>
+        <td>
+          3933
+          -
+          3964
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.mutable.Builder.result
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XPath.this.helper.builder.+=(only).result()
+        </td>
+      </tr><tr>
+        <td>
+          91
+        </td>
+        <td>
+          6003
+        </td>
+        <td>
+          4090
+          -
+          4097
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          f.apply(this)
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          6004
+        </td>
+        <td>
+          4209
+          -
+          4214
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.XPath.in
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XPath.this.in(f)
+        </td>
+      </tr><tr>
+        <td>
+          102
+        </td>
+        <td>
+          6005
+        </td>
+        <td>
+          4323
+          -
+          4358
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.XmlPathImplicits.fromXPathToIterable
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.ScalesXml.fromXPathToIterable(this)
+        </td>
+      </tr><tr>
+        <td>
+          103
+        </td>
+        <td>
+          6006
+        </td>
+        <td>
+          4367
+          -
+          4382
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.!=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          nodes.size.!=(1)
+        </td>
+      </tr><tr>
+        <td>
+          103
+        </td>
+        <td>
+          6007
+        </td>
+        <td>
+          4384
+          -
+          4387
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.immutable.Nil
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.collection.immutable.Nil
+        </td>
+      </tr><tr>
+        <td>
+          103
+        </td>
+        <td>
+          6008
+        </td>
+        <td>
+          4384
+          -
+          4387
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.collection.immutable.Nil
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.collection.immutable.Nil
+        </td>
+      </tr><tr>
+        <td>
+          104
+        </td>
+        <td>
+          6009
+        </td>
+        <td>
+          4414
+          -
+          4424
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.IterableLike.head
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          nodes.head
+        </td>
+      </tr><tr>
+        <td>
+          104
+        </td>
+        <td>
+          6010
+        </td>
+        <td>
+          4397
+          -
+          4425
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.one
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.one[scales.xml.XmlPath](nodes.head)
+        </td>
+      </tr><tr>
+        <td>
+          104
+        </td>
+        <td>
+          6011
+        </td>
+        <td>
+          4397
+          -
+          4425
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.one
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.one[scales.xml.XmlPath](nodes.head)
+        </td>
+      </tr><tr>
+        <td>
+          108
+        </td>
+        <td>
+          6012
+        </td>
+        <td>
+          4503
+          -
+          4538
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.XmlPathImplicits.fromXPathToIterable
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.xml.ScalesXml.fromXPathToIterable(this)
+        </td>
+      </tr><tr>
+        <td>
+          109
+        </td>
+        <td>
+          6013
+        </td>
+        <td>
+          4547
+          -
+          4562
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          nodes.size.==(1)
+        </td>
+      </tr><tr>
+        <td>
+          109
+        </td>
+        <td>
+          6014
+        </td>
+        <td>
+          4581
+          -
+          4591
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.IterableLike.head
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          nodes.head
+        </td>
+      </tr><tr>
+        <td>
+          109
+        </td>
+        <td>
+          6015
+        </td>
+        <td>
+          4564
+          -
+          4592
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.one
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.utils.`package`.one[scales.xml.XmlPath](nodes.head)
+        </td>
+      </tr><tr>
+        <td>
+          109
+        </td>
+        <td>
+          6016
+        </td>
+        <td>
+          4564
+          -
+          4592
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.one
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.utils.`package`.one[scales.xml.XmlPath](nodes.head)
+        </td>
+      </tr><tr>
+        <td>
+          110
+        </td>
+        <td>
+          6017
+        </td>
+        <td>
+          4602
+          -
+          4615
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          handler.apply(this)
+        </td>
+      </tr><tr>
+        <td>
+          110
+        </td>
+        <td>
+          6018
+        </td>
+        <td>
+          4602
+          -
+          4615
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          handler.apply(this)
+        </td>
+      </tr><tr>
+        <td>
+          121
+        </td>
+        <td>
+          6027
+        </td>
+        <td>
+          4910
+          -
+          5080
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.XPathInfo.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XPathInfo.apply(XPath.this.path.nodes.++[Iterable[scales.xml.XmlPath], Iterable[Iterable[scales.xml.XmlPath]]](other.path.nodes)(collection.this.Iterable.canBuildFrom[Iterable[scales.xml.XmlPath]]), true, true, false, XPath.this.path.eager.|(other.path.eager), XPathInfo.apply$default$6)
+        </td>
+      </tr><tr>
+        <td>
+          121
+        </td>
+        <td>
+          6029
+        </td>
+        <td>
+          4900
+          -
+          4900
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.xpath.XPath.helper
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XPath.this.helper
+        </td>
+      </tr><tr>
+        <td>
+          121
+        </td>
+        <td>
+          6030
+        </td>
+        <td>
+          4900
+          -
+          5086
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.xpath.XPath.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new scales.xml.xpath.XPath[PT](XPathInfo.apply(XPath.this.path.nodes.++[Iterable[scales.xml.XmlPath], Iterable[Iterable[scales.xml.XmlPath]]](other.path.nodes)(collection.this.Iterable.canBuildFrom[Iterable[scales.xml.XmlPath]]), true, true, false, XPath.this.path.eager.|(other.path.eager), XPathInfo.apply$default$6), XPath.this.cbf)(XPath.this.helper)
+        </td>
+      </tr><tr>
+        <td>
+          122
+        </td>
+        <td>
+          6019
+        </td>
+        <td>
+          4950
+          -
+          4966
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.xpath.XPathInfo.nodes
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          other.path.nodes
+        </td>
+      </tr><tr>
+        <td>
+          122
+        </td>
+        <td>
+          6020
+        </td>
+        <td>
+          4947
+          -
+          4947
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.Iterable.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.Iterable.canBuildFrom[Iterable[scales.xml.XmlPath]]
+        </td>
+      </tr><tr>
+        <td>
+          122
+        </td>
+        <td>
+          6021
+        </td>
+        <td>
+          4936
+          -
+          4966
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableLike.++
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XPath.this.path.nodes.++[Iterable[scales.xml.XmlPath], Iterable[Iterable[scales.xml.XmlPath]]](other.path.nodes)(collection.this.Iterable.canBuildFrom[Iterable[scales.xml.XmlPath]])
+        </td>
+      </tr><tr>
+        <td>
+          123
+        </td>
+        <td>
+          6022
+        </td>
+        <td>
+          4990
+          -
+          4994
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          123
+        </td>
+        <td>
+          6023
+        </td>
+        <td>
+          5015
+          -
+          5019
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          123
+        </td>
+        <td>
+          6024
+        </td>
+        <td>
+          5035
+          -
+          5040
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          123
+        </td>
+        <td>
+          6025
+        </td>
+        <td>
+          5063
+          -
+          5079
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.xpath.XPathInfo.eager
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          other.path.eager
+        </td>
+      </tr><tr>
+        <td>
+          123
+        </td>
+        <td>
+          6026
+        </td>
+        <td>
+          5050
+          -
+          5079
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.|
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XPath.this.path.eager.|(other.path.eager)
+        </td>
+      </tr><tr>
+        <td>
+          123
+        </td>
+        <td>
+          6028
+        </td>
+        <td>
+          5082
+          -
+          5085
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.xpath.XPath.cbf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XPath.this.cbf
+        </td>
+      </tr><tr>
+        <td>
+          133
+        </td>
+        <td>
+          6031
+        </td>
+        <td>
+          5559
+          -
+          5588
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.XPathInfo.copy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          info.copy(newNodes, info.copy$default$2, info.copy$default$3, info.copy$default$4, info.copy$default$5, info.copy$default$6)
+        </td>
+      </tr><tr>
+        <td>
+          133
+        </td>
+        <td>
+          6032
+        </td>
+        <td>
+          5551
+          -
+          5589
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.XPath.newThis
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          DirectXPath.this.newThis(info.copy(newNodes, info.copy$default$2, info.copy$default$3, info.copy$default$4, info.copy$default$5, info.copy$default$6))
+        </td>
+      </tr><tr>
+        <td>
+          143
+        </td>
+        <td>
+          6033
+        </td>
+        <td>
+          5789
+          -
+          5792
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.immutable.Nil
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.collection.immutable.Nil
+        </td>
+      </tr><tr>
+        <td>
+          145
+        </td>
+        <td>
+          6034
+        </td>
+        <td>
+          5806
+          -
+          5822
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.IterableLike.iterator
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          xmlPath.iterator
+        </td>
+      </tr><tr>
+        <td>
+          146
+        </td>
+        <td>
+          6035
+        </td>
+        <td>
+          5833
+          -
+          5842
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.Iterator.hasNext
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          i.hasNext
+        </td>
+      </tr><tr>
+        <td>
+          146
+        </td>
+        <td>
+          6044
+        </td>
+        <td>
+          5844
+          -
+          5844
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.Axis.while$1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          while$1()
+        </td>
+      </tr><tr>
+        <td>
+          146
+        </td>
+        <td>
+          6045
+        </td>
+        <td>
+          5844
+          -
+          6056
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  {
+    val child: scales.xml.XmlPath = i.next();
+    if (child.isItem)
+      res = {
+        &lt;synthetic&gt; &lt;artifact&gt; val x$3: scales.xml.XmlPath = child;
+        res.::[scales.xml.XmlPath](x$3)
+      }
+    else
+      res = {
+  &lt;synthetic&gt; &lt;artifact&gt; val x$4: scales.xml.XmlPath = child;
+  res.::[scales.xml.XmlPath](x$4)
+}.reverse_:::[scales.xml.XmlPath](Axis.this.eager_recUnpack((child: Iterable[scales.xml.XmlPath])))
+  };
+  while$1()
+}
+        </td>
+      </tr><tr>
+        <td>
+          146
+        </td>
+        <td>
+          6046
+        </td>
+        <td>
+          5827
+          -
+          5827
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          146
+        </td>
+        <td>
+          6047
+        </td>
+        <td>
+          5827
+          -
+          5827
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          147
+        </td>
+        <td>
+          6036
+        </td>
+        <td>
+          5864
+          -
+          5870
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.Iterator.next
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          i.next()
+        </td>
+      </tr><tr>
+        <td>
+          148
+        </td>
+        <td>
+          6037
+        </td>
+        <td>
+          5881
+          -
+          5893
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Path.isItem
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          child.isItem
+        </td>
+      </tr><tr>
+        <td>
+          149
+        </td>
+        <td>
+          6038
+        </td>
+        <td>
+          5903
+          -
+          5915
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.List.::
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          res.::[scales.xml.XmlPath](x$3)
+        </td>
+      </tr><tr>
+        <td>
+          149
+        </td>
+        <td>
+          6039
+        </td>
+        <td>
+          5897
+          -
+          5915
+        </td>
+        <td>
+          Assign
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          res = {
+  &lt;synthetic&gt; &lt;artifact&gt; val x$3: scales.xml.XmlPath = child;
+  res.::[scales.xml.XmlPath](x$3)
+}
+        </td>
+      </tr><tr>
+        <td>
+          152
+        </td>
+        <td>
+          6040
+        </td>
+        <td>
+          5967
+          -
+          5979
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.List.::
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          res.::[scales.xml.XmlPath](x$4)
+        </td>
+      </tr><tr>
+        <td>
+          152
+        </td>
+        <td>
+          6042
+        </td>
+        <td>
+          5966
+          -
+          6042
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.List.reverse_:::
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  &lt;synthetic&gt; &lt;artifact&gt; val x$4: scales.xml.XmlPath = child;
+  res.::[scales.xml.XmlPath](x$4)
+}.reverse_:::[scales.xml.XmlPath](Axis.this.eager_recUnpack((child: Iterable[scales.xml.XmlPath])))
+        </td>
+      </tr><tr>
+        <td>
+          152
+        </td>
+        <td>
+          6043
+        </td>
+        <td>
+          5960
+          -
+          6042
+        </td>
+        <td>
+          Assign
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          res = {
+  &lt;synthetic&gt; &lt;artifact&gt; val x$4: scales.xml.XmlPath = child;
+  res.::[scales.xml.XmlPath](x$4)
+}.reverse_:::[scales.xml.XmlPath](Axis.this.eager_recUnpack((child: Iterable[scales.xml.XmlPath])))
+        </td>
+      </tr><tr>
+        <td>
+          153
+        </td>
+        <td>
+          6041
+        </td>
+        <td>
+          5999
+          -
+          6040
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.Axis.eager_recUnpack
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.eager_recUnpack((child: Iterable[scales.xml.XmlPath]))
+        </td>
+      </tr><tr>
+        <td>
+          163
+        </td>
+        <td>
+          6055
+        </td>
+        <td>
+          6251
+          -
+          6251
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.Iterable.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.Iterable.canBuildFrom[scales.xml.XmlPath]
+        </td>
+      </tr><tr>
+        <td>
+          163
+        </td>
+        <td>
+          6056
+        </td>
+        <td>
+          6235
+          -
+          6438
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableLike.flatMap
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          xmlPath.flatMap[scales.xml.XmlPath, Iterable[scales.xml.XmlPath]](((child: scales.xml.XmlPath) =&gt; if (child.isItem)
+  axis.just(child)
+else
+  axis.just(child).++[scales.xml.XmlPath, Iterable[scales.xml.XmlPath]](Axis.this.lazy_recUnpack(axis)((child: Iterable[scales.xml.XmlPath])))(collection.this.Iterable.canBuildFrom[scales.xml.XmlPath])))(collection.this.Iterable.canBuildFrom[scales.xml.XmlPath])
+        </td>
+      </tr><tr>
+        <td>
+          164
+        </td>
+        <td>
+          6048
+        </td>
+        <td>
+          6272
+          -
+          6284
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Path.isItem
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          child.isItem
+        </td>
+      </tr><tr>
+        <td>
+          164
+        </td>
+        <td>
+          6049
+        </td>
+        <td>
+          6286
+          -
+          6302
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.Axis.just
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          axis.just(child)
+        </td>
+      </tr><tr>
+        <td>
+          164
+        </td>
+        <td>
+          6050
+        </td>
+        <td>
+          6286
+          -
+          6302
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.xpath.Axis.just
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          axis.just(child)
+        </td>
+      </tr><tr>
+        <td>
+          167
+        </td>
+        <td>
+          6052
+        </td>
+        <td>
+          6365
+          -
+          6365
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.Iterable.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.Iterable.canBuildFrom[scales.xml.XmlPath]
+        </td>
+      </tr><tr>
+        <td>
+          167
+        </td>
+        <td>
+          6053
+        </td>
+        <td>
+          6348
+          -
+          6415
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableLike.++
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          axis.just(child).++[scales.xml.XmlPath, Iterable[scales.xml.XmlPath]](Axis.this.lazy_recUnpack(axis)((child: Iterable[scales.xml.XmlPath])))(collection.this.Iterable.canBuildFrom[scales.xml.XmlPath])
+        </td>
+      </tr><tr>
+        <td>
+          167
+        </td>
+        <td>
+          6054
+        </td>
+        <td>
+          6348
+          -
+          6415
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.collection.TraversableLike.++
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          axis.just(child).++[scales.xml.XmlPath, Iterable[scales.xml.XmlPath]](Axis.this.lazy_recUnpack(axis)((child: Iterable[scales.xml.XmlPath])))(collection.this.Iterable.canBuildFrom[scales.xml.XmlPath])
+        </td>
+      </tr><tr>
+        <td>
+          168
+        </td>
+        <td>
+          6051
+        </td>
+        <td>
+          6369
+          -
+          6415
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.Axis.lazy_recUnpack
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.lazy_recUnpack(axis)((child: Iterable[scales.xml.XmlPath]))
+        </td>
+      </tr><tr>
+        <td>
+          189
+        </td>
+        <td>
+          6057
+        </td>
+        <td>
+          6803
+          -
+          6813
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.xpath.XPathInfo.eager
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.path.eager
+        </td>
+      </tr><tr>
+        <td>
+          190
+        </td>
+        <td>
+          6058
+        </td>
+        <td>
+          6840
+          -
+          6849
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.IterableLike.isEmpty
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$5.isEmpty
+        </td>
+      </tr><tr>
+        <td>
+          190
+        </td>
+        <td>
+          6059
+        </td>
+        <td>
+          6824
+          -
+          6850
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.IterableLike.exists
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          newNodes.exists(((x$5: Iterable[scales.xml.XmlPath]) =&gt; x$5.isEmpty))
+        </td>
+      </tr><tr>
+        <td>
+          190
+        </td>
+        <td>
+          6064
+        </td>
+        <td>
+          6820
+          -
+          6921
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (newNodes.exists(((x$5: Iterable[scales.xml.XmlPath]) =&gt; x$5.isEmpty)))
+  newNodes.filter(((x$6: Iterable[scales.xml.XmlPath]) =&gt; x$6.isEmpty.unary_!))
+else
+  newNodes
+        </td>
+      </tr><tr>
+        <td>
+          191
+        </td>
+        <td>
+          6060
+        </td>
+        <td>
+          6887
+          -
+          6897
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$6.isEmpty.unary_!
+        </td>
+      </tr><tr>
+        <td>
+          191
+        </td>
+        <td>
+          6061
+        </td>
+        <td>
+          6871
+          -
+          6898
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.TraversableLike.filter
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          newNodes.filter(((x$6: Iterable[scales.xml.XmlPath]) =&gt; x$6.isEmpty.unary_!))
+        </td>
+      </tr><tr>
+        <td>
+          191
+        </td>
+        <td>
+          6062
+        </td>
+        <td>
+          6871
+          -
+          6898
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.collection.TraversableLike.filter
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          newNodes.filter(((x$6: Iterable[scales.xml.XmlPath]) =&gt; x$6.isEmpty.unary_!))
+        </td>
+      </tr><tr>
+        <td>
+          193
+        </td>
+        <td>
+          6063
+        </td>
+        <td>
+          6913
+          -
+          6921
+        </td>
+        <td>
+          Ident
+        </td>
+        <td>
+          scales.xml.xpath.Axis.newNodes
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          newNodes
+        </td>
+      </tr><tr>
+        <td>
+          194
+        </td>
+        <td>
+          6065
+        </td>
+        <td>
+          6946
+          -
+          6956
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$7.isEmpty.unary_!
+        </td>
+      </tr><tr>
+        <td>
+          194
+        </td>
+        <td>
+          6066
+        </td>
+        <td>
+          6930
+          -
+          6957
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.TraversableLike.filter
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          newNodes.filter(((x$7: Iterable[scales.xml.XmlPath]) =&gt; x$7.isEmpty.unary_!))
+        </td>
+      </tr><tr>
+        <td>
+          194
+        </td>
+        <td>
+          6067
+        </td>
+        <td>
+          6930
+          -
+          6957
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.collection.TraversableLike.filter
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          newNodes.filter(((x$7: Iterable[scales.xml.XmlPath]) =&gt; x$7.isEmpty.unary_!))
+        </td>
+      </tr><tr>
+        <td>
+          196
+        </td>
+        <td>
+          6068
+        </td>
+        <td>
+          6989
+          -
+          7011
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.XPathInfo.copy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          info.copy(nn, info.copy$default$2, info.copy$default$3, info.copy$default$4, info.copy$default$5, info.copy$default$6)
+        </td>
+      </tr><tr>
+        <td>
+          196
+        </td>
+        <td>
+          6069
+        </td>
+        <td>
+          6981
+          -
+          7012
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.Axis.newThis
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.newThis(info.copy(nn, info.copy$default$2, info.copy$default$3, info.copy$default$4, info.copy$default$5, info.copy$default$6))
+        </td>
+      </tr><tr>
+        <td>
+          206
+        </td>
+        <td>
+          6070
+        </td>
+        <td>
+          7304
+          -
+          7304
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.Iterable.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.Iterable.canBuildFrom[Iterable[scales.xml.XmlPath]]
+        </td>
+      </tr><tr>
+        <td>
+          206
+        </td>
+        <td>
+          6071
+        </td>
+        <td>
+          7286
+          -
+          7309
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableLike.flatMap
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.path.nodes.flatMap[Iterable[scales.xml.XmlPath], Iterable[Iterable[scales.xml.XmlPath]]](f)(collection.this.Iterable.canBuildFrom[Iterable[scales.xml.XmlPath]])
+        </td>
+      </tr><tr>
+        <td>
+          206
+        </td>
+        <td>
+          6072
+        </td>
+        <td>
+          7277
+          -
+          7311
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.Axis.process
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.process(Axis.this.path.nodes.flatMap[Iterable[scales.xml.XmlPath], Iterable[Iterable[scales.xml.XmlPath]]](f)(collection.this.Iterable.canBuildFrom[Iterable[scales.xml.XmlPath]]), Axis.this.process$default$2)
+        </td>
+      </tr><tr>
+        <td>
+          209
+        </td>
+        <td>
+          6073
+        </td>
+        <td>
+          7388
+          -
+          7410
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.TraversableLike.filter
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.path.nodes.filter(f)
+        </td>
+      </tr><tr>
+        <td>
+          209
+        </td>
+        <td>
+          6074
+        </td>
+        <td>
+          7380
+          -
+          7412
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.Axis.process
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.process(Axis.this.path.nodes.filter(f), Axis.this.process$default$2)
+        </td>
+      </tr><tr>
+        <td>
+          212
+        </td>
+        <td>
+          6075
+        </td>
+        <td>
+          7506
+          -
+          7512
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.TraversableOnce.size
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x.size
+        </td>
+      </tr><tr>
+        <td>
+          212
+        </td>
+        <td>
+          6076
+        </td>
+        <td>
+          7501
+          -
+          7513
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          onN.apply(x.size)
+        </td>
+      </tr><tr>
+        <td>
+          212
+        </td>
+        <td>
+          6077
+        </td>
+        <td>
+          7487
+          -
+          7515
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.Axis.xfilter
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.xfilter(((x: Iterable[scales.xml.XmlPath]) =&gt; onN.apply(x.size)))
+        </td>
+      </tr><tr>
+        <td>
+          218
+        </td>
+        <td>
+          6078
+        </td>
+        <td>
+          7620
+          -
+          7625
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$8.&gt;(n)
+        </td>
+      </tr><tr>
+        <td>
+          218
+        </td>
+        <td>
+          6079
+        </td>
+        <td>
+          7613
+          -
+          7627
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.Axis.xlast
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.xlast(((x$8: Int) =&gt; x$8.&gt;(n)))
+        </td>
+      </tr><tr>
+        <td>
+          224
+        </td>
+        <td>
+          6080
+        </td>
+        <td>
+          7732
+          -
+          7737
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&lt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$9.&lt;(n)
+        </td>
+      </tr><tr>
+        <td>
+          224
+        </td>
+        <td>
+          6081
+        </td>
+        <td>
+          7725
+          -
+          7739
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.Axis.xlast
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.xlast(((x$9: Int) =&gt; x$9.&lt;(n)))
+        </td>
+      </tr><tr>
+        <td>
+          230
+        </td>
+        <td>
+          6082
+        </td>
+        <td>
+          7845
+          -
+          7851
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$10.==(n)
+        </td>
+      </tr><tr>
+        <td>
+          230
+        </td>
+        <td>
+          6083
+        </td>
+        <td>
+          7838
+          -
+          7853
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.Axis.xlast
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.xlast(((x$10: Int) =&gt; x$10.==(n)))
+        </td>
+      </tr><tr>
+        <td>
+          236
+        </td>
+        <td>
+          6084
+        </td>
+        <td>
+          7959
+          -
+          7971
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.TraversableLike.lastOption
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$11.lastOption
+        </td>
+      </tr><tr>
+        <td>
+          236
+        </td>
+        <td>
+          6085
+        </td>
+        <td>
+          7959
+          -
+          7971
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.Option.option2Iterable
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Option.option2Iterable[scales.xml.XmlPath](x$11.lastOption)
+        </td>
+      </tr><tr>
+        <td>
+          236
+        </td>
+        <td>
+          6086
+        </td>
+        <td>
+          7952
+          -
+          7973
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.Axis.xmap
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.xmap(((x$11: Iterable[scales.xml.XmlPath]) =&gt; scala.this.Option.option2Iterable[scales.xml.XmlPath](x$11.lastOption)))
+        </td>
+      </tr><tr>
+        <td>
+          242
+        </td>
+        <td>
+          6093
+        </td>
+        <td>
+          8078
+          -
+          8169
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.Axis.xflatMap
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.xflatMap(((path: Iterable[scales.xml.XmlPath]) =&gt; {
+  val n: Iterable[scales.xml.XmlPath] = path.drop(pos);
+  if (n.isEmpty)
+    Axis.this.empty
+  else
+    scales.utils.`package`.one[Iterable[scales.xml.XmlPath]](n)
+}))
+        </td>
+      </tr><tr>
+        <td>
+          243
+        </td>
+        <td>
+          6087
+        </td>
+        <td>
+          8106
+          -
+          8120
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.IterableLike.drop
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path.drop(pos)
+        </td>
+      </tr><tr>
+        <td>
+          244
+        </td>
+        <td>
+          6088
+        </td>
+        <td>
+          8126
+          -
+          8135
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.IterableLike.isEmpty
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          n.isEmpty
+        </td>
+      </tr><tr>
+        <td>
+          245
+        </td>
+        <td>
+          6089
+        </td>
+        <td>
+          8140
+          -
+          8145
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.xpath.Axis.empty
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Axis.this.empty
+        </td>
+      </tr><tr>
+        <td>
+          245
+        </td>
+        <td>
+          6090
+        </td>
+        <td>
+          8140
+          -
+          8145
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.xpath.Axis.empty
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Axis.this.empty
+        </td>
+      </tr><tr>
+        <td>
+          247
+        </td>
+        <td>
+          6091
+        </td>
+        <td>
+          8155
+          -
+          8161
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.one
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.one[Iterable[scales.xml.XmlPath]](n)
+        </td>
+      </tr><tr>
+        <td>
+          247
+        </td>
+        <td>
+          6092
+        </td>
+        <td>
+          8155
+          -
+          8161
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.one
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.one[Iterable[scales.xml.XmlPath]](n)
+        </td>
+      </tr><tr>
+        <td>
+          254
+        </td>
+        <td>
+          6101
+        </td>
+        <td>
+          8274
+          -
+          8374
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.Axis.xflatMap
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.xflatMap(((path: Iterable[scales.xml.XmlPath]) =&gt; {
+  val n: Iterable[scales.xml.XmlPath] = path.take(pos.-(1));
+  if (n.isEmpty)
+    Axis.this.empty
+  else
+    scales.utils.`package`.one[Iterable[scales.xml.XmlPath]](n)
+}))
+        </td>
+      </tr><tr>
+        <td>
+          255
+        </td>
+        <td>
+          6094
+        </td>
+        <td>
+          8312
+          -
+          8317
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.-
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          pos.-(1)
+        </td>
+      </tr><tr>
+        <td>
+          255
+        </td>
+        <td>
+          6095
+        </td>
+        <td>
+          8302
+          -
+          8318
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.IterableLike.take
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path.take(pos.-(1))
+        </td>
+      </tr><tr>
+        <td>
+          256
+        </td>
+        <td>
+          6096
+        </td>
+        <td>
+          8331
+          -
+          8340
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.IterableLike.isEmpty
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          n.isEmpty
+        </td>
+      </tr><tr>
+        <td>
+          257
+        </td>
+        <td>
+          6097
+        </td>
+        <td>
+          8345
+          -
+          8350
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.xpath.Axis.empty
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Axis.this.empty
+        </td>
+      </tr><tr>
+        <td>
+          257
+        </td>
+        <td>
+          6098
+        </td>
+        <td>
+          8345
+          -
+          8350
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.xpath.Axis.empty
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Axis.this.empty
+        </td>
+      </tr><tr>
+        <td>
+          259
+        </td>
+        <td>
+          6099
+        </td>
+        <td>
+          8360
+          -
+          8366
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.one
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.one[Iterable[scales.xml.XmlPath]](n)
+        </td>
+      </tr><tr>
+        <td>
+          259
+        </td>
+        <td>
+          6100
+        </td>
+        <td>
+          8360
+          -
+          8366
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.one
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.one[Iterable[scales.xml.XmlPath]](n)
+        </td>
+      </tr><tr>
+        <td>
+          262
+        </td>
+        <td>
+          6102
+        </td>
+        <td>
+          8408
+          -
+          8414
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.Axis.pos
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.pos(p)
+        </td>
+      </tr><tr>
+        <td>
+          268
+        </td>
+        <td>
+          6111
+        </td>
+        <td>
+          8535
+          -
+          8662
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.Axis.xflatMap
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.xflatMap(((path: Iterable[scales.xml.XmlPath]) =&gt; {
+  val n: Iterable[scales.xml.XmlPath] = path.take(pos);
+  if (n.size.!=(pos))
+    Axis.this.empty
+  else
+    scales.utils.`package`.one[Iterable[scales.xml.XmlPath]](Axis.this.just(n.last))
+}))
+        </td>
+      </tr><tr>
+        <td>
+          269
+        </td>
+        <td>
+          6103
+        </td>
+        <td>
+          8563
+          -
+          8577
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.IterableLike.take
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path.take(pos)
+        </td>
+      </tr><tr>
+        <td>
+          271
+        </td>
+        <td>
+          6104
+        </td>
+        <td>
+          8587
+          -
+          8600
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.!=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          n.size.!=(pos)
+        </td>
+      </tr><tr>
+        <td>
+          272
+        </td>
+        <td>
+          6105
+        </td>
+        <td>
+          8606
+          -
+          8611
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.xpath.Axis.empty
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.empty
+        </td>
+      </tr><tr>
+        <td>
+          272
+        </td>
+        <td>
+          6106
+        </td>
+        <td>
+          8606
+          -
+          8611
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.xpath.Axis.empty
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.empty
+        </td>
+      </tr><tr>
+        <td>
+          274
+        </td>
+        <td>
+          6107
+        </td>
+        <td>
+          8631
+          -
+          8637
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.TraversableLike.last
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          n.last
+        </td>
+      </tr><tr>
+        <td>
+          274
+        </td>
+        <td>
+          6108
+        </td>
+        <td>
+          8626
+          -
+          8638
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.Axis.just
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.just(n.last)
+        </td>
+      </tr><tr>
+        <td>
+          274
+        </td>
+        <td>
+          6109
+        </td>
+        <td>
+          8622
+          -
+          8639
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.one
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.one[Iterable[scales.xml.XmlPath]](Axis.this.just(n.last))
+        </td>
+      </tr><tr>
+        <td>
+          274
+        </td>
+        <td>
+          6110
+        </td>
+        <td>
+          8622
+          -
+          8639
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.one
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.one[Iterable[scales.xml.XmlPath]](Axis.this.just(n.last))
+        </td>
+      </tr><tr>
+        <td>
+          282
+        </td>
+        <td>
+          6121
+        </td>
+        <td>
+          8851
+          -
+          8851
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.Iterable.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.Iterable.canBuildFrom[Iterable[scales.xml.XmlPath]]
+        </td>
+      </tr><tr>
+        <td>
+          282
+        </td>
+        <td>
+          6122
+        </td>
+        <td>
+          8832
+          -
+          8975
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableLike.flatMap
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.path.nodes.flatMap[Iterable[scales.xml.XmlPath], Iterable[Iterable[scales.xml.XmlPath]]](((path: Iterable[scales.xml.XmlPath]) =&gt; path.flatMap[Iterable[scales.xml.XmlPath], Iterable[Iterable[scales.xml.XmlPath]]](((x: scales.xml.XmlPath) =&gt; if (x.top.isLeft)
+  Axis.this.empty
+else
+  scales.utils.`package`.one[Iterable[scales.xml.XmlPath]](Axis.this.just(x.top.right.get))))(collection.this.Iterable.canBuildFrom[Iterable[scales.xml.XmlPath]])))(collection.this.Iterable.canBuildFrom[Iterable[scales.xml.XmlPath]])
+        </td>
+      </tr><tr>
+        <td>
+          282
+        </td>
+        <td>
+          6126
+        </td>
+        <td>
+          8824
+          -
+          9024
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.Axis.process
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.process(Axis.this.path.nodes.flatMap[Iterable[scales.xml.XmlPath], Iterable[Iterable[scales.xml.XmlPath]]](((path: Iterable[scales.xml.XmlPath]) =&gt; path.flatMap[Iterable[scales.xml.XmlPath], Iterable[Iterable[scales.xml.XmlPath]]](((x: scales.xml.XmlPath) =&gt; if (x.top.isLeft)
+  Axis.this.empty
+else
+  scales.utils.`package`.one[Iterable[scales.xml.XmlPath]](Axis.this.just(x.top.right.get))))(collection.this.Iterable.canBuildFrom[Iterable[scales.xml.XmlPath]])))(collection.this.Iterable.canBuildFrom[Iterable[scales.xml.XmlPath]]), {
+  &lt;artifact&gt; val x$1: Boolean = false;
+  &lt;artifact&gt; val x$2: Boolean = false;
+  &lt;artifact&gt; val x$3: Iterable[Iterable[scales.xml.XmlPath]] = Axis.this.path.copy$default$1;
+  &lt;artifact&gt; val x$4: Boolean = Axis.this.path.copy$default$2;
+  &lt;artifact&gt; val x$5: Boolean = Axis.this.path.copy$default$3;
+  &lt;artifact&gt; val x$6: Boolean = Axis.this.path.copy$default$5;
+  Axis.this.path.copy(x$3, x$4, x$5, x$1, x$6, x$2)
+})
+        </td>
+      </tr><tr>
+        <td>
+          283
+        </td>
+        <td>
+          6119
+        </td>
+        <td>
+          8875
+          -
+          8875
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.Iterable.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.Iterable.canBuildFrom[Iterable[scales.xml.XmlPath]]
+        </td>
+      </tr><tr>
+        <td>
+          283
+        </td>
+        <td>
+          6120
+        </td>
+        <td>
+          8862
+          -
+          8967
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableLike.flatMap
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path.flatMap[Iterable[scales.xml.XmlPath], Iterable[Iterable[scales.xml.XmlPath]]](((x: scales.xml.XmlPath) =&gt; if (x.top.isLeft)
+  Axis.this.empty
+else
+  scales.utils.`package`.one[Iterable[scales.xml.XmlPath]](Axis.this.just(x.top.right.get))))(collection.this.Iterable.canBuildFrom[Iterable[scales.xml.XmlPath]])
+        </td>
+      </tr><tr>
+        <td>
+          284
+        </td>
+        <td>
+          6112
+        </td>
+        <td>
+          8896
+          -
+          8908
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.EitherLike.isLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x.top.isLeft
+        </td>
+      </tr><tr>
+        <td>
+          284
+        </td>
+        <td>
+          6113
+        </td>
+        <td>
+          8910
+          -
+          8915
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.xpath.Axis.empty
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Axis.this.empty
+        </td>
+      </tr><tr>
+        <td>
+          284
+        </td>
+        <td>
+          6114
+        </td>
+        <td>
+          8910
+          -
+          8915
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.xpath.Axis.empty
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Axis.this.empty
+        </td>
+      </tr><tr>
+        <td>
+          285
+        </td>
+        <td>
+          6115
+        </td>
+        <td>
+          8940
+          -
+          8955
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.impl.RightLikeProjection.get
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x.top.right.get
+        </td>
+      </tr><tr>
+        <td>
+          285
+        </td>
+        <td>
+          6116
+        </td>
+        <td>
+          8935
+          -
+          8956
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.Axis.just
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.just(x.top.right.get)
+        </td>
+      </tr><tr>
+        <td>
+          285
+        </td>
+        <td>
+          6117
+        </td>
+        <td>
+          8931
+          -
+          8957
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.one
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.one[Iterable[scales.xml.XmlPath]](Axis.this.just(x.top.right.get))
+        </td>
+      </tr><tr>
+        <td>
+          285
+        </td>
+        <td>
+          6118
+        </td>
+        <td>
+          8931
+          -
+          8957
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.one
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.one[Iterable[scales.xml.XmlPath]](Axis.this.just(x.top.right.get))
+        </td>
+      </tr><tr>
+        <td>
+          287
+        </td>
+        <td>
+          6123
+        </td>
+        <td>
+          9001
+          -
+          9006
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          287
+        </td>
+        <td>
+          6124
+        </td>
+        <td>
+          9017
+          -
+          9022
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          287
+        </td>
+        <td>
+          6125
+        </td>
+        <td>
+          8977
+          -
+          9023
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.XPathInfo.copy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.path.copy(x$3, x$4, x$5, x$1, x$6, x$2)
+        </td>
+      </tr><tr>
+        <td>
+          291
+        </td>
+        <td>
+          6127
+        </td>
+        <td>
+          9210
+          -
+          9215
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          291
+        </td>
+        <td>
+          6128
+        </td>
+        <td>
+          9226
+          -
+          9231
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          291
+        </td>
+        <td>
+          6129
+        </td>
+        <td>
+          9186
+          -
+          9232
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.XPathInfo.copy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.path.copy(x$3, x$4, x$5, x$1, x$6, x$2)
+        </td>
+      </tr><tr>
+        <td>
+          291
+        </td>
+        <td>
+          6130
+        </td>
+        <td>
+          9178
+          -
+          9233
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.Axis.newThis
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.newThis({
+  &lt;artifact&gt; val x$1: Boolean = false;
+  &lt;artifact&gt; val x$2: Boolean = false;
+  &lt;artifact&gt; val x$3: Iterable[Iterable[scales.xml.XmlPath]] = Axis.this.path.copy$default$1;
+  &lt;artifact&gt; val x$4: Boolean = Axis.this.path.copy$default$2;
+  &lt;artifact&gt; val x$5: Boolean = Axis.this.path.copy$default$3;
+  &lt;artifact&gt; val x$6: Boolean = Axis.this.path.copy$default$5;
+  Axis.this.path.copy(x$3, x$4, x$5, x$1, x$6, x$2)
+})
+        </td>
+      </tr><tr>
+        <td>
+          298
+        </td>
+        <td>
+          6138
+        </td>
+        <td>
+          9527
+          -
+          9527
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.Iterable.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.Iterable.canBuildFrom[scales.xml.XmlPath]
+        </td>
+      </tr><tr>
+        <td>
+          298
+        </td>
+        <td>
+          6139
+        </td>
+        <td>
+          9508
+          -
+          9664
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableLike.flatMap
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.path.nodes.flatMap[scales.xml.XmlPath, Iterable[Iterable[scales.xml.XmlPath]]](((x$12: Iterable[scales.xml.XmlPath]) =&gt; x$12.flatMap[scales.xml.XmlPath, Iterable[scales.xml.XmlPath]](((child: scales.xml.XmlPath) =&gt; if (child.isItem)
+  Axis.this.just(child)
+else
+  scales.utils.`package`.one[scales.xml.XmlPath](child)))(collection.this.Iterable.canBuildFrom[scales.xml.XmlPath])))(collection.this.Iterable.canBuildFrom[scales.xml.XmlPath])
+        </td>
+      </tr><tr>
+        <td>
+          298
+        </td>
+        <td>
+          6143
+        </td>
+        <td>
+          9500
+          -
+          9713
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.Axis.process
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.process(Axis.this.path.nodes.flatMap[scales.xml.XmlPath, Iterable[Iterable[scales.xml.XmlPath]]](((x$12: Iterable[scales.xml.XmlPath]) =&gt; x$12.flatMap[scales.xml.XmlPath, Iterable[scales.xml.XmlPath]](((child: scales.xml.XmlPath) =&gt; if (child.isItem)
+  Axis.this.just(child)
+else
+  scales.utils.`package`.one[scales.xml.XmlPath](child)))(collection.this.Iterable.canBuildFrom[scales.xml.XmlPath])))(collection.this.Iterable.canBuildFrom[scales.xml.XmlPath]), {
+  &lt;artifact&gt; val x$1: Boolean = false;
+  &lt;artifact&gt; val x$2: Boolean = false;
+  &lt;artifact&gt; val x$3: Iterable[Iterable[scales.xml.XmlPath]] = Axis.this.path.copy$default$1;
+  &lt;artifact&gt; val x$4: Boolean = Axis.this.path.copy$default$2;
+  &lt;artifact&gt; val x$5: Boolean = Axis.this.path.copy$default$3;
+  &lt;artifact&gt; val x$6: Boolean = Axis.this.path.copy$default$5;
+  Axis.this.path.copy(x$3, x$4, x$5, x$1, x$6, x$2)
+})
+        </td>
+      </tr><tr>
+        <td>
+          299
+        </td>
+        <td>
+          6136
+        </td>
+        <td>
+          9547
+          -
+          9547
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.Iterable.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.Iterable.canBuildFrom[scales.xml.XmlPath]
+        </td>
+      </tr><tr>
+        <td>
+          299
+        </td>
+        <td>
+          6137
+        </td>
+        <td>
+          9537
+          -
+          9656
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableLike.flatMap
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$12.flatMap[scales.xml.XmlPath, Iterable[scales.xml.XmlPath]](((child: scales.xml.XmlPath) =&gt; if (child.isItem)
+  Axis.this.just(child)
+else
+  scales.utils.`package`.one[scales.xml.XmlPath](child)))(collection.this.Iterable.canBuildFrom[scales.xml.XmlPath])
+        </td>
+      </tr><tr>
+        <td>
+          300
+        </td>
+        <td>
+          6131
+        </td>
+        <td>
+          9572
+          -
+          9584
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Path.isItem
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          child.isItem
+        </td>
+      </tr><tr>
+        <td>
+          300
+        </td>
+        <td>
+          6132
+        </td>
+        <td>
+          9586
+          -
+          9597
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.Axis.just
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Axis.this.just(child)
+        </td>
+      </tr><tr>
+        <td>
+          300
+        </td>
+        <td>
+          6133
+        </td>
+        <td>
+          9586
+          -
+          9597
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.xpath.Axis.just
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Axis.this.just(child)
+        </td>
+      </tr><tr>
+        <td>
+          301
+        </td>
+        <td>
+          6134
+        </td>
+        <td>
+          9613
+          -
+          9623
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.one
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.one[scales.xml.XmlPath](child)
+        </td>
+      </tr><tr>
+        <td>
+          301
+        </td>
+        <td>
+          6135
+        </td>
+        <td>
+          9613
+          -
+          9623
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.one
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.one[scales.xml.XmlPath](child)
+        </td>
+      </tr><tr>
+        <td>
+          303
+        </td>
+        <td>
+          6140
+        </td>
+        <td>
+          9690
+          -
+          9695
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          303
+        </td>
+        <td>
+          6141
+        </td>
+        <td>
+          9706
+          -
+          9711
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          303
+        </td>
+        <td>
+          6142
+        </td>
+        <td>
+          9666
+          -
+          9712
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.XPathInfo.copy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.path.copy(x$3, x$4, x$5, x$1, x$6, x$2)
+        </td>
+      </tr><tr>
+        <td>
+          310
+        </td>
+        <td>
+          6144
+        </td>
+        <td>
+          9851
+          -
+          9861
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.xpath.XPathInfo.eager
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.path.eager
+        </td>
+      </tr><tr>
+        <td>
+          310
+        </td>
+        <td>
+          6145
+        </td>
+        <td>
+          9863
+          -
+          9878
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.Axis.eager_recUnpack
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.eager_recUnpack(xmlPath)
+        </td>
+      </tr><tr>
+        <td>
+          310
+        </td>
+        <td>
+          6146
+        </td>
+        <td>
+          9863
+          -
+          9878
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  ((xmlPath: Iterable[scales.xml.XmlPath]) =&gt; Axis.eager_recUnpack(xmlPath))
+}
+        </td>
+      </tr><tr>
+        <td>
+          311
+        </td>
+        <td>
+          6147
+        </td>
+        <td>
+          9887
+          -
+          9907
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.Axis.lazy_recUnpack
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.lazy_recUnpack(this)(xmlPath)
+        </td>
+      </tr><tr>
+        <td>
+          311
+        </td>
+        <td>
+          6148
+        </td>
+        <td>
+          9887
+          -
+          9907
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  ((xmlPath: Iterable[scales.xml.XmlPath]) =&gt; Axis.lazy_recUnpack(this)(xmlPath))
+}
+        </td>
+      </tr><tr>
+        <td>
+          313
+        </td>
+        <td>
+          6161
+        </td>
+        <td>
+          9917
+          -
+          10168
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.Axis.process
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.process(if (Axis.this.path.initialNode)
+  Axis.this.path.nodes
+else
+  scala.collection.immutable.Nil.++[Iterable[scales.xml.XmlPath], Iterable[Iterable[scales.xml.XmlPath]]](Axis.this.path.nodes.flatMap[scales.xml.XmlPath, Iterable[scales.xml.XmlPath]](f)(collection.this.Iterable.canBuildFrom[scales.xml.XmlPath]))(collection.this.Iterable.canBuildFrom[Iterable[scales.xml.XmlPath]]), {
+  &lt;artifact&gt; val x$1: Boolean = false;
+  &lt;artifact&gt; val x$2: Boolean = false;
+  &lt;artifact&gt; val x$3: Iterable[Iterable[scales.xml.XmlPath]] = Axis.this.path.copy$default$1;
+  &lt;artifact&gt; val x$4: Boolean = Axis.this.path.copy$default$2;
+  &lt;artifact&gt; val x$5: Boolean = Axis.this.path.copy$default$3;
+  &lt;artifact&gt; val x$6: Boolean = Axis.this.path.copy$default$5;
+  Axis.this.path.copy(x$3, x$4, x$5, x$1, x$6, x$2)
+})
+        </td>
+      </tr><tr>
+        <td>
+          314
+        </td>
+        <td>
+          6149
+        </td>
+        <td>
+          9939
+          -
+          9955
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.xpath.XPathInfo.initialNode
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.path.initialNode
+        </td>
+      </tr><tr>
+        <td>
+          314
+        </td>
+        <td>
+          6150
+        </td>
+        <td>
+          9957
+          -
+          9967
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.xpath.XPathInfo.nodes
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.path.nodes
+        </td>
+      </tr><tr>
+        <td>
+          314
+        </td>
+        <td>
+          6151
+        </td>
+        <td>
+          9957
+          -
+          9967
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.xpath.XPathInfo.nodes
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.path.nodes
+        </td>
+      </tr><tr>
+        <td>
+          315
+        </td>
+        <td>
+          6152
+        </td>
+        <td>
+          10072
+          -
+          10078
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.immutable.Nil
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.collection.immutable.Nil
+        </td>
+      </tr><tr>
+        <td>
+          315
+        </td>
+        <td>
+          6153
+        </td>
+        <td>
+          10072
+          -
+          10078
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.collection.immutable.Nil
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.collection.immutable.Nil
+        </td>
+      </tr><tr>
+        <td>
+          316
+        </td>
+        <td>
+          6154
+        </td>
+        <td>
+          10112
+          -
+          10112
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.Iterable.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.Iterable.canBuildFrom[scales.xml.XmlPath]
+        </td>
+      </tr><tr>
+        <td>
+          316
+        </td>
+        <td>
+          6155
+        </td>
+        <td>
+          10093
+          -
+          10117
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableLike.flatMap
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.path.nodes.flatMap[scales.xml.XmlPath, Iterable[scales.xml.XmlPath]](f)(collection.this.Iterable.canBuildFrom[scales.xml.XmlPath])
+        </td>
+      </tr><tr>
+        <td>
+          316
+        </td>
+        <td>
+          6156
+        </td>
+        <td>
+          10090
+          -
+          10090
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.Iterable.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.Iterable.canBuildFrom[Iterable[scales.xml.XmlPath]]
+        </td>
+      </tr><tr>
+        <td>
+          316
+        </td>
+        <td>
+          6157
+        </td>
+        <td>
+          9934
+          -
+          10117
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableLike.++
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (Axis.this.path.initialNode)
+  Axis.this.path.nodes
+else
+  scala.collection.immutable.Nil.++[Iterable[scales.xml.XmlPath], Iterable[Iterable[scales.xml.XmlPath]]](Axis.this.path.nodes.flatMap[scales.xml.XmlPath, Iterable[scales.xml.XmlPath]](f)(collection.this.Iterable.canBuildFrom[scales.xml.XmlPath]))(collection.this.Iterable.canBuildFrom[Iterable[scales.xml.XmlPath]])
+        </td>
+      </tr><tr>
+        <td>
+          317
+        </td>
+        <td>
+          6158
+        </td>
+        <td>
+          10145
+          -
+          10150
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          317
+        </td>
+        <td>
+          6159
+        </td>
+        <td>
+          10161
+          -
+          10166
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          317
+        </td>
+        <td>
+          6160
+        </td>
+        <td>
+          10121
+          -
+          10167
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.XPathInfo.copy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.path.copy(x$3, x$4, x$5, x$1, x$6, x$2)
+        </td>
+      </tr><tr>
+        <td>
+          322
+        </td>
+        <td>
+          6162
+        </td>
+        <td>
+          10276
+          -
+          10276
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.Iterable.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.Iterable.canBuildFrom[Iterable[scales.xml.XmlPath]]
+        </td>
+      </tr><tr>
+        <td>
+          322
+        </td>
+        <td>
+          6163
+        </td>
+        <td>
+          10262
+          -
+          10281
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableLike.map
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.path.nodes.map[Iterable[scales.xml.XmlPath], Iterable[Iterable[scales.xml.XmlPath]]](f)(collection.this.Iterable.canBuildFrom[Iterable[scales.xml.XmlPath]])
+        </td>
+      </tr><tr>
+        <td>
+          322
+        </td>
+        <td>
+          6164
+        </td>
+        <td>
+          10254
+          -
+          10282
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.Axis.process
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.process(Axis.this.path.nodes.map[Iterable[scales.xml.XmlPath], Iterable[Iterable[scales.xml.XmlPath]]](f)(collection.this.Iterable.canBuildFrom[Iterable[scales.xml.XmlPath]]), Axis.this.process$default$2)
+        </td>
+      </tr><tr>
+        <td>
+          326
+        </td>
+        <td>
+          6165
+        </td>
+        <td>
+          10401
+          -
+          10415
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.TraversableLike.filter
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$13.filter(pred)
+        </td>
+      </tr><tr>
+        <td>
+          326
+        </td>
+        <td>
+          6166
+        </td>
+        <td>
+          10395
+          -
+          10417
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.Axis.xmap
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.xmap(((x$13: Iterable[scales.xml.XmlPath]) =&gt; x$13.filter(pred)))
+        </td>
+      </tr><tr>
+        <td>
+          332
+        </td>
+        <td>
+          6167
+        </td>
+        <td>
+          10539
+          -
+          10571
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPathText.text(x).==(textValue)
+        </td>
+      </tr><tr>
+        <td>
+          332
+        </td>
+        <td>
+          6168
+        </td>
+        <td>
+          10527
+          -
+          10572
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.xpath.Axis.filter
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Axis.this.filter(((x: scales.xml.XmlPath) =&gt; XmlPathText.text(x).==(textValue)))
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

@@ -1,0 +1,2127 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/xml/parser/pull/XmlPull.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.xml.parser.pull
+</span>2 <span style=''>
+</span>3 <span style=''>import javax.xml.stream._
+</span>4 <span style=''>import scales.utils.io.{ProxiedCloseOnNeedReader, ProxiedCloseOnNeedInputStream}
+</span>5 <span style=''>import scales.utils.resources.{CloseOnNeed, IsClosed, Pool}
+</span>6 <span style=''>
+</span>7 <span style=''>import scales.xml.impl
+</span>8 <span style=''>import impl.{FromParser, IsFromParser}
+</span>9 <span style=''>
+</span>10 <span style=''>import scales.xml.{
+</span>11 <span style=''>  ScalesXml,
+</span>12 <span style=''>  defaultOptimisation,
+</span>13 <span style=''>  defaultPathOptimisation,
+</span>14 <span style=''>  Doc,
+</span>15 <span style=''>  XmlItem,
+</span>16 <span style=''>  Elem, EndElem,
+</span>17 <span style=''>  Xml10,
+</span>18 <span style=''>  XmlEvent
+</span>19 <span style=''>  }
+</span>20 <span style=''>
+</span>21 <span style=''>import scales.xml.parser.strategies.{MemoryOptimisationStrategy, PathOptimisationStrategy, OptimisationToken}
+</span>22 <span style=''>
+</span>23 <span style=''>import java.io._
+</span>24 <span style=''>
+</span>25 <span style=''>/**
+</span>26 <span style=''> * We should give the stax what it needs to work best, especially with encoding issues, converting streams to readers etc is teh suxor
+</span>27 <span style=''> */
+</span>28 <span style=''>sealed trait SourceUser extends CloseOnNeed {
+</span>29 <span style=''>  def getReader( xf : XMLInputFactory ) : XMLStreamReader
+</span>30 <span style=''>}
+</span>31 <span style=''>
+</span>32 <span style=''>case class CharacterSourceUser(reader : ProxiedCloseOnNeedReader) extends SourceUser {
+</span>33 <span style=''>  def getReader( xf : XMLInputFactory ) = </span><span style='background: #AEF1AE'>xf.createXMLStreamReader(reader)</span><span style=''>
+</span>34 <span style=''>  protected def doClose = </span><span style='background: #AEF1AE'>reader.closeResource</span><span style=''>
+</span>35 <span style=''>}
+</span>36 <span style=''>
+</span>37 <span style=''>case class ByteSourceUser(stream : ProxiedCloseOnNeedInputStream) extends SourceUser {
+</span>38 <span style=''>  def getReader( xf : XMLInputFactory ) = </span><span style='background: #AEF1AE'>xf.createXMLStreamReader(stream)</span><span style=''>
+</span>39 <span style=''>  protected def doClose = </span><span style='background: #AEF1AE'>stream.closeResource</span><span style=''>
+</span>40 <span style=''>}
+</span>41 <span style=''>
+</span>42 <span style=''>/**
+</span>43 <span style=''> * Wraps the stax cursor inteface (iterator just adds weight here).
+</span>44 <span style=''> *
+</span>45 <span style=''> * scala.xml.pull uses a thread based on stax approach to push/pull events.
+</span>46 <span style=''> *
+</span>47 <span style=''> * This code uses stax only, extra iteratee goodness will appear curtousy of scalaz....
+</span>48 <span style=''> *
+</span>49 <span style=''> */
+</span>50 <span style=''>trait XmlPulls {
+</span>51 <span style=''>
+</span>52 <span style=''>  /**
+</span>53 <span style=''>   * Provides proxied sources to the pull parsers, the stream provided is the stream used
+</span>54 <span style=''>   */ 
+</span>55 <span style=''>  def sourceUser( source : org.xml.sax.InputSource ) = {
+</span>56 <span style=''>    // use character stream in preference
+</span>57 <span style=''>    val cs = </span><span style='background: #AEF1AE'>source.getCharacterStream()</span><span style=''>
+</span>58 <span style=''>    if (</span><span style='background: #AEF1AE'>cs eq null</span><span style=''>) 
+</span>59 <span style=''>      </span><span style='background: #AEF1AE'>ByteSourceUser(ProxiedCloseOnNeedInputStream(source.getByteStream()))</span><span style=''>
+</span>60 <span style=''>    else 
+</span>61 <span style=''>      </span><span style='background: #AEF1AE'>CharacterSourceUser(ProxiedCloseOnNeedReader(cs))</span><span style=''>
+</span>62 <span style=''>  }
+</span>63 <span style=''>
+</span>64 <span style=''>
+</span>65 <span style=''>  /**
+</span>66 <span style=''>   * Load xml via pull parsing
+</span>67 <span style=''>   */ 
+</span>68 <span style=''>  def pullXmlCompletely[RToken &lt;: OptimisationToken]( source : org.xml.sax.InputSource, strategy : PathOptimisationStrategy[RToken] = defaultPathOptimisation, parserFactoryPool : Pool[XMLInputFactory] = impl.DefaultStaxInputFactoryPool, closeAfterUse : Boolean = true) : Doc = {
+</span>69 <span style=''>    val pull = </span><span style='background: #AEF1AE'>pullXml[RToken](source, strategy, parserFactoryPool, closeAfterUse)</span><span style=''>
+</span>70 <span style=''>    
+</span>71 <span style=''>    </span><span style='background: #AEF1AE'>Doc(toTree(pull, strategy), pull.prolog, pull.end)</span><span style=''>
+</span>72 <span style=''>  }
+</span>73 <span style=''>
+</span>74 <span style=''>  /**
+</span>75 <span style=''>   * Attempts to convert a stream to a tree
+</span>76 <span style=''>   */ 
+</span>77 <span style=''>  def toTree[RToken &lt;: OptimisationToken]( pull : Iterator[PullType], strategy : PathOptimisationStrategy[RToken] = defaultPathOptimisation ) = {
+</span>78 <span style=''>    val token = </span><span style='background: #AEF1AE'>strategy.createToken(Xml10, IsFromParser)</span><span style=''>
+</span>79 <span style=''>    // start with nothing
+</span>80 <span style=''>    val buf = </span><span style='background: #AEF1AE'>new impl.TreeProxies()</span><span style=''>
+</span>81 <span style=''>
+</span>82 <span style=''>    while( </span><span style='background: #AEF1AE'>pull.hasNext</span><span style=''> ){
+</span>83 <span style=''>      </span><span style='background: #AEF1AE'>pull.next match {
+</span>84 <span style=''></span><span style='background: #AEF1AE'>	case Left( i : XmlItem ) =&gt; 
+</span>85 <span style=''></span><span style='background: #AEF1AE'>	  buf.addChild(i)
+</span>86 <span style=''></span><span style='background: #AEF1AE'>	case Left( e : Elem ) =&gt; 
+</span>87 <span style=''></span><span style='background: #AEF1AE'>	  strategy.beginSubTree(buf, e, token)
+</span>88 <span style=''></span><span style='background: #AEF1AE'>	case Right(endElem) =&gt; 
+</span>89 <span style=''></span><span style='background: #AEF1AE'>	  strategy.elementEnd(buf, token)
+</span>90 <span style=''></span><span style='background: #AEF1AE'>      }</span><span style=''>
+</span>91 <span style=''>    }
+</span>92 <span style=''>    </span><span style='background: #AEF1AE'>buf.tree</span><span style=''>
+</span>93 <span style=''>  }
+</span>94 <span style=''>
+</span>95 <span style=''>  /**
+</span>96 <span style=''>   * Creates a new XmlPull based on source for direct handling of the stream.  Note to close the stream you must bracket.
+</span>97 <span style=''>   * The individual XmlPull will be closed after the document end but the stream will remain open
+</span>98 <span style=''>   */
+</span>99 <span style=''>  def pullXmlResource[RToken &lt;: OptimisationToken](source: org.xml.sax.InputSource, optimisationStrategy : MemoryOptimisationStrategy[RToken] = defaultOptimisation, parserFactoryPool: Pool[XMLInputFactory] = impl.DefaultStaxInputFactoryPool) : (CloseOnNeed, XmlPull) = {
+</span>100 <span style=''>    val stream = </span><span style='background: #AEF1AE'>sourceUser(source)</span><span style=''>
+</span>101 <span style=''>
+</span>102 <span style=''>    val pf = </span><span style='background: #AEF1AE'>parserFactoryPool.grab</span><span style=''>
+</span>103 <span style=''>    
+</span>104 <span style=''>    implicit val weAreInAParser : FromParser = </span><span style='background: #AEF1AE'>IsFromParser</span><span style=''>
+</span>105 <span style=''>
+</span>106 <span style=''>    import ScalesXml.defaultVersion
+</span>107 <span style=''>
+</span>108 <span style=''>    </span><span style='background: #AEF1AE'>(stream,
+</span>109 <span style=''></span><span style='background: #AEF1AE'>      new XmlPull {
+</span>110 <span style=''></span><span style='background: #AEF1AE'>	type Token = RToken
+</span>111 <span style=''></span><span style='background: #AEF1AE'>	
+</span>112 <span style=''></span><span style='background: #AEF1AE'>	val strategy = optimisationStrategy
+</span>113 <span style=''></span><span style='background: #AEF1AE'>	implicit val token = optimisationStrategy.createToken
+</span>114 <span style=''></span><span style='background: #AEF1AE'>
+</span>115 <span style=''></span><span style='background: #AEF1AE'>        val parser = stream.getReader(pf)
+</span>116 <span style=''></span><span style='background: #AEF1AE'>        val resourceCloser = () =&gt; { </span><span style='background: #F0ADAD'>parserFactoryPool.giveBack(pf)</span><span style='background: #AEF1AE'> } //noop its now the CloseOnNeeds job
+</span>117 <span style=''></span><span style='background: #AEF1AE'>
+</span>118 <span style=''></span><span style='background: #AEF1AE'>        start
+</span>119 <span style=''></span><span style='background: #AEF1AE'>      })</span><span style=''>
+</span>120 <span style=''>  }
+</span>121 <span style=''>
+</span>122 <span style=''>  /**
+</span>123 <span style=''>   * Creates a new XmlPull based on source.  By default it will close the stream after use.
+</span>124 <span style=''>   */
+</span>125 <span style=''>  def pullXml[RToken &lt;: OptimisationToken](source: org.xml.sax.InputSource, optimisationStrategy : MemoryOptimisationStrategy[RToken] = defaultOptimisation, parserFactoryPool: Pool[XMLInputFactory] = impl.DefaultStaxInputFactoryPool, closeAfterUse: Boolean = true) : XmlPull with java.io.Closeable with IsClosed = {
+</span>126 <span style=''>    val stream = </span><span style='background: #AEF1AE'>sourceUser(source)</span><span style=''>
+</span>127 <span style=''>
+</span>128 <span style=''>    val pf = </span><span style='background: #AEF1AE'>parserFactoryPool.grab</span><span style=''>
+</span>129 <span style=''>
+</span>130 <span style=''>    implicit val weAreInAParser : FromParser = </span><span style='background: #AEF1AE'>IsFromParser</span><span style=''>
+</span>131 <span style=''>    
+</span>132 <span style=''>    import ScalesXml.defaultVersion
+</span>133 <span style=''>
+</span>134 <span style=''>    </span><span style='background: #AEF1AE'>new</span><span style=''> XmlPull with java.io.Closeable with IsClosed {
+</span>135 <span style=''>      type Token = RToken
+</span>136 <span style=''>
+</span>137 <span style=''>      val strategy = optimisationStrategy
+</span>138 <span style=''>      val token = </span><span style='background: #AEF1AE'>optimisationStrategy.createToken</span><span style=''>
+</span>139 <span style=''>
+</span>140 <span style=''>      val parser = </span><span style='background: #AEF1AE'>stream.getReader(pf)</span><span style=''>
+</span>141 <span style=''>      val resourceCloser = () =&gt; { </span><span style='background: #AEF1AE'>parserFactoryPool.giveBack(pf)</span><span style=''>; </span><span style='background: #AEF1AE'>stream.closeResource</span><span style=''> } // bug: 6539065 javadocs say does not close, implementation seems to close :&lt; calling it twice should be safe - especially with CloseOnNeed
+</span>142 <span style=''>
+</span>143 <span style=''>      private[this] var closed = </span><span style='background: #AEF1AE'>false</span><span style=''>
+</span>144 <span style=''>      def isClosed = </span><span style='background: #AEF1AE'>closed</span><span style=''>
+</span>145 <span style=''>
+</span>146 <span style=''>      override def internalClose { </span><span style='background: #AEF1AE'>close</span><span style=''> }
+</span>147 <span style=''>
+</span>148 <span style=''>      def close {
+</span>149 <span style=''>        if (</span><span style='background: #AEF1AE'>!closed</span><span style=''>) </span><span style='background: #AEF1AE'>{
+</span>150 <span style=''></span><span style='background: #AEF1AE'>          parser.close
+</span>151 <span style=''></span><span style='background: #AEF1AE'>          resourceCloser() // parser close doesn't close the resource
+</span>152 <span style=''></span><span style='background: #AEF1AE'>          closed = true
+</span>153 <span style=''></span><span style='background: #AEF1AE'>        }</span><span style=''>
+</span>154 <span style=''>      }
+</span>155 <span style=''>
+</span>156 <span style=''>      </span><span style='background: #AEF1AE'>start</span><span style=''>
+</span>157 <span style=''>    }
+</span>158 <span style=''>  }
+</span>159 <span style=''>
+</span>160 <span style=''>  /**
+</span>161 <span style=''>   * Allows plugging in other feeds, non source based, as such not closeable
+</span>162 <span style=''>   */ 
+</span>163 <span style=''>  def pullXmlReader[RToken &lt;: OptimisationToken]( reader  : XMLStreamReader, defaultOptimisationStrategy : MemoryOptimisationStrategy[RToken] = defaultOptimisation) : XmlPull = </span><span style='background: #AEF1AE'>new</span><span style=''> XmlPull {
+</span>164 <span style=''>    type Token = RToken
+</span>165 <span style=''>
+</span>166 <span style=''>    implicit val eweAreInAParser : FromParser = </span><span style='background: #AEF1AE'>IsFromParser</span><span style=''>
+</span>167 <span style=''>
+</span>168 <span style=''>    import ScalesXml.defaultVersion
+</span>169 <span style=''>
+</span>170 <span style=''>    val strategy = defaultOptimisationStrategy
+</span>171 <span style=''>    val token = </span><span style='background: #AEF1AE'>defaultOptimisationStrategy.createToken</span><span style=''>
+</span>172 <span style=''>
+</span>173 <span style=''>    val parser = reader
+</span>174 <span style=''>    val resourceCloser = () =&gt; </span><span style='background: #F0ADAD'>{}</span><span style=''>
+</span>175 <span style=''>
+</span>176 <span style=''>    </span><span style='background: #AEF1AE'>start</span><span style=''>
+</span>177 <span style=''>  }
+</span>178 <span style=''>
+</span>179 <span style=''>  type PullType = Either[XmlEvent, EndElem]
+</span>180 <span style=''>
+</span>181 <span style=''>  implicit def toLeft(ev: XmlEvent) = </span><span style='background: #AEF1AE'>Left(ev)</span><span style=''>
+</span>182 <span style=''>  implicit def toRight(ev: EndElem) = </span><span style='background: #AEF1AE'>Right(ev)</span><span style=''>
+</span>183 <span style=''>
+</span>184 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          4282
+        </td>
+        <td>
+          939
+          -
+          945
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.CharacterSourceUser.reader
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          CharacterSourceUser.this.reader
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          4283
+        </td>
+        <td>
+          914
+          -
+          946
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.stream.XMLInputFactory.createXMLStreamReader
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          xf.createXMLStreamReader(CharacterSourceUser.this.reader)
+        </td>
+      </tr><tr>
+        <td>
+          34
+        </td>
+        <td>
+          4284
+        </td>
+        <td>
+          973
+          -
+          993
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.resources.CloseOnNeed.closeResource
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          CharacterSourceUser.this.reader.closeResource
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          4285
+        </td>
+        <td>
+          1151
+          -
+          1157
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.ByteSourceUser.stream
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ByteSourceUser.this.stream
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          4286
+        </td>
+        <td>
+          1126
+          -
+          1158
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.stream.XMLInputFactory.createXMLStreamReader
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          xf.createXMLStreamReader(ByteSourceUser.this.stream)
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          4287
+        </td>
+        <td>
+          1185
+          -
+          1205
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.resources.CloseOnNeed.closeResource
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ByteSourceUser.this.stream.closeResource
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          4288
+        </td>
+        <td>
+          1691
+          -
+          1718
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.xml.sax.InputSource.getCharacterStream
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          source.getCharacterStream()
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          4289
+        </td>
+        <td>
+          1727
+          -
+          1737
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          cs.eq(null)
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          4290
+        </td>
+        <td>
+          1791
+          -
+          1813
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.xml.sax.InputSource.getByteStream
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          source.getByteStream()
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          4291
+        </td>
+        <td>
+          1761
+          -
+          1814
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.io.ProxiedCloseOnNeedInputStream.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.io.ProxiedCloseOnNeedInputStream.apply(source.getByteStream())
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          4292
+        </td>
+        <td>
+          1746
+          -
+          1815
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.ByteSourceUser.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ByteSourceUser.apply(scales.utils.io.ProxiedCloseOnNeedInputStream.apply(source.getByteStream()))
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          4293
+        </td>
+        <td>
+          1746
+          -
+          1815
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.parser.pull.ByteSourceUser.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ByteSourceUser.apply(scales.utils.io.ProxiedCloseOnNeedInputStream.apply(source.getByteStream()))
+        </td>
+      </tr><tr>
+        <td>
+          61
+        </td>
+        <td>
+          4294
+        </td>
+        <td>
+          1852
+          -
+          1880
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.io.ProxiedCloseOnNeedReader.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.io.ProxiedCloseOnNeedReader.apply(cs)
+        </td>
+      </tr><tr>
+        <td>
+          61
+        </td>
+        <td>
+          4295
+        </td>
+        <td>
+          1832
+          -
+          1881
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.CharacterSourceUser.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          CharacterSourceUser.apply(scales.utils.io.ProxiedCloseOnNeedReader.apply(cs))
+        </td>
+      </tr><tr>
+        <td>
+          61
+        </td>
+        <td>
+          4296
+        </td>
+        <td>
+          1832
+          -
+          1881
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.parser.pull.CharacterSourceUser.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          CharacterSourceUser.apply(scales.utils.io.ProxiedCloseOnNeedReader.apply(cs))
+        </td>
+      </tr><tr>
+        <td>
+          69
+        </td>
+        <td>
+          4297
+        </td>
+        <td>
+          2226
+          -
+          2293
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPulls.pullXml
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPulls.this.pullXml[RToken](source, strategy, parserFactoryPool, closeAfterUse)
+        </td>
+      </tr><tr>
+        <td>
+          71
+        </td>
+        <td>
+          4298
+        </td>
+        <td>
+          2307
+          -
+          2329
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPulls.toTree
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPulls.this.toTree[RToken](pull, strategy)
+        </td>
+      </tr><tr>
+        <td>
+          71
+        </td>
+        <td>
+          4299
+        </td>
+        <td>
+          2331
+          -
+          2342
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPull.prolog
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          pull.prolog
+        </td>
+      </tr><tr>
+        <td>
+          71
+        </td>
+        <td>
+          4300
+        </td>
+        <td>
+          2344
+          -
+          2352
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPull.end
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          pull.end
+        </td>
+      </tr><tr>
+        <td>
+          71
+        </td>
+        <td>
+          4301
+        </td>
+        <td>
+          2303
+          -
+          2353
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Doc.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Doc.apply(XmlPulls.this.toTree[RToken](pull, strategy), pull.prolog, pull.end)
+        </td>
+      </tr><tr>
+        <td>
+          78
+        </td>
+        <td>
+          4302
+        </td>
+        <td>
+          2599
+          -
+          2604
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Xml10
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Xml10
+        </td>
+      </tr><tr>
+        <td>
+          78
+        </td>
+        <td>
+          4303
+        </td>
+        <td>
+          2606
+          -
+          2618
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.IsFromParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.impl.IsFromParser
+        </td>
+      </tr><tr>
+        <td>
+          78
+        </td>
+        <td>
+          4304
+        </td>
+        <td>
+          2578
+          -
+          2619
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.strategies.MemoryOptimisationStrategy.createToken
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          strategy.createToken(scales.xml.Xml10, scales.xml.impl.IsFromParser)
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          4305
+        </td>
+        <td>
+          2660
+          -
+          2682
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.TreeProxies.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new scales.xml.impl.TreeProxies()
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          4306
+        </td>
+        <td>
+          2695
+          -
+          2707
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.Iterator.hasNext
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          pull.hasNext
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          4315
+        </td>
+        <td>
+          2717
+          -
+          2918
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  pull.next() match {
+    case (value: scales.xml.XmlEvent)scala.util.Left[scales.xml.XmlEvent,scales.xml.EndElem]((i @ (_: scales.xml.XmlItem))) =&gt; buf.addChild(i)
+    case (value: scales.xml.XmlEvent)scala.util.Left[scales.xml.XmlEvent,scales.xml.EndElem]((e @ (_: scales.xml.Elem))) =&gt; strategy.beginSubTree(buf, e, token)
+    case (value: scales.xml.EndElem)scala.util.Right[scales.xml.XmlEvent,scales.xml.EndElem]((endElem @ _)) =&gt; strategy.elementEnd(buf, token)
+  };
+  while$1()
+}
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          4316
+        </td>
+        <td>
+          2688
+          -
+          2688
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          4317
+        </td>
+        <td>
+          2688
+          -
+          2688
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          83
+        </td>
+        <td>
+          4307
+        </td>
+        <td>
+          2717
+          -
+          2726
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.Iterator.next
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          pull.next()
+        </td>
+      </tr><tr>
+        <td>
+          83
+        </td>
+        <td>
+          4314
+        </td>
+        <td>
+          2727
+          -
+          2727
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPulls.while$1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          while$1()
+        </td>
+      </tr><tr>
+        <td>
+          85
+        </td>
+        <td>
+          4308
+        </td>
+        <td>
+          2768
+          -
+          2783
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.TreeProxies.addChild
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          buf.addChild(i)
+        </td>
+      </tr><tr>
+        <td>
+          85
+        </td>
+        <td>
+          4309
+        </td>
+        <td>
+          2768
+          -
+          2783
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.impl.TreeProxies.addChild
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          buf.addChild(i)
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          4310
+        </td>
+        <td>
+          2814
+          -
+          2850
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.strategies.PathOptimisationStrategy.beginSubTree
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          strategy.beginSubTree(buf, e, token)
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          4311
+        </td>
+        <td>
+          2814
+          -
+          2850
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.parser.strategies.PathOptimisationStrategy.beginSubTree
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          strategy.beginSubTree(buf, e, token)
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          4312
+        </td>
+        <td>
+          2879
+          -
+          2910
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.strategies.PathOptimisationStrategy.elementEnd
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          strategy.elementEnd(buf, token)
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          4313
+        </td>
+        <td>
+          2879
+          -
+          2910
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.parser.strategies.PathOptimisationStrategy.elementEnd
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          strategy.elementEnd(buf, token)
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          4318
+        </td>
+        <td>
+          2929
+          -
+          2937
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.TreeProxies.tree
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          buf.tree
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          4319
+        </td>
+        <td>
+          3463
+          -
+          3481
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPulls.sourceUser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPulls.this.sourceUser(source)
+        </td>
+      </tr><tr>
+        <td>
+          102
+        </td>
+        <td>
+          4320
+        </td>
+        <td>
+          3496
+          -
+          3518
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.resources.Pool.grab
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          parserFactoryPool.grab
+        </td>
+      </tr><tr>
+        <td>
+          104
+        </td>
+        <td>
+          4321
+        </td>
+        <td>
+          3571
+          -
+          3583
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.IsFromParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.impl.IsFromParser
+        </td>
+      </tr><tr>
+        <td>
+          108
+        </td>
+        <td>
+          4329
+        </td>
+        <td>
+          3626
+          -
+          3942
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[scales.xml.parser.pull.SourceUser with Product with Serializable, scales.xml.parser.pull.XmlPull{type Token = RToken}](stream, {
+  final class $anon extends AnyRef with scales.xml.parser.pull.XmlPull {
+    def &lt;init&gt;(): &lt;$anon: scales.xml.parser.pull.XmlPull&gt; = {
+      $anon.super.&lt;init&gt;();
+      ()
+    };
+    type Token = RToken;
+    private[this] val strategy: scales.xml.parser.strategies.MemoryOptimisationStrategy[RToken] = optimisationStrategy;
+    &lt;stable&gt; &lt;accessor&gt; def strategy: scales.xml.parser.strategies.MemoryOptimisationStrategy[RToken] = $anon.this.strategy;
+    private[this] val token: RToken = optimisationStrategy.createToken(scales.xml.ScalesXml.defaultVersion, $anon.this.weAreInAParser);
+    implicit &lt;stable&gt; &lt;accessor&gt; def token: RToken = $anon.this.token;
+    private[this] val parser: javax.xml.stream.XMLStreamReader = stream.getReader(pf);
+    &lt;stable&gt; &lt;accessor&gt; def parser: javax.xml.stream.XMLStreamReader = $anon.this.parser;
+    private[this] val resourceCloser: () =&gt; Unit = (() =&gt; parserFactoryPool.giveBack(pf));
+    &lt;stable&gt; &lt;accessor&gt; def resourceCloser: () =&gt; Unit = $anon.this.resourceCloser;
+    $anon.this.start
+  };
+  new $anon()
+})
+        </td>
+      </tr><tr>
+        <td>
+          109
+        </td>
+        <td>
+          4328
+        </td>
+        <td>
+          3641
+          -
+          3644
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPulls.$anon.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          113
+        </td>
+        <td>
+          4322
+        </td>
+        <td>
+          3758
+          -
+          3758
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.DefaultXmlVersion.defaultVersion
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.ScalesXml.defaultVersion
+        </td>
+      </tr><tr>
+        <td>
+          113
+        </td>
+        <td>
+          4323
+        </td>
+        <td>
+          3758
+          -
+          3758
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPull.weAreInAParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.weAreInAParser
+        </td>
+      </tr><tr>
+        <td>
+          113
+        </td>
+        <td>
+          4324
+        </td>
+        <td>
+          3737
+          -
+          3769
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.parser.strategies.MemoryOptimisationStrategy.createToken
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          optimisationStrategy.createToken(scales.xml.ScalesXml.defaultVersion, $anon.this.weAreInAParser)
+        </td>
+      </tr><tr>
+        <td>
+          115
+        </td>
+        <td>
+          4325
+        </td>
+        <td>
+          3792
+          -
+          3812
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.SourceUser.getReader
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          stream.getReader(pf)
+        </td>
+      </tr><tr>
+        <td>
+          116
+        </td>
+        <td>
+          4326
+        </td>
+        <td>
+          3850
+          -
+          3880
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.resources.Pool.giveBack
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          parserFactoryPool.giveBack(pf)
+        </td>
+      </tr><tr>
+        <td>
+          118
+        </td>
+        <td>
+          4327
+        </td>
+        <td>
+          3928
+          -
+          3933
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPull.start
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.start
+        </td>
+      </tr><tr>
+        <td>
+          126
+        </td>
+        <td>
+          4330
+        </td>
+        <td>
+          4385
+          -
+          4403
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPulls.sourceUser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPulls.this.sourceUser(source)
+        </td>
+      </tr><tr>
+        <td>
+          128
+        </td>
+        <td>
+          4331
+        </td>
+        <td>
+          4418
+          -
+          4440
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.resources.Pool.grab
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          parserFactoryPool.grab
+        </td>
+      </tr><tr>
+        <td>
+          130
+        </td>
+        <td>
+          4332
+        </td>
+        <td>
+          4489
+          -
+          4501
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.IsFromParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.impl.IsFromParser
+        </td>
+      </tr><tr>
+        <td>
+          134
+        </td>
+        <td>
+          4350
+        </td>
+        <td>
+          4548
+          -
+          4551
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPulls.$anon.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          138
+        </td>
+        <td>
+          4333
+        </td>
+        <td>
+          4707
+          -
+          4707
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.DefaultXmlVersion.defaultVersion
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.ScalesXml.defaultVersion
+        </td>
+      </tr><tr>
+        <td>
+          138
+        </td>
+        <td>
+          4334
+        </td>
+        <td>
+          4707
+          -
+          4707
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPull.weAreInAParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.weAreInAParser
+        </td>
+      </tr><tr>
+        <td>
+          138
+        </td>
+        <td>
+          4335
+        </td>
+        <td>
+          4686
+          -
+          4718
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.parser.strategies.MemoryOptimisationStrategy.createToken
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          optimisationStrategy.createToken(scales.xml.ScalesXml.defaultVersion, $anon.this.weAreInAParser)
+        </td>
+      </tr><tr>
+        <td>
+          140
+        </td>
+        <td>
+          4336
+        </td>
+        <td>
+          4739
+          -
+          4759
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.SourceUser.getReader
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          stream.getReader(pf)
+        </td>
+      </tr><tr>
+        <td>
+          141
+        </td>
+        <td>
+          4337
+        </td>
+        <td>
+          4795
+          -
+          4825
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.resources.Pool.giveBack
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          parserFactoryPool.giveBack(pf)
+        </td>
+      </tr><tr>
+        <td>
+          141
+        </td>
+        <td>
+          4338
+        </td>
+        <td>
+          4827
+          -
+          4847
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.resources.CloseOnNeed.closeResource
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          stream.closeResource
+        </td>
+      </tr><tr>
+        <td>
+          143
+        </td>
+        <td>
+          4339
+        </td>
+        <td>
+          5024
+          -
+          5029
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          144
+        </td>
+        <td>
+          4340
+        </td>
+        <td>
+          5051
+          -
+          5057
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPulls.$anon.closed
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.closed
+        </td>
+      </tr><tr>
+        <td>
+          146
+        </td>
+        <td>
+          4341
+        </td>
+        <td>
+          5094
+          -
+          5099
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPulls.$anon.close
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.close()
+        </td>
+      </tr><tr>
+        <td>
+          149
+        </td>
+        <td>
+          4342
+        </td>
+        <td>
+          5133
+          -
+          5140
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.closed.unary_!
+        </td>
+      </tr><tr>
+        <td>
+          149
+        </td>
+        <td>
+          4346
+        </td>
+        <td>
+          5142
+          -
+          5270
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  $anon.this.parser.close();
+  $anon.this.resourceCloser.apply();
+  $anon.this.closed = true
+}
+        </td>
+      </tr><tr>
+        <td>
+          149
+        </td>
+        <td>
+          4347
+        </td>
+        <td>
+          5129
+          -
+          5129
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          149
+        </td>
+        <td>
+          4348
+        </td>
+        <td>
+          5129
+          -
+          5129
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          150
+        </td>
+        <td>
+          4343
+        </td>
+        <td>
+          5154
+          -
+          5166
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.stream.XMLStreamReader.close
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.parser.close()
+        </td>
+      </tr><tr>
+        <td>
+          151
+        </td>
+        <td>
+          4344
+        </td>
+        <td>
+          5177
+          -
+          5193
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function0.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.resourceCloser.apply()
+        </td>
+      </tr><tr>
+        <td>
+          152
+        </td>
+        <td>
+          4345
+        </td>
+        <td>
+          5256
+          -
+          5260
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          156
+        </td>
+        <td>
+          4349
+        </td>
+        <td>
+          5286
+          -
+          5291
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPull.start
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.start
+        </td>
+      </tr><tr>
+        <td>
+          163
+        </td>
+        <td>
+          4357
+        </td>
+        <td>
+          5570
+          -
+          5573
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPulls.$anon.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          166
+        </td>
+        <td>
+          4351
+        </td>
+        <td>
+          5657
+          -
+          5669
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.IsFromParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.impl.IsFromParser
+        </td>
+      </tr><tr>
+        <td>
+          171
+        </td>
+        <td>
+          4352
+        </td>
+        <td>
+          5799
+          -
+          5799
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.DefaultXmlVersion.defaultVersion
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.ScalesXml.defaultVersion
+        </td>
+      </tr><tr>
+        <td>
+          171
+        </td>
+        <td>
+          4353
+        </td>
+        <td>
+          5799
+          -
+          5799
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPulls.$anon.eweAreInAParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.eweAreInAParser
+        </td>
+      </tr><tr>
+        <td>
+          171
+        </td>
+        <td>
+          4354
+        </td>
+        <td>
+          5771
+          -
+          5810
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.parser.strategies.MemoryOptimisationStrategy.createToken
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          defaultOptimisationStrategy.createToken(scales.xml.ScalesXml.defaultVersion, $anon.this.eweAreInAParser)
+        </td>
+      </tr><tr>
+        <td>
+          174
+        </td>
+        <td>
+          4355
+        </td>
+        <td>
+          5867
+          -
+          5869
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          176
+        </td>
+        <td>
+          4356
+        </td>
+        <td>
+          5875
+          -
+          5880
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPull.start
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.start
+        </td>
+      </tr><tr>
+        <td>
+          181
+        </td>
+        <td>
+          4358
+        </td>
+        <td>
+          5969
+          -
+          5977
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Left.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Left.apply[scales.xml.XmlEvent, Nothing](ev)
+        </td>
+      </tr><tr>
+        <td>
+          182
+        </td>
+        <td>
+          4359
+        </td>
+        <td>
+          6016
+          -
+          6025
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Right.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Right.apply[Nothing, scales.xml.EndElem](ev)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

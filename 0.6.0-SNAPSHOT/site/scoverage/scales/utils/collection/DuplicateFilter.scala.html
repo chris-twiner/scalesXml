@@ -1,0 +1,1084 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/utils/collection/DuplicateFilter.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.utils.collection
+</span>2 <span style=''>
+</span>3 <span style=''>import scalaz._
+</span>4 <span style=''>import Scalaz._
+</span>5 <span style=''>
+</span>6 <span style=''>/**
+</span>7 <span style=''> * Remove neighbouring duplicates based on a given predicate (defaults to _ eq _).
+</span>8 <span style=''> * 
+</span>9 <span style=''> * For example (1,2,2,3) would be converted to (1,2,3)
+</span>10 <span style=''> * 
+</span>11 <span style=''> * @author Chris
+</span>12 <span style=''> *
+</span>13 <span style=''> */
+</span>14 <span style=''>case class DuplicateFilter[T](orig: Iterable[T])(
+</span>15 <span style=''>  implicit predicate: Equal[T]) extends Iterable[T] {
+</span>16 <span style=''>
+</span>17 <span style=''>  /**
+</span>18 <span style=''>   * Provide iterator to the path of the children
+</span>19 <span style=''>   */
+</span>20 <span style=''>  def iterator() = </span><span style='background: #AEF1AE'>new</span><span style=''> Iterator[T]() {
+</span>21 <span style=''>    val itr = </span><span style='background: #AEF1AE'>orig.iterator</span><span style=''>
+</span>22 <span style=''>    var nextPair: (Boolean, T) = </span><span style='background: #AEF1AE'>getNext</span><span style=''>
+</span>23 <span style=''>    var isFirst = </span><span style='background: #AEF1AE'>true</span><span style=''>
+</span>24 <span style=''>    def getNext: (Boolean, T) =
+</span>25 <span style=''>      if (</span><span style='background: #AEF1AE'>itr.hasNext</span><span style=''>)
+</span>26 <span style=''>        </span><span style='background: #AEF1AE'>(true, itr.next)</span><span style=''>
+</span>27 <span style=''>      else
+</span>28 <span style=''>        </span><span style='background: #AEF1AE'>null: (Boolean, T)</span><span style=''>
+</span>29 <span style=''>
+</span>30 <span style=''>    /**
+</span>31 <span style=''>     * 1, 2, 2, 3
+</span>32 <span style=''>     * 
+</span>33 <span style=''>     * 				nextPair	cur
+</span>34 <span style=''>     * construct		1
+</span>35 <span style=''>     * hasNext			1		-
+</span>36 <span style=''>     * hasNext.getNext	2		1
+</span>37 <span style=''>     * 	- true // pred == false
+</span>38 <span style=''>     * hasNext			2		-
+</span>39 <span style=''>     * hasNext.getNext	2		2
+</span>40 <span style=''>     * 	// pred == false
+</span>41 <span style=''>     * hasNext			2		-
+</span>42 <span style=''>     * hasNext.getNext	3		2
+</span>43 <span style=''>     * 	- true // pred == false
+</span>44 <span style=''>     * hasNext			3		-
+</span>45 <span style=''>     * hasNext.getNext	null	3
+</span>46 <span style=''>     * 	- false // nextPair eq null
+</span>47 <span style=''>     * 
+</span>48 <span style=''>     */
+</span>49 <span style=''>    def hasNext = if (</span><span style='background: #AEF1AE'>isFirst</span><span style=''>) </span><span style='background: #AEF1AE'>{
+</span>50 <span style=''></span><span style='background: #AEF1AE'>      //error(&quot;oops I iz testing init&quot;)
+</span>51 <span style=''></span><span style='background: #AEF1AE'>      isFirst = false
+</span>52 <span style=''></span><span style='background: #AEF1AE'>      (nextPair ne null)
+</span>53 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''> else {
+</span>54 <span style=''>      </span><span style='background: #AEF1AE'>if (nextPair ne null) {
+</span>55 <span style=''></span><span style='background: #AEF1AE'>        val cur = nextPair
+</span>56 <span style=''></span><span style='background: #AEF1AE'>        nextPair = getNext
+</span>57 <span style=''></span><span style='background: #AEF1AE'>        if (nextPair ne null) {
+</span>58 <span style=''></span><span style='background: #AEF1AE'>          // are they different?
+</span>59 <span style=''></span><span style='background: #AEF1AE'>          if (predicate.equal(cur._2, nextPair._2)) {
+</span>60 <span style=''></span><span style='background: #AEF1AE'>            // get again, recurse
+</span>61 <span style=''></span><span style='background: #AEF1AE'>            hasNext
+</span>62 <span style=''></span><span style='background: #AEF1AE'>          } else {
+</span>63 <span style=''></span><span style='background: #AEF1AE'>            true
+</span>64 <span style=''></span><span style='background: #AEF1AE'>          }
+</span>65 <span style=''></span><span style='background: #AEF1AE'>        } else {
+</span>66 <span style=''></span><span style='background: #AEF1AE'>          false
+</span>67 <span style=''></span><span style='background: #AEF1AE'>        }
+</span>68 <span style=''></span><span style='background: #AEF1AE'>      } else </span><span style='background: #F0ADAD'>false</span><span style=''>
+</span>69 <span style=''>    }
+</span>70 <span style=''>
+</span>71 <span style=''>    def next(): T =
+</span>72 <span style=''>      if (</span><span style='background: #AEF1AE'>nextPair ne null</span><span style=''>) {
+</span>73 <span style=''>        </span><span style='background: #AEF1AE'>nextPair._2</span><span style=''>
+</span>74 <span style=''>      } else </span><span style='background: #F0ADAD'>throw new NoSuchElementException(&quot;next on empty iterator&quot;)</span><span style=''>
+</span>75 <span style=''>
+</span>76 <span style=''>  }
+</span>77 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          495
+        </td>
+        <td>
+          426
+          -
+          429
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.DuplicateFilter.$anon.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          21
+        </td>
+        <td>
+          457
+        </td>
+        <td>
+          460
+          -
+          473
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.IterableLike.iterator
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          DuplicateFilter.this.orig.iterator
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          458
+        </td>
+        <td>
+          507
+          -
+          514
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.DuplicateFilter.$anon.getNext
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.getNext
+        </td>
+      </tr><tr>
+        <td>
+          23
+        </td>
+        <td>
+          459
+        </td>
+        <td>
+          533
+          -
+          537
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          25
+        </td>
+        <td>
+          460
+        </td>
+        <td>
+          580
+          -
+          591
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.Iterator.hasNext
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.itr.hasNext
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          461
+        </td>
+        <td>
+          602
+          -
+          606
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          462
+        </td>
+        <td>
+          608
+          -
+          616
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.Iterator.next
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.itr.next()
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          463
+        </td>
+        <td>
+          601
+          -
+          617
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[Boolean, T](true, $anon.this.itr.next())
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          464
+        </td>
+        <td>
+          601
+          -
+          617
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[Boolean, T](true, $anon.this.itr.next())
+        </td>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          465
+        </td>
+        <td>
+          637
+          -
+          641
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          466
+        </td>
+        <td>
+          637
+          -
+          655
+        </td>
+        <td>
+          Typed
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          (null: (Boolean, T))
+        </td>
+      </tr><tr>
+        <td>
+          49
+        </td>
+        <td>
+          467
+        </td>
+        <td>
+          1100
+          -
+          1107
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.DuplicateFilter.$anon.isFirst
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.isFirst
+        </td>
+      </tr><tr>
+        <td>
+          49
+        </td>
+        <td>
+          470
+        </td>
+        <td>
+          1109
+          -
+          1203
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  $anon.this.isFirst_=(false);
+  $anon.this.nextPair.ne(null)
+}
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          468
+        </td>
+        <td>
+          1157
+          -
+          1172
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.DuplicateFilter.$anon.isFirst_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.isFirst_=(false)
+        </td>
+      </tr><tr>
+        <td>
+          52
+        </td>
+        <td>
+          469
+        </td>
+        <td>
+          1180
+          -
+          1196
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.ne
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.nextPair.ne(null)
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          471
+        </td>
+        <td>
+          1221
+          -
+          1237
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.ne
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.nextPair.ne(null)
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          486
+        </td>
+        <td>
+          1239
+          -
+          1566
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val cur: (Boolean, T) = $anon.this.nextPair;
+  $anon.this.nextPair_=($anon.this.getNext);
+  if ($anon.this.nextPair.ne(null))
+    if (DuplicateFilter.this.predicate.equal(cur._2, $anon.this.nextPair._2))
+      $anon.this.hasNext
+    else
+      true
+  else
+    false
+}
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          489
+        </td>
+        <td>
+          1217
+          -
+          1577
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if ($anon.this.nextPair.ne(null))
+  {
+    val cur: (Boolean, T) = $anon.this.nextPair;
+    $anon.this.nextPair_=($anon.this.getNext);
+    if ($anon.this.nextPair.ne(null))
+      if (DuplicateFilter.this.predicate.equal(cur._2, $anon.this.nextPair._2))
+        $anon.this.hasNext
+      else
+        true
+    else
+      false
+  }
+else
+  false
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          472
+        </td>
+        <td>
+          1259
+          -
+          1267
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.DuplicateFilter.$anon.nextPair
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.nextPair
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          473
+        </td>
+        <td>
+          1287
+          -
+          1294
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.DuplicateFilter.$anon.getNext
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.getNext
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          474
+        </td>
+        <td>
+          1276
+          -
+          1294
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.DuplicateFilter.$anon.nextPair_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.nextPair_=($anon.this.getNext)
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          475
+        </td>
+        <td>
+          1307
+          -
+          1323
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.ne
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.nextPair.ne(null)
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          476
+        </td>
+        <td>
+          1390
+          -
+          1396
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          cur._2
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          477
+        </td>
+        <td>
+          1398
+          -
+          1409
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.nextPair._2
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          478
+        </td>
+        <td>
+          1374
+          -
+          1410
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.Equal.equal
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          DuplicateFilter.this.predicate.equal(cur._2, $anon.this.nextPair._2)
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          483
+        </td>
+        <td>
+          1370
+          -
+          1515
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (DuplicateFilter.this.predicate.equal(cur._2, $anon.this.nextPair._2))
+  $anon.this.hasNext
+else
+  true
+        </td>
+      </tr><tr>
+        <td>
+          61
+        </td>
+        <td>
+          479
+        </td>
+        <td>
+          1460
+          -
+          1467
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.DuplicateFilter.$anon.hasNext
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.hasNext
+        </td>
+      </tr><tr>
+        <td>
+          61
+        </td>
+        <td>
+          480
+        </td>
+        <td>
+          1460
+          -
+          1467
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.collection.DuplicateFilter.$anon.hasNext
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.hasNext
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          481
+        </td>
+        <td>
+          1499
+          -
+          1503
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          482
+        </td>
+        <td>
+          1499
+          -
+          1503
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          66
+        </td>
+        <td>
+          484
+        </td>
+        <td>
+          1543
+          -
+          1548
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          66
+        </td>
+        <td>
+          485
+        </td>
+        <td>
+          1543
+          -
+          1548
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          68
+        </td>
+        <td>
+          487
+        </td>
+        <td>
+          1572
+          -
+          1577
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          68
+        </td>
+        <td>
+          488
+        </td>
+        <td>
+          1572
+          -
+          1577
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          72
+        </td>
+        <td>
+          490
+        </td>
+        <td>
+          1615
+          -
+          1631
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.ne
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.nextPair.ne(null)
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          491
+        </td>
+        <td>
+          1643
+          -
+          1654
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.nextPair._2
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          492
+        </td>
+        <td>
+          1643
+          -
+          1654
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.nextPair._2
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          493
+        </td>
+        <td>
+          1668
+          -
+          1726
+        </td>
+        <td>
+          Throw
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          throw new scala.`package`.NoSuchElementException(&quot;next on empty iterator&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          494
+        </td>
+        <td>
+          1668
+          -
+          1726
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          throw new scala.`package`.NoSuchElementException(&quot;next on empty iterator&quot;)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

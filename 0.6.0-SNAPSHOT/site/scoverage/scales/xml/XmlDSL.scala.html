@@ -1,0 +1,265 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/xml/XmlDSL.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.xml
+</span>2 <span style=''>
+</span>3 <span style=''>import ScalesXml.{fromParserDefault} // note cannot be in parser here
+</span>4 <span style=''>
+</span>5 <span style=''>/**
+</span>6 <span style=''> * Creates DslBuilder instances
+</span>7 <span style=''> */
+</span>8 <span style=''>object &lt; {
+</span>9 <span style=''>  /**
+</span>10 <span style=''>   * Creates a DslBuilder with qname as the root Elems 
+</span>11 <span style=''>   */ 
+</span>12 <span style=''>  def apply(qname : QName) = </span><span style='background: #AEF1AE'>dsl.DslBuilder(Elem(qname))</span><span style=''>
+</span>13 <span style=''>  /**
+</span>14 <span style=''>   * Creates a DslBuilder with the given elem as root
+</span>15 <span style=''>   */ 
+</span>16 <span style=''>  def apply(elem : Elem) = </span><span style='background: #AEF1AE'>dsl.DslBuilder(elem)</span><span style=''>
+</span>17 <span style=''>}
+</span>18 <span style=''>
+</span>19 <span style=''>/**
+</span>20 <span style=''> * Creates OptionalDslBuilder instances.  If none of the end Elems contain data (either attributes or child text nodes) the result of the builder is None.
+</span>21 <span style=''> */
+</span>22 <span style=''>object ?&lt; {
+</span>23 <span style=''>  /**
+</span>24 <span style=''>   * Creates an OptionalDslBuilder with qname as the root Elems 
+</span>25 <span style=''>   */ 
+</span>26 <span style=''>  def apply(qname : QName) = </span><span style='background: #AEF1AE'>dsl.OptionalDslBuilder(Elem(qname))</span><span style=''>
+</span>27 <span style=''>  /**
+</span>28 <span style=''>   * Creates a OptionalDslBuilder with the given elem as root
+</span>29 <span style=''>   */ 
+</span>30 <span style=''>  def apply(elem : Elem) = </span><span style='background: #F0ADAD'>dsl.OptionalDslBuilder(elem)</span><span style=''>
+</span>31 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          12
+        </td>
+        <td>
+          2142
+        </td>
+        <td>
+          259
+          -
+          259
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.XmlTypesImplicits.fromParserDefault
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesXml.fromParserDefault
+        </td>
+      </tr><tr>
+        <td>
+          12
+        </td>
+        <td>
+          2143
+        </td>
+        <td>
+          255
+          -
+          266
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.Elem.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Elem.apply(qname, Elem.apply$default$2, Elem.apply$default$3)(ScalesXml.fromParserDefault)
+        </td>
+      </tr><tr>
+        <td>
+          12
+        </td>
+        <td>
+          2144
+        </td>
+        <td>
+          240
+          -
+          267
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.dsl.DslBuilder.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          dsl.DslBuilder.apply(Elem.apply(qname, Elem.apply$default$2, Elem.apply$default$3)(ScalesXml.fromParserDefault))
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          2145
+        </td>
+        <td>
+          362
+          -
+          382
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.dsl.DslBuilder.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          dsl.DslBuilder.apply(elem)
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          2146
+        </td>
+        <td>
+          695
+          -
+          695
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.XmlTypesImplicits.fromParserDefault
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesXml.fromParserDefault
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          2147
+        </td>
+        <td>
+          691
+          -
+          702
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.Elem.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Elem.apply(qname, Elem.apply$default$2, Elem.apply$default$3)(ScalesXml.fromParserDefault)
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          2148
+        </td>
+        <td>
+          668
+          -
+          703
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.dsl.OptionalDslBuilder.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          dsl.OptionalDslBuilder.apply(Elem.apply(qname, Elem.apply$default$2, Elem.apply$default$3)(ScalesXml.fromParserDefault))
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          2149
+        </td>
+        <td>
+          806
+          -
+          834
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.dsl.OptionalDslBuilder.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          dsl.OptionalDslBuilder.apply(elem)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

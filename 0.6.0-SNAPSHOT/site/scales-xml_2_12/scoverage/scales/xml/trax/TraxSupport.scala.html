@@ -1,0 +1,451 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/xml/trax/TraxSupport.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.xml.trax
+</span>2 <span style=''>
+</span>3 <span style=''>import javax.xml.transform.Source
+</span>4 <span style=''>import javax.xml.transform.stax._
+</span>5 <span style=''>import javax.xml.transform.sax._
+</span>6 <span style=''>
+</span>7 <span style=''>import scales.utils._
+</span>8 <span style=''>
+</span>9 <span style=''>//import ScalesXml._
+</span>10 <span style=''>
+</span>11 <span style=''>import scales.xml.parser.sax.Handler
+</span>12 <span style=''>import scales.xml.parser.strategies.{PathOptimisationStrategy, OptimisationToken}
+</span>13 <span style=''>
+</span>14 <span style=''>import scales.xml.{Doc, DocLike, EmptyDoc, PullType, XmlTree, streamOr, convertToStream, asString, ScalesXml}
+</span>15 <span style=''>import scales.xml.impl.Versions
+</span>16 <span style=''>import scales.xml.serializers.SerializeableXml
+</span>17 <span style=''>
+</span>18 <span style=''>/**
+</span>19 <span style=''> * A TrAX Result
+</span>20 <span style=''> */ 
+</span>21 <span style=''>case class ScalesResult[Token &lt;: OptimisationToken](strategy : PathOptimisationStrategy[Token] = scales.xml.defaultPathOptimisation) extends SAXResult(new Handler[Token](strategy)(ScalesXml.defaultVersion)) {
+</span>22 <span style=''>  def doc = {
+</span>23 <span style=''>    val handler = </span><span style='background: #F0ADAD'>getHandler.asInstanceOf[Handler[Token]]</span><span style=''>
+</span>24 <span style=''>    //val tp = handler.buf.proxies(0)
+</span>25 <span style=''>
+</span>26 <span style=''>    </span><span style='background: #F0ADAD'>Doc(handler.getBuf.tree//Tree(tp.elem, tp.children.result)//path.tree()
+</span>27 <span style=''></span><span style='background: #F0ADAD'>	, handler.getProlog, handler.getEnd)</span><span style=''>
+</span>28 <span style=''>  }
+</span>29 <span style=''>}
+</span>30 <span style=''>
+</span>31 <span style=''>/**
+</span>32 <span style=''> * Use as a basis for TrAX or javax.xml.validation and some other services.  Unfortunately XPath isn't one of them, fortunately ScalesXml comes with similar...
+</span>33 <span style=''> *
+</span>34 <span style=''> * To add to the joy, at time of writing Xalan (2.7.1) uses SAXSource.toInputSource to convert this into a stream, problem is the JVM version (1.6.0_24) doesn't support StAXSource transformation, which is nice.  So until this is fixed users should serialize themselves into a stream and then use for trax if they are using Xalan directly.
+</span>35 <span style=''> * 
+</span>36 <span style=''> * Only the prolog and endMisc are taken from the document, the rest comes from the stream
+</span>37 <span style=''> */ 
+</span>38 <span style=''>case class ScalesSource(stream : Iterator[PullType], documentLike : DocLike = EmptyDoc()) extends StAXSource (
+</span>39 <span style=''>  new ScalesStreamReader() {
+</span>40 <span style=''>    val itr = stream
+</span>41 <span style=''>    val docLike = documentLike
+</span>42 <span style=''>  }
+</span>43 <span style=''>)
+</span>44 <span style=''>
+</span>45 <span style=''>trait TraxConversionImplicits {
+</span>46 <span style=''>
+</span>47 <span style=''>  implicit def treeToSource( tree : XmlTree )(implicit serf: scales.xml.serializers.SerializerFactory, sf : SerializeableXml[XmlTree]) : Source = 
+</span>48 <span style=''>    </span><span style='background: #F0ADAD'>streamOr( tree, ScalesSource(convertToStream(tree)))</span><span style=''>
+</span>49 <span style=''>
+</span>50 <span style=''>  implicit def docToSource( doc : Doc )(implicit serf: scales.xml.serializers.SerializerFactory, sf : SerializeableXml[Doc]) : Source = 
+</span>51 <span style=''>    </span><span style='background: #AEF1AE'>streamOr( doc, ScalesSource(convertToStream(doc.rootElem), doc))</span><span style=''>
+</span>52 <span style=''>}
+</span>53 <span style=''>
+</span>54 <span style=''>
+</span>55 <span style=''>trait TraxSourceConversions {
+</span>56 <span style=''>
+</span>57 <span style=''>  def convertToStream(tree : XmlTree) : Iterator[PullType] = </span><span style='background: #AEF1AE'>new TreeIterable(tree)</span><span style=''>
+</span>58 <span style=''>
+</span>59 <span style=''>  /**
+</span>60 <span style=''>   * When the user really wants a stream source or there is yet another place that jaxp Source support is not complete.
+</span>61 <span style=''>   */ 
+</span>62 <span style=''>  def asStreamSource[T]( xml : T )(implicit serf: scales.xml.serializers.SerializerFactory, serXml: SerializeableXml[T]) : Source = {
+</span>63 <span style=''>    val str = </span><span style='background: #F0ADAD'>asString(xml)</span><span style=''>
+</span>64 <span style=''>    </span><span style='background: #F0ADAD'>new javax.xml.transform.stream.StreamSource(new java.io.StringReader(str))</span><span style=''>
+</span>65 <span style=''>  }
+</span>66 <span style=''>
+</span>67 <span style=''>  def streamOr[T]( xml : T , f : =&gt; Source)(implicit serf: scales.xml.serializers.SerializerFactory, serXml: SerializeableXml[T]) : Source =
+</span>68 <span style=''>    if (Versions.traxSourceShouldSerialize)
+</span>69 <span style=''>      </span><span style='background: #F0ADAD'>asStreamSource(xml)</span><span style=''>
+</span>70 <span style=''>    else 
+</span>71 <span style=''>      </span><span style='background: #AEF1AE'>f</span><span style=''>
+</span>72 <span style=''>  
+</span>73 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          23
+        </td>
+        <td>
+          5643
+        </td>
+        <td>
+          749
+          -
+          788
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ScalesResult.this.getHandler().asInstanceOf[scales.xml.parser.sax.Handler[Token]]
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          5644
+        </td>
+        <td>
+          836
+          -
+          855
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.TreeProxies.tree
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          handler.getBuf.tree
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          5647
+        </td>
+        <td>
+          832
+          -
+          941
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Doc.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.xml.Doc.apply(handler.getBuf.tree, handler.getProlog, handler.getEnd)
+        </td>
+      </tr><tr>
+        <td>
+          27
+        </td>
+        <td>
+          5645
+        </td>
+        <td>
+          907
+          -
+          924
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.sax.Handler.getProlog
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          handler.getProlog
+        </td>
+      </tr><tr>
+        <td>
+          27
+        </td>
+        <td>
+          5646
+        </td>
+        <td>
+          926
+          -
+          940
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.sax.Handler.getEnd
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          handler.getEnd
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          5648
+        </td>
+        <td>
+          1938
+          -
+          1990
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.trax.TraxSourceConversions.streamOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.xml.`package`.streamOr[scales.xml.XmlTree](tree, ScalesSource.apply(scales.xml.`package`.convertToStream(tree), ScalesSource.apply$default$2))(serf, sf)
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          5649
+        </td>
+        <td>
+          2133
+          -
+          2197
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.trax.TraxSourceConversions.streamOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.`package`.streamOr[scales.xml.Doc](doc, ScalesSource.apply(scales.xml.`package`.convertToStream(doc.rootElem), doc))(serf, sf)
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          5650
+        </td>
+        <td>
+          2294
+          -
+          2316
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.trax.TreeIterable.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new TreeIterable(tree)
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          5651
+        </td>
+        <td>
+          2599
+          -
+          2612
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.serializers.XmlPrinter.asString
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.xml.`package`.asString[T](xml)(serf, serXml)
+        </td>
+      </tr><tr>
+        <td>
+          64
+        </td>
+        <td>
+          5652
+        </td>
+        <td>
+          2661
+          -
+          2690
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.StringReader.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new java.io.StringReader(str)
+        </td>
+      </tr><tr>
+        <td>
+          64
+        </td>
+        <td>
+          5653
+        </td>
+        <td>
+          2617
+          -
+          2691
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.transform.stream.StreamSource.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new javax.xml.transform.stream.StreamSource(new java.io.StringReader(str))
+        </td>
+      </tr><tr>
+        <td>
+          69
+        </td>
+        <td>
+          5654
+        </td>
+        <td>
+          2888
+          -
+          2907
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.trax.TraxSourceConversions.asStreamSource
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          TraxSourceConversions.this.asStreamSource[T](xml)(serf, serXml)
+        </td>
+      </tr><tr>
+        <td>
+          69
+        </td>
+        <td>
+          5655
+        </td>
+        <td>
+          2888
+          -
+          2907
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.trax.TraxSourceConversions.asStreamSource
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          TraxSourceConversions.this.asStreamSource[T](xml)(serf, serXml)
+        </td>
+      </tr><tr>
+        <td>
+          71
+        </td>
+        <td>
+          5656
+        </td>
+        <td>
+          2924
+          -
+          2925
+        </td>
+        <td>
+          Ident
+        </td>
+        <td>
+          scales.xml.trax.TraxSourceConversions.f
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          f
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

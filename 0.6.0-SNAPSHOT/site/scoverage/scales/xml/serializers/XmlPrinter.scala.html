@@ -1,0 +1,3957 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/xml/serializers/XmlPrinter.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.xml.serializers
+</span>2 <span style=''>
+</span>3 <span style=''>import scales.xml.impl.NamespaceDefaults
+</span>4 <span style=''>
+</span>5 <span style=''>import scales.xml.{EmptyDoc, XmlItem, DocLike,
+</span>6 <span style=''>		 Misc, XmlVersion, Declaration,
+</span>7 <span style=''>		 XmlPull, ScalesXml, Elem}
+</span>8 <span style=''>
+</span>9 <span style=''>import scales.utils._
+</span>10 <span style=''>
+</span>11 <span style=''>import scala.collection.immutable.Map
+</span>12 <span style=''>
+</span>13 <span style=''>import resources._
+</span>14 <span style=''>
+</span>15 <span style=''>import java.io.Writer
+</span>16 <span style=''>
+</span>17 <span style=''>import java.nio.charset.Charset
+</span>18 <span style=''>
+</span>19 <span style=''>trait XmlPrinterImplicits {
+</span>20 <span style=''>
+</span>21 <span style=''>  implicit def fromSerializeableToWriteTo[T : SerializeableXml]( it : T ) =
+</span>22 <span style=''>    </span><span style='background: #AEF1AE'>new WriteTo[T](it)</span><span style=''>
+</span>23 <span style=''>
+</span>24 <span style=''>
+</span>25 <span style=''>  /**
+</span>26 <span style=''>   * Import to _ and replace with your own SerializerFactory if desired
+</span>27 <span style=''>   */
+</span>28 <span style=''>  implicit val defaultSerializerFactory : SerializerFactory = LSSerializerFactory
+</span>29 <span style=''>
+</span>30 <span style=''>  case class DeclarationConverter(decl: Declaration) {
+</span>31 <span style=''>    def withWriter(out: Writer): SerializerData = </span><span style='background: #F0ADAD'>scales.xml.withWriter(decl, out)</span><span style=''>
+</span>32 <span style=''>  }
+</span>33 <span style=''>
+</span>34 <span style=''>  implicit def toWithWriter(decl: Declaration) = </span><span style='background: #F0ADAD'>DeclarationConverter(decl)</span><span style=''>
+</span>35 <span style=''>
+</span>36 <span style=''>}
+</span>37 <span style=''>
+</span>38 <span style=''>trait XmlPrinter {
+</span>39 <span style=''>
+</span>40 <span style=''>  /**
+</span>41 <span style=''>   * a) add / replace in mappings
+</span>42 <span style=''>   * b) add to declMap
+</span>43 <span style=''>   */
+</span>44 <span style=''>  def laddNS(entry: (String, String), mappings: Map[String, String], declMap: Map[String, String]) = {
+</span>45 <span style=''>    val mapping = </span><span style='background: #AEF1AE'>mappings.get(entry._1)</span><span style=''>
+</span>46 <span style=''>
+</span>47 <span style=''>    if (</span><span style='background: #AEF1AE'>mapping.isDefined</span><span style=''>) {
+</span>48 <span style=''>      // currently exists
+</span>49 <span style=''>      </span><span style='background: #AEF1AE'>if (mapping.get == entry._2) {
+</span>50 <span style=''></span><span style='background: #AEF1AE'>        // do nothing
+</span>51 <span style=''></span><span style='background: #AEF1AE'>        (mappings, declMap)
+</span>52 <span style=''></span><span style='background: #AEF1AE'>      } else {
+</span>53 <span style=''></span><span style='background: #AEF1AE'>        // replace and redefine
+</span>54 <span style=''></span><span style='background: #AEF1AE'>        (mappings.updated(entry._1, entry._2),
+</span>55 <span style=''></span><span style='background: #AEF1AE'>          declMap + entry)
+</span>56 <span style=''></span><span style='background: #AEF1AE'>      }</span><span style=''>
+</span>57 <span style=''>    } else {
+</span>58 <span style=''>      // map and define
+</span>59 <span style=''>      </span><span style='background: #AEF1AE'>(mappings + (entry._1 -&gt; entry._2),
+</span>60 <span style=''></span><span style='background: #AEF1AE'>        declMap + entry)</span><span style=''>
+</span>61 <span style=''>    }
+</span>62 <span style=''>  }
+</span>63 <span style=''>
+</span>64 <span style=''>  def doElement(x: Elem, currentMappings : Map[String, String]) = {
+</span>65 <span style=''>    import ScalesXml._
+</span>66 <span style=''>
+</span>67 <span style=''>    // for each of our namespace mappings that differ (or are not there)
+</span>68 <span style=''>    var (mappings, declMap) = x.namespaces.foldLeft( // (nsmappings start with top , what we declare)
+</span>69 <span style=''>      (currentMappings, Map[String, String]()))((p, a) =&gt; laddNS(a, p._1, p._2))
+</span>70 <span style=''>
+</span>71 <span style=''>    // with our attributes
+</span>72 <span style=''>    val t = </span><span style='background: #AEF1AE'>x.attributes.foldLeft((mappings, declMap)) { (p, a) =&gt;
+</span>73 <span style=''></span><span style='background: #AEF1AE'>      val e = a
+</span>74 <span style=''></span><span style='background: #AEF1AE'>      if (e.prefix.isDefined)
+</span>75 <span style=''></span><span style='background: #AEF1AE'>        laddNS((e.prefix.get, e.namespace.uri), p._1, p._2)
+</span>76 <span style=''></span><span style='background: #AEF1AE'>      else p
+</span>77 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>78 <span style=''>
+</span>79 <span style=''>    mappings = </span><span style='background: #AEF1AE'>t._1</span><span style=''>
+</span>80 <span style=''>    declMap = </span><span style='background: #AEF1AE'>t._2</span><span style=''>
+</span>81 <span style=''>
+</span>82 <span style=''>    // is this namespace declared?
+</span>83 <span style=''>    val addedDefaultNS = {
+</span>84 <span style=''>      val currentDefault = </span><span style='background: #AEF1AE'>mappings(NamespaceDefaults.namespace.uri)</span><span style=''>
+</span>85 <span style=''>      if (</span><span style='background: #AEF1AE'>x.name.namespace != NamespaceDefaults.noNamespace</span><span style=''>) {
+</span>86 <span style=''>        // is there a prefix?
+</span>87 <span style=''>        </span><span style='background: #AEF1AE'>if (x.name.prefix.isDefined) {
+</span>88 <span style=''></span><span style='background: #AEF1AE'>          // then it is a normal laddNS
+</span>89 <span style=''></span><span style='background: #AEF1AE'>          val (imappings, ideclMap) = laddNS((x.name.prefix.get, x.name.namespace.uri), mappings, declMap)
+</span>90 <span style=''></span><span style='background: #AEF1AE'>          mappings = imappings
+</span>91 <span style=''></span><span style='background: #AEF1AE'>          declMap = ideclMap
+</span>92 <span style=''></span><span style='background: #AEF1AE'>          // push the current on again
+</span>93 <span style=''></span><span style='background: #AEF1AE'>          false
+</span>94 <span style=''></span><span style='background: #AEF1AE'>        } else {
+</span>95 <span style=''></span><span style='background: #AEF1AE'>          // there will always be on as we don't remove only redefine.
+</span>96 <span style=''></span><span style='background: #AEF1AE'>
+</span>97 <span style=''></span><span style='background: #AEF1AE'>          // is it the current default namespace? 
+</span>98 <span style=''></span><span style='background: #AEF1AE'>          if (currentDefault == x.name.namespace.uri) {
+</span>99 <span style=''></span><span style='background: #AEF1AE'>            // keep the current
+</span>100 <span style=''></span><span style='background: #AEF1AE'>            false
+</span>101 <span style=''></span><span style='background: #AEF1AE'>          } else {
+</span>102 <span style=''></span><span style='background: #AEF1AE'>            // must redefine it
+</span>103 <span style=''></span><span style='background: #AEF1AE'>            // then the namespace has been badly declared as we have a conflict, but in order for at
+</span>104 <span style=''></span><span style='background: #AEF1AE'>            // least this element to be valid we must remap it, log it?
+</span>105 <span style=''></span><span style='background: #AEF1AE'>            mappings = mappings.updated(NamespaceDefaults.namespace.uri, x.name.namespace.uri)
+</span>106 <span style=''></span><span style='background: #AEF1AE'>            true
+</span>107 <span style=''></span><span style='background: #AEF1AE'>          }
+</span>108 <span style=''></span><span style='background: #AEF1AE'>        }</span><span style=''>
+</span>109 <span style=''>      } else {
+</span>110 <span style=''>        // then if the current default is not &quot;&quot; we must redeclare it
+</span>111 <span style=''>        </span><span style='background: #AEF1AE'>if (currentDefault == NamespaceDefaults.noNamespace.uri) {
+</span>112 <span style=''></span><span style='background: #AEF1AE'>          false
+</span>113 <span style=''></span><span style='background: #AEF1AE'>        } else {
+</span>114 <span style=''></span><span style='background: #AEF1AE'>          mappings = mappings.updated(NamespaceDefaults.namespace.uri, NamespaceDefaults.noNamespace.uri)
+</span>115 <span style=''></span><span style='background: #AEF1AE'>          true
+</span>116 <span style=''></span><span style='background: #AEF1AE'>        }</span><span style=''>
+</span>117 <span style=''>      }
+</span>118 <span style=''>    }
+</span>119 <span style=''>
+</span>120 <span style=''>    // don't render it here, mappings contains it
+</span>121 <span style=''>    declMap = </span><span style='background: #AEF1AE'>declMap - NamespaceDefaults.namespace.uri</span><span style=''>
+</span>122 <span style=''>
+</span>123 <span style=''>    val default = </span><span style='background: #AEF1AE'>x.namespaces.get(NamespaceDefaults.namespace.uri)</span><span style=''>
+</span>124 <span style=''>    val addDef =
+</span>125 <span style=''>      if (</span><span style='background: #AEF1AE'>addedDefaultNS || default.isDefined</span><span style=''>) {
+</span>126 <span style=''>        // we have a new mapping, old one doesn't work anymore
+</span>127 <span style=''>        </span><span style='background: #AEF1AE'>Some(mappings(NamespaceDefaults.namespace.uri))</span><span style=''>
+</span>128 <span style=''>      } else
+</span>129 <span style=''>        </span><span style='background: #AEF1AE'>None</span><span style=''>
+</span>130 <span style=''>
+</span>131 <span style=''>    </span><span style='background: #AEF1AE'>NamespaceContext(mappings, declMap, addDef)</span><span style=''>
+</span>132 <span style=''>  }
+</span>133 <span style=''>
+</span>134 <span style=''>
+</span>135 <span style=''>  def withWriter(decl: Declaration, out: Writer): SerializerData = </span><span style='background: #F0ADAD'>SerializerData(out, decl.version, decl.encoding)</span><span style=''>
+</span>136 <span style=''>
+</span>137 <span style=''>  def serializeMisc(pout: XmlOutput, misc: Iterable[Misc], serializer: Serializer) = {
+</span>138 <span style=''>    val opt = </span><span style='background: #AEF1AE'>misc.foldLeft(None: Option[Throwable]) { (x, m) =&gt;
+</span>139 <span style=''></span><span style='background: #AEF1AE'>      x.orElse {
+</span>140 <span style=''></span><span style='background: #AEF1AE'>        serializer.item(m.fold[XmlItem](z =&gt; z, y =&gt; y), List())
+</span>141 <span style=''></span><span style='background: #AEF1AE'>      }
+</span>142 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>143 <span style=''>    </span><span style='background: #AEF1AE'>(pout, opt)</span><span style=''>
+</span>144 <span style=''>  }
+</span>145 <span style=''>
+</span>146 <span style=''>  def headerAndFooter(pout: XmlOutput, doc: DocLike)(serializerf: (XmlOutput, Serializer) =&gt; (XmlOutput, Option[Throwable])): Serializer =&gt; Option[Throwable] = { serializer =&gt;
+</span>147 <span style=''>
+</span>148 <span style=''>    var out = pout
+</span>149 <span style=''>    // TODO DTD
+</span>150 <span style=''>    </span><span style='background: #AEF1AE'>serializer.xmlDeclaration(pout.data.encoding, pout.data.version).orElse {
+</span>151 <span style=''></span><span style='background: #AEF1AE'>      // DTD
+</span>152 <span style=''></span><span style='background: #AEF1AE'>      None
+</span>153 <span style=''></span><span style='background: #AEF1AE'>    }.orElse {
+</span>154 <span style=''></span><span style='background: #AEF1AE'>      val (pout, opt) = serializeMisc(out, doc.prolog.misc, serializer)
+</span>155 <span style=''></span><span style='background: #AEF1AE'>      out = pout
+</span>156 <span style=''></span><span style='background: #AEF1AE'>      opt
+</span>157 <span style=''></span><span style='background: #AEF1AE'>    }.orElse {
+</span>158 <span style=''></span><span style='background: #AEF1AE'>      val (pout, opt) = serializerf(out, serializer)
+</span>159 <span style=''></span><span style='background: #AEF1AE'>      out = pout
+</span>160 <span style=''></span><span style='background: #AEF1AE'>      opt
+</span>161 <span style=''></span><span style='background: #AEF1AE'>    }.orElse {
+</span>162 <span style=''></span><span style='background: #AEF1AE'>      val (pout, opt) = serializeMisc(out, doc.end.misc, serializer)
+</span>163 <span style=''></span><span style='background: #AEF1AE'>      out = pout
+</span>164 <span style=''></span><span style='background: #AEF1AE'>      opt
+</span>165 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>166 <span style=''>  }
+</span>167 <span style=''>
+</span>168 <span style=''>  type CloseablePull = XmlPull with java.io.Closeable with IsClosed
+</span>169 <span style=''>
+</span>170 <span style=''>  /**
+</span>171 <span style=''>   * Placeholder - prefer serialize instead
+</span>172 <span style=''>   */
+</span>173 <span style=''>  def foldPrint[T: SerializeableXml](pout: XmlOutput)(it: T) =
+</span>174 <span style=''>    </span><span style='background: #AEF1AE'>serialize(pout)(it)</span><span style=''>
+</span>175 <span style=''>
+</span>176 <span style=''>  /**
+</span>177 <span style=''>   * Serializes items which can behave like xml.
+</span>178 <span style=''>   */
+</span>179 <span style=''>  def serialize[T: SerializeableXml](pout: XmlOutput)(it: T) =
+</span>180 <span style=''>    </span><span style='background: #AEF1AE'>pout.serializerF {
+</span>181 <span style=''></span><span style='background: #AEF1AE'>      val sxml = implicitly[SerializeableXml[T]]
+</span>182 <span style=''></span><span style='background: #AEF1AE'>      headerAndFooter(pout, sxml.doc(it))(
+</span>183 <span style=''></span><span style='background: #AEF1AE'>        sxml(it))
+</span>184 <span style=''></span><span style='background: #AEF1AE'>    }(pout.data)</span><span style=''>
+</span>185 <span style=''>
+</span>186 <span style=''>  /**
+</span>187 <span style=''>   * Writes the xml to a given Writer with defaults provided for .
+</span>188 <span style=''>   */ 
+</span>189 <span style=''>  def writeTo[T](it: T, output : Writer, version: Option[XmlVersion] = None, encoding: Option[Charset] = None)(implicit serializerFI: SerializerFactory, sxml: SerializeableXml[T]) : Option[Throwable] = {
+</span>190 <span style=''>    val decl = </span><span style='background: #AEF1AE'>sxml.doc(it).prolog.decl</span><span style=''>
+</span>191 <span style=''>    val sd = </span><span style='background: #AEF1AE'>SerializerData(output, 
+</span>192 <span style=''></span><span style='background: #AEF1AE'>      version.getOrElse(decl.version), 
+</span>193 <span style=''></span><span style='background: #AEF1AE'>      encoding.getOrElse(decl.encoding))</span><span style=''>
+</span>194 <span style=''>    val xo = </span><span style='background: #AEF1AE'>XmlOutput(sd)</span><span style=''>
+</span>195 <span style=''>//    println(xo.serializerF.getClass.getName)
+</span>196 <span style=''>//    println(implicitly[SerializerFactory].getClass.getName)
+</span>197 <span style=''>    </span><span style='background: #AEF1AE'>serialize(xo)(it)</span><span style=''>
+</span>198 <span style=''>  }
+</span>199 <span style=''>
+</span>200 <span style=''>
+</span>201 <span style=''>  /**
+</span>202 <span style=''>   * Prints to stdout, useful for testing etc  Will dump an error if one is found.
+</span>203 <span style=''>   *
+</span>204 <span style=''>   * Note it outputs to the vmDefaultCharset so it should always be C+P able
+</span>205 <span style=''>   */
+</span>206 <span style=''>  def printTree[T](xml: T)(implicit serf: SerializerFactory, sxml: SerializeableXml[T]): Unit = {
+</span>207 <span style=''>    val out = </span><span style='background: #F0ADAD'>new java.io.PrintWriter(System.out)</span><span style=''>
+</span>208 <span style=''>
+</span>209 <span style=''>    val decl = </span><span style='background: #F0ADAD'>sxml.doc(xml).prolog.decl</span><span style=''>
+</span>210 <span style=''>    </span><span style='background: #F0ADAD'>serialize(XmlOutput(SerializerData(out, decl.version, decl.encoding)))(xml) foreach { e =&gt;
+</span>211 <span style=''></span><span style='background: #F0ADAD'>      out.println(&quot;Could not serialize got the following exception &quot; + e.getClass.getName + &quot; - &quot; + e.getMessage)
+</span>212 <span style=''></span><span style='background: #F0ADAD'>      e.printStackTrace(out)
+</span>213 <span style=''></span><span style='background: #F0ADAD'>    }</span><span style=''>
+</span>214 <span style=''>    </span><span style='background: #F0ADAD'>out.flush</span><span style=''>
+</span>215 <span style=''>    //out.close, v bad to close stdout :-)
+</span>216 <span style=''>    </span><span style='background: #F0ADAD'>println()</span><span style=''>
+</span>217 <span style=''>  }
+</span>218 <span style=''>
+</span>219 <span style=''>  /**
+</span>220 <span style=''>   * Returns a string version of the tree or throws
+</span>221 <span style=''>   */
+</span>222 <span style=''>  def asString[T](xml: T)(implicit serf: SerializerFactory, sxml: SerializeableXml[T]): String = {
+</span>223 <span style=''>    val builder = </span><span style='background: #AEF1AE'>new java.io.StringWriter()</span><span style=''>
+</span>224 <span style=''>
+</span>225 <span style=''>    val decl = </span><span style='background: #AEF1AE'>sxml.doc(xml).prolog.decl</span><span style=''>
+</span>226 <span style=''>    </span><span style='background: #AEF1AE'>foldPrint(XmlOutput(SerializerData(builder, decl.version, decl.encoding)))(xml) foreach {
+</span>227 <span style=''></span><span style='background: #AEF1AE'>      throw _
+</span>228 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>229 <span style=''>    </span><span style='background: #AEF1AE'>builder.toString</span><span style=''>
+</span>230 <span style=''>  }
+</span>231 <span style=''>
+</span>232 <span style=''>  /**
+</span>233 <span style=''>   * Just for items, given we don't want to generally serialize them directly but as part of a tree.  Useful for debugging only
+</span>234 <span style=''>   */ 
+</span>235 <span style=''>  def itemAsString(xmlItem: XmlItem)(implicit serf: SerializerFactory): String = {
+</span>236 <span style=''>    implicit val items = </span><span style='background: #F0ADAD'>new</span><span style=''> SerializeableXml[XmlItem] {
+</span>237 <span style=''>      def doc(it: XmlItem) = </span><span style='background: #F0ADAD'>EmptyDoc()</span><span style=''>
+</span>238 <span style=''>      def apply(it: XmlItem)(out: XmlOutput, serializer: Serializer): (XmlOutput, Option[Throwable]) = </span><span style='background: #F0ADAD'>(out, serializer.item(it, out.path))</span><span style=''>
+</span>239 <span style=''>    }
+</span>240 <span style=''>    
+</span>241 <span style=''>    val builder = </span><span style='background: #F0ADAD'>new java.io.StringWriter()</span><span style=''>
+</span>242 <span style=''>    val o = </span><span style='background: #F0ADAD'>XmlOutput(SerializerData(builder))</span><span style=''>
+</span>243 <span style=''>    </span><span style='background: #F0ADAD'>serf{ s =&gt;
+</span>244 <span style=''></span><span style='background: #F0ADAD'>      s.item(xmlItem, o.path)
+</span>245 <span style=''></span><span style='background: #F0ADAD'>    }(o.data)</span><span style=''>
+</span>246 <span style=''>//    foldPrint(XmlOutput(SerializerData(builder)))(xml) foreach {
+</span>247 <span style=''>  //    throw _
+</span>248 <span style=''>    //}
+</span>249 <span style=''>    </span><span style='background: #F0ADAD'>builder.toString</span><span style=''>
+</span>250 <span style=''>  }
+</span>251 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          5210
+        </td>
+        <td>
+          432
+          -
+          450
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.serializers.WriteTo.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new scales.xml.serializers.WriteTo[T](it, serializers.this.WriteTo.&lt;init&gt;$default$2[T], serializers.this.WriteTo.&lt;init&gt;$default$3[T])(evidence$1)
+        </td>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          5211
+        </td>
+        <td>
+          747
+          -
+          751
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.XmlPrinterImplicits.DeclarationConverter.decl
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          DeclarationConverter.this.decl
+        </td>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          5212
+        </td>
+        <td>
+          725
+          -
+          757
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.XmlPrinter.withWriter
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.xml.`package`.withWriter(DeclarationConverter.this.decl, out)
+        </td>
+      </tr><tr>
+        <td>
+          34
+        </td>
+        <td>
+          5213
+        </td>
+        <td>
+          812
+          -
+          838
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.XmlPrinterImplicits.DeclarationConverter.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          XmlPrinterImplicits.this.DeclarationConverter.apply(decl)
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          5214
+        </td>
+        <td>
+          1066
+          -
+          1074
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          entry._1
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          5215
+        </td>
+        <td>
+          1053
+          -
+          1075
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.MapLike.get
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          mappings.get(entry._1)
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          5216
+        </td>
+        <td>
+          1085
+          -
+          1102
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Option.isDefined
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          mapping.isDefined
+        </td>
+      </tr><tr>
+        <td>
+          49
+        </td>
+        <td>
+          5217
+        </td>
+        <td>
+          1157
+          -
+          1165
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          entry._2
+        </td>
+      </tr><tr>
+        <td>
+          49
+        </td>
+        <td>
+          5218
+        </td>
+        <td>
+          1142
+          -
+          1165
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          mapping.get.==(entry._2)
+        </td>
+      </tr><tr>
+        <td>
+          49
+        </td>
+        <td>
+          5227
+        </td>
+        <td>
+          1138
+          -
+          1347
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (mapping.get.==(entry._2))
+  scala.Tuple2.apply[scala.collection.immutable.Map[String,String], scala.collection.immutable.Map[String,String]](mappings, declMap)
+else
+  scala.Tuple2.apply[scala.collection.immutable.Map[String,String], scala.collection.immutable.Map[String,String]](mappings.updated[String](entry._1, entry._2), declMap.+[String](entry))
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          5219
+        </td>
+        <td>
+          1199
+          -
+          1218
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[scala.collection.immutable.Map[String,String], scala.collection.immutable.Map[String,String]](mappings, declMap)
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          5220
+        </td>
+        <td>
+          1199
+          -
+          1218
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[scala.collection.immutable.Map[String,String], scala.collection.immutable.Map[String,String]](mappings, declMap)
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          5221
+        </td>
+        <td>
+          1292
+          -
+          1300
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          entry._1
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          5222
+        </td>
+        <td>
+          1302
+          -
+          1310
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          entry._2
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          5223
+        </td>
+        <td>
+          1275
+          -
+          1311
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.MapLike.updated
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          mappings.updated[String](entry._1, entry._2)
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          5225
+        </td>
+        <td>
+          1274
+          -
+          1339
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[scala.collection.immutable.Map[String,String], scala.collection.immutable.Map[String,String]](mappings.updated[String](entry._1, entry._2), declMap.+[String](entry))
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          5226
+        </td>
+        <td>
+          1274
+          -
+          1339
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[scala.collection.immutable.Map[String,String], scala.collection.immutable.Map[String,String]](mappings.updated[String](entry._1, entry._2), declMap.+[String](entry))
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          5224
+        </td>
+        <td>
+          1323
+          -
+          1338
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.Map.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          declMap.+[String](entry)
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          5228
+        </td>
+        <td>
+          1404
+          -
+          1412
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          entry._1
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          5229
+        </td>
+        <td>
+          1416
+          -
+          1424
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          entry._2
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          5230
+        </td>
+        <td>
+          1404
+          -
+          1424
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.ArrowAssoc.-&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.ArrowAssoc[String](entry._1).-&gt;[String](entry._2)
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          5231
+        </td>
+        <td>
+          1392
+          -
+          1425
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.Map.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          mappings.+[String](scala.Predef.ArrowAssoc[String](entry._1).-&gt;[String](entry._2))
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          5233
+        </td>
+        <td>
+          1391
+          -
+          1451
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[scala.collection.immutable.Map[String,String], scala.collection.immutable.Map[String,String]](mappings.+[String](scala.Predef.ArrowAssoc[String](entry._1).-&gt;[String](entry._2)), declMap.+[String](entry))
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          5234
+        </td>
+        <td>
+          1391
+          -
+          1451
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[scala.collection.immutable.Map[String,String], scala.collection.immutable.Map[String,String]](mappings.+[String](scala.Predef.ArrowAssoc[String](entry._1).-&gt;[String](entry._2)), declMap.+[String](entry))
+        </td>
+      </tr><tr>
+        <td>
+          60
+        </td>
+        <td>
+          5232
+        </td>
+        <td>
+          1435
+          -
+          1450
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.Map.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          declMap.+[String](entry)
+        </td>
+      </tr><tr>
+        <td>
+          68
+        </td>
+        <td>
+          5235
+        </td>
+        <td>
+          1637
+          -
+          1637
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$1._1
+        </td>
+      </tr><tr>
+        <td>
+          68
+        </td>
+        <td>
+          5236
+        </td>
+        <td>
+          1647
+          -
+          1647
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$1._2
+        </td>
+      </tr><tr>
+        <td>
+          72
+        </td>
+        <td>
+          5237
+        </td>
+        <td>
+          1873
+          -
+          1892
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[scala.collection.immutable.Map[String,String], scala.collection.immutable.Map[String,String]](mappings, declMap)
+        </td>
+      </tr><tr>
+        <td>
+          72
+        </td>
+        <td>
+          5247
+        </td>
+        <td>
+          1851
+          -
+          2030
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.TraversableOnce.foldLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x.attributes.foldLeft[(scala.collection.immutable.Map[String,String], scala.collection.immutable.Map[String,String])](scala.Tuple2.apply[scala.collection.immutable.Map[String,String], scala.collection.immutable.Map[String,String]](mappings, declMap))(((p: (scala.collection.immutable.Map[String,String], scala.collection.immutable.Map[String,String]), a: scales.xml.Attribute) =&gt; {
+  val e: scales.xml.Attribute = a;
+  if (scales.xml.ScalesXml.toQNameF.apply(e).prefix.isDefined)
+    XmlPrinter.this.laddNS(scala.Tuple2.apply[String, String](scales.xml.ScalesXml.toQNameF.apply(e).prefix.get, scales.xml.ScalesXml.toQNameF.apply(e).namespace.uri), p._1, p._2)
+  else
+    p
+}))
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          5238
+        </td>
+        <td>
+          1932
+          -
+          1950
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Option.isDefined
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.ScalesXml.toQNameF.apply(e).prefix.isDefined
+        </td>
+      </tr><tr>
+        <td>
+          75
+        </td>
+        <td>
+          5239
+        </td>
+        <td>
+          1968
+          -
+          1980
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Option.get
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.ScalesXml.toQNameF.apply(e).prefix.get
+        </td>
+      </tr><tr>
+        <td>
+          75
+        </td>
+        <td>
+          5240
+        </td>
+        <td>
+          1982
+          -
+          1997
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.UnderlyingNamespace.uri
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.ScalesXml.toQNameF.apply(e).namespace.uri
+        </td>
+      </tr><tr>
+        <td>
+          75
+        </td>
+        <td>
+          5241
+        </td>
+        <td>
+          1967
+          -
+          1998
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[String, String](scales.xml.ScalesXml.toQNameF.apply(e).prefix.get, scales.xml.ScalesXml.toQNameF.apply(e).namespace.uri)
+        </td>
+      </tr><tr>
+        <td>
+          75
+        </td>
+        <td>
+          5242
+        </td>
+        <td>
+          2000
+          -
+          2004
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          p._1
+        </td>
+      </tr><tr>
+        <td>
+          75
+        </td>
+        <td>
+          5243
+        </td>
+        <td>
+          2006
+          -
+          2010
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          p._2
+        </td>
+      </tr><tr>
+        <td>
+          75
+        </td>
+        <td>
+          5244
+        </td>
+        <td>
+          1960
+          -
+          2011
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.XmlPrinter.laddNS
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPrinter.this.laddNS(scala.Tuple2.apply[String, String](scales.xml.ScalesXml.toQNameF.apply(e).prefix.get, scales.xml.ScalesXml.toQNameF.apply(e).namespace.uri), p._1, p._2)
+        </td>
+      </tr><tr>
+        <td>
+          75
+        </td>
+        <td>
+          5245
+        </td>
+        <td>
+          1960
+          -
+          2011
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.serializers.XmlPrinter.laddNS
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPrinter.this.laddNS(scala.Tuple2.apply[String, String](scales.xml.ScalesXml.toQNameF.apply(e).prefix.get, scales.xml.ScalesXml.toQNameF.apply(e).namespace.uri), p._1, p._2)
+        </td>
+      </tr><tr>
+        <td>
+          76
+        </td>
+        <td>
+          5246
+        </td>
+        <td>
+          2023
+          -
+          2024
+        </td>
+        <td>
+          Ident
+        </td>
+        <td>
+          scales.xml.serializers.XmlPrinter.p
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          p
+        </td>
+      </tr><tr>
+        <td>
+          79
+        </td>
+        <td>
+          5248
+        </td>
+        <td>
+          2047
+          -
+          2051
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          t._1
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          5249
+        </td>
+        <td>
+          2066
+          -
+          2070
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          t._2
+        </td>
+      </tr><tr>
+        <td>
+          84
+        </td>
+        <td>
+          5250
+        </td>
+        <td>
+          2170
+          -
+          2201
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.UnderlyingNamespace.uri
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.impl.NamespaceDefaults.namespace.uri
+        </td>
+      </tr><tr>
+        <td>
+          84
+        </td>
+        <td>
+          5251
+        </td>
+        <td>
+          2161
+          -
+          2202
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.MapLike.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          mappings.apply(scales.xml.impl.NamespaceDefaults.namespace.uri)
+        </td>
+      </tr><tr>
+        <td>
+          85
+        </td>
+        <td>
+          5252
+        </td>
+        <td>
+          2233
+          -
+          2262
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.NamespaceDefaults.noNamespace
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.impl.NamespaceDefaults.noNamespace
+        </td>
+      </tr><tr>
+        <td>
+          85
+        </td>
+        <td>
+          5253
+        </td>
+        <td>
+          2213
+          -
+          2262
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.!=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x.name.namespace.!=(scales.xml.impl.NamespaceDefaults.noNamespace)
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          5254
+        </td>
+        <td>
+          2308
+          -
+          2331
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Option.isDefined
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x.name.prefix.isDefined
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          5258
+        </td>
+        <td>
+          2333
+          -
+          2606
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  &lt;synthetic&gt; &lt;artifact&gt; private[this] val x$2: (scala.collection.immutable.Map[String,String], scala.collection.immutable.Map[String,String]) = (XmlPrinter.this.laddNS(scala.Tuple2.apply[String, String](x.name.prefix.get, x.name.namespace.uri), mappings, declMap): (scala.collection.immutable.Map[String,String], scala.collection.immutable.Map[String,String]) @unchecked) match {
+    case (_1: scala.collection.immutable.Map[String,String], _2: scala.collection.immutable.Map[String,String])(scala.collection.immutable.Map[String,String], scala.collection.immutable.Map[String,String])((imappings @ _), (ideclMap @ _)) =&gt; scala.Tuple2.apply[scala.collection.immutable.Map[String,String], scala.collection.immutable.Map[String,String]](imappings, ideclMap)
+  };
+  val imappings: scala.collection.immutable.Map[String,String] = x$2._1;
+  val ideclMap: scala.collection.immutable.Map[String,String] = x$2._2;
+  mappings = imappings;
+  declMap = ideclMap;
+  false
+}
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          5269
+        </td>
+        <td>
+          2304
+          -
+          3200
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (x.name.prefix.isDefined)
+  {
+    &lt;synthetic&gt; &lt;artifact&gt; private[this] val x$2: (scala.collection.immutable.Map[String,String], scala.collection.immutable.Map[String,String]) = (XmlPrinter.this.laddNS(scala.Tuple2.apply[String, String](x.name.prefix.get, x.name.namespace.uri), mappings, declMap): (scala.collection.immutable.Map[String,String], scala.collection.immutable.Map[String,String]) @unchecked) match {
+      case (_1: scala.collection.immutable.Map[String,String], _2: scala.collection.immutable.Map[String,String])(scala.collection.immutable.Map[String,String], scala.collection.immutable.Map[String,String])((imappings @ _), (ideclMap @ _)) =&gt; scala.Tuple2.apply[scala.collection.immutable.Map[String,String], scala.collection.immutable.Map[String,String]](imappings, ideclMap)
+    };
+    val imappings: scala.collection.immutable.Map[String,String] = x$2._1;
+    val ideclMap: scala.collection.immutable.Map[String,String] = x$2._2;
+    mappings = imappings;
+    declMap = ideclMap;
+    false
+  }
+else
+  if (currentDefault.==(x.name.namespace.uri))
+    false
+  else
+    {
+      mappings = mappings.updated[String](scales.xml.impl.NamespaceDefaults.namespace.uri, x.name.namespace.uri);
+      true
+    }
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          5255
+        </td>
+        <td>
+          2390
+          -
+          2390
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$2._1
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          5256
+        </td>
+        <td>
+          2401
+          -
+          2401
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$2._2
+        </td>
+      </tr><tr>
+        <td>
+          93
+        </td>
+        <td>
+          5257
+        </td>
+        <td>
+          2591
+          -
+          2596
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          98
+        </td>
+        <td>
+          5259
+        </td>
+        <td>
+          2769
+          -
+          2789
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.UnderlyingNamespace.uri
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x.name.namespace.uri
+        </td>
+      </tr><tr>
+        <td>
+          98
+        </td>
+        <td>
+          5260
+        </td>
+        <td>
+          2751
+          -
+          2789
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          currentDefault.==(x.name.namespace.uri)
+        </td>
+      </tr><tr>
+        <td>
+          98
+        </td>
+        <td>
+          5268
+        </td>
+        <td>
+          2747
+          -
+          3190
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (currentDefault.==(x.name.namespace.uri))
+  false
+else
+  {
+    mappings = mappings.updated[String](scales.xml.impl.NamespaceDefaults.namespace.uri, x.name.namespace.uri);
+    true
+  }
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          5261
+        </td>
+        <td>
+          2837
+          -
+          2842
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          5262
+        </td>
+        <td>
+          2837
+          -
+          2842
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          101
+        </td>
+        <td>
+          5267
+        </td>
+        <td>
+          2860
+          -
+          3190
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  mappings = mappings.updated[String](scales.xml.impl.NamespaceDefaults.namespace.uri, x.name.namespace.uri);
+  true
+}
+        </td>
+      </tr><tr>
+        <td>
+          105
+        </td>
+        <td>
+          5263
+        </td>
+        <td>
+          3107
+          -
+          3138
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.UnderlyingNamespace.uri
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.impl.NamespaceDefaults.namespace.uri
+        </td>
+      </tr><tr>
+        <td>
+          105
+        </td>
+        <td>
+          5264
+        </td>
+        <td>
+          3140
+          -
+          3160
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.UnderlyingNamespace.uri
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x.name.namespace.uri
+        </td>
+      </tr><tr>
+        <td>
+          105
+        </td>
+        <td>
+          5265
+        </td>
+        <td>
+          3090
+          -
+          3161
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.MapLike.updated
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          mappings.updated[String](scales.xml.impl.NamespaceDefaults.namespace.uri, x.name.namespace.uri)
+        </td>
+      </tr><tr>
+        <td>
+          106
+        </td>
+        <td>
+          5266
+        </td>
+        <td>
+          3174
+          -
+          3178
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          5270
+        </td>
+        <td>
+          3298
+          -
+          3349
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          currentDefault.==(&quot;&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          5278
+        </td>
+        <td>
+          3294
+          -
+          3516
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (currentDefault.==(&quot;&quot;))
+  false
+else
+  {
+    mappings = mappings.updated[String](scales.xml.impl.NamespaceDefaults.namespace.uri, &quot;&quot;);
+    true
+  }
+        </td>
+      </tr><tr>
+        <td>
+          112
+        </td>
+        <td>
+          5271
+        </td>
+        <td>
+          3363
+          -
+          3368
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          112
+        </td>
+        <td>
+          5272
+        </td>
+        <td>
+          3363
+          -
+          3368
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          113
+        </td>
+        <td>
+          5277
+        </td>
+        <td>
+          3384
+          -
+          3516
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  mappings = mappings.updated[String](scales.xml.impl.NamespaceDefaults.namespace.uri, &quot;&quot;);
+  true
+}
+        </td>
+      </tr><tr>
+        <td>
+          114
+        </td>
+        <td>
+          5273
+        </td>
+        <td>
+          3424
+          -
+          3455
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.UnderlyingNamespace.uri
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.impl.NamespaceDefaults.namespace.uri
+        </td>
+      </tr><tr>
+        <td>
+          114
+        </td>
+        <td>
+          5274
+        </td>
+        <td>
+          3457
+          -
+          3490
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;&quot;
+        </td>
+      </tr><tr>
+        <td>
+          114
+        </td>
+        <td>
+          5275
+        </td>
+        <td>
+          3407
+          -
+          3491
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.MapLike.updated
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          mappings.updated[String](scales.xml.impl.NamespaceDefaults.namespace.uri, &quot;&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          115
+        </td>
+        <td>
+          5276
+        </td>
+        <td>
+          3502
+          -
+          3506
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          121
+        </td>
+        <td>
+          5279
+        </td>
+        <td>
+          3606
+          -
+          3637
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.UnderlyingNamespace.uri
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.impl.NamespaceDefaults.namespace.uri
+        </td>
+      </tr><tr>
+        <td>
+          121
+        </td>
+        <td>
+          5280
+        </td>
+        <td>
+          3596
+          -
+          3637
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.MapLike.-
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          declMap.-(scales.xml.impl.NamespaceDefaults.namespace.uri)
+        </td>
+      </tr><tr>
+        <td>
+          123
+        </td>
+        <td>
+          5281
+        </td>
+        <td>
+          3674
+          -
+          3705
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.UnderlyingNamespace.uri
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.impl.NamespaceDefaults.namespace.uri
+        </td>
+      </tr><tr>
+        <td>
+          123
+        </td>
+        <td>
+          5282
+        </td>
+        <td>
+          3657
+          -
+          3706
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.MapLike.get
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x.namespaces.get(scales.xml.impl.NamespaceDefaults.namespace.uri)
+        </td>
+      </tr><tr>
+        <td>
+          125
+        </td>
+        <td>
+          5283
+        </td>
+        <td>
+          3752
+          -
+          3769
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Option.isDefined
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          default.isDefined
+        </td>
+      </tr><tr>
+        <td>
+          125
+        </td>
+        <td>
+          5284
+        </td>
+        <td>
+          3734
+          -
+          3769
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.||
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          addedDefaultNS.||(default.isDefined)
+        </td>
+      </tr><tr>
+        <td>
+          127
+        </td>
+        <td>
+          5285
+        </td>
+        <td>
+          3858
+          -
+          3889
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.UnderlyingNamespace.uri
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.impl.NamespaceDefaults.namespace.uri
+        </td>
+      </tr><tr>
+        <td>
+          127
+        </td>
+        <td>
+          5286
+        </td>
+        <td>
+          3849
+          -
+          3890
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.MapLike.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          mappings.apply(scales.xml.impl.NamespaceDefaults.namespace.uri)
+        </td>
+      </tr><tr>
+        <td>
+          127
+        </td>
+        <td>
+          5287
+        </td>
+        <td>
+          3844
+          -
+          3891
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[String](mappings.apply(scales.xml.impl.NamespaceDefaults.namespace.uri))
+        </td>
+      </tr><tr>
+        <td>
+          127
+        </td>
+        <td>
+          5288
+        </td>
+        <td>
+          3844
+          -
+          3891
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[String](mappings.apply(scales.xml.impl.NamespaceDefaults.namespace.uri))
+        </td>
+      </tr><tr>
+        <td>
+          129
+        </td>
+        <td>
+          5289
+        </td>
+        <td>
+          3913
+          -
+          3917
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          129
+        </td>
+        <td>
+          5290
+        </td>
+        <td>
+          3913
+          -
+          3917
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          131
+        </td>
+        <td>
+          5291
+        </td>
+        <td>
+          3923
+          -
+          3966
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.NamespaceContext.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          NamespaceContext.apply(mappings, declMap, addDef)
+        </td>
+      </tr><tr>
+        <td>
+          135
+        </td>
+        <td>
+          5292
+        </td>
+        <td>
+          4060
+          -
+          4072
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Declaration.version
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          decl.version
+        </td>
+      </tr><tr>
+        <td>
+          135
+        </td>
+        <td>
+          5293
+        </td>
+        <td>
+          4074
+          -
+          4087
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Declaration.encoding
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          decl.encoding
+        </td>
+      </tr><tr>
+        <td>
+          135
+        </td>
+        <td>
+          5294
+        </td>
+        <td>
+          4040
+          -
+          4088
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.SerializerData.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          SerializerData.apply(out, decl.version, decl.encoding)
+        </td>
+      </tr><tr>
+        <td>
+          138
+        </td>
+        <td>
+          5295
+        </td>
+        <td>
+          4205
+          -
+          4209
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          138
+        </td>
+        <td>
+          5300
+        </td>
+        <td>
+          4191
+          -
+          4337
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.TraversableOnce.foldLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          misc.foldLeft[Option[Throwable]]((scala.None: Option[Throwable]))(((x: Option[Throwable], m: scales.xml.Misc) =&gt; x.orElse[Throwable](serializer.item(m.fold[scales.xml.XmlItem](((z: scales.xml.Comment) =&gt; z), ((y: scales.xml.PI) =&gt; y)), scala.collection.immutable.Nil))))
+        </td>
+      </tr><tr>
+        <td>
+          139
+        </td>
+        <td>
+          5299
+        </td>
+        <td>
+          4248
+          -
+          4331
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.orElse
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x.orElse[Throwable](serializer.item(m.fold[scales.xml.XmlItem](((z: scales.xml.Comment) =&gt; z), ((y: scales.xml.PI) =&gt; y)), scala.collection.immutable.Nil))
+        </td>
+      </tr><tr>
+        <td>
+          140
+        </td>
+        <td>
+          5296
+        </td>
+        <td>
+          4283
+          -
+          4314
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Either.fold
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          m.fold[scales.xml.XmlItem](((z: scales.xml.Comment) =&gt; z), ((y: scales.xml.PI) =&gt; y))
+        </td>
+      </tr><tr>
+        <td>
+          140
+        </td>
+        <td>
+          5297
+        </td>
+        <td>
+          4316
+          -
+          4322
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.immutable.Nil
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.collection.immutable.Nil
+        </td>
+      </tr><tr>
+        <td>
+          140
+        </td>
+        <td>
+          5298
+        </td>
+        <td>
+          4267
+          -
+          4323
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.Serializer.item
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          serializer.item(m.fold[scales.xml.XmlItem](((z: scales.xml.Comment) =&gt; z), ((y: scales.xml.PI) =&gt; y)), scala.collection.immutable.Nil)
+        </td>
+      </tr><tr>
+        <td>
+          143
+        </td>
+        <td>
+          5301
+        </td>
+        <td>
+          4342
+          -
+          4353
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[scales.xml.serializers.XmlOutput, Option[Throwable]](pout, opt)
+        </td>
+      </tr><tr>
+        <td>
+          150
+        </td>
+        <td>
+          5302
+        </td>
+        <td>
+          4601
+          -
+          4619
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.SerializerData.encoding
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          pout.data.encoding
+        </td>
+      </tr><tr>
+        <td>
+          150
+        </td>
+        <td>
+          5303
+        </td>
+        <td>
+          4621
+          -
+          4638
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.SerializerData.version
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          pout.data.version
+        </td>
+      </tr><tr>
+        <td>
+          152
+        </td>
+        <td>
+          5304
+        </td>
+        <td>
+          4668
+          -
+          4672
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          154
+        </td>
+        <td>
+          5305
+        </td>
+        <td>
+          4699
+          -
+          4699
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$3._1
+        </td>
+      </tr><tr>
+        <td>
+          154
+        </td>
+        <td>
+          5306
+        </td>
+        <td>
+          4705
+          -
+          4705
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$3._2
+        </td>
+      </tr><tr>
+        <td>
+          158
+        </td>
+        <td>
+          5307
+        </td>
+        <td>
+          4813
+          -
+          4813
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$4._1
+        </td>
+      </tr><tr>
+        <td>
+          158
+        </td>
+        <td>
+          5308
+        </td>
+        <td>
+          4819
+          -
+          4819
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$4._2
+        </td>
+      </tr><tr>
+        <td>
+          161
+        </td>
+        <td>
+          5311
+        </td>
+        <td>
+          4575
+          -
+          4998
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.orElse
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          serializer.xmlDeclaration(pout.data.encoding, pout.data.version).orElse[Throwable](scala.None).orElse[Throwable]({
+  &lt;synthetic&gt; &lt;artifact&gt; private[this] val x$3: (scales.xml.serializers.XmlOutput, Option[Throwable]) = (XmlPrinter.this.serializeMisc(out, doc.prolog.misc, serializer): (scales.xml.serializers.XmlOutput, Option[Throwable]) @unchecked) match {
+    case (_1: scales.xml.serializers.XmlOutput, _2: Option[Throwable])(scales.xml.serializers.XmlOutput, Option[Throwable])((pout @ _), (opt @ _)) =&gt; scala.Tuple2.apply[scales.xml.serializers.XmlOutput, Option[Throwable]](pout, opt)
+  };
+  val pout: scales.xml.serializers.XmlOutput = x$3._1;
+  val opt: Option[Throwable] = x$3._2;
+  out = pout;
+  opt
+}).orElse[Throwable]({
+  &lt;synthetic&gt; &lt;artifact&gt; private[this] val x$4: (scales.xml.serializers.XmlOutput, Option[Throwable]) = (serializerf.apply(out, serializer): (scales.xml.serializers.XmlOutput, Option[Throwable]) @unchecked) match {
+    case (_1: scales.xml.serializers.XmlOutput, _2: Option[Throwable])(scales.xml.serializers.XmlOutput, Option[Throwable])((pout @ _), (opt @ _)) =&gt; scala.Tuple2.apply[scales.xml.serializers.XmlOutput, Option[Throwable]](pout, opt)
+  };
+  val pout: scales.xml.serializers.XmlOutput = x$4._1;
+  val opt: Option[Throwable] = x$4._2;
+  out = pout;
+  opt
+}).orElse[Throwable]({
+  &lt;synthetic&gt; &lt;artifact&gt; private[this] val x$5: (scales.xml.serializers.XmlOutput, Option[Throwable]) = (XmlPrinter.this.serializeMisc(out, doc.end.misc, serializer): (scales.xml.serializers.XmlOutput, Option[Throwable]) @unchecked) match {
+    case (_1: scales.xml.serializers.XmlOutput, _2: Option[Throwable])(scales.xml.serializers.XmlOutput, Option[Throwable])((pout @ _), (opt @ _)) =&gt; scala.Tuple2.apply[scales.xml.serializers.XmlOutput, Option[Throwable]](pout, opt)
+  };
+  val pout: scales.xml.serializers.XmlOutput = x$5._1;
+  val opt: Option[Throwable] = x$5._2;
+  out = pout;
+  opt
+})
+        </td>
+      </tr><tr>
+        <td>
+          162
+        </td>
+        <td>
+          5309
+        </td>
+        <td>
+          4908
+          -
+          4908
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$5._1
+        </td>
+      </tr><tr>
+        <td>
+          162
+        </td>
+        <td>
+          5310
+        </td>
+        <td>
+          4914
+          -
+          4914
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$5._2
+        </td>
+      </tr><tr>
+        <td>
+          174
+        </td>
+        <td>
+          5312
+        </td>
+        <td>
+          5196
+          -
+          5215
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.serializers.XmlPrinter.serialize
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPrinter.this.serialize[T](pout)(it)(evidence$2)
+        </td>
+      </tr><tr>
+        <td>
+          181
+        </td>
+        <td>
+          5313
+        </td>
+        <td>
+          5381
+          -
+          5412
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.Predef.implicitly
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.implicitly[scales.xml.serializers.SerializeableXml[T]](evidence$3)
+        </td>
+      </tr><tr>
+        <td>
+          182
+        </td>
+        <td>
+          5314
+        </td>
+        <td>
+          5441
+          -
+          5453
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.SerializeableXml.doc
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          sxml.doc(it)
+        </td>
+      </tr><tr>
+        <td>
+          182
+        </td>
+        <td>
+          5316
+        </td>
+        <td>
+          5419
+          -
+          5473
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.XmlPrinter.headerAndFooter
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPrinter.this.headerAndFooter(pout, sxml.doc(it))({
+  ((out: scales.xml.serializers.XmlOutput, serializer: scales.xml.serializers.Serializer) =&gt; sxml.apply(it)(out, serializer))
+})
+        </td>
+      </tr><tr>
+        <td>
+          183
+        </td>
+        <td>
+          5315
+        </td>
+        <td>
+          5464
+          -
+          5472
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.SerializeableXml.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          sxml.apply(it)(out, serializer)
+        </td>
+      </tr><tr>
+        <td>
+          184
+        </td>
+        <td>
+          5317
+        </td>
+        <td>
+          5480
+          -
+          5489
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.XmlOutput.data
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          pout.data
+        </td>
+      </tr><tr>
+        <td>
+          184
+        </td>
+        <td>
+          5318
+        </td>
+        <td>
+          5345
+          -
+          5490
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.SerializerFactory.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          pout.serializerF.apply[Option[Throwable]]({
+  val sxml: scales.xml.serializers.SerializeableXml[T] = scala.Predef.implicitly[scales.xml.serializers.SerializeableXml[T]](evidence$3);
+  XmlPrinter.this.headerAndFooter(pout, sxml.doc(it))({
+    ((out: scales.xml.serializers.XmlOutput, serializer: scales.xml.serializers.Serializer) =&gt; sxml.apply(it)(out, serializer))
+  })
+})(pout.data)
+        </td>
+      </tr><tr>
+        <td>
+          190
+        </td>
+        <td>
+          5319
+        </td>
+        <td>
+          5791
+          -
+          5815
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Prolog.decl
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          sxml.doc(it).prolog.decl
+        </td>
+      </tr><tr>
+        <td>
+          191
+        </td>
+        <td>
+          5324
+        </td>
+        <td>
+          5829
+          -
+          5933
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.SerializerData.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SerializerData.apply(output, version.getOrElse[scales.xml.XmlVersion](decl.version), encoding.getOrElse[java.nio.charset.Charset](decl.encoding))
+        </td>
+      </tr><tr>
+        <td>
+          192
+        </td>
+        <td>
+          5320
+        </td>
+        <td>
+          5877
+          -
+          5889
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Declaration.version
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          decl.version
+        </td>
+      </tr><tr>
+        <td>
+          192
+        </td>
+        <td>
+          5321
+        </td>
+        <td>
+          5859
+          -
+          5890
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.getOrElse
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          version.getOrElse[scales.xml.XmlVersion](decl.version)
+        </td>
+      </tr><tr>
+        <td>
+          193
+        </td>
+        <td>
+          5322
+        </td>
+        <td>
+          5918
+          -
+          5931
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Declaration.encoding
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          decl.encoding
+        </td>
+      </tr><tr>
+        <td>
+          193
+        </td>
+        <td>
+          5323
+        </td>
+        <td>
+          5899
+          -
+          5932
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.getOrElse
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          encoding.getOrElse[java.nio.charset.Charset](decl.encoding)
+        </td>
+      </tr><tr>
+        <td>
+          194
+        </td>
+        <td>
+          5325
+        </td>
+        <td>
+          5947
+          -
+          5960
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.serializers.XmlOutput.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlOutput.apply(sd, XmlOutput.apply$default$2, XmlOutput.apply$default$3)(serializerFI)
+        </td>
+      </tr><tr>
+        <td>
+          197
+        </td>
+        <td>
+          5326
+        </td>
+        <td>
+          6074
+          -
+          6091
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.serializers.XmlPrinter.serialize
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPrinter.this.serialize[T](xo)(it)(sxml)
+        </td>
+      </tr><tr>
+        <td>
+          207
+        </td>
+        <td>
+          5327
+        </td>
+        <td>
+          6411
+          -
+          6421
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          java.lang.System.out
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          java.lang.System.out
+        </td>
+      </tr><tr>
+        <td>
+          207
+        </td>
+        <td>
+          5328
+        </td>
+        <td>
+          6387
+          -
+          6422
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.PrintWriter.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new java.io.PrintWriter(java.lang.System.out)
+        </td>
+      </tr><tr>
+        <td>
+          209
+        </td>
+        <td>
+          5329
+        </td>
+        <td>
+          6439
+          -
+          6464
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Prolog.decl
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          sxml.doc(xml).prolog.decl
+        </td>
+      </tr><tr>
+        <td>
+          210
+        </td>
+        <td>
+          5330
+        </td>
+        <td>
+          6479
+          -
+          6538
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.serializers.XmlOutput.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          XmlOutput.apply(SerializerData.apply(out, decl.version, decl.encoding), XmlOutput.apply$default$2, XmlOutput.apply$default$3)(serf)
+        </td>
+      </tr><tr>
+        <td>
+          210
+        </td>
+        <td>
+          5338
+        </td>
+        <td>
+          6469
+          -
+          6708
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.foreach
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          XmlPrinter.this.serialize[T](XmlOutput.apply(SerializerData.apply(out, decl.version, decl.encoding), XmlOutput.apply$default$2, XmlOutput.apply$default$3)(serf))(xml)(sxml).foreach[Unit](((e: Throwable) =&gt; {
+  out.println(&quot;Could not serialize got the following exception &quot;.+(e.getClass().getName()).+(&quot; - &quot;).+(e.getMessage()));
+  e.printStackTrace(out)
+}))
+        </td>
+      </tr><tr>
+        <td>
+          211
+        </td>
+        <td>
+          5331
+        </td>
+        <td>
+          6578
+          -
+          6628
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;Could not serialize got the following exception &quot;
+        </td>
+      </tr><tr>
+        <td>
+          211
+        </td>
+        <td>
+          5332
+        </td>
+        <td>
+          6631
+          -
+          6649
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Class.getName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          e.getClass().getName()
+        </td>
+      </tr><tr>
+        <td>
+          211
+        </td>
+        <td>
+          5333
+        </td>
+        <td>
+          6652
+          -
+          6657
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          &quot; - &quot;
+        </td>
+      </tr><tr>
+        <td>
+          211
+        </td>
+        <td>
+          5334
+        </td>
+        <td>
+          6660
+          -
+          6672
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Throwable.getMessage
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          e.getMessage()
+        </td>
+      </tr><tr>
+        <td>
+          211
+        </td>
+        <td>
+          5335
+        </td>
+        <td>
+          6578
+          -
+          6672
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;Could not serialize got the following exception &quot;.+(e.getClass().getName()).+(&quot; - &quot;).+(e.getMessage())
+        </td>
+      </tr><tr>
+        <td>
+          211
+        </td>
+        <td>
+          5336
+        </td>
+        <td>
+          6566
+          -
+          6673
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.PrintWriter.println
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          out.println(&quot;Could not serialize got the following exception &quot;.+(e.getClass().getName()).+(&quot; - &quot;).+(e.getMessage()))
+        </td>
+      </tr><tr>
+        <td>
+          212
+        </td>
+        <td>
+          5337
+        </td>
+        <td>
+          6680
+          -
+          6702
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Throwable.printStackTrace
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          e.printStackTrace(out)
+        </td>
+      </tr><tr>
+        <td>
+          214
+        </td>
+        <td>
+          5339
+        </td>
+        <td>
+          6713
+          -
+          6722
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.PrintWriter.flush
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          out.flush()
+        </td>
+      </tr><tr>
+        <td>
+          216
+        </td>
+        <td>
+          5340
+        </td>
+        <td>
+          6770
+          -
+          6779
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.println
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Predef.println()
+        </td>
+      </tr><tr>
+        <td>
+          223
+        </td>
+        <td>
+          5341
+        </td>
+        <td>
+          6966
+          -
+          6992
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.StringWriter.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new java.io.StringWriter()
+        </td>
+      </tr><tr>
+        <td>
+          225
+        </td>
+        <td>
+          5342
+        </td>
+        <td>
+          7009
+          -
+          7034
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Prolog.decl
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          sxml.doc(xml).prolog.decl
+        </td>
+      </tr><tr>
+        <td>
+          226
+        </td>
+        <td>
+          5343
+        </td>
+        <td>
+          7049
+          -
+          7112
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.serializers.XmlOutput.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlOutput.apply(SerializerData.apply(builder, decl.version, decl.encoding), XmlOutput.apply$default$2, XmlOutput.apply$default$3)(serf)
+        </td>
+      </tr><tr>
+        <td>
+          226
+        </td>
+        <td>
+          5345
+        </td>
+        <td>
+          7039
+          -
+          7148
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.foreach
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlPrinter.this.foldPrint[T](XmlOutput.apply(SerializerData.apply(builder, decl.version, decl.encoding), XmlOutput.apply$default$2, XmlOutput.apply$default$3)(serf))(xml)(sxml).foreach[Nothing](((x$6: Throwable) =&gt; throw x$6))
+        </td>
+      </tr><tr>
+        <td>
+          227
+        </td>
+        <td>
+          5344
+        </td>
+        <td>
+          7135
+          -
+          7142
+        </td>
+        <td>
+          Throw
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          throw x$6
+        </td>
+      </tr><tr>
+        <td>
+          229
+        </td>
+        <td>
+          5346
+        </td>
+        <td>
+          7153
+          -
+          7169
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.StringWriter.toString
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          builder.toString()
+        </td>
+      </tr><tr>
+        <td>
+          236
+        </td>
+        <td>
+          5351
+        </td>
+        <td>
+          7424
+          -
+          7427
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.XmlPrinter.$anon.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          237
+        </td>
+        <td>
+          5347
+        </td>
+        <td>
+          7485
+          -
+          7495
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.EmptyDoc.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.xml.EmptyDoc.apply(scales.xml.EmptyDoc.apply$default$1, scales.xml.EmptyDoc.apply$default$2)
+        </td>
+      </tr><tr>
+        <td>
+          238
+        </td>
+        <td>
+          5348
+        </td>
+        <td>
+          7625
+          -
+          7633
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.XmlOutput.path
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          out.path
+        </td>
+      </tr><tr>
+        <td>
+          238
+        </td>
+        <td>
+          5349
+        </td>
+        <td>
+          7605
+          -
+          7634
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.Serializer.item
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          serializer.item(it, out.path)
+        </td>
+      </tr><tr>
+        <td>
+          238
+        </td>
+        <td>
+          5350
+        </td>
+        <td>
+          7599
+          -
+          7635
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Tuple2.apply[scales.xml.serializers.XmlOutput, Option[Throwable]](out, serializer.item(it, out.path))
+        </td>
+      </tr><tr>
+        <td>
+          241
+        </td>
+        <td>
+          5352
+        </td>
+        <td>
+          7665
+          -
+          7691
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.StringWriter.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new java.io.StringWriter()
+        </td>
+      </tr><tr>
+        <td>
+          242
+        </td>
+        <td>
+          5353
+        </td>
+        <td>
+          7704
+          -
+          7738
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.serializers.XmlOutput.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          XmlOutput.apply(SerializerData.apply(builder, SerializerData.apply$default$2, SerializerData.apply$default$3), XmlOutput.apply$default$2, XmlOutput.apply$default$3)(serf)
+        </td>
+      </tr><tr>
+        <td>
+          244
+        </td>
+        <td>
+          5354
+        </td>
+        <td>
+          7776
+          -
+          7782
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.XmlOutput.path
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          o.path
+        </td>
+      </tr><tr>
+        <td>
+          244
+        </td>
+        <td>
+          5355
+        </td>
+        <td>
+          7760
+          -
+          7783
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.Serializer.item
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          s.item(xmlItem, o.path)
+        </td>
+      </tr><tr>
+        <td>
+          245
+        </td>
+        <td>
+          5356
+        </td>
+        <td>
+          7790
+          -
+          7796
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.XmlOutput.data
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          o.data
+        </td>
+      </tr><tr>
+        <td>
+          245
+        </td>
+        <td>
+          5357
+        </td>
+        <td>
+          7743
+          -
+          7797
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.SerializerFactory.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          serf.apply[Option[Throwable]](((s: scales.xml.serializers.Serializer) =&gt; s.item(xmlItem, o.path)))(o.data)
+        </td>
+      </tr><tr>
+        <td>
+          249
+        </td>
+        <td>
+          5358
+        </td>
+        <td>
+          7893
+          -
+          7909
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.StringWriter.toString
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          builder.toString()
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

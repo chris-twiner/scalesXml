@@ -1,0 +1,821 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/utils/collection/Trees.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.utils.collection
+</span>2 <span style=''>
+</span>3 <span style=''>import scala.collection.generic.CanBuildFrom
+</span>4 <span style=''>
+</span>5 <span style=''>import scales.utils.{LeftLike, RightLike, EitherLike}
+</span>6 <span style=''>
+</span>7 <span style=''>trait Trees {
+</span>8 <span style=''>
+</span>9 <span style=''>  type ItemOrTree[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]] = EitherLike[Item, Tree[Item, Section, CC]]
+</span>10 <span style=''>
+</span>11 <span style=''>  /** badly named the boolean should indicate if it has any children */
+</span>12 <span style=''>  type ItemOrSectionWalk[Item, Section] = Either[Item, SectionWalk[Section]]
+</span>13 <span style=''>
+</span>14 <span style=''>  type TreeCBF[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]] = CanBuildFrom[CC[_], ItemOrTree[Item, Section, CC], CC[ItemOrTree[Item, Section, CC]]]
+</span>15 <span style=''>
+</span>16 <span style=''>  final def fold[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_], A](a: A)(folder: (ItemOrSectionWalk[Item, Section], A) =&gt; A)(tree: Tree[Item, Section, CC]): A =
+</span>17 <span style=''>    </span><span style='background: #AEF1AE'>tree.fold(a)(folder)</span><span style=''>
+</span>18 <span style=''>
+</span>19 <span style=''>}
+</span>20 <span style=''>
+</span>21 <span style=''>import scales.utils.{ItemOrTree, ItemOrSectionWalk}
+</span>22 <span style=''>
+</span>23 <span style=''>/**
+</span>24 <span style=''> * IF hasChildren then isStart indicates that this particular occurence
+</span>25 <span style=''> * is the start of the element or the end
+</span>26 <span style=''> *
+</span>27 <span style=''> * @author Chris
+</span>28 <span style=''> *
+</span>29 <span style=''> */
+</span>30 <span style=''>case class SectionWalk[Section](section: Section, hasChildren: Boolean = false, isStart: Boolean = true)
+</span>31 <span style=''>
+</span>32 <span style=''>
+</span>33 <span style=''>object Tree {
+</span>34 <span style=''>  def apply[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]](isection: Section, ichildren: CC[ItemOrTree[Item, Section, CC]])
+</span>35 <span style=''>                                                                            (implicit iseqLikeThing: SeqLikeThing[CC[_], ItemOrTree[Item, Section, CC], CC]) : Tree[Item, Section, CC] =
+</span>36 <span style=''>    </span><span style='background: #AEF1AE'>new</span><span style=''> Tree[Item, Section, CC] {
+</span>37 <span style=''>      val section = isection
+</span>38 <span style=''>      val children = ichildren
+</span>39 <span style=''>
+</span>40 <span style=''>      def copy( section : Section = section, children : CC[ItemOrTree[Item,Section,CC]] = children) = </span><span style='background: #AEF1AE'>apply(section, children)(iseqLikeThing)</span><span style=''>
+</span>41 <span style=''>
+</span>42 <span style=''>      override implicit val seqLikeThing: SeqLikeThing[CC[_], ItemOrTree[Item, Section, CC], CC] = iseqLikeThing
+</span>43 <span style=''>    }
+</span>44 <span style=''>
+</span>45 <span style=''>  def unapply[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]]( t : Tree[Item, Section, CC] ) : Option[(Section, CC[ItemOrTree[Item,Section,CC]])] = </span><span style='background: #AEF1AE'>Some((t.section, t.children))</span><span style=''>
+</span>46 <span style=''>}
+</span>47 <span style=''>
+</span>48 <span style=''>
+</span>49 <span style=''>trait Tree[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]] extends RightLike[Item, Tree[Item, Section, CC]] {
+</span>50 <span style=''>
+</span>51 <span style=''>  implicit val seqLikeThing: SeqLikeThing[CC[_], ItemOrTree[Item, Section, CC], CC]
+</span>52 <span style=''>
+</span>53 <span style=''>  def section: Section
+</span>54 <span style=''>  def children: CC[ItemOrTree[Item, Section, CC]]
+</span>55 <span style=''>
+</span>56 <span style=''>  def copy( section : Section = section, children : CC[ItemOrTree[Item,Section,CC]] = children) : Tree[Item, Section, CC]
+</span>57 <span style=''>
+</span>58 <span style=''>  def fold[A](a: A)(folder: (ItemOrSectionWalk[Item, Section], A) =&gt; A): A = {
+</span>59 <span style=''>
+</span>60 <span style=''>    // @scala.annotation.tailrec can't optimize
+</span>61 <span style=''>    def ifold(a: A, folder: (ItemOrSectionWalk[Item, Section], A) =&gt; A,
+</span>62 <span style=''>      tree: Tree[Item, Section, CC]): A =
+</span>63 <span style=''>      // match against
+</span>64 <span style=''>      tree match {
+</span>65 <span style=''>        case Tree(top, x) if (</span><span style='background: #AEF1AE'>seqLikeThing.seq(x).isEmpty</span><span style=''>) =&gt; </span><span style='background: #AEF1AE'>folder(Right(SectionWalk(top)), a)</span><span style=''>
+</span>66 <span style=''>        case Tree(top, children) </span><span style='background: #AEF1AE'>=&gt;
+</span>67 <span style=''></span><span style='background: #AEF1AE'>          val temp = folder(Right(SectionWalk(top, hasChildren = true)), a)
+</span>68 <span style=''></span><span style='background: #AEF1AE'>          val fres = seqLikeThing.seq(children).foldLeft(temp) { (foldeda, iort) =&gt;
+</span>69 <span style=''></span><span style='background: #AEF1AE'>            iort.fold( 
+</span>70 <span style=''></span><span style='background: #AEF1AE'>              (item : Item) =&gt; folder(Left(item), foldeda),
+</span>71 <span style=''></span><span style='background: #AEF1AE'>              (rtree : Tree[Item,Section,CC]) =&gt; ifold(foldeda, folder, rtree)
+</span>72 <span style=''></span><span style='background: #AEF1AE'>            )
+</span>73 <span style=''></span><span style='background: #AEF1AE'>          }
+</span>74 <span style=''></span><span style='background: #AEF1AE'>          folder(Right(SectionWalk(top, hasChildren = true, isStart = false)), fres)</span><span style=''>
+</span>75 <span style=''>      }
+</span>76 <span style=''>    </span><span style='background: #AEF1AE'>ifold(a, folder, this)</span><span style=''>
+</span>77 <span style=''>  }
+</span>78 <span style=''>
+</span>79 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          17
+        </td>
+        <td>
+          679
+        </td>
+        <td>
+          779
+          -
+          799
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.Tree.fold
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          tree.fold[A](a)(folder)
+        </td>
+      </tr><tr>
+        <td>
+          36
+        </td>
+        <td>
+          681
+        </td>
+        <td>
+          1454
+          -
+          1457
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.Tree.$anon.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          680
+        </td>
+        <td>
+          1647
+          -
+          1686
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.Tree.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Tree.this.apply[Item, Section, CC](section, children)(iseqLikeThing)
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          682
+        </td>
+        <td>
+          1979
+          -
+          1988
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.Tree.section
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          t.section
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          683
+        </td>
+        <td>
+          1990
+          -
+          2000
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.Tree.children
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          t.children
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          684
+        </td>
+        <td>
+          1978
+          -
+          2001
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[Section, CC[scales.utils.ItemOrTree[Item,Section,CC]]](t.section, t.children)
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          685
+        </td>
+        <td>
+          1973
+          -
+          2002
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[(Section, CC[scales.utils.ItemOrTree[Item,Section,CC]])](scala.Tuple2.apply[Section, CC[scales.utils.ItemOrTree[Item,Section,CC]]](t.section, t.children))
+        </td>
+      </tr><tr>
+        <td>
+          65
+        </td>
+        <td>
+          686
+        </td>
+        <td>
+          2731
+          -
+          2758
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.SeqLike.isEmpty
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Tree.this.seqLikeThing.seq(x).isEmpty
+        </td>
+      </tr><tr>
+        <td>
+          65
+        </td>
+        <td>
+          687
+        </td>
+        <td>
+          2776
+          -
+          2776
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scales.utils.collection.SectionWalk.apply$default$2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SectionWalk.apply$default$2[Nothing]
+        </td>
+      </tr><tr>
+        <td>
+          65
+        </td>
+        <td>
+          688
+        </td>
+        <td>
+          2776
+          -
+          2776
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scales.utils.collection.SectionWalk.apply$default$3
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SectionWalk.apply$default$3[Nothing]
+        </td>
+      </tr><tr>
+        <td>
+          65
+        </td>
+        <td>
+          689
+        </td>
+        <td>
+          2776
+          -
+          2792
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.SectionWalk.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SectionWalk.apply[Section](top, SectionWalk.apply$default$2[Nothing], SectionWalk.apply$default$3[Nothing])
+        </td>
+      </tr><tr>
+        <td>
+          65
+        </td>
+        <td>
+          690
+        </td>
+        <td>
+          2770
+          -
+          2793
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Right.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Right.apply[Nothing, scales.utils.collection.SectionWalk[Section]](SectionWalk.apply[Section](top, SectionWalk.apply$default$2[Nothing], SectionWalk.apply$default$3[Nothing]))
+        </td>
+      </tr><tr>
+        <td>
+          65
+        </td>
+        <td>
+          691
+        </td>
+        <td>
+          2763
+          -
+          2797
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          folder.apply(scala.`package`.Right.apply[Nothing, scales.utils.collection.SectionWalk[Section]](SectionWalk.apply[Section](top, SectionWalk.apply$default$2[Nothing], SectionWalk.apply$default$3[Nothing])), a)
+        </td>
+      </tr><tr>
+        <td>
+          65
+        </td>
+        <td>
+          692
+        </td>
+        <td>
+          2763
+          -
+          2797
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Function2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          folder.apply(scala.`package`.Right.apply[Nothing, scales.utils.collection.SectionWalk[Section]](SectionWalk.apply[Section](top, SectionWalk.apply$default$2[Nothing], SectionWalk.apply$default$3[Nothing])), a)
+        </td>
+      </tr><tr>
+        <td>
+          66
+        </td>
+        <td>
+          706
+        </td>
+        <td>
+          2831
+          -
+          3267
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val temp: A = folder.apply(scala.`package`.Right.apply[Nothing, scales.utils.collection.SectionWalk[Section]](SectionWalk.apply[Section](top, true, SectionWalk.apply$default$3[Nothing])), a);
+  val fres: A = Tree.this.seqLikeThing.seq(children).foldLeft[A](temp)(((foldeda: A, iort: scales.utils.ItemOrTree[Item,Section,CC]) =&gt; iort.fold[A](((item: Item) =&gt; folder.apply(scala.`package`.Left.apply[Item, Nothing](item), foldeda)), ((rtree: scales.utils.collection.Tree[Item,Section,CC]) =&gt; ifold(foldeda, folder, rtree)))));
+  folder.apply(scala.`package`.Right.apply[Nothing, scales.utils.collection.SectionWalk[Section]](SectionWalk.apply[Section](top, true, false)), fres)
+}
+        </td>
+      </tr><tr>
+        <td>
+          67
+        </td>
+        <td>
+          693
+        </td>
+        <td>
+          2899
+          -
+          2903
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          67
+        </td>
+        <td>
+          694
+        </td>
+        <td>
+          2868
+          -
+          2868
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scales.utils.collection.SectionWalk.apply$default$3
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SectionWalk.apply$default$3[Nothing]
+        </td>
+      </tr><tr>
+        <td>
+          67
+        </td>
+        <td>
+          695
+        </td>
+        <td>
+          2868
+          -
+          2904
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.SectionWalk.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SectionWalk.apply[Section](top, true, SectionWalk.apply$default$3[Nothing])
+        </td>
+      </tr><tr>
+        <td>
+          67
+        </td>
+        <td>
+          696
+        </td>
+        <td>
+          2862
+          -
+          2905
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Right.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Right.apply[Nothing, scales.utils.collection.SectionWalk[Section]](SectionWalk.apply[Section](top, true, SectionWalk.apply$default$3[Nothing]))
+        </td>
+      </tr><tr>
+        <td>
+          67
+        </td>
+        <td>
+          697
+        </td>
+        <td>
+          2855
+          -
+          2909
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          folder.apply(scala.`package`.Right.apply[Nothing, scales.utils.collection.SectionWalk[Section]](SectionWalk.apply[Section](top, true, SectionWalk.apply$default$3[Nothing])), a)
+        </td>
+      </tr><tr>
+        <td>
+          68
+        </td>
+        <td>
+          702
+        </td>
+        <td>
+          2931
+          -
+          3182
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.TraversableOnce.foldLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Tree.this.seqLikeThing.seq(children).foldLeft[A](temp)(((foldeda: A, iort: scales.utils.ItemOrTree[Item,Section,CC]) =&gt; iort.fold[A](((item: Item) =&gt; folder.apply(scala.`package`.Left.apply[Item, Nothing](item), foldeda)), ((rtree: scales.utils.collection.Tree[Item,Section,CC]) =&gt; ifold(foldeda, folder, rtree)))))
+        </td>
+      </tr><tr>
+        <td>
+          69
+        </td>
+        <td>
+          701
+        </td>
+        <td>
+          3006
+          -
+          3170
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.EitherLike.fold
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          iort.fold[A](((item: Item) =&gt; folder.apply(scala.`package`.Left.apply[Item, Nothing](item), foldeda)), ((rtree: scales.utils.collection.Tree[Item,Section,CC]) =&gt; ifold(foldeda, folder, rtree)))
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          698
+        </td>
+        <td>
+          3056
+          -
+          3066
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Left.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Left.apply[Item, Nothing](item)
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          699
+        </td>
+        <td>
+          3049
+          -
+          3076
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          folder.apply(scala.`package`.Left.apply[Item, Nothing](item), foldeda)
+        </td>
+      </tr><tr>
+        <td>
+          71
+        </td>
+        <td>
+          700
+        </td>
+        <td>
+          3127
+          -
+          3156
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.Tree.ifold
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ifold(foldeda, folder, rtree)
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          703
+        </td>
+        <td>
+          3206
+          -
+          3259
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.SectionWalk.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SectionWalk.apply[Section](top, true, false)
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          704
+        </td>
+        <td>
+          3200
+          -
+          3260
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Right.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Right.apply[Nothing, scales.utils.collection.SectionWalk[Section]](SectionWalk.apply[Section](top, true, false))
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          705
+        </td>
+        <td>
+          3193
+          -
+          3267
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          folder.apply(scala.`package`.Right.apply[Nothing, scales.utils.collection.SectionWalk[Section]](SectionWalk.apply[Section](top, true, false)), fres)
+        </td>
+      </tr><tr>
+        <td>
+          76
+        </td>
+        <td>
+          707
+        </td>
+        <td>
+          3280
+          -
+          3302
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.Tree.ifold
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ifold(a, folder, this)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>
