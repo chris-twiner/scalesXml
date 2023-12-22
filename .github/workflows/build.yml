@@ -92,11 +92,11 @@ jobs:
         with:
           name: target
           path: |
-            target
-            scales-xml/target
-            aalto/target
-            jaxen/target
-            saxon-tests/target
+            target/site
+            scales-xml/target/site
+            aalto/target/site
+            jaxen/target/site
+            saxon-tests/target/site
     outputs:
       version: ${{ steps.version.outputs.version }}
 
@@ -151,7 +151,7 @@ jobs:
       - uses: ./.github/workflows/mkdocs #sparkutils/quality/.github/workflows/mkdocs/action.yml@e8cd720ee2cb495a6a020363441a81da3bb70b23
         with:
           prepScript: |
-            ls -R
+            ls -R target
             cp -rf target/site docs/
             cp -rf scales-xml/target/site docs/site/scales-xml_2_12
             cp -rf aalto/target/site docs/site/scales-xml-aalto_2_12
