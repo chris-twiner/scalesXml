@@ -1,24 +1,13 @@
 package scales.xml.impl
 
-import scales.utils.collection.{ImmutableArrayProxyLikeThing, SeqLikeThingBuilder}
+import scales.utils.collection.ImmutableArrayProxyLikeThing
+import scales.utils.collection.array.IAEmpty
 
-import scala.collection.immutable.Map
-import scala.collection.generic.CanBuildFrom
 import scala.collection.mutable
-
-//import scales.utils.collection.path.{Path, Node, Position}
-import scales.utils.{TreeCBF, subtree, item, top, 
-		     ItemOrTree, noPath => fno, 
-		     EitherLike, LeftLike}
-
-import scales.utils.collection.{ListSet, Tree, 
-				ImmutableArrayProxy, ImmutableArrayProxyBuilder }
-import scales.utils.collection.path.{ Path, Position, Node }
-
-import scales.xml.{XmlItem, Elem, Comment, 
-		   PI, QName, PrefixedQName, 
-		   NoNamespaceQName, Attribute,
-		   ScalesXml}
+import scales.utils.{EitherLike, ItemOrTree, TreeCBF, item, subtree, top, noPath => fno}
+import scales.utils.collection.{ImmutableArrayProxy, ImmutableArrayProxyBuilder, ListSet, Tree}
+import scales.utils.collection.path.{Node, Path}
+import scales.xml.{Attribute, Comment, Elem, NoNamespaceQName, PI, PrefixedQName, QName, ScalesXml, XmlItem}
 
 trait XmlTypes {
 
@@ -41,7 +30,7 @@ trait XmlTypes {
   /**
    * Default implementation for constructing an instance of XmlBuilder (ImmutableArrayProxyBuilder)
    */ 
-  def XmlBuilder() : XmlBuilder = SeqLikeThingBuilder[ItemOrElem, ImmutableArrayProxyLikeThing](ImmutableArrayProxyBuilder[ItemOrElem]().asInstanceOf[mutable.Builder[XmlTypes.this.ItemOrElem,Seq[XmlTypes.this.ItemOrElem]]])//ImmutableArrayProxyBuilder[ItemOrElem]()
+  def XmlBuilder() : XmlBuilder = ImmutableArrayProxyBuilder[ItemOrElem]()
 
   /**
    * Alias for Trees of Elem and XmlItem
@@ -61,7 +50,7 @@ trait XmlTypes {
   /**
    * XML Collection - an alias for ImmutableArrayProxy 
    */ 
-  type XCC[T] = ImmutableArrayProxyLikeThing[T]
+  type XCC[T] = ImmutableArrayProxy[T]
 
   /**
    * Misc is either a Comment or PI, and is used for the Prolog and trailing Misc items in a Doc.
@@ -84,7 +73,7 @@ trait XmlTypes {
   val emptyNamespaces: Map[String, String] = Map[String, String]()
 
   /** An empty collection of ItemOrElem */ 
-  val emptyChildren: XmlChildren = ImmutableArrayProxyLikeThing(ImmutableArrayProxy[ItemOrElem]())
+  val emptyChildren: XmlChildren = IAEmpty[ItemOrElem]()
 
   /**
    * Use to signify a "null object", tree/path shouldn't work like this its a smell

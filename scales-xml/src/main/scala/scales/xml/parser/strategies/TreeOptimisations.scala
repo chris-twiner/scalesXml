@@ -1,20 +1,18 @@
 package scales.xml.parser.strategies
 
 import scales.xml._
-import scales.utils.collection.{Tree, ImmutableArrayProxy}
-
-import scales.xml.impl.{NotFromParser, IsFromParser, FromParser}
-
+import scales.utils.collection.{ImmutableArrayProxy, SeqLikeThing, Tree}
+import scales.xml.impl.{FromParser, IsFromParser, NotFromParser}
 import ImmutableArrayProxy.one
-
 import impl.TreeProxies
+import scales.utils.ItemOrTree
 
 /**
  * Allows replacing a tree for memory optimisations
  */ 
 trait TreeOptimisation[TOKEN <: OptimisationToken] extends PathOptimisationStrategy[TOKEN] {
 
-  def newTree( elem : Elem, children : XmlChildren, token : TOKEN ) : XmlTree
+  def newTree( elem : Elem, children : XmlChildren, token : TOKEN )(implicit seqLikeThing: SeqLikeThing[XCC[_], ItemOrTree[XmlItem, Elem, XCC], XCC]): XmlTree
 
   final override def elementEnd( xml : TreeProxies, token : TOKEN ) {
     import ScalesXml.xmlCBF
@@ -56,7 +54,7 @@ abstract class NameValue(val name : QName, val text : String) extends Tree[XmlIt
  * An elem with attributes or namespaces and only one text value.
  *
  */
-class ElemValue(val section : Elem, val text : String) extends Tree[XmlItem, Elem, XCC] {
+class ElemValue(val section : Elem, val text : String)(implicit val seqLikeThing: SeqLikeThing[XCC[_], ItemOrTree[XmlItem, Elem, XCC], XCC]) extends Tree[XmlItem, Elem, XCC] {
 
   def children : XmlChildren = one(Text(text))
 
@@ -95,18 +93,20 @@ object LazyOptimisedTree {
     }
   
 
-  def newNameValue( iname : QName, itext : String ) ( implicit fromParser : FromParser ) : NameValue = 
+  def newNameValue( iname : QName, itext : String ) ( implicit fromParser : FromParser, iseqLikeThing: SeqLikeThing[XCC[_], ItemOrTree[XmlItem, Elem, XCC], XCC] ) : NameValue =
     if (fromParser eq NotFromParser)
       new NameValue(iname, itext) {
 	
-	def section : Elem = Elem(name)(NotFromParser) // have to recheck that the qname is ok
+        def section : Elem = Elem(name)(NotFromParser) // have to recheck that the qname is ok
 
+        override implicit val seqLikeThing: SeqLikeThing[XCC[_], ItemOrTree[XmlItem, Elem, XCC], XCC] = iseqLikeThing
       }
     else
       new NameValue(iname, itext) {
 	
-	def section : Elem = Elem(name)(IsFromParser) // don't have to recheck
+	      def section : Elem = Elem(name)(IsFromParser) // don't have to recheck
 
+        override implicit val seqLikeThing: SeqLikeThing[XCC[_], ItemOrTree[XmlItem, Elem, XCC], XCC] = iseqLikeThing
       }
 
 }
@@ -116,7 +116,7 @@ object LazyOptimisedTree {
  */ 
 object QNameTreeOptimisation extends TreeOptimisation[QNameToken] with QNameOptimisationT[QNameToken] with QNameTokenF {
 
-  def newTree( elem : Elem, children : XmlChildren, token : QNameToken ) : XmlTree =
+  def newTree( elem : Elem, children : XmlChildren, token : QNameToken )(implicit seqLikeThing: SeqLikeThing[XCC[_], ItemOrTree[XmlItem, Elem, XCC], XCC]) : XmlTree =
     LazyOptimisedTree( elem, children )(IsFromParser)
 
 }
@@ -126,7 +126,7 @@ object QNameTreeOptimisation extends TreeOptimisation[QNameToken] with QNameOpti
  */
 object QNameElemTreeOptimisation extends PathOptimisationStrategy[ElemToken] with ElemQNameOptimisationT[ElemToken] with TreeOptimisation[ElemToken] with ElemTokenF {
   
-  def newTree( elem : Elem, children : XmlChildren, token : ElemToken ) : XmlTree =
+  def newTree( elem : Elem, children : XmlChildren, token : ElemToken )(implicit seqLikeThing: SeqLikeThing[XCC[_], ItemOrTree[XmlItem, Elem, XCC], XCC]) : XmlTree =
     LazyOptimisedTree( elem, children )(IsFromParser)
 
 }

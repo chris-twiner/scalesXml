@@ -8,7 +8,7 @@ import scales.utils.{FoldR, LeftLike, PathFoldR, deepestLast}
  *
  * It specifically provides an up event, allowing consumers to "pop" the element stack
  */ 
-trait AbstractPathIterator[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: SeqLikeThing[X], T] extends Iterator[T] {
+trait AbstractPathIterator[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_], T] extends Iterator[T] {
 
   def initialPath : Path[Item, Section, CC]
 
@@ -138,7 +138,7 @@ trait AbstractPathIterator[Item <: LeftLike[Item, Tree[Item, Section, CC]], Sect
  * Iterates over paths using the document order it skips over EndElemS events when going forward and StartElem when reversing, returning just the path.
  * Developers should call preceding or following before entering this iterator.
  */
-class DirectionIterator[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: SeqLikeThing[X]]( val initialPath : Path[Item,Section,CC], override val isForward : Boolean = true ) extends AbstractPathIterator[Item, Section, CC, Path[Item,Section,CC]] {
+class DirectionIterator[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]]( val initialPath : Path[Item,Section,CC], override val isForward : Boolean = true ) extends AbstractPathIterator[Item, Section, CC, Path[Item,Section,CC]] {
   def event = path
   def end = path
 
