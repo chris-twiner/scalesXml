@@ -100,7 +100,7 @@ When parsing xml messages it is often necessary to identify the type of the mess
 
 To help with this issue Scales pull parsing offers the ability to "peek" into an event stream and replay the events again to fully process them.
 
-A simple example is processing soap messages based on the first body element, you may want to choose different code paths based on this, but require elements in the header to do so.  The usage is simple via the  [capture function](../../scales-xml-{{site_scala_compat()}}/site/scaladocs/index.html#scales.utils.package@capture%5bA%5d(Iterator%5bA%5d):CapturedIterator%5bA%5d) and the [skip/skipv functions](../../scales-xml-{{site_scala_compat()}}/site/scaladocs/index.html#scales.xml.package@skip(⇒List%5bInt%5d):IterV%5bPullType,PeekMatch%5d):
+A simple example is processing soap messages based on the first body element, you may want to choose different code paths based on this, but require elements in the header to do so.  The usage is simple via the  [capture function](../../site/scales-xml_{{site_scala_compat()}}/scaladocs/index.html#scales.utils.package@capture%5bA%5d(Iterator%5bA%5d):CapturedIterator%5bA%5d) and the [skip/skipv functions](../../site/scales-xml_{{site_scala_compat()}}/scaladocs/index.html#scales.xml.package@skip(⇒List%5bInt%5d):IterV%5bPullType,PeekMatch%5d):
 
 ```scala
 

@@ -38,7 +38,7 @@ and of course
 
 ## QName Functions
 
-The full list of functions is available [here](../../scales-xml-{{site_scala_compat()}}/site/scaladocs/scales/xml/xpath/NameFunctions.html).
+The full list of functions is available [here](../../site/scales-xml_{{site_scala_compat()}}/scaladocs/scales/xml/xpath/NameFunctions.html).
 
 Some examples:
 
@@ -73,7 +73,7 @@ Using the `name` function with a non QName XPath (e.g. an XmlItem) will result i
 
 ## Text Functions
 
-The full list of functions is available [here](../../scales-xml-{{site_scala_compat()}}/site/scaladocs/scales/xml/xpath/TextFunctions.html).
+The full list of functions is available [here](../../site/scales-xml_{{site_scala_compat()}}/scaladocs/scales/xml/xpath/TextFunctions.html).
 
 Some examples (using the above definitions):
 

@@ -4,7 +4,7 @@ Scales Xml provides a unique transformation option based on the premise of XmlPa
 
 Once a given path is modified it effectively refers to a new Xml tree, the trick is then to move the zipper to the next paths relative position in the old document.
 
-A number of transformations are available based on [FoldOperation](../../scales-xml-{{site_scala_compat()}}/site/scaladocs/scales/utils/collection/path/FoldOperation.html):
+A number of transformations are available based on [FoldOperation](../../site/scales-xml_{{site_scala_compat()}}/scaladocs/scales/utils/collection/path/FoldOperation.html):
 
 * AddAfter - ''add the nodes to the parent after the current path''
 * AddBefore - ''add the nodes to the parent before the current path''
