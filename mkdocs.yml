@@ -55,11 +55,15 @@ nav:
       - Advanced/XML_Equality/EqualityBasics.md
       - Advanced/XML_Equality/XmlComparison.md
   - Reference Material:
-    - Maven Site: site/index.html
     - Scaladocs:
       - scales-xml: site/scales-xml_2.12/scaladocs/index.html
       - scales-xml-jaxen: site/scales-xml-jaxen_2.12/scaladocs/index.html
       - scales-xml-aalto: site/scales-xml-aalto_2.12/scaladocs/index.html
+    - Maven:
+      - Root : site/index.html
+      - scales-xml: site/scales-xml_2.12/index.html
+      - scales-xml-jaxen: site/scales-xml-jaxen_2.12/index.html
+      - scales-xml-aalto: site/scales-xml-aalto_2.12/index.html
 
 extra:
   version:
