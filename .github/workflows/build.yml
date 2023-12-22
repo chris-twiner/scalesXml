@@ -155,10 +155,10 @@ jobs:
         with:
           prepScript: |
             cp -rf target/target/site docs/
-            cp -rf target/scales-xml/target/site docs/site/scales-xml_2_12
-            cp -rf target/aalto/target/site docs/site/scales-xml-aalto_2_12
-            cp -rf target/jaxen/target/site docs/site/scales-xml-jaxen_2_12
-            cp -rf target/saxon-tests/target/site docs/site/scales-xml-saxon-tests_2_12
+            cp -rf target/scales-xml/target/site docs/site/scales-xml_2.12
+            cp -rf target/aalto/target/site docs/site/scales-xml-aalto_2.12
+            cp -rf target/jaxen/target/site docs/site/scales-xml-jaxen_2.12
+            cp -rf target/saxon-tests/target/site docs/site/scales-xml-saxon-tests_2.12
             cp target/target/coverage.txt docs/
             cp target/target/version.txt .
             cp target/target/coverage.txt .

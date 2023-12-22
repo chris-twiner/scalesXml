@@ -13,15 +13,15 @@ The unified interface is one main function:
   def serialize[T: SerializeableXml](pout: XmlOutput)(it: T) : Option[Throwable]
 ```
 
-All XML types that can be serialized provide a SerializeableXml type class instance and the user supplies the [XmlOutput](../../site/scaladocs/scales/xml/serializers/XmlOutput.html) object.  The users main interaction is through the [SerializerData](../../site/scaladocs/scales/xml/serializers/SerializerData.html) object allowing users to supply the output java.io.Writer and override both the encoding and xml version used.
+All XML types that can be serialized provide a SerializeableXml type class instance and the user supplies the [XmlOutput](../../scales-xml-{{site_scala_compat()}}/site/scales-xml-{{site_scala_compat()}}/scaladocs/scales/xml/serializers/XmlOutput.html) object.  The users main interaction is through the [SerializerData](../../scales-xml-{{site_scala_compat()}}/site/scaladocs/scales/xml/serializers/SerializerData.html) object allowing users to supply the output java.io.Writer and override both the encoding and xml version used.
 
 Typically one of the following functions will be used:
 
-* [writeTo( it, out )](.../../site/scaladocs/index.html#scales.xml.package@writeTo%5bT%5d(T,Writer,Option%5bXmlVersion%5d,Option%5bCharset%5d)(SerializerFactory,SerializeableXml%5bT%5d):Option%5bThrowable%5d)
-* it [writeTo](../../site/scaladocs/index.html#scales.xml.WriteTo@writeTo(Writer)(SerializerFactory):Option%5bThrowable%5d) out
-* [asString( it )](../../site/scaladocs/index.html#scales.xml.package@asString%5bT%5d(T)(SerializerFactory,SerializeableXml%5bT%5d):String)
-* [itemAsString( xmlItem )](../../site/scaladocs/index.html#scales.xml.package@itemAsString(XmlItem)(SerializerFactory):String)
-* [printTree( it )](../../site/scaladocs/index.html#scales.xml.package@printTree%5bT%5d(T)(SerializerFactory,SerializeableXml%5bT%5d):Unit)
+* [writeTo( it, out )](.../../scales-xml-{{site_scala_compat()}}/site/scaladocs/index.html#scales.xml.package@writeTo%5bT%5d(T,Writer,Option%5bXmlVersion%5d,Option%5bCharset%5d)(SerializerFactory,SerializeableXml%5bT%5d):Option%5bThrowable%5d)
+* it [writeTo](../../scales-xml-{{site_scala_compat()}}/site/scaladocs/index.html#scales.xml.WriteTo@writeTo(Writer)(SerializerFactory):Option%5bThrowable%5d) out
+* [asString( it )](../../scales-xml-{{site_scala_compat()}}/site/scales-xml-{{site_scala_compat()}}/scaladocs/index.html#scales.xml.package@asString%5bT%5d(T)(SerializerFactory,SerializeableXml%5bT%5d):String)
+* [itemAsString( xmlItem )](../../scales-xml-{{site_scala_compat()}}/site/scaladocs/index.html#scales.xml.package@itemAsString(XmlItem)(SerializerFactory):String)
+* [printTree( it )](../../scales-xml-{{site_scala_compat()}}/site/scaladocs/index.html#scales.xml.package@printTree%5bT%5d(T)(SerializerFactory,SerializeableXml%5bT%5d):Unit)
 
 The first two (writeTo) are the most general and the later three useful for debugging.
 
@@ -66,4 +66,4 @@ The following types can be serialized:
 
 With the itemAsString allowing simple debug output.
 
-If an object can be meaningfully written as Xml it is suggested to wrap [streamSerializeable](../../site/scaladocs/index.html#scales.xml.ScalesXml$@streamSerializeable:xml.SerializeableXml%5bIterator%5bxml.PullType%5d%5d) directly, converting your object into a stream as required.
+If an object can be meaningfully written as Xml it is suggested to wrap [streamSerializeable](../../scales-xml-{{site_scala_compat()}}/site/scaladocs/index.html#scales.xml.ScalesXml$@streamSerializeable:xml.SerializeableXml%5bIterator%5bxml.PullType%5d%5d) directly, converting your object into a stream as required.

@@ -46,7 +46,7 @@ The '''wrapped''' method is an implicit converter that lifts a java.nio channel.
 
 [ResumableIter'atees](RepeatedSections.md#pull-parsing-resumableiteratees) within Scales allow calculations to be suspended and resumed with intermediate results which is very useful for streamed XML processing.  When a new value is available a Done((value, cont)) is returned and when more data is required a Cont.  The same standard Iteratee semantics (Done or Cont) can be used to "map" over an Iteratee to convert one sequence of typed events into sequences of other types.  This mapping process is modelled by Enumeratees.
 
-The key Enumeratee provided by Scales is [enumToMany](../../site/scaladocs/index.html#scales.utils.package@enumToMany%5bE,A,R%5d(ResumableIter%5bA,R%5d)(ResumableIter%5bE,EphemeralStream%5bA%5d%5d):ResumableIter%5bE,R%5d), a mapping Enumeratee:
+The key Enumeratee provided by Scales is [enumToMany](../../scales-xml-{{site_scala_compat()}}/site/scaladocs/index.html#scales.utils.package@enumToMany%5bE,A,R%5d(ResumableIter%5bA,R%5d)(ResumableIter%5bE,EphemeralStream%5bA%5d%5d):ResumableIter%5bE,R%5d), a mapping Enumeratee:
 
 ```scala
   def enumToMany[E, A, R]( dest: ResumableIter[A,R])( 

@@ -33,3 +33,7 @@ def define_env(env):
   @env.macro
   def branch_coverage():
     return withPath("coverage.txt", lambda f: readTwiceAndStrip(f))
+
+  @env.macro
+  def site_scala_compat():
+    return "2.12"

@@ -38,7 +38,7 @@ however returning None will collapse the optional element as well as the text (t
   <?xml version="1.0" encoding="UTF-8"?><root xmlns="uri:test"/>
 ```
 
-The api for the Optional DSL can be found [here](../../site/scaladocs/scales/xml/dsl/OptionalDslBuilder.html).
+The api for the Optional DSL can be found [here](../../scales-xml/site/scaladocs/scales/xml/dsl/OptionalDslBuilder.html).
 
 ## Cascading Optionals 
 

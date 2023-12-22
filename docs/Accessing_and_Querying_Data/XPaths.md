@@ -53,13 +53,13 @@ The context, which can be thought of as current "place" in the document, is repr
 
 Location steps are a combination of axe, node test and predicates e.g. <nowiki>/*fred</nowiki> which represents the child axe, element node test and a predicate against a no-namespace local name of "fred".
 
-As the XPath adds more axe, steps and predicates the context changes, reducing or expanding possible matches as it develops.  Scales Xml's XPath DSL represents that context with the [XPath](../../site/scaladocs/scales/xml/xpath.XPath.html) class, where each operation on that class returns another immutable instance for the next context.
+As the XPath adds more axe, steps and predicates the context changes, reducing or expanding possible matches as it develops.  Scales Xml's XPath DSL represents that context with the [XPath](../../scales-xml-{{site_scala_compat()}}/site/scaladocs/scales/xml/xpath.XPath.html) class, where each operation on that class returns another immutable instance for the next context.
 
 As with XPath, Scales Xml predicates, axe and node tests can be chained with the current context (the self axe in XPath) always represented by the resulting Scales XPath object.  Only when the underlying results are used (for example by string or qname functions) do they leave the XPath object and get transformed into a, by default, ordered list of matching nodes.
 
 ## XPath Axe
 
-Scales supports the complete useful XPath axe, each of which can be used against a given context (an instance of [Scales XPath](../../site/scaladocs/scales/xml/xpath/XPath.html)), for the full XPath axe details find the spec [here](http://www.w3.org/TR/xpath20/#axes):
+Scales supports the complete useful XPath axe, each of which can be used against a given context (an instance of [Scales XPath](../../scales-xml-{{site_scala_compat()}}/site/scaladocs/scales/xml/xpath/XPath.html)), for the full XPath axe details find the spec [here](http://www.w3.org/TR/xpath20/#axes):
 
 {|class="genTable"
 !XPath Axis
@@ -159,7 +159,7 @@ The developer can chose to ignore namespaces (not recommended) by using the *:* 
 All the predicates in Scales are built from two simple building blocks:
 
 1. XmlPath => Boolean - via the XPath.filter function
-2. AttributePath => Boolean - via the [AttributeAxis](../../site/scaladocs/scales/xml/xpath/AttributeAxis.html).*@ function
+2. AttributePath => Boolean - via the [AttributeAxis](../../scales-xml-{{site_scala_compat()}}/site/scaladocs/scales/xml/xpath/AttributeAxis.html).*@ function
 
 The various base node types and filters are based on these functions, for example the element predicate * is implemented as:
 
@@ -172,7 +172,7 @@ In turn \* can be seen as a combination of the \ child step and the * predicate 
 
 Similarly text is implemented using filter.
 
-All of the standard set of predicates (and axis combinations) can be found in the  [XPath](../../site/scaladocs/scales/xml/xpath/XPath.html) ScalaDoc.  Clicking the right arrow for many of the functions will lead you to the Definition Classes docs and their code. 
+All of the standard set of predicates (and axis combinations) can be found in the  [XPath](../../scales-xml-{{site_scala_compat()}}/site/scaladocs/scales/xml/xpath/XPath.html) ScalaDoc.  Clicking the right arrow for many of the functions will lead you to the Definition Classes docs and their code. 
 
 ### Chaining Predicates
 
@@ -238,4 +238,4 @@ In order to meet XPath expected usage results are sorted in Document order and c
 
 The viewed function however uses views as its default type and may help add further lazy evaluation.  Whilst tests have shown lazy evaluation takes place its worth profiling your application to see if it actually impacts performance in an expected fashion.
 
-See the [XmlPaths trait](../../site/scaladocs/scales/xml/xpath/XmlPaths.html) for more information.
+See the [XmlPaths trait](../../scales-xml-{{site_scala_compat()}}/site/scaladocs/scales/xml/xpath/XmlPaths.html) for more information.

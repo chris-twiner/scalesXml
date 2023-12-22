@@ -1,6 +1,6 @@
 # Pulling Repeated Sections
 
-Scales leverages and extends Scalaz Iteratees to allow resuming an Iteratee.  This resuming action is simply returning the current value and the next continuation when done ([ResumableIter](../../site/scaladocs/index.html#scales.utils.package@ResumableIter%5bE,A%5d:ResumableIter%5bE,A%5d)).  The [iterate function](../../site/scaladocs/index.html#scales.xml.package@iterate(List%5bQName%5d,Iterator%5bPullType%5d):FlatMapIterator%5bXmlPath%5d), as shown [here](PullParsing.md#simple-reading-of-repeated-sections), uses this approach to provide a single path repeating section.
+Scales leverages and extends Scalaz Iteratees to allow resuming an Iteratee.  This resuming action is simply returning the current value and the next continuation when done ([ResumableIter](../../scales-xml-{{site_scala_compat()}}/site/scaladocs/index.html#scales.utils.package@ResumableIter%5bE,A%5d:ResumableIter%5bE,A%5d)).  The [iterate function](../../scales-xml-{{site_scala_compat()}}/site/scaladocs/index.html#scales.xml.package@iterate(List%5bQName%5d,Iterator%5bPullType%5d):FlatMapIterator%5bXmlPath%5d), as shown [here](PullParsing.md#simple-reading-of-repeated-sections), uses this approach to provide a single path repeating section.
 
 Many documents however have a more complex structure, of many repeated or alternating structures, the following shows the various structures supported by the combination of onDone and onQNames:
 
@@ -105,9 +105,9 @@ __It should be noted that monadic serial composition of onQNames would also work
 
 ResumableIter is an Iteratee over E that instead of returning just a <nowiki>Done[R] returns Done[(R, NextResumableIter)]</nowiki>.  The next ResumableIter stores the calculation up until the point of returning, allowing the calculation to be resumed.
 
-To process the above examples we make use of this and the [onDone Iteratee](../../site/scaladocs/index.html#scales.utils.package@onDone%5bE,A%5d(List%5bResumableIter%5bE,A%5d%5d):ResumableIterList%5bE,A%5d).  This takes a list of ResumableIter and applies the input element to each of the Iteratees in that list, Done here returns both a list of the Iteratees which evaluate to Done for that input and (of course) the next continuation of onDone.
+To process the above examples we make use of this and the [onDone Iteratee](../../scales-xml-{{site_scala_compat()}}/site/scaladocs/index.html#scales.utils.package@onDone%5bE,A%5d(List%5bResumableIter%5bE,A%5d%5d):ResumableIterList%5bE,A%5d).  This takes a list of ResumableIter and applies the input element to each of the Iteratees in that list, Done here returns both a list of the Iteratees which evaluate to Done for that input and (of course) the next continuation of onDone.
 
-A simple, and recommended, way to leverage onDone is with the [foldOnDone function](../../site/scaladocs/index.html#scales.utils.package@foldOnDone%5bE,A,ACC,F%5b_%5d%5d(F%5bE%5d)(ACC,ResumableIter%5bE,A%5d)((ACC,A)⇒ACC)(Enumerator%5bF%5d):ACC):
+A simple, and recommended, way to leverage onDone is with the [foldOnDone function](../../scales-xml-{{site_scala_compat()}}/site/scaladocs/index.html#scales.utils.package@foldOnDone%5bE,A,ACC,F%5b_%5d%5d(F%5bE%5d)(ACC,ResumableIter%5bE,A%5d)((ACC,A)⇒ACC)(Enumerator%5bF%5d):ACC):
 
 ```scala
   val Headers = List("root"l,"section"l,"sectionHeader"l)

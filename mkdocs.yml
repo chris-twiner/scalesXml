@@ -32,11 +32,11 @@ plugins:
       type: datetime
       fallback_to_build_date: true
       enable_creation_date: true
-#  - with-pdf:
-#      enabled_if_env: ENABLE_PDF_EXPORT
-#      cover_subtitle: A High Performance Scala Xml Library
-#      copyright: Copyright @ 2010 - Chris Twiner
-#      author: Chris Twiner
+  - with-pdf:
+      enabled_if_env: ENABLE_PDF_EXPORT
+      cover_subtitle: A High Performance Scala Xml Library
+      copyright: Copyright @ 2010 - Chris Twiner
+      author: Chris Twiner
 
 markdown_extensions:
   - markdown.extensions.toc:
