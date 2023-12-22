@@ -81,8 +81,6 @@ object HighMemoryOptimisation extends PathOptimisationStrategy[ElemToken] with E
  * This also removes any extra parsing time from string joining.
  */ 
 trait TextNodeJoiner[Token <: OptimisationToken] extends TreeOptimisation[Token] {
-    
-  import ScalesXml.xmlCBF
 
   def newTree( elem : Elem, children : XmlChildren, token : Token )(implicit seqLikeThing: SeqLikeThing[XCC[_], ItemOrTree[XmlItem, Elem, XCC], XCC]) : XmlTree =
     Tree(elem, joinTextNodes(children))

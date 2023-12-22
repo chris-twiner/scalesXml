@@ -1,11 +1,10 @@
 package scales.xml.impl
 
-import scales.utils.collection.ImmutableArrayProxyLikeThing
+import scales.utils.collection.{ImmutableArrayProxy, ImmutableArrayProxyBuilder, ImmutableArrayProxyLikeThing, ListSet, SeqLikeThing, Tree}
 import scales.utils.collection.array.IAEmpty
 
 import scala.collection.mutable
 import scales.utils.{EitherLike, ItemOrTree, TreeCBF, item, subtree, top, noPath => fno}
-import scales.utils.collection.{ImmutableArrayProxy, ImmutableArrayProxyBuilder, ListSet, Tree}
 import scales.utils.collection.path.{Node, Path}
 import scales.xml.{Attribute, Comment, Elem, NoNamespaceQName, PI, PrefixedQName, QName, ScalesXml, XmlItem}
 
@@ -51,6 +50,11 @@ trait XmlTypes {
    * XML Collection - an alias for ImmutableArrayProxy 
    */ 
   type XCC[T] = ImmutableArrayProxy[T]
+
+  /**
+   * The xml typed ImmutableArrayProxy SeqLikeThing
+   */
+  val xmlSeqLikeThing = SeqLikeThing.immutableArrayProxyLikeThing[XCC[_], ItemOrElem]
 
   /**
    * Misc is either a Comment or PI, and is used for the Prolog and trailing Misc items in a Doc.
@@ -114,8 +118,6 @@ trait XmlTypes {
       top(Tree(
         elem, dchildren))
     } else {
-      import ScalesXml.xmlCBF
-
       // using a Function1 causes 2% of the cost for init alone
       
       // cache it here as we are going to fudge the path
@@ -128,10 +130,11 @@ trait XmlTypes {
       size = c.length
       
       // add a child, focus on it
-      val tpath = Path( path.top, 
-		       Node( path.node.index, 
-			    Tree(parent.section,
-				       c :+ n)) )
+      val tpath =
+        Path( path.top,
+		      Node( path.node.index,
+			      Tree(parent.section,
+				      parent.seqLikeThing.:+(c)(n))) )
 
       // drill down to last child
       Path(tpath, Node(size, n))
@@ -141,14 +144,13 @@ trait XmlTypes {
    * Adds a child to the given subpath, however focus remains on the newly modified path
    */ 
   final def addChild(path: XmlPath, child: XmlItem) = {
-    import ScalesXml.xmlCBF
     import path.node.focus
 
     val parent = focus.getRight
     Path( path.top, 
 	       Node( path.node.index,
 		     Tree(parent.section,
-        parent.children :+ item[XmlItem, Elem, XCC](child))
+           parent.seqLikeThing.:+(parent.children)(item[XmlItem, Elem, XCC](child)))
 			       ))
   }
 

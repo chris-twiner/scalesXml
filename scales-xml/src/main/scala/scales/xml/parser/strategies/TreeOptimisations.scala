@@ -15,7 +15,6 @@ trait TreeOptimisation[TOKEN <: OptimisationToken] extends PathOptimisationStrat
   def newTree( elem : Elem, children : XmlChildren, token : TOKEN )(implicit seqLikeThing: SeqLikeThing[XCC[_], ItemOrTree[XmlItem, Elem, XCC], XCC]): XmlTree
 
   final override def elementEnd( xml : TreeProxies, token : TOKEN ) {
-    import ScalesXml.xmlCBF
 
     val l = xml.current
     val nt = newTree(l.elem, l.builder.result, token)

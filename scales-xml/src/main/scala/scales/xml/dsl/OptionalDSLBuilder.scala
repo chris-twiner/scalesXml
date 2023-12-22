@@ -12,8 +12,6 @@ import scales.xml.{
 import scales.utils.collection.path._
 import scales.utils.{AsBoolean, subtree, foldPositions, booleanMatcher, booleanAndTMatcher, top, item}
 
-import ScalesXml.xmlCBF
-
 import ScalesXml.fromParserDefault // note cannot be in parser here
 
 /**

@@ -22,7 +22,6 @@ import scala.collection.mutable.ArrayBuffer
  * NOTE this is effectively an internal structure, but is provided for user land performance tweaks
  */ 
 class TreeProxies( ){
-  import ScalesXml.xmlCBF
 
   // special case root tree
   var rootTree : XmlTree = _

@@ -1,20 +1,9 @@
 package scales.xml.dsl
 
-import scales.xml.{
-  XmlTree, Elem, 
-  XCC, XmlItem, 
-  QName, ScalesXml,
-  Attribute, emptyChildren,
-  ItemOrElem, XPath,
-  XmlPath, Text, raw
-  }
-
+import scales.xml.{Attribute, Elem, ItemOrElem, QName, ScalesXml, Text, XCC, XPath, XmlItem, XmlPath, XmlTree, emptyChildren, raw}
 import scales.utils.collection.path._
-import scales.utils.{AsBoolean, subtree, foldPositions, booleanMatcher, booleanAndTMatcher, top, item}
-
-import ScalesXml.xmlCBF
-
-import ScalesXml.fromParserDefault // note cannot be in parser here
+import scales.utils.{foldPositions, item, subtree, top}
+import ScalesXml.fromParserDefault
 
 /**
  * Entry point to creating DslBuilders, can be used without the implicit helpers
@@ -82,7 +71,7 @@ final class DslBuilder private(val tree: XmlTree) {
   def add( itemOrElems : ItemOrElem * ) = /( itemOrElems :_* )
 
   def /( itemOrElems : => Iterable[ItemOrElem] ) : DslBuilder =
-    new DslBuilder( tree.copy( children = (tree.children ++ itemOrElems  )))
+    new DslBuilder( tree.copy( children = tree.seqLikeThing.++(tree.children)(itemOrElems)  ))
 
   /**
    * Add a number of ItemOrElems wrapped in Option, those which are Some will be added.
@@ -100,7 +89,7 @@ final class DslBuilder private(val tree: XmlTree) {
    */
   def /( itemOrElem : Option[ItemOrElem] ) = 
     itemOrElem.map{ i => 
-      new DslBuilder( tree.copy( children = (tree.children :+ i  )))
+      new DslBuilder( tree.copy( children = tree.seqLikeThing.:+(tree.children)(i)  ))
 		 }.getOrElse{this}
 
   /**
@@ -128,7 +117,7 @@ final class DslBuilder private(val tree: XmlTree) {
   /**
    * Removes all child trees with a given qname
    */ // any qname will do given its elems
-  def -/( qname : QName ) = new DslBuilder(tree.copy(children = tree.children.filterNot{
+  def -/( qname : QName ) = new DslBuilder(tree.copy(children = tree.seqLikeThing.filterNot(tree.children){
     either =>
       either.fold( item => false, tree => tree.section.name =:= qname)
   }))
@@ -137,14 +126,14 @@ final class DslBuilder private(val tree: XmlTree) {
    * Add a number of trees, xmlItems, text, cdata, comments etc
    */
   def /( itemOrElems : ItemOrElem * ) = 
-    new DslBuilder( tree.copy( children = (tree.children ++ itemOrElems )))
+    new DslBuilder( tree.copy( children = tree.seqLikeThing.wrap(tree.children ++ itemOrElems) ))
 
   /**
    * sets the tree to a single Text node child, replacing all others
    */
   def ~>( value : String ) : DslBuilder = // note ~> is used not -> as it will then get in the way of the tupler
     if (value ne null)
-      new DslBuilder( tree.copy(children = emptyChildren :+ item[XmlItem, Elem, XCC](Text(value))))
+      new DslBuilder( tree.copy(children = tree.seqLikeThing.wrap(emptyChildren :+ item[XmlItem, Elem, XCC](Text(value)))))
     else this
     
   /**
@@ -163,7 +152,7 @@ final class DslBuilder private(val tree: XmlTree) {
    */
   def ~>( value : Option[String] ) : DslBuilder = 
     value.map{ v =>
-      new DslBuilder( tree.copy(children = emptyChildren :+ item[XmlItem, Elem, XCC](Text(v))))
+      new DslBuilder( tree.copy(children = tree.seqLikeThing.wrap(emptyChildren :+ item[XmlItem, Elem, XCC](Text(v)))))
 	    }.getOrElse{this}
 
   /**
@@ -174,7 +163,7 @@ final class DslBuilder private(val tree: XmlTree) {
   /**
    * Cleans out any child text nodes (comments, cdata etc) and just leaves child elements
    */
-  def elementsOnly = new DslBuilder(tree.copy(children = tree.children.filter( _.fold( _ => false, _ => true ) ) ))
+  def elementsOnly = new DslBuilder(tree.copy(children = tree.seqLikeThing.wrap(tree.children.filter( _.fold( _ => false, _ => true ) ) )))
 
   def toTree = tree
 

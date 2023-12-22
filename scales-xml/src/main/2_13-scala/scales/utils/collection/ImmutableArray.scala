@@ -198,7 +198,7 @@ object ImmutableArrayProxy extends SeqFactory[ImmutableArrayProxy] {
   /**
    * Convenience constructor creates a single cell array
    */ 
-  def one[A](a: A): ImmutableArrayProxyLikeThing[A] = ImmutableArrayProxyLikeThing(IAOne(a))
+  def one[A](a: A): ImmutableArrayProxy[A] = IAOne(a)
 
   @inline final override def empty[ A ] : ImmutableArrayProxy[A]  = emptyImmutableArray.asInstanceOf[ImmutableArrayProxy[A]]
 
