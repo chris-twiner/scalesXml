@@ -151,11 +151,11 @@ jobs:
       - uses: ./.github/workflows/mkdocs #sparkutils/quality/.github/workflows/mkdocs/action.yml@e8cd720ee2cb495a6a020363441a81da3bb70b23
         with:
           prepScript: |
-            cp -rf target/site docs/
-            cp -rf scales-xml/target/site docs/site/scales-xml_2_12
-            cp -rf aalto/target/site docs/site/scales-xml-aalto_2_12
-            cp -rf jaxen/target/site docs/site/scales-xml-jaxen_2_12
-            cp -rf saxon-tests/target/site docs/site/scales-xml-saxon-tests_2_12
-            cp target/coverage.txt docs/
-            cp target/version.txt .
-            cp target/coverage.txt .
+            cp -rf scalesXml/target/site docs/
+            cp -rf scalesXml/scales-xml/target/site docs/site/scales-xml_2_12
+            cp -rf scalesXml/aalto/target/site docs/site/scales-xml-aalto_2_12
+            cp -rf scalesXml/jaxen/target/site docs/site/scales-xml-jaxen_2_12
+            cp -rf scalesXml/saxon-tests/target/site docs/site/scales-xml-saxon-tests_2_12
+            cp scalesXml/target/coverage.txt docs/
+            cp scalesXml/target/version.txt .
+            cp scalesXml/target/coverage.txt .
