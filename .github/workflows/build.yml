@@ -71,7 +71,7 @@ jobs:
           OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           OSSRH_TOKEN: ${{ secrets.OSSRH_TOKEN }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
-      - name: Building site against Scala_2_13
+      - name: Building site against Scala_2_12
         run: |
             conda install libgomp=11.2.0 # force the right libs
             conda install graphviz=2.50.0 # conda is from fatty
@@ -95,7 +95,12 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: target
-          path: target
+          path: |
+            target
+            scales-xml/target
+            aalto/target
+            jaxen/target
+            saxon-tests/target
     outputs:
       version: ${{ steps.version.outputs.version }}
 
