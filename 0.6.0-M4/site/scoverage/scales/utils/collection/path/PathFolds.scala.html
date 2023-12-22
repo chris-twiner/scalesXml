@@ -1,0 +1,1621 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/utils/collection/path/PathFolds.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.utils.collection.path
+</span>2 <span style=''>
+</span>3 <span style=''>import scala.collection.generic.CanBuildFrom
+</span>4 <span style=''>import scales.utils.collection.{SeqLikeThing, Tree}
+</span>5 <span style=''>import scales.utils.{FoldR, ItemOrTree, LeftLike, PathFoldR, TreeCBF, deepestLast, top}
+</span>6 <span style=''>
+</span>7 <span style=''>/**
+</span>8 <span style=''> * Represents the base for operations that fold over a list of paths
+</span>9 <span style=''> */ 
+</span>10 <span style=''>sealed trait FoldOperation[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]] {
+</span>11 <span style=''>
+</span>12 <span style=''>  implicit val seqLikeThing: SeqLikeThing[CC[_], ItemOrTree[Item, Section, CC], CC]
+</span>13 <span style=''>
+</span>14 <span style=''>  protected def rootChangeAllowed = </span><span style='background: #F0ADAD'>false</span><span style=''>
+</span>15 <span style=''>
+</span>16 <span style=''>  def perform(path: Path[Item, Section, CC]): FoldR[Item, Section, CC]
+</span>17 <span style=''>
+</span>18 <span style=''>  protected def add(path: Path[Item, Section, CC], direction: Int, newPath: Iterable[ItemOrTree[Item, Section, CC]]) : FoldR[Item, Section, CC] = {
+</span>19 <span style=''>    // need to go up to replace
+</span>20 <span style=''>    val parent = </span><span style='background: #AEF1AE'>path.zipUp</span><span style=''>
+</span>21 <span style=''>    if (</span><span style='background: #AEF1AE'>path.top.isLeft &amp;&amp; !rootChangeAllowed</span><span style=''>)
+</span>22 <span style=''>      </span><span style='background: #F0ADAD'>Right(AddedBeforeOrAfterRoot)</span><span style=''>
+</span>23 <span style=''>    else
+</span>24 <span style=''>      </span><span style='background: #AEF1AE'>Left(parent.
+</span>25 <span style=''></span><span style='background: #AEF1AE'>        modify { x =&gt;
+</span>26 <span style=''></span><span style='background: #AEF1AE'>          val tree = x.right.get;
+</span>27 <span style=''></span><span style='background: #AEF1AE'>          val index = path.node.index + direction
+</span>28 <span style=''></span><span style='background: #AEF1AE'>          val (pre,pos) = seqLikeThing.splitAt(tree.children)(index)
+</span>29 <span style=''></span><span style='background: #AEF1AE'>          val newChildren = seqLikeThing.++((seqLikeThing.++(pre)(newPath)))( seqLikeThing.seq(pos))
+</span>30 <span style=''></span><span style='background: #AEF1AE'>          Tree(tree.section, newChildren.asInstanceOf[CC[ItemOrTree[Item, Section, CC]]]) // actually the same
+</span>31 <span style=''></span><span style='background: #AEF1AE'>        })</span><span style=''>
+</span>32 <span style=''>
+</span>33 <span style=''>  }
+</span>34 <span style=''>}
+</span>35 <span style=''>
+</span>36 <span style=''>case class Remove[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]]()(implicit val seqLikeThing: SeqLikeThing[CC[_], ItemOrTree[Item, Section, CC], CC]) extends FoldOperation[Item, Section, CC] {
+</span>37 <span style=''>
+</span>38 <span style=''>  def perform(path: Path[Item, Section, CC]): FoldR[Item, Section, CC] = {
+</span>39 <span style=''>    val ores = </span><span style='background: #AEF1AE'>path.removeAndUp()</span><span style=''>;
+</span>40 <span style=''>    if (</span><span style='background: #AEF1AE'>ores.isDefined</span><span style=''>) </span><span style='background: #AEF1AE'>Left(ores.get)</span><span style=''>
+</span>41 <span style=''>    else </span><span style='background: #AEF1AE'>Right(RemovedRoot)</span><span style=''>
+</span>42 <span style=''>  }
+</span>43 <span style=''>}
+</span>44 <span style=''>
+</span>45 <span style=''>case class AddBefore[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]](newPath: ItemOrTree[Item, Section, CC])(implicit val seqLikeThing: SeqLikeThing[CC[_], ItemOrTree[Item, Section, CC], CC]) extends FoldOperation[Item, Section, CC] {
+</span>46 <span style=''>
+</span>47 <span style=''>  def perform(path: Path[Item, Section, CC]): FoldR[Item, Section, CC] = </span><span style='background: #AEF1AE'>add(path, 0, List(newPath))</span><span style=''>
+</span>48 <span style=''>}
+</span>49 <span style=''>
+</span>50 <span style=''>case class AddAfter[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]](newPath: ItemOrTree[Item, Section, CC])(implicit val seqLikeThing: SeqLikeThing[CC[_], ItemOrTree[Item, Section, CC], CC]) extends FoldOperation[Item, Section, CC] {
+</span>51 <span style=''>
+</span>52 <span style=''>  def perform(path: Path[Item, Section, CC]): FoldR[Item, Section, CC] = </span><span style='background: #AEF1AE'>add(path, 1, List(newPath))</span><span style=''>
+</span>53 <span style=''>}
+</span>54 <span style=''>
+</span>55 <span style=''>/**
+</span>56 <span style=''> * Use to make it easier to filter out large sets (for those that aren't interesting simply asis them, see tests for use case)
+</span>57 <span style=''> */
+</span>58 <span style=''>case class AsIs[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]]()(implicit val seqLikeThing: SeqLikeThing[CC[_], ItemOrTree[Item, Section, CC], CC]) extends FoldOperation[Item, Section, CC] {
+</span>59 <span style=''>
+</span>60 <span style=''>  def perform(path: Path[Item, Section, CC]): FoldR[Item, Section, CC] = </span><span style='background: #AEF1AE'>Left(path)</span><span style=''>
+</span>61 <span style=''>}
+</span>62 <span style=''>
+</span>63 <span style=''>object Replace {
+</span>64 <span style=''>  /**
+</span>65 <span style=''>   * Simpler interface
+</span>66 <span style=''>   */
+</span>67 <span style=''>  def apply[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]](replaceWith: ItemOrTree[Item, Section, CC]*)(implicit seqLikeThing: SeqLikeThing[CC[_], ItemOrTree[Item, Section, CC], CC]) = </span><span style='background: #AEF1AE'>new Replace[Item, Section, CC](replaceWith)</span><span style=''>
+</span>68 <span style=''>
+</span>69 <span style=''>}
+</span>70 <span style=''>
+</span>71 <span style=''>/**
+</span>72 <span style=''> * Allows replacing one path with many, may be easier to use the * version however
+</span>73 <span style=''> */
+</span>74 <span style=''>case class Replace[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]](replaceWith: Iterable[ItemOrTree[Item, Section, CC]])(implicit val seqLikeThing: SeqLikeThing[CC[_], ItemOrTree[Item, Section, CC], CC]) extends FoldOperation[Item, Section, CC] {
+</span>75 <span style=''>  override def rootChangeAllowed = </span><span style='background: #AEF1AE'>true</span><span style=''>
+</span>76 <span style=''>
+</span>77 <span style=''>  def perform(path: Path[Item, Section, CC]): FoldR[Item, Section, CC] = {
+</span>78 <span style=''>    // modify with tail
+</span>79 <span style=''>    val tpath = </span><span style='background: #AEF1AE'>path.modify(_ =&gt; replaceWith.head)</span><span style=''>
+</span>80 <span style=''>    </span><span style='background: #AEF1AE'>add(tpath, 1, replaceWith.tail)</span><span style=''>
+</span>81 <span style=''>  }
+</span>82 <span style=''>}
+</span>83 <span style=''>
+</span>84 <span style=''>/**
+</span>85 <span style=''> * Allows foldPositions to be nested, only replace and delete makes sense here (afaict).
+</span>86 <span style=''> *
+</span>87 <span style=''> * As such, when wholeTree is false, the path (which must be a tree) is transformed
+</span>88 <span style=''> * 
+</span>89 <span style=''> *     p =&gt; top(p.tree)
+</span>90 <span style=''> *
+</span>91 <span style=''> * and a special case for &quot;deletes&quot; is made - when RemovedRoot is returned from the transformation a delete will take place on the Path.  This enforces that only replace and removes are possible and function appropriately.
+</span>92 <span style=''> *
+</span>93 <span style=''> * Warning:
+</span>94 <span style=''> * 
+</span>95 <span style=''> * When wholeTree is true the function f is passed the Path (or item) in the original tree, any transformations are then conusmed across the whole tree, which is likely not desired. 
+</span>96 <span style=''> */
+</span>97 <span style=''>case class ReplaceWith[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]](f: PathFoldR[Item, Section, CC], wholeTree : Boolean = false)
+</span>98 <span style=''>  (implicit val seqLikeThing: SeqLikeThing[CC[_], ItemOrTree[Item, Section, CC], CC]) extends FoldOperation[Item, Section, CC] {
+</span>99 <span style=''>
+</span>100 <span style=''>  def perform(path: Path[Item, Section, CC]): FoldR[Item, Section, CC] =
+</span>101 <span style=''>    // modify back in (allows changes), or pass on the error
+</span>102 <span style=''>    </span><span style='background: #AEF1AE'>f( if (wholeTree) 
+</span>103 <span style=''></span><span style='background: #AEF1AE'>      	 </span><span style='background: #F0ADAD'>path</span><span style='background: #AEF1AE'>
+</span>104 <span style=''></span><span style='background: #AEF1AE'>       else
+</span>105 <span style=''></span><span style='background: #AEF1AE'>         top(path.tree) ).
+</span>106 <span style=''></span><span style='background: #AEF1AE'>            fold(fres =&gt;
+</span>107 <span style=''></span><span style='background: #AEF1AE'>                Left(path.modify(_ =&gt;
+</span>108 <span style=''></span><span style='background: #AEF1AE'>                        fres.tree
+</span>109 <span style=''></span><span style='background: #AEF1AE'>                  )),
+</span>110 <span style=''></span><span style='background: #AEF1AE'>              x =&gt; {
+</span>111 <span style=''></span><span style='background: #AEF1AE'>                if (</span><span style='background: #F0ADAD'>(x eq RemovedRoot) &amp;&amp;
+</span>112 <span style=''></span><span style='background: #F0ADAD'>                    (!wholeTree)</span><span style='background: #AEF1AE'>)
+</span>113 <span style=''></span><span style='background: #AEF1AE'>                  // delete the node - special case as per doc
+</span>114 <span style=''></span><span style='background: #AEF1AE'>                  </span><span style='background: #F0ADAD'>Remove[Item, Section, CC]().perform(path)</span><span style='background: #AEF1AE'> // it might itself be the root but thats fine
+</span>115 <span style=''></span><span style='background: #AEF1AE'>                else
+</span>116 <span style=''></span><span style='background: #AEF1AE'>                  </span><span style='background: #F0ADAD'>Right(x)</span><span style='background: #AEF1AE'>
+</span>117 <span style=''></span><span style='background: #AEF1AE'>              }
+</span>118 <span style=''></span><span style='background: #AEF1AE'>            )</span><span style=''>
+</span>119 <span style=''>
+</span>120 <span style=''>}
+</span>121 <span style=''>
+</span>122 <span style=''>sealed trait FoldError
+</span>123 <span style=''>
+</span>124 <span style=''>case object NoPaths extends FoldError
+</span>125 <span style=''>case object NoSingleRoot extends FoldError
+</span>126 <span style=''>case object RemovedRoot extends FoldError
+</span>127 <span style=''>case object AddedBeforeOrAfterRoot extends FoldError
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          14
+        </td>
+        <td>
+          707
+        </td>
+        <td>
+          518
+          -
+          523
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          708
+        </td>
+        <td>
+          794
+          -
+          804
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Path.zipUp
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path.zipUp()
+        </td>
+      </tr><tr>
+        <td>
+          21
+        </td>
+        <td>
+          709
+        </td>
+        <td>
+          832
+          -
+          850
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FoldOperation.this.rootChangeAllowed.unary_!
+        </td>
+      </tr><tr>
+        <td>
+          21
+        </td>
+        <td>
+          710
+        </td>
+        <td>
+          813
+          -
+          850
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path.top.isLeft.&amp;&amp;(FoldOperation.this.rootChangeAllowed.unary_!)
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          711
+        </td>
+        <td>
+          858
+          -
+          887
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Right.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.`package`.Right.apply[Nothing, scales.utils.collection.path.AddedBeforeOrAfterRoot.type](AddedBeforeOrAfterRoot)
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          712
+        </td>
+        <td>
+          858
+          -
+          887
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.util.Right.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.`package`.Right.apply[Nothing, scales.utils.collection.path.AddedBeforeOrAfterRoot.type](AddedBeforeOrAfterRoot)
+        </td>
+      </tr><tr>
+        <td>
+          24
+        </td>
+        <td>
+          725
+        </td>
+        <td>
+          903
+          -
+          1313
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Left.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Left.apply[scales.utils.collection.path.Path[Item,Section,CC], Nothing](parent.modify(((x: scales.utils.ItemOrTree[Item,Section,CC]) =&gt; {
+  val tree: scales.utils.collection.Tree[Item,Section,CC] = x.right.get;
+  val index: Int = path.node.index.+(direction);
+  &lt;synthetic&gt; &lt;artifact&gt; private[this] val x$1: (CC[scales.utils.ItemOrTree[Item,Section,CC]], CC[scales.utils.ItemOrTree[Item,Section,CC]]) = (FoldOperation.this.seqLikeThing.splitAt(tree.children)(index): (CC[scales.utils.ItemOrTree[Item,Section,CC]], CC[scales.utils.ItemOrTree[Item,Section,CC]]) @unchecked) match {
+    case (_1: CC[scales.utils.ItemOrTree[Item,Section,CC]], _2: CC[scales.utils.ItemOrTree[Item,Section,CC]])(CC[scales.utils.ItemOrTree[Item,Section,CC]], CC[scales.utils.ItemOrTree[Item,Section,CC]])((pre @ _), (pos @ _)) =&gt; scala.Tuple2.apply[CC[scales.utils.ItemOrTree[Item,Section,CC]], CC[scales.utils.ItemOrTree[Item,Section,CC]]](pre, pos)
+  };
+  val pre: CC[scales.utils.ItemOrTree[Item,Section,CC]] = x$1._1;
+  val pos: CC[scales.utils.ItemOrTree[Item,Section,CC]] = x$1._2;
+  val newChildren: CC[scales.utils.ItemOrTree[Item,Section,CC]] = FoldOperation.this.seqLikeThing.++(FoldOperation.this.seqLikeThing.++(pre)(newPath))(FoldOperation.this.seqLikeThing.seq(pos));
+  scales.utils.collection.Tree.apply[Item, Section, CC](tree.section, newChildren.asInstanceOf[CC[scales.utils.ItemOrTree[Item,Section,CC]]])(FoldOperation.this.seqLikeThing)
+})))
+        </td>
+      </tr><tr>
+        <td>
+          24
+        </td>
+        <td>
+          726
+        </td>
+        <td>
+          903
+          -
+          1313
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.util.Left.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Left.apply[scales.utils.collection.path.Path[Item,Section,CC], Nothing](parent.modify(((x: scales.utils.ItemOrTree[Item,Section,CC]) =&gt; {
+  val tree: scales.utils.collection.Tree[Item,Section,CC] = x.right.get;
+  val index: Int = path.node.index.+(direction);
+  &lt;synthetic&gt; &lt;artifact&gt; private[this] val x$1: (CC[scales.utils.ItemOrTree[Item,Section,CC]], CC[scales.utils.ItemOrTree[Item,Section,CC]]) = (FoldOperation.this.seqLikeThing.splitAt(tree.children)(index): (CC[scales.utils.ItemOrTree[Item,Section,CC]], CC[scales.utils.ItemOrTree[Item,Section,CC]]) @unchecked) match {
+    case (_1: CC[scales.utils.ItemOrTree[Item,Section,CC]], _2: CC[scales.utils.ItemOrTree[Item,Section,CC]])(CC[scales.utils.ItemOrTree[Item,Section,CC]], CC[scales.utils.ItemOrTree[Item,Section,CC]])((pre @ _), (pos @ _)) =&gt; scala.Tuple2.apply[CC[scales.utils.ItemOrTree[Item,Section,CC]], CC[scales.utils.ItemOrTree[Item,Section,CC]]](pre, pos)
+  };
+  val pre: CC[scales.utils.ItemOrTree[Item,Section,CC]] = x$1._1;
+  val pos: CC[scales.utils.ItemOrTree[Item,Section,CC]] = x$1._2;
+  val newChildren: CC[scales.utils.ItemOrTree[Item,Section,CC]] = FoldOperation.this.seqLikeThing.++(FoldOperation.this.seqLikeThing.++(pre)(newPath))(FoldOperation.this.seqLikeThing.seq(pos));
+  scales.utils.collection.Tree.apply[Item, Section, CC](tree.section, newChildren.asInstanceOf[CC[scales.utils.ItemOrTree[Item,Section,CC]]])(FoldOperation.this.seqLikeThing)
+})))
+        </td>
+      </tr><tr>
+        <td>
+          25
+        </td>
+        <td>
+          724
+        </td>
+        <td>
+          908
+          -
+          1312
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Path.modify
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          parent.modify(((x: scales.utils.ItemOrTree[Item,Section,CC]) =&gt; {
+  val tree: scales.utils.collection.Tree[Item,Section,CC] = x.right.get;
+  val index: Int = path.node.index.+(direction);
+  &lt;synthetic&gt; &lt;artifact&gt; private[this] val x$1: (CC[scales.utils.ItemOrTree[Item,Section,CC]], CC[scales.utils.ItemOrTree[Item,Section,CC]]) = (FoldOperation.this.seqLikeThing.splitAt(tree.children)(index): (CC[scales.utils.ItemOrTree[Item,Section,CC]], CC[scales.utils.ItemOrTree[Item,Section,CC]]) @unchecked) match {
+    case (_1: CC[scales.utils.ItemOrTree[Item,Section,CC]], _2: CC[scales.utils.ItemOrTree[Item,Section,CC]])(CC[scales.utils.ItemOrTree[Item,Section,CC]], CC[scales.utils.ItemOrTree[Item,Section,CC]])((pre @ _), (pos @ _)) =&gt; scala.Tuple2.apply[CC[scales.utils.ItemOrTree[Item,Section,CC]], CC[scales.utils.ItemOrTree[Item,Section,CC]]](pre, pos)
+  };
+  val pre: CC[scales.utils.ItemOrTree[Item,Section,CC]] = x$1._1;
+  val pos: CC[scales.utils.ItemOrTree[Item,Section,CC]] = x$1._2;
+  val newChildren: CC[scales.utils.ItemOrTree[Item,Section,CC]] = FoldOperation.this.seqLikeThing.++(FoldOperation.this.seqLikeThing.++(pre)(newPath))(FoldOperation.this.seqLikeThing.seq(pos));
+  scales.utils.collection.Tree.apply[Item, Section, CC](tree.section, newChildren.asInstanceOf[CC[scales.utils.ItemOrTree[Item,Section,CC]]])(FoldOperation.this.seqLikeThing)
+}))
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          713
+        </td>
+        <td>
+          959
+          -
+          970
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.impl.RightLikeProjection.get
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x.right.get
+        </td>
+      </tr><tr>
+        <td>
+          27
+        </td>
+        <td>
+          714
+        </td>
+        <td>
+          994
+          -
+          1021
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path.node.index.+(direction)
+        </td>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          715
+        </td>
+        <td>
+          1037
+          -
+          1037
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$1._1
+        </td>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          716
+        </td>
+        <td>
+          1041
+          -
+          1041
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$1._2
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          717
+        </td>
+        <td>
+          1136
+          -
+          1165
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.SeqLikeThing.++
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FoldOperation.this.seqLikeThing.++(pre)(newPath)
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          718
+        </td>
+        <td>
+          1169
+          -
+          1190
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.SeqLikeThing.seq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FoldOperation.this.seqLikeThing.seq(pos)
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          719
+        </td>
+        <td>
+          1119
+          -
+          1191
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.SeqLikeThing.++
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FoldOperation.this.seqLikeThing.++(FoldOperation.this.seqLikeThing.++(pre)(newPath))(FoldOperation.this.seqLikeThing.seq(pos))
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          720
+        </td>
+        <td>
+          1207
+          -
+          1219
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.Tree.section
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          tree.section
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          721
+        </td>
+        <td>
+          1221
+          -
+          1280
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          newChildren.asInstanceOf[CC[scales.utils.ItemOrTree[Item,Section,CC]]]
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          722
+        </td>
+        <td>
+          1206
+          -
+          1206
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.FoldOperation.seqLikeThing
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FoldOperation.this.seqLikeThing
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          723
+        </td>
+        <td>
+          1202
+          -
+          1281
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.Tree.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.collection.Tree.apply[Item, Section, CC](tree.section, newChildren.asInstanceOf[CC[scales.utils.ItemOrTree[Item,Section,CC]]])(FoldOperation.this.seqLikeThing)
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          727
+        </td>
+        <td>
+          1624
+          -
+          1642
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Path.removeAndUp
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path.removeAndUp()
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          728
+        </td>
+        <td>
+          1652
+          -
+          1666
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Option.isDefined
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ores.isDefined
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          729
+        </td>
+        <td>
+          1673
+          -
+          1681
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Option.get
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ores.get
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          730
+        </td>
+        <td>
+          1668
+          -
+          1682
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Left.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Left.apply[scales.utils.collection.path.Path[Item,Section,CC], Nothing](ores.get)
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          731
+        </td>
+        <td>
+          1668
+          -
+          1682
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.util.Left.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Left.apply[scales.utils.collection.path.Path[Item,Section,CC], Nothing](ores.get)
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          732
+        </td>
+        <td>
+          1692
+          -
+          1710
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Right.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Right.apply[Nothing, scales.utils.collection.path.RemovedRoot.type](RemovedRoot)
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          733
+        </td>
+        <td>
+          1692
+          -
+          1710
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.util.Right.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Right.apply[Nothing, scales.utils.collection.path.RemovedRoot.type](RemovedRoot)
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          734
+        </td>
+        <td>
+          2054
+          -
+          2055
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          735
+        </td>
+        <td>
+          2062
+          -
+          2069
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.AddBefore.newPath
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AddBefore.this.newPath
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          736
+        </td>
+        <td>
+          2057
+          -
+          2070
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.List.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.collection.immutable.List.apply[scales.utils.ItemOrTree[Item,Section,CC]](AddBefore.this.newPath)
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          737
+        </td>
+        <td>
+          2044
+          -
+          2071
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.FoldOperation.add
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AddBefore.this.add(path, 0, scala.collection.immutable.List.apply[scales.utils.ItemOrTree[Item,Section,CC]](AddBefore.this.newPath))
+        </td>
+      </tr><tr>
+        <td>
+          52
+        </td>
+        <td>
+          738
+        </td>
+        <td>
+          2410
+          -
+          2411
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          52
+        </td>
+        <td>
+          739
+        </td>
+        <td>
+          2418
+          -
+          2425
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.AddAfter.newPath
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AddAfter.this.newPath
+        </td>
+      </tr><tr>
+        <td>
+          52
+        </td>
+        <td>
+          740
+        </td>
+        <td>
+          2413
+          -
+          2426
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.List.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.collection.immutable.List.apply[scales.utils.ItemOrTree[Item,Section,CC]](AddAfter.this.newPath)
+        </td>
+      </tr><tr>
+        <td>
+          52
+        </td>
+        <td>
+          741
+        </td>
+        <td>
+          2400
+          -
+          2427
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.FoldOperation.add
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AddAfter.this.add(path, 1, scala.collection.immutable.List.apply[scales.utils.ItemOrTree[Item,Section,CC]](AddAfter.this.newPath))
+        </td>
+      </tr><tr>
+        <td>
+          60
+        </td>
+        <td>
+          742
+        </td>
+        <td>
+          2849
+          -
+          2859
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Left.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Left.apply[scales.utils.collection.path.Path[Item,Section,CC], Nothing](path)
+        </td>
+      </tr><tr>
+        <td>
+          67
+        </td>
+        <td>
+          743
+        </td>
+        <td>
+          3118
+          -
+          3161
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.path.Replace.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new scales.utils.collection.path.Replace[Item,Section,CC](replaceWith)(seqLikeThing)
+        </td>
+      </tr><tr>
+        <td>
+          75
+        </td>
+        <td>
+          744
+        </td>
+        <td>
+          3556
+          -
+          3560
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          79
+        </td>
+        <td>
+          745
+        </td>
+        <td>
+          3694
+          -
+          3710
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.IterableLike.head
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Replace.this.replaceWith.head
+        </td>
+      </tr><tr>
+        <td>
+          79
+        </td>
+        <td>
+          746
+        </td>
+        <td>
+          3677
+          -
+          3711
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Path.modify
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path.modify(((x$2: scales.utils.ItemOrTree[Item,Section,CC]) =&gt; Replace.this.replaceWith.head))
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          747
+        </td>
+        <td>
+          3727
+          -
+          3728
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          748
+        </td>
+        <td>
+          3730
+          -
+          3746
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.TraversableLike.tail
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Replace.this.replaceWith.tail
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          749
+        </td>
+        <td>
+          3716
+          -
+          3747
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.FoldOperation.add
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Replace.this.add(tpath, 1, Replace.this.replaceWith.tail)
+        </td>
+      </tr><tr>
+        <td>
+          102
+        </td>
+        <td>
+          750
+        </td>
+        <td>
+          4820
+          -
+          4829
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.ReplaceWith.wholeTree
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ReplaceWith.this.wholeTree
+        </td>
+      </tr><tr>
+        <td>
+          103
+        </td>
+        <td>
+          751
+        </td>
+        <td>
+          4840
+          -
+          4844
+        </td>
+        <td>
+          Ident
+        </td>
+        <td>
+          scales.utils.collection.path.ReplaceWith.path
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          path
+        </td>
+      </tr><tr>
+        <td>
+          105
+        </td>
+        <td>
+          752
+        </td>
+        <td>
+          4870
+          -
+          4879
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Path.tree
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path.tree()
+        </td>
+      </tr><tr>
+        <td>
+          105
+        </td>
+        <td>
+          753
+        </td>
+        <td>
+          4869
+          -
+          4869
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.ReplaceWith.seqLikeThing
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ReplaceWith.this.seqLikeThing
+        </td>
+      </tr><tr>
+        <td>
+          105
+        </td>
+        <td>
+          754
+        </td>
+        <td>
+          4866
+          -
+          4880
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.path.Paths.top
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.top[Item, Section, CC](path.tree())(ReplaceWith.this.seqLikeThing)
+        </td>
+      </tr><tr>
+        <td>
+          105
+        </td>
+        <td>
+          755
+        </td>
+        <td>
+          4866
+          -
+          4880
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.collection.path.Paths.top
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.top[Item, Section, CC](path.tree())(ReplaceWith.this.seqLikeThing)
+        </td>
+      </tr><tr>
+        <td>
+          106
+        </td>
+        <td>
+          765
+        </td>
+        <td>
+          4813
+          -
+          5346
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Either.fold
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ReplaceWith.this.f.apply(if (ReplaceWith.this.wholeTree)
+  path
+else
+  scales.utils.`package`.top[Item, Section, CC](path.tree())(ReplaceWith.this.seqLikeThing)).fold[scales.utils.FoldR[Item,Section,CC]](((fres: scales.utils.collection.path.Path[Item,Section,CC]) =&gt; scala.`package`.Left.apply[scales.utils.collection.path.Path[Item,Section,CC], Nothing](path.modify(((x$3: scales.utils.ItemOrTree[Item,Section,CC]) =&gt; fres.tree())))), ((x: scales.utils.collection.path.FoldError) =&gt; if (x.eq(RemovedRoot).&amp;&amp;(ReplaceWith.this.wholeTree.unary_!))
+  Remove.apply[Item, Section, CC]()(ReplaceWith.this.seqLikeThing).perform(path)
+else
+  scala.`package`.Right.apply[Nothing, scales.utils.collection.path.FoldError](x)))
+        </td>
+      </tr><tr>
+        <td>
+          107
+        </td>
+        <td>
+          757
+        </td>
+        <td>
+          4930
+          -
+          5000
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Path.modify
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path.modify(((x$3: scales.utils.ItemOrTree[Item,Section,CC]) =&gt; fres.tree()))
+        </td>
+      </tr><tr>
+        <td>
+          107
+        </td>
+        <td>
+          758
+        </td>
+        <td>
+          4925
+          -
+          5001
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Left.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Left.apply[scales.utils.collection.path.Path[Item,Section,CC], Nothing](path.modify(((x$3: scales.utils.ItemOrTree[Item,Section,CC]) =&gt; fres.tree())))
+        </td>
+      </tr><tr>
+        <td>
+          108
+        </td>
+        <td>
+          756
+        </td>
+        <td>
+          4971
+          -
+          4980
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Path.tree
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          fres.tree()
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          760
+        </td>
+        <td>
+          5044
+          -
+          5098
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          x.eq(RemovedRoot).&amp;&amp;(ReplaceWith.this.wholeTree.unary_!)
+        </td>
+      </tr><tr>
+        <td>
+          112
+        </td>
+        <td>
+          759
+        </td>
+        <td>
+          5087
+          -
+          5097
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReplaceWith.this.wholeTree.unary_!
+        </td>
+      </tr><tr>
+        <td>
+          114
+        </td>
+        <td>
+          761
+        </td>
+        <td>
+          5181
+          -
+          5222
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Remove.perform
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Remove.apply[Item, Section, CC]()(ReplaceWith.this.seqLikeThing).perform(path)
+        </td>
+      </tr><tr>
+        <td>
+          114
+        </td>
+        <td>
+          762
+        </td>
+        <td>
+          5181
+          -
+          5222
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.collection.path.Remove.perform
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Remove.apply[Item, Section, CC]()(ReplaceWith.this.seqLikeThing).perform(path)
+        </td>
+      </tr><tr>
+        <td>
+          116
+        </td>
+        <td>
+          763
+        </td>
+        <td>
+          5308
+          -
+          5316
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Right.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.`package`.Right.apply[Nothing, scales.utils.collection.path.FoldError](x)
+        </td>
+      </tr><tr>
+        <td>
+          116
+        </td>
+        <td>
+          764
+        </td>
+        <td>
+          5308
+          -
+          5316
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.util.Right.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.`package`.Right.apply[Nothing, scales.utils.collection.path.FoldError](x)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

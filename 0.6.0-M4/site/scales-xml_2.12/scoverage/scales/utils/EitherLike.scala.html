@@ -1,0 +1,341 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/utils/EitherLike.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.utils
+</span>2 <span style=''>
+</span>3 <span style=''>import impl.{LeftLikeProjection, RightLikeProjection, NonLeftP, NonRightP}
+</span>4 <span style=''>
+</span>5 <span style=''>/**
+</span>6 <span style=''> * Either is great, perfect for what is needed, except for the indirection and the added memory and cpu costs thereof.  If ScalesXml is meant to be used in the placesthat JAXP and friends would live it should perform the best it can.
+</span>7 <span style=''> *
+</span>8 <span style=''> * That means reducing allocations wherever possible and optimising up to the point of model damage.  I think this unfortunately crosses that line but meets the aim.
+</span>9 <span style=''> */ 
+</span>10 <span style=''>sealed trait EitherLike[+L,+R] {
+</span>11 <span style=''>  def isLeft : Boolean
+</span>12 <span style=''>
+</span>13 <span style=''>  def isRight : Boolean
+</span>14 <span style=''>
+</span>15 <span style=''>  def fold[X]( fl : (L) =&gt; X, fr : (R) =&gt; X) : X
+</span>16 <span style=''>
+</span>17 <span style=''>  def left : LeftLikeProjection[L]
+</span>18 <span style=''>  
+</span>19 <span style=''>  def getLeft : L
+</span>20 <span style=''>
+</span>21 <span style=''>  def right : RightLikeProjection[R]
+</span>22 <span style=''>
+</span>23 <span style=''>  def getRight : R
+</span>24 <span style=''>}
+</span>25 <span style=''>
+</span>26 <span style=''>trait LeftLike[+L, +R] extends LeftLikeProjection[L] with EitherLike[L,R] { lefty : L =&gt;
+</span>27 <span style=''>  @inline final def isLeft = </span><span style='background: #AEF1AE'>true</span><span style=''>
+</span>28 <span style=''>  @inline final def isRight = </span><span style='background: #F0ADAD'>false</span><span style=''>
+</span>29 <span style=''>
+</span>30 <span style=''>  @inline final def fold[X]( fl : (L) =&gt; X, fr : (R) =&gt; X) : X = </span><span style='background: #AEF1AE'>fl(lefty)</span><span style=''>
+</span>31 <span style=''>
+</span>32 <span style=''>  @inline final def left : LeftLikeProjection[L] = this
+</span>33 <span style=''>
+</span>34 <span style=''>  @inline final def right : RightLikeProjection[R] = </span><span style='background: #F0ADAD'>NonRightP.asInstanceOf[RightLikeProjection[R]]</span><span style=''>
+</span>35 <span style=''>
+</span>36 <span style=''>  @inline final def get : L = lefty
+</span>37 <span style=''>
+</span>38 <span style=''>  @inline final def getLeft : L = lefty
+</span>39 <span style=''>
+</span>40 <span style=''>  @inline final def getRight : R = </span><span style='background: #F0ADAD'>right.get</span><span style=''>
+</span>41 <span style=''>
+</span>42 <span style=''>}
+</span>43 <span style=''>
+</span>44 <span style=''>trait RightLike[+L, +R] extends RightLikeProjection[R] with EitherLike[L,R] { righty : R =&gt;
+</span>45 <span style=''>  @inline final def isLeft = </span><span style='background: #AEF1AE'>false</span><span style=''>
+</span>46 <span style=''>  @inline final def isRight = </span><span style='background: #AEF1AE'>true</span><span style=''>
+</span>47 <span style=''>
+</span>48 <span style=''>  @inline final def fold[X]( fl : (L) =&gt; X, fr : (R) =&gt; X) : X = </span><span style='background: #AEF1AE'>fr(righty)</span><span style=''>
+</span>49 <span style=''>
+</span>50 <span style=''>  @inline final def left : LeftLikeProjection[L] = </span><span style='background: #F0ADAD'>NonLeftP.asInstanceOf[LeftLikeProjection[L]]</span><span style=''>
+</span>51 <span style=''>
+</span>52 <span style=''>  @inline final def right : RightLikeProjection[R] = this 
+</span>53 <span style=''>
+</span>54 <span style=''>  @inline final def get : R = righty
+</span>55 <span style=''>
+</span>56 <span style=''>  @inline final def getRight : R = righty
+</span>57 <span style=''>
+</span>58 <span style=''>  @inline final def getLeft : L = </span><span style='background: #F0ADAD'>left.get</span><span style=''>
+</span>59 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          27
+        </td>
+        <td>
+          424
+        </td>
+        <td>
+          877
+          -
+          881
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          425
+        </td>
+        <td>
+          912
+          -
+          917
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          426
+        </td>
+        <td>
+          984
+          -
+          993
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          fl.apply(LeftLike.this)
+        </td>
+      </tr><tr>
+        <td>
+          34
+        </td>
+        <td>
+          427
+        </td>
+        <td>
+          1105
+          -
+          1151
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          impl.NonRightP.asInstanceOf[scales.utils.impl.RightLikeProjection[R]]
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          428
+        </td>
+        <td>
+          1266
+          -
+          1275
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.impl.RightLikeProjection.get
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          LeftLike.this.right.get
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          429
+        </td>
+        <td>
+          1401
+          -
+          1406
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          430
+        </td>
+        <td>
+          1437
+          -
+          1441
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          431
+        </td>
+        <td>
+          1508
+          -
+          1518
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          fr.apply(RightLike.this)
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          432
+        </td>
+        <td>
+          1571
+          -
+          1615
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          impl.NonLeftP.asInstanceOf[scales.utils.impl.LeftLikeProjection[L]]
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          433
+        </td>
+        <td>
+          1792
+          -
+          1800
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.impl.LeftLikeProjection.get
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          RightLike.this.left.get
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

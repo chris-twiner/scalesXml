@@ -1,0 +1,1512 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+          <title>scales-xml-jaxen 0.6.0-M4 API  - scales.xml.jaxen.ScalesNavigator</title>
+          <meta name="description" content="scales - xml - jaxen 0.6.0 - M4 API - scales.xml.jaxen.ScalesNavigator" />
+          <meta name="keywords" content="scales xml jaxen 0.6.0 M4 API scales.xml.jaxen.ScalesNavigator" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      
+      <link href="../../../lib/index.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../lib/jquery.min.js"></script>
+      <script type="text/javascript" src="../../../lib/jquery.panzoom.min.js"></script>
+      <script type="text/javascript" src="../../../lib/jquery.mousewheel.min.js"></script>
+      <script type="text/javascript" src="../../../lib/index.js"></script>
+      <script type="text/javascript" src="../../../index.js"></script>
+      <script type="text/javascript" src="../../../lib/scheduler.js"></script>
+      <script type="text/javascript" src="../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../lib/modernizr.custom.js"></script><script type="text/javascript" src="../../../lib/diagrams.js" id="diagrams-js"></script>
+      <script type="text/javascript">
+        /* this variable can be used by the JS to determine the path to the root document */
+        var toRoot = '../../../';
+      </script>
+    
+        </head>
+        <body>
+      <div id="search">
+        <span id="doc-title">scales-xml-jaxen 0.6.0-M4 API<span id="doc-version"></span></span>
+        <span class="close-results"><span class="left">&lt;</span> Back</span>
+        <div id="textfilter">
+          <span class="input">
+            <input autocapitalize="none" placeholder="Search" id="index-input" type="text" accesskey="/" />
+            <i class="clear material-icons"></i>
+            <i id="search-icon" class="material-icons"></i>
+          </span>
+        </div>
+    </div>
+      <div id="search-results">
+        <div id="search-progress">
+          <div id="progress-fill"></div>
+        </div>
+        <div id="results-content">
+          <div id="entity-results"></div>
+          <div id="member-results"></div>
+        </div>
+      </div>
+      <div id="content-scroll-container" style="-webkit-overflow-scrolling: touch;">
+        <div id="content-container" style="-webkit-overflow-scrolling: touch;">
+          <div id="subpackage-spacer">
+            <div id="packages">
+              <h1>Packages</h1>
+              <ul>
+                <li name="_root_.root" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="_root_"></a><a id="root:_root_"></a>
+      <span class="permalink">
+      <a href="../../../index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="../../../index.html"><span class="name">root</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../index.html" class="extype" name="_root_">root</a></dd></dl></div>
+    </li><li name="_root_.scales" visbl="pub" class="indented1 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="scales"></a><a id="scales:scales"></a>
+      <span class="permalink">
+      <a href="../../../scales/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="../../index.html"><span class="name">scales</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../index.html" class="extype" name="_root_">root</a></dd></dl></div>
+    </li><li name="scales.xml" visbl="pub" class="indented2 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="xml"></a><a id="xml:xml"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="../index.html"><span class="name">xml</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../index.html" class="extype" name="scales">scales</a></dd></dl></div>
+    </li><li name="scales.xml.jaxen" visbl="pub" class="indented3 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="jaxen"></a><a id="jaxen:jaxen"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="This package provides string XPath evaluation based on the Jaxen library, sample use:" href="index.html"><span class="name">jaxen</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">This package provides string XPath evaluation based on the Jaxen library, sample use: </p><div class="fullcomment"><div class="comment cmt"><p>This package provides string XPath evaluation based on the Jaxen library, sample use: </p><pre><span class="kw">val</span> xpath = ScalesXPath(str, <span class="std">Map</span>(
+      <span class="lit">"pre"</span> -&gt; <span class="lit">"urn:prefix"</span>,
+      <span class="lit">"jh"</span> -&gt; <span class="lit">"urn:justHere"</span>,
+      <span class="lit">"def"</span> -&gt; <span class="lit">"urn:default"</span>
+    ))
+<span class="kw">val</span> result : Iterable[Either[AttributePath, XmlPath]] = xpath.evaluate(x : XmlPath)</pre><p>NB: This class is only available with the scales-jaxen dependencies.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="scales.xml">xml</a></dd></dl></div>
+    </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="object" href="Implicits$.html" title=""></a>
+                        <a href="Implicits$.html" title="">Implicits</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="class" href="ScalesBaseJaxenXPath.html" title="Base functionality for all concrete, implementation-specific XPaths."></a>
+                        <a href="ScalesBaseJaxenXPath.html" title="Base functionality for all concrete, implementation-specific XPaths.">ScalesBaseJaxenXPath</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="object" href="ScalesComparator$.html" title="Interesting exercise in futility, its better not to sort as so many other places make reference / identity assumptions."></a>
+                        <a href="ScalesComparator$.html" title="Interesting exercise in futility, its better not to sort as so many other places make reference / identity assumptions.">ScalesComparator</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="class" href="ScalesDefaultAbsoluteLocationPath.html" title=""></a>
+                        <a href="ScalesDefaultAbsoluteLocationPath.html" title="">ScalesDefaultAbsoluteLocationPath</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="class" href="ScalesDefaultLocationPath.html" title=""></a>
+                        <a href="ScalesDefaultLocationPath.html" title="">ScalesDefaultLocationPath</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="class" href="" title="Maps Scales Xml into Jaxen"></a>
+                        <a href="" title="Maps Scales Xml into Jaxen">ScalesNavigator</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="class" href="ScalesUnionExpr.html" title="To use a proper comparator"></a>
+                        <a href="ScalesUnionExpr.html" title="To use a proper comparator">ScalesUnionExpr</a>
+                      </li><li class="current-entities indented3">
+                        <a class="object" href="ScalesXPath$.html" title="Useful constructors for String XPaths"></a>
+                        <a class="class" href="ScalesXPath.html" title="Use evaluate every time, select nodes will not work."></a>
+                        <a href="ScalesXPath.html" title="Use evaluate every time, select nodes will not work.">ScalesXPath</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="object" href="ScalesXPathFactory$.html" title="Due to reference equality comparisoms and a deeply woven comparator we need to override a few things..."></a>
+                        <a href="ScalesXPathFactory$.html" title="Due to reference equality comparisoms and a deeply woven comparator we need to override a few things...">ScalesXPathFactory</a>
+                      </li>
+              </ul>
+            </div>
+          </div>
+          <div id="content">
+            <body class="class type">
+      <div id="definition">
+        <div class="big-circle class">c</div>
+        <p id="owner"><a href="../../index.html" class="extype" name="scales">scales</a>.<a href="../index.html" class="extype" name="scales.xml">xml</a>.<a href="index.html" class="extype" name="scales.xml.jaxen">jaxen</a></p>
+        <h1>ScalesNavigator<span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span></h1>
+        <h3><span class="morelinks"></span></h3>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ScalesNavigator</span><span class="result"> extends <span class="extype" name="org.jaxen.DefaultNavigator">DefaultNavigator</span></span>
+      </span>
+      </h4>
+
+      
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Maps Scales Xml into Jaxen</p></div><div class="toggleContainer block">
+          <span class="toggle">
+            Linear Supertypes
+          </span>
+          <div class="superTypes hiddenContent"><span class="extype" name="org.jaxen.DefaultNavigator">DefaultNavigator</span>, <span class="extype" name="org.jaxen.Navigator">Navigator</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+        </div><div class="toggleContainer block diagram-container" id="inheritance-diagram-container">
+                <span class="toggle diagram-link">
+                  Type Hierarchy
+                </span>
+                <div class="diagram" id="inheritance-diagram"><svg class="class-diagram" id="graph1" width="170pt" height="118pt" viewBox="0.00 0.00 170.00 118.00" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><g id="page0,1_graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 114)"><polygon fill="white" stroke="transparent" points="-4,4 -4,-114 166,-114 166,4 -4,4"></polygon><g id="clust1" class="cluster"></g><g id="clust2" class="cluster"></g><!-- node0 --><g class="node this class" id="graph1_0"><g id="a_this class|graph1_0"><a xlink:href="#inheritance-diagram" xlink:title="scales.xml.jaxen.ScalesNavigator (this class)"><path fill="#418565" stroke="#418565" d="M129.67,-49C129.67,-49 32.33,-49 32.33,-49 28.17,-49 24,-44.83 24,-40.67 24,-40.67 24,-32.33 24,-32.33 24,-28.17 28.17,-24 32.33,-24 32.33,-24 129.67,-24 129.67,-24 133.83,-24 138,-28.17 138,-32.33 138,-32.33 138,-40.67 138,-40.67 138,-44.83 133.83,-49 129.67,-49"></path><image xlink:href="../../../lib/class_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="34" y="-43.5"></image><text text-anchor="start" x="55" y="-34.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">ScalesNavigator</text></a></g></g><!-- node1 --><g class="node class" id="graph1_1"><g id="a_class|graph1_1"><a xlink:title="org.jaxen.DefaultNavigator"><path fill="#418565" stroke="#418565" d="M131.67,-110C131.67,-110 30.33,-110 30.33,-110 26.17,-110 22,-105.83 22,-101.67 22,-101.67 22,-93.33 22,-93.33 22,-89.17 26.17,-85 30.33,-85 30.33,-85 131.67,-85 131.67,-85 135.83,-85 140,-89.17 140,-93.33 140,-93.33 140,-101.67 140,-101.67 140,-105.83 135.83,-110 131.67,-110"></path><image xlink:href="../../../lib/class_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="32" y="-104.5"></image><text text-anchor="start" x="53" y="-95.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">DefaultNavigator</text></a></g></g><!-- node1&#45;&gt;node0 --><g class="edge inheritance" id="graph1_1_0"><g id="a_inheritance|graph1_1_0"><a xlink:title="ScalesNavigator is a subtype of DefaultNavigator"><path fill="none" stroke="#d4d4d4" d="M81,-77.76C81,-68.37 81,-57.29 81,-49.13"></path><polygon fill="none" stroke="#d4d4d4" points="78.55,-77.84 81,-84.84 83.45,-77.84 78.55,-77.84"></polygon></a></g></g></g></svg></div>
+                <div id="diagram-controls" class="hiddenContent">
+                  <button id="diagram-zoom-out" class="diagram-btn"><i class="material-icons"></i></button>
+                  <button id="diagram-zoom-in" class="diagram-btn"><i class="material-icons"></i></button>
+                  <button title="Toggle full-screen" id="diagram-fs" class="diagram-btn to-full"><i class="material-icons"></i></button>
+                </div>
+              </div></div>
+        
+
+      <div id="mbrsel">
+        <div class="toggle"></div>
+        <div id="memberfilter">
+          <i class="material-icons arrow"></i>
+          <span class="input">
+            <input id="mbrsel-input" placeholder="Filter all members" type="text" accesskey="/" />
+          </span>
+          <i class="clear material-icons"></i>
+        </div>
+        <div id="filterby">
+          <div id="order">
+            <span class="filtertype">Ordering</span>
+            <ol>
+              
+              <li class="alpha in"><span>Alphabetic</span></li>
+              <li class="inherit out"><span>By Inheritance</span></li>
+            </ol>
+          </div>
+          <div class="ancestors">
+                  <span class="filtertype">Inherited<br />
+                  </span>
+                  <ol id="linearization">
+                    <li class="in" name="scales.xml.jaxen.ScalesNavigator"><span>ScalesNavigator</span></li><li class="in" name="org.jaxen.DefaultNavigator"><span>DefaultNavigator</span></li><li class="in" name="org.jaxen.Navigator"><span>Navigator</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  </ol>
+                </div><div class="ancestors">
+              <span class="filtertype"></span>
+              <ol>
+                <li class="hideall out"><span>Hide All</span></li>
+                <li class="showall in"><span>Show All</span></li>
+              </ol>
+            </div>
+          <div id="visbl">
+              <span class="filtertype">Visibility</span>
+              <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+            </div>
+        </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        <div id="constructors" class="members">
+              <h3>Instance Constructors</h3>
+              <ol><li name="scales.xml.jaxen.ScalesNavigator#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="&lt;init&gt;(nameConversion:scales.xml.QName=&gt;scales.xml.QName):scales.xml.jaxen.ScalesNavigator"></a><a id="&lt;init&gt;:ScalesNavigator"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#&lt;init&gt;(nameConversion:scales.xml.QName=&gt;scales.xml.QName):scales.xml.jaxen.ScalesNavigator" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">new</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ScalesNavigator</span><span class="params">(<span name="nameConversion">nameConversion: (<span class="extype" name="scales.xml.QName">QName</span>) ⇒ <span class="extype" name="scales.xml.QName">QName</span></span>)</span>
+      </span>
+      
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt class="param">nameConversion</dt><dd class="cmt"><p>allows conversion of a qname in the document before evaluation</p></dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        
+
+        <div class="values members">
+              <h3>Value Members</h3>
+              <ol>
+                <li name="scala.AnyRef#!=" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="!=(x$1:Any):Boolean"></a><a id="!=(Any):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#!=(x$1:Any):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef###" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="##():Int"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html###():Int" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $hash$hash" class="name">##</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#==" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="==(x$1:Any):Boolean"></a><a id="==(Any):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#==(x$1:Any):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.Any#asInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="asInstanceOf[T0]:T0"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#asInstanceOf[T0]:T0" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Any.asInstanceOf.T0">T0</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="scala.AnyRef#clone" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="clone():Object"></a><a id="clone():AnyRef"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#clone():Object" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<span class="extype" name="java.lang">lang</span>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.CloneNotSupportedException]">...</span>
+    </span>)</span>
+              
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#eq" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="eq(x$1:AnyRef):Boolean"></a><a id="eq(AnyRef):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#eq(x$1:AnyRef):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#equals" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="equals(x$1:Any):Boolean"></a><a id="equals(Any):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#equals(x$1:Any):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#finalize" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="finalize():Unit"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#finalize():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">finalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<span class="extype" name="java.lang">lang</span>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.lang.Throwable]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scales.xml.jaxen.ScalesNavigator#fromDocsUpA" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="fromDocsUpA(ctx:AnyRef):scales.xml.AttributePath"></a><a id="fromDocsUpA(AnyRef):AttributePath"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#fromDocsUpA(ctx:AnyRef):scales.xml.AttributePath" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">fromDocsUpA</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <a href="../index.html#AttributePath=scales.xml.xpath.AttributePath" class="extmbr" name="scales.xml.AttributePath">AttributePath</a></span>
+      </span>
+      
+      
+    </li><li name="scales.xml.jaxen.ScalesNavigator#fromDocsUpX" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="fromDocsUpX(ctx:AnyRef):scales.xml.XmlPath"></a><a id="fromDocsUpX(AnyRef):xml.XmlPath"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#fromDocsUpX(ctx:AnyRef):scales.xml.XmlPath" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">fromDocsUpX</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <a href="../index.html#XmlPath=scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,XmlTypes.this.XCC]" class="extmbr" name="scales.xml.XmlPath">xml.XmlPath</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">I dislike typing this over and over again
+</p>
+    </li><li name="org.jaxen.DefaultNavigator#getAncestorAxisIterator" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getAncestorAxisIterator(x$1:Any):java.util.Iterator[_]"></a><a id="getAncestorAxisIterator(Any):Iterator[_]"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#getAncestorAxisIterator(x$1:Any):java.util.Iterator[_]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getAncestorAxisIterator</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="java.util.Iterator">Iterator</span>[_]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DefaultNavigator → Navigator</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[org.jaxen.UnsupportedAxisException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.jaxen.DefaultNavigator#getAncestorOrSelfAxisIterator" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getAncestorOrSelfAxisIterator(x$1:Any):java.util.Iterator[_]"></a><a id="getAncestorOrSelfAxisIterator(Any):Iterator[_]"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#getAncestorOrSelfAxisIterator(x$1:Any):java.util.Iterator[_]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getAncestorOrSelfAxisIterator</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="java.util.Iterator">Iterator</span>[_]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DefaultNavigator → Navigator</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[org.jaxen.UnsupportedAxisException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scales.xml.jaxen.ScalesNavigator#getAttributeAxisIterator" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getAttributeAxisIterator(ctx:AnyRef):java.util.Iterator[_&lt;:scales.xml.impl.DocsUp[scales.xml.xpath.AttributePath]]"></a><a id="getAttributeAxisIterator(AnyRef):Iterator[_&lt;:DocsUp[xpath.AttributePath]]"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#getAttributeAxisIterator(ctx:AnyRef):java.util.Iterator[_&lt;:scales.xml.impl.DocsUp[scales.xml.xpath.AttributePath]]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getAttributeAxisIterator</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="java.util.Iterator">Iterator</span>[_ &lt;: <span class="extype" name="scales.xml.impl.DocsUp">DocsUp</span>[<span class="extype" name="scales.xml.xpath.AttributePath">xpath.AttributePath</span>]]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.xml.jaxen.ScalesNavigator">ScalesNavigator</a> → DefaultNavigator → Navigator</dd></dl></div>
+    </li><li name="scales.xml.jaxen.ScalesNavigator#getAttributeName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getAttributeName(ctx:AnyRef):String"></a><a id="getAttributeName(AnyRef):String"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#getAttributeName(ctx:AnyRef):String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getAttributeName</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.xml.jaxen.ScalesNavigator">ScalesNavigator</a> → Navigator</dd></dl></div>
+    </li><li name="scales.xml.jaxen.ScalesNavigator#getAttributeNamespaceUri" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getAttributeNamespaceUri(ctx:AnyRef):String"></a><a id="getAttributeNamespaceUri(AnyRef):String"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#getAttributeNamespaceUri(ctx:AnyRef):String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getAttributeNamespaceUri</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.xml.jaxen.ScalesNavigator">ScalesNavigator</a> → Navigator</dd></dl></div>
+    </li><li name="scales.xml.jaxen.ScalesNavigator#getAttributeQName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getAttributeQName(ctx:AnyRef):String"></a><a id="getAttributeQName(AnyRef):String"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#getAttributeQName(ctx:AnyRef):String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getAttributeQName</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.xml.jaxen.ScalesNavigator">ScalesNavigator</a> → Navigator</dd></dl></div>
+    </li><li name="scales.xml.jaxen.ScalesNavigator#getAttributeStringValue" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getAttributeStringValue(ctx:AnyRef):String"></a><a id="getAttributeStringValue(AnyRef):String"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#getAttributeStringValue(ctx:AnyRef):String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getAttributeStringValue</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.xml.jaxen.ScalesNavigator">ScalesNavigator</a> → Navigator</dd></dl></div>
+    </li><li name="scales.xml.jaxen.ScalesNavigator#getChildAxisIterator" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getChildAxisIterator(ctx:AnyRef):java.util.Iterator[scales.xml.impl.DocsUp[scales.xml.XmlPath]]"></a><a id="getChildAxisIterator(AnyRef):Iterator[DocsUp[xml.XmlPath]]"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#getChildAxisIterator(ctx:AnyRef):java.util.Iterator[scales.xml.impl.DocsUp[scales.xml.XmlPath]]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getChildAxisIterator</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="java.util.Iterator">Iterator</span>[<span class="extype" name="scales.xml.impl.DocsUp">DocsUp</span>[<a href="../index.html#XmlPath=scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,XmlTypes.this.XCC]" class="extmbr" name="scales.xml.XmlPath">xml.XmlPath</a>]]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.xml.jaxen.ScalesNavigator">ScalesNavigator</a> → DefaultNavigator → Navigator</dd></dl></div>
+    </li><li name="scala.AnyRef#getClass" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getClass():Class[_]"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#getClass():Class[_]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getClass</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.Class">Class</span>[_]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd><dt>Annotations</dt><dd>
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="scales.xml.jaxen.ScalesNavigator#getCommentStringValue" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getCommentStringValue(ctx:AnyRef):String"></a><a id="getCommentStringValue(AnyRef):String"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#getCommentStringValue(ctx:AnyRef):String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getCommentStringValue</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.xml.jaxen.ScalesNavigator">ScalesNavigator</a> → Navigator</dd></dl></div>
+    </li><li name="org.jaxen.DefaultNavigator#getDescendantAxisIterator" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getDescendantAxisIterator(x$1:Any):java.util.Iterator[_]"></a><a id="getDescendantAxisIterator(Any):Iterator[_]"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#getDescendantAxisIterator(x$1:Any):java.util.Iterator[_]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getDescendantAxisIterator</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="java.util.Iterator">Iterator</span>[_]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DefaultNavigator → Navigator</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[org.jaxen.UnsupportedAxisException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.jaxen.DefaultNavigator#getDescendantOrSelfAxisIterator" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getDescendantOrSelfAxisIterator(x$1:Any):java.util.Iterator[_]"></a><a id="getDescendantOrSelfAxisIterator(Any):Iterator[_]"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#getDescendantOrSelfAxisIterator(x$1:Any):java.util.Iterator[_]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getDescendantOrSelfAxisIterator</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="java.util.Iterator">Iterator</span>[_]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DefaultNavigator → Navigator</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[org.jaxen.UnsupportedAxisException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scales.xml.jaxen.ScalesNavigator#getDocument" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getDocument(uri:String):Nothing"></a><a id="getDocument(String):Nothing"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#getDocument(uri:String):Nothing" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getDocument</span><span class="params">(<span name="uri">uri: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Nothing">Nothing</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.xml.jaxen.ScalesNavigator">ScalesNavigator</a> → DefaultNavigator → Navigator</dd></dl></div>
+    </li><li name="scales.xml.jaxen.ScalesNavigator#getDocumentNode" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getDocumentNode(ctx:AnyRef):scales.xml.impl.DocumentRoot"></a><a id="getDocumentNode(AnyRef):DocumentRoot"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#getDocumentNode(ctx:AnyRef):scales.xml.impl.DocumentRoot" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getDocumentNode</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scales.xml.impl.DocumentRoot">DocumentRoot</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.xml.jaxen.ScalesNavigator">ScalesNavigator</a> → DefaultNavigator → Navigator</dd></dl></div>
+    </li><li name="org.jaxen.DefaultNavigator#getElementById" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getElementById(x$1:Any,x$2:String):Object"></a><a id="getElementById(Any,String):AnyRef"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#getElementById(x$1:Any,x$2:String):Object" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getElementById</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>, <span name="arg1">arg1: <span class="extype" name="java.lang.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DefaultNavigator → Navigator</dd></dl></div>
+    </li><li name="scales.xml.jaxen.ScalesNavigator#getElementName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getElementName(ctx:AnyRef):String"></a><a id="getElementName(AnyRef):String"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#getElementName(ctx:AnyRef):String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getElementName</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.xml.jaxen.ScalesNavigator">ScalesNavigator</a> → Navigator</dd></dl></div>
+    </li><li name="scales.xml.jaxen.ScalesNavigator#getElementNamespaceUri" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getElementNamespaceUri(ctx:AnyRef):String"></a><a id="getElementNamespaceUri(AnyRef):String"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#getElementNamespaceUri(ctx:AnyRef):String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getElementNamespaceUri</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.xml.jaxen.ScalesNavigator">ScalesNavigator</a> → Navigator</dd></dl></div>
+    </li><li name="scales.xml.jaxen.ScalesNavigator#getElementQName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getElementQName(ctx:AnyRef):String"></a><a id="getElementQName(AnyRef):String"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#getElementQName(ctx:AnyRef):String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getElementQName</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.xml.jaxen.ScalesNavigator">ScalesNavigator</a> → Navigator</dd></dl></div>
+    </li><li name="scales.xml.jaxen.ScalesNavigator#getElementStringValue" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getElementStringValue(ctx:AnyRef):String"></a><a id="getElementStringValue(AnyRef):String"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#getElementStringValue(ctx:AnyRef):String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getElementStringValue</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.xml.jaxen.ScalesNavigator">ScalesNavigator</a> → Navigator</dd></dl></div>
+    </li><li name="org.jaxen.DefaultNavigator#getFollowingAxisIterator" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getFollowingAxisIterator(x$1:Any):java.util.Iterator[_]"></a><a id="getFollowingAxisIterator(Any):Iterator[_]"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#getFollowingAxisIterator(x$1:Any):java.util.Iterator[_]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getFollowingAxisIterator</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="java.util.Iterator">Iterator</span>[_]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DefaultNavigator → Navigator</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[org.jaxen.UnsupportedAxisException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.jaxen.DefaultNavigator#getFollowingSiblingAxisIterator" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getFollowingSiblingAxisIterator(x$1:Any):java.util.Iterator[_]"></a><a id="getFollowingSiblingAxisIterator(Any):Iterator[_]"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#getFollowingSiblingAxisIterator(x$1:Any):java.util.Iterator[_]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getFollowingSiblingAxisIterator</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="java.util.Iterator">Iterator</span>[_]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DefaultNavigator → Navigator</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[org.jaxen.UnsupportedAxisException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.jaxen.DefaultNavigator#getNamespaceAxisIterator" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getNamespaceAxisIterator(x$1:Any):java.util.Iterator[_]"></a><a id="getNamespaceAxisIterator(Any):Iterator[_]"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#getNamespaceAxisIterator(x$1:Any):java.util.Iterator[_]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getNamespaceAxisIterator</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="java.util.Iterator">Iterator</span>[_]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DefaultNavigator → Navigator</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[org.jaxen.UnsupportedAxisException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scales.xml.jaxen.ScalesNavigator#getNamespacePrefix" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getNamespacePrefix(ctx:AnyRef):Nothing"></a><a id="getNamespacePrefix(AnyRef):Nothing"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#getNamespacePrefix(ctx:AnyRef):Nothing" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getNamespacePrefix</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Nothing">Nothing</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.xml.jaxen.ScalesNavigator">ScalesNavigator</a> → Navigator</dd></dl></div>
+    </li><li name="scales.xml.jaxen.ScalesNavigator#getNamespaceStringValue" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getNamespaceStringValue(ctx:AnyRef):Nothing"></a><a id="getNamespaceStringValue(AnyRef):Nothing"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#getNamespaceStringValue(ctx:AnyRef):Nothing" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getNamespaceStringValue</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Nothing">Nothing</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.xml.jaxen.ScalesNavigator">ScalesNavigator</a> → Navigator</dd></dl></div>
+    </li><li name="org.jaxen.DefaultNavigator#getNodeType" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getNodeType(x$1:Any):Short"></a><a id="getNodeType(Any):Short"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#getNodeType(x$1:Any):Short" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getNodeType</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Short">Short</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DefaultNavigator → Navigator</dd></dl></div>
+    </li><li name="scales.xml.jaxen.ScalesNavigator#getParentAxisIterator" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getParentAxisIterator(ctx:AnyRef):java.util.Iterator[Object]"></a><a id="getParentAxisIterator(AnyRef):Iterator[AnyRef]"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#getParentAxisIterator(ctx:AnyRef):java.util.Iterator[Object]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getParentAxisIterator</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="java.util.Iterator">Iterator</span>[<span class="extype" name="scala.AnyRef">AnyRef</span>]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.xml.jaxen.ScalesNavigator">ScalesNavigator</a> → DefaultNavigator → Navigator</dd></dl></div>
+    </li><li name="scales.xml.jaxen.ScalesNavigator#getParentNode" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getParentNode(ctx:AnyRef):Object"></a><a id="getParentNode(AnyRef):AnyRef"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#getParentNode(ctx:AnyRef):Object" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getParentNode</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.xml.jaxen.ScalesNavigator">ScalesNavigator</a> → DefaultNavigator → Navigator</dd></dl></div>
+    </li><li name="org.jaxen.DefaultNavigator#getPrecedingAxisIterator" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getPrecedingAxisIterator(x$1:Any):java.util.Iterator[_]"></a><a id="getPrecedingAxisIterator(Any):Iterator[_]"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#getPrecedingAxisIterator(x$1:Any):java.util.Iterator[_]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getPrecedingAxisIterator</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="java.util.Iterator">Iterator</span>[_]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DefaultNavigator → Navigator</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[org.jaxen.UnsupportedAxisException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.jaxen.DefaultNavigator#getPrecedingSiblingAxisIterator" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getPrecedingSiblingAxisIterator(x$1:Any):java.util.Iterator[_]"></a><a id="getPrecedingSiblingAxisIterator(Any):Iterator[_]"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#getPrecedingSiblingAxisIterator(x$1:Any):java.util.Iterator[_]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getPrecedingSiblingAxisIterator</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="java.util.Iterator">Iterator</span>[_]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DefaultNavigator → Navigator</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[org.jaxen.UnsupportedAxisException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.jaxen.DefaultNavigator#getProcessingInstructionData" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getProcessingInstructionData(x$1:Any):String"></a><a id="getProcessingInstructionData(Any):String"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#getProcessingInstructionData(x$1:Any):String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getProcessingInstructionData</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DefaultNavigator → Navigator</dd></dl></div>
+    </li><li name="org.jaxen.DefaultNavigator#getProcessingInstructionTarget" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getProcessingInstructionTarget(x$1:Any):String"></a><a id="getProcessingInstructionTarget(Any):String"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#getProcessingInstructionTarget(x$1:Any):String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getProcessingInstructionTarget</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DefaultNavigator → Navigator</dd></dl></div>
+    </li><li name="org.jaxen.DefaultNavigator#getSelfAxisIterator" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getSelfAxisIterator(x$1:Any):java.util.Iterator[_]"></a><a id="getSelfAxisIterator(Any):Iterator[_]"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#getSelfAxisIterator(x$1:Any):java.util.Iterator[_]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getSelfAxisIterator</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="java.util.Iterator">Iterator</span>[_]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DefaultNavigator → Navigator</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[org.jaxen.UnsupportedAxisException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scales.xml.jaxen.ScalesNavigator#getTextStringValue" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getTextStringValue(ctx:AnyRef):String"></a><a id="getTextStringValue(AnyRef):String"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#getTextStringValue(ctx:AnyRef):String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getTextStringValue</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.xml.jaxen.ScalesNavigator">ScalesNavigator</a> → Navigator</dd></dl></div>
+    </li><li name="scala.AnyRef#hashCode" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hashCode():Int"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#hashCode():Int" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd><dt>Annotations</dt><dd>
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="scales.xml.jaxen.ScalesNavigator#iOrFalse" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="iOrFalse(ctx:AnyRef,f:scales.xml.XmlPath=&gt;Boolean):Boolean"></a><a id="iOrFalse(AnyRef,(xml.XmlPath)⇒Boolean):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#iOrFalse(ctx:AnyRef,f:scales.xml.XmlPath=&gt;Boolean):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">iOrFalse</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="scala.AnyRef">AnyRef</span></span>, <span name="f">f: (<a href="../index.html#XmlPath=scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,XmlTypes.this.XCC]" class="extmbr" name="scales.xml.XmlPath">xml.XmlPath</a>) ⇒ <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      
+    </li><li name="scales.xml.jaxen.ScalesNavigator#isAttribute" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isAttribute(ctx:AnyRef):Boolean"></a><a id="isAttribute(AnyRef):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#isAttribute(ctx:AnyRef):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isAttribute</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.xml.jaxen.ScalesNavigator">ScalesNavigator</a> → Navigator</dd></dl></div>
+    </li><li name="scales.xml.jaxen.ScalesNavigator#isComment" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isComment(ctx:AnyRef):Boolean"></a><a id="isComment(AnyRef):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#isComment(ctx:AnyRef):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isComment</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.xml.jaxen.ScalesNavigator">ScalesNavigator</a> → Navigator</dd></dl></div>
+    </li><li name="scales.xml.jaxen.ScalesNavigator#isDocument" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isDocument(ctx:AnyRef):Boolean"></a><a id="isDocument(AnyRef):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#isDocument(ctx:AnyRef):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isDocument</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.xml.jaxen.ScalesNavigator">ScalesNavigator</a> → Navigator</dd></dl></div>
+    </li><li name="scales.xml.jaxen.ScalesNavigator#isElement" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isElement(ctx:AnyRef):Boolean"></a><a id="isElement(AnyRef):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#isElement(ctx:AnyRef):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isElement</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.xml.jaxen.ScalesNavigator">ScalesNavigator</a> → Navigator</dd></dl></div>
+    </li><li name="scala.Any#isInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#isInstanceOf[T0]:Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="scales.xml.jaxen.ScalesNavigator#isNamespace" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isNamespace(ctx:AnyRef):Boolean"></a><a id="isNamespace(AnyRef):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#isNamespace(ctx:AnyRef):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isNamespace</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.xml.jaxen.ScalesNavigator">ScalesNavigator</a> → Navigator</dd></dl></div>
+    </li><li name="scales.xml.jaxen.ScalesNavigator#isProcessingInstruction" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isProcessingInstruction(ctx:AnyRef):Boolean"></a><a id="isProcessingInstruction(AnyRef):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#isProcessingInstruction(ctx:AnyRef):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isProcessingInstruction</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.xml.jaxen.ScalesNavigator">ScalesNavigator</a> → Navigator</dd></dl></div>
+    </li><li name="scales.xml.jaxen.ScalesNavigator#isText" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isText(ctx:AnyRef):Boolean"></a><a id="isText(AnyRef):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#isText(ctx:AnyRef):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isText</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.xml.jaxen.ScalesNavigator">ScalesNavigator</a> → Navigator</dd></dl></div>
+    </li><li name="scales.xml.jaxen.ScalesNavigator#nameConversion" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="nameConversion:scales.xml.QName=&gt;scales.xml.QName"></a><a id="nameConversion:(QName)⇒QName"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#nameConversion:scales.xml.QName=&gt;scales.xml.QName" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">nameConversion</span><span class="result">: (<span class="extype" name="scales.xml.QName">QName</span>) ⇒ <span class="extype" name="scales.xml.QName">QName</span></span>
+      </span>
+      
+      
+    </li><li name="scala.AnyRef#ne" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ne(x$1:AnyRef):Boolean"></a><a id="ne(AnyRef):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#ne(x$1:AnyRef):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#notify" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notify():Unit"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#notify():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notify</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#notifyAll" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notifyAll():Unit"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#notifyAll():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notifyAll</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="scales.xml.jaxen.ScalesNavigator#pOr" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="pOr[T](ctx:AnyRef,f:scales.xml.XmlPath=&gt;T,e:=&gt;T):T"></a><a id="pOr[T](AnyRef,(xml.XmlPath)⇒T,⇒T):T"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#pOr[T](ctx:AnyRef,f:scales.xml.XmlPath=&gt;T,e:=&gt;T):T" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">pOr</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="scala.AnyRef">AnyRef</span></span>, <span name="f">f: (<a href="../index.html#XmlPath=scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,XmlTypes.this.XCC]" class="extmbr" name="scales.xml.XmlPath">xml.XmlPath</a>) ⇒ <span class="extype" name="scales.xml.jaxen.ScalesNavigator.pOr.T">T</span></span>, <span name="e">e: ⇒ <span class="extype" name="scales.xml.jaxen.ScalesNavigator.pOr.T">T</span></span>)</span><span class="result">: <span class="extype" name="scales.xml.jaxen.ScalesNavigator.pOr.T">T</span></span>
+      </span>
+      
+      
+    </li><li name="scales.xml.jaxen.ScalesNavigator#pOrFalse" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="pOrFalse(ctx:AnyRef,f:scales.xml.XmlPath=&gt;Boolean):Boolean"></a><a id="pOrFalse(AnyRef,(xml.XmlPath)⇒Boolean):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#pOrFalse(ctx:AnyRef,f:scales.xml.XmlPath=&gt;Boolean):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">pOrFalse</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="scala.AnyRef">AnyRef</span></span>, <span name="f">f: (<a href="../index.html#XmlPath=scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,XmlTypes.this.XCC]" class="extmbr" name="scales.xml.XmlPath">xml.XmlPath</a>) ⇒ <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      
+    </li><li name="scales.xml.jaxen.ScalesNavigator#parseXPath" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="parseXPath(xpath:String):scales.xml.jaxen.ScalesXPath"></a><a id="parseXPath(String):ScalesXPath"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#parseXPath(xpath:String):scales.xml.jaxen.ScalesXPath" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">parseXPath</span><span class="params">(<span name="xpath">xpath: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="ScalesXPath.html" class="extype" name="scales.xml.jaxen.ScalesXPath">ScalesXPath</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.xml.jaxen.ScalesNavigator">ScalesNavigator</a> → Navigator</dd></dl></div>
+    </li><li name="scala.AnyRef#synchronized" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="synchronized[T0](x$1:=&gt;T0):T0"></a><a id="synchronized[T0](⇒T0):T0"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#synchronized[T0](x$1:=&gt;T0):T0" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">synchronized</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="params">(<span name="arg0">arg0: ⇒ <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>)</span><span class="result">: <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#toString" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toString():String"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#toString():String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.jaxen.DefaultNavigator#translateNamespacePrefixToUri" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="translateNamespacePrefixToUri(x$1:String,x$2:Any):String"></a><a id="translateNamespacePrefixToUri(String,Any):String"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#translateNamespacePrefixToUri(x$1:String,x$2:Any):String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">translateNamespacePrefixToUri</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.String">String</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DefaultNavigator → Navigator</dd></dl></div>
+    </li><li name="scales.xml.jaxen.ScalesNavigator#use" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="use[T,W](ctx:AnyRef,f:scales.xml.impl.DocsUp[W]=&gt;T):T"></a><a id="use[T,W](AnyRef,(DocsUp[W])⇒T):T"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#use[T,W](ctx:AnyRef,f:scales.xml.impl.DocsUp[W]=&gt;T):T" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">use</span><span class="tparams">[<span name="T">T</span>, <span name="W">W</span>]</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="scala.AnyRef">AnyRef</span></span>, <span name="f">f: (<span class="extype" name="scales.xml.impl.DocsUp">DocsUp</span>[<span class="extype" name="scales.xml.jaxen.ScalesNavigator.use.W">W</span>]) ⇒ <span class="extype" name="scales.xml.jaxen.ScalesNavigator.use.T">T</span></span>)</span><span class="result">: <span class="extype" name="scales.xml.jaxen.ScalesNavigator.use.T">T</span></span>
+      </span>
+      
+      
+    </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait():Unit"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#wait():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long,x$2:Int):Unit"></a><a id="wait(Long,Int):Unit"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#wait(x$1:Long,x$2:Int):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long):Unit"></a><a id="wait(Long):Unit"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#wait(x$1:Long):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="scales.xml.jaxen.ScalesNavigator#wrap" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="wrap[W](ctx:AnyRef,f:scales.xml.impl.DocsUp[W]=&gt;W):scales.xml.impl.DocsUp[W]"></a><a id="wrap[W](AnyRef,(DocsUp[W])⇒W):DocsUp[W]"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/jaxen/ScalesNavigator.html#wrap[W](ctx:AnyRef,f:scales.xml.impl.DocsUp[W]=&gt;W):scales.xml.impl.DocsUp[W]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wrap</span><span class="tparams">[<span name="W">W</span>]</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="scala.AnyRef">AnyRef</span></span>, <span name="f">f: (<span class="extype" name="scales.xml.impl.DocsUp">DocsUp</span>[<span class="extype" name="scales.xml.jaxen.ScalesNavigator.wrap.W">W</span>]) ⇒ <span class="extype" name="scales.xml.jaxen.ScalesNavigator.wrap.W">W</span></span>)</span><span class="result">: <span class="extype" name="scales.xml.impl.DocsUp">DocsUp</span>[<span class="extype" name="scales.xml.jaxen.ScalesNavigator.wrap.W">W</span>]</span>
+      </span>
+      
+      
+    </li>
+              </ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="org.jaxen.DefaultNavigator">
+              <h3>Inherited from <span class="extype" name="org.jaxen.DefaultNavigator">DefaultNavigator</span></h3>
+            </div><div class="parent" name="org.jaxen.Navigator">
+              <h3>Inherited from <span class="extype" name="org.jaxen.Navigator">Navigator</span></h3>
+            </div><div class="parent" name="java.io.Serializable">
+              <h3>Inherited from <span class="extype" name="java.io.Serializable">Serializable</span></h3>
+            </div><div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+    </body>
+          </div>
+        </div>
+      </div>
+    </body>
+      </html>

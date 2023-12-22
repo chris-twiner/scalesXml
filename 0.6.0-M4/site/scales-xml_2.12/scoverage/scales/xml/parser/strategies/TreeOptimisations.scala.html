@@ -1,0 +1,3257 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/xml/parser/strategies/TreeOptimisations.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.xml.parser.strategies
+</span>2 <span style=''>
+</span>3 <span style=''>import scales.xml._
+</span>4 <span style=''>import scales.utils.collection.{ImmutableArrayProxy, SeqLikeThing, Tree}
+</span>5 <span style=''>import scales.xml.impl.{FromParser, IsFromParser, NotFromParser}
+</span>6 <span style=''>import ImmutableArrayProxy.one
+</span>7 <span style=''>import impl.TreeProxies
+</span>8 <span style=''>import scales.utils.ItemOrTree
+</span>9 <span style=''>
+</span>10 <span style=''>/**
+</span>11 <span style=''> * Allows replacing a tree for memory optimisations
+</span>12 <span style=''> */ 
+</span>13 <span style=''>trait TreeOptimisation[TOKEN &lt;: OptimisationToken] extends PathOptimisationStrategy[TOKEN] {
+</span>14 <span style=''>
+</span>15 <span style=''>  def newTree( elem : Elem, children : XmlChildren, token : TOKEN )(implicit seqLikeThing: SeqLikeThing[XCC[_], ItemOrTree[XmlItem, Elem, XCC], XCC]): XmlTree
+</span>16 <span style=''>
+</span>17 <span style=''>  final override def elementEnd( xml : TreeProxies, token : TOKEN ) {
+</span>18 <span style=''>
+</span>19 <span style=''>    val l = </span><span style='background: #AEF1AE'>xml.current</span><span style=''>
+</span>20 <span style=''>    val nt = </span><span style='background: #AEF1AE'>newTree(l.elem, l.builder.result, token)</span><span style=''>
+</span>21 <span style=''>    val d = </span><span style='background: #AEF1AE'>xml.depth</span><span style=''>
+</span>22 <span style=''>    val nd = </span><span style='background: #AEF1AE'>d - 1</span><span style=''>
+</span>23 <span style=''>    if (</span><span style='background: #AEF1AE'>d &gt; 0</span><span style=''>) </span><span style='background: #AEF1AE'>{
+</span>24 <span style=''></span><span style='background: #AEF1AE'>      xml.depth = nd
+</span>25 <span style=''></span><span style='background: #AEF1AE'>      val c = xml.proxy( nd )
+</span>26 <span style=''></span><span style='background: #AEF1AE'>      xml.current = c
+</span>27 <span style=''></span><span style='background: #AEF1AE'>      c.builder.+=(nt)
+</span>28 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''> else </span><span style='background: #AEF1AE'>{
+</span>29 <span style=''></span><span style='background: #AEF1AE'>      xml.rootTree = nt 
+</span>30 <span style=''></span><span style='background: #AEF1AE'>      xml.depth = nd
+</span>31 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>32 <span style=''>  }
+</span>33 <span style=''>
+</span>34 <span style=''>}
+</span>35 <span style=''>
+</span>36 <span style=''>/**
+</span>37 <span style=''> * An elem with no attributes, namespaces and only one text value.
+</span>38 <span style=''> *
+</span>39 <span style=''> */
+</span>40 <span style=''>abstract class NameValue(val name : QName, val text : String) extends Tree[XmlItem, Elem, XCC] {
+</span>41 <span style=''>
+</span>42 <span style=''>  def section : Elem
+</span>43 <span style=''>  def children : XmlChildren = </span><span style='background: #AEF1AE'>one(Text(text))</span><span style=''>
+</span>44 <span style=''>
+</span>45 <span style=''>  def copy( section : Elem = section, children : XmlChildren = children) : Tree[XmlItem, Elem, XCC] = {
+</span>46 <span style=''>    // if we are copying we are no longer in a parse
+</span>47 <span style=''>    import ScalesXml.fromParserDefault
+</span>48 <span style=''>    </span><span style='background: #AEF1AE'>LazyOptimisedTree(section, children)</span><span style=''>
+</span>49 <span style=''>  }
+</span>50 <span style=''>}
+</span>51 <span style=''>
+</span>52 <span style=''>/**
+</span>53 <span style=''> * An elem with attributes or namespaces and only one text value.
+</span>54 <span style=''> *
+</span>55 <span style=''> */
+</span>56 <span style=''>class ElemValue(val section : Elem, val text : String)(implicit val seqLikeThing: SeqLikeThing[XCC[_], ItemOrTree[XmlItem, Elem, XCC], XCC]) extends Tree[XmlItem, Elem, XCC] {
+</span>57 <span style=''>
+</span>58 <span style=''>  def children : XmlChildren = </span><span style='background: #F0ADAD'>one(Text(text))</span><span style=''>
+</span>59 <span style=''>
+</span>60 <span style=''>  def copy( section : Elem = section, children : XmlChildren = children) : Tree[XmlItem, Elem, XCC] = {
+</span>61 <span style=''>    // if we are copying we are no longer in a parse
+</span>62 <span style=''>    import ScalesXml.fromParserDefault
+</span>63 <span style=''>    </span><span style='background: #F0ADAD'>LazyOptimisedTree(section, children)</span><span style=''>
+</span>64 <span style=''>  }
+</span>65 <span style=''>}
+</span>66 <span style=''>
+</span>67 <span style=''>
+</span>68 <span style=''>/**
+</span>69 <span style=''> * Collection of optimisations that reduce memory significantly at the cost of parsing performance, and later non-lazy creation of correct objects for accessing the tree.
+</span>70 <span style=''> *
+</span>71 <span style=''> * This can have confusing runtime evaluation of XPaths etc.  These optimisations are appropriate for trees that are seldom read, repeated reads may generate too much garbage.
+</span>72 <span style=''> */ 
+</span>73 <span style=''>object LazyOptimisedTree {
+</span>74 <span style=''>
+</span>75 <span style=''>  /**
+</span>76 <span style=''>   * Returns an optimised Tree if Possible
+</span>77 <span style=''>   */ 
+</span>78 <span style=''>  def apply( section : Elem, children : XmlChildren ) ( implicit fromParser : FromParser ) : XmlTree = 
+</span>79 <span style=''>    if (</span><span style='background: #AEF1AE'>children.isEmpty</span><span style=''>)
+</span>80 <span style=''>      </span><span style='background: #F0ADAD'>Tree(section, children)</span><span style=''>
+</span>81 <span style=''>    else </span><span style='background: #AEF1AE'>{
+</span>82 <span style=''></span><span style='background: #AEF1AE'>      val head = children.head
+</span>83 <span style=''></span><span style='background: #AEF1AE'>      if (head.isLeft) {
+</span>84 <span style=''></span><span style='background: #AEF1AE'>	val left = head.getLeft
+</span>85 <span style=''></span><span style='background: #AEF1AE'>	if (left.isInstanceOf[Text] &amp;&amp; children.size == 1) {
+</span>86 <span style=''></span><span style='background: #AEF1AE'>	  if (section.attributes.isEmpty &amp;&amp; section.namespaces.isEmpty)
+</span>87 <span style=''></span><span style='background: #AEF1AE'>	    newNameValue(section.name, left.value)
+</span>88 <span style=''></span><span style='background: #AEF1AE'>	  else
+</span>89 <span style=''></span><span style='background: #AEF1AE'>	    new ElemValue(section, left.value)
+</span>90 <span style=''></span><span style='background: #AEF1AE'>	} else Tree(section, children)
+</span>91 <span style=''></span><span style='background: #AEF1AE'>      } else Tree(section, children)
+</span>92 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>93 <span style=''>  
+</span>94 <span style=''>
+</span>95 <span style=''>  def newNameValue( iname : QName, itext : String ) ( implicit fromParser : FromParser, iseqLikeThing: SeqLikeThing[XCC[_], ItemOrTree[XmlItem, Elem, XCC], XCC] ) : NameValue =
+</span>96 <span style=''>    if (</span><span style='background: #AEF1AE'>fromParser eq NotFromParser</span><span style=''>)
+</span>97 <span style=''>      </span><span style='background: #AEF1AE'>new NameValue(iname, itext) {
+</span>98 <span style=''></span><span style='background: #AEF1AE'>	
+</span>99 <span style=''></span><span style='background: #AEF1AE'>        def section : Elem = Elem(name)(NotFromParser) // have to recheck that the qname is ok
+</span>100 <span style=''></span><span style='background: #AEF1AE'>
+</span>101 <span style=''></span><span style='background: #AEF1AE'>        override implicit val seqLikeThing: SeqLikeThing[XCC[_], ItemOrTree[XmlItem, Elem, XCC], XCC] = iseqLikeThing
+</span>102 <span style=''></span><span style='background: #AEF1AE'>      }</span><span style=''>
+</span>103 <span style=''>    else
+</span>104 <span style=''>      </span><span style='background: #AEF1AE'>new NameValue(iname, itext) {
+</span>105 <span style=''></span><span style='background: #AEF1AE'>	
+</span>106 <span style=''></span><span style='background: #AEF1AE'>	      def section : Elem = Elem(name)(IsFromParser) // don't have to recheck
+</span>107 <span style=''></span><span style='background: #AEF1AE'>
+</span>108 <span style=''></span><span style='background: #AEF1AE'>        override implicit val seqLikeThing: SeqLikeThing[XCC[_], ItemOrTree[XmlItem, Elem, XCC], XCC] = iseqLikeThing
+</span>109 <span style=''></span><span style='background: #AEF1AE'>      }</span><span style=''>
+</span>110 <span style=''>
+</span>111 <span style=''>}
+</span>112 <span style=''>
+</span>113 <span style=''>/**
+</span>114 <span style=''> * Optimises QNames and Trees according to LazyOptimisedTree
+</span>115 <span style=''> */ 
+</span>116 <span style=''>object QNameTreeOptimisation extends TreeOptimisation[QNameToken] with QNameOptimisationT[QNameToken] with QNameTokenF {
+</span>117 <span style=''>
+</span>118 <span style=''>  def newTree( elem : Elem, children : XmlChildren, token : QNameToken )(implicit seqLikeThing: SeqLikeThing[XCC[_], ItemOrTree[XmlItem, Elem, XCC], XCC]) : XmlTree =
+</span>119 <span style=''>    </span><span style='background: #AEF1AE'>LazyOptimisedTree( elem, children )(IsFromParser)</span><span style=''>
+</span>120 <span style=''>
+</span>121 <span style=''>}
+</span>122 <span style=''>
+</span>123 <span style=''>/**
+</span>124 <span style=''> * Optimised QNames, Elems and Tree, heavily reduced memory consumption with LazyOptimisedTree.
+</span>125 <span style=''> */
+</span>126 <span style=''>object QNameElemTreeOptimisation extends PathOptimisationStrategy[ElemToken] with ElemQNameOptimisationT[ElemToken] with TreeOptimisation[ElemToken] with ElemTokenF {
+</span>127 <span style=''>  
+</span>128 <span style=''>  def newTree( elem : Elem, children : XmlChildren, token : ElemToken )(implicit seqLikeThing: SeqLikeThing[XCC[_], ItemOrTree[XmlItem, Elem, XCC], XCC]) : XmlTree =
+</span>129 <span style=''>    </span><span style='background: #AEF1AE'>LazyOptimisedTree( elem, children )(IsFromParser)</span><span style=''>
+</span>130 <span style=''>
+</span>131 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          4685
+        </td>
+        <td>
+          681
+          -
+          692
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.TreeProxies.current
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          xml.current
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          4686
+        </td>
+        <td>
+          714
+          -
+          720
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.TreeProxy.elem
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          l.elem
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          4687
+        </td>
+        <td>
+          722
+          -
+          738
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.mutable.Builder.result
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          l.builder.result()
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          4688
+        </td>
+        <td>
+          713
+          -
+          713
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          classOf[scales.utils.EitherLike]
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          4689
+        </td>
+        <td>
+          713
+          -
+          713
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.reflect.ClassManifestFactory.classType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem])
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          4690
+        </td>
+        <td>
+          713
+          -
+          713
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          classOf[scales.utils.collection.Tree]
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          4691
+        </td>
+        <td>
+          713
+          -
+          713
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.reflect.ClassManifestFactory.classType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem])
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          4692
+        </td>
+        <td>
+          713
+          -
+          713
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.reflect.ClassManifestFactory.classType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem])
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          4693
+        </td>
+        <td>
+          713
+          -
+          713
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.reflect.NoManifest
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.reflect.NoManifest
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          4694
+        </td>
+        <td>
+          713
+          -
+          713
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.reflect.ClassManifestFactory.classType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest)
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          4695
+        </td>
+        <td>
+          713
+          -
+          713
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.reflect.ClassManifestFactory.classType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest))
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          4696
+        </td>
+        <td>
+          713
+          -
+          713
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.ImmutableArrayProxy.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.ImmutableArrayProxy.canBuildFrom[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest)))
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          4697
+        </td>
+        <td>
+          713
+          -
+          713
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.SeqLikeThing.immutableArrayProxyLikeThing
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.SeqLikeThing.immutableArrayProxyLikeThing[scales.xml.XCC[_], scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](collection.this.ImmutableArrayProxy.canBuildFrom[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest))))
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          4698
+        </td>
+        <td>
+          706
+          -
+          746
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.parser.strategies.TreeOptimisation.newTree
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          TreeOptimisation.this.newTree(l.elem, l.builder.result(), token)(collection.this.SeqLikeThing.immutableArrayProxyLikeThing[scales.xml.XCC[_], scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](collection.this.ImmutableArrayProxy.canBuildFrom[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest)))))
+        </td>
+      </tr><tr>
+        <td>
+          21
+        </td>
+        <td>
+          4699
+        </td>
+        <td>
+          759
+          -
+          768
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.TreeProxies.depth
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          xml.depth
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          4700
+        </td>
+        <td>
+          782
+          -
+          787
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.-
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          d.-(1)
+        </td>
+      </tr><tr>
+        <td>
+          23
+        </td>
+        <td>
+          4701
+        </td>
+        <td>
+          796
+          -
+          801
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          d.&gt;(0)
+        </td>
+      </tr><tr>
+        <td>
+          23
+        </td>
+        <td>
+          4707
+        </td>
+        <td>
+          803
+          -
+          906
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  xml.depth_=(nd);
+  val c: scales.xml.impl.TreeProxy = xml.proxy(nd);
+  xml.current_=(c);
+  {
+    c.builder.+=(nt);
+    ()
+  }
+}
+        </td>
+      </tr><tr>
+        <td>
+          24
+        </td>
+        <td>
+          4702
+        </td>
+        <td>
+          811
+          -
+          825
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.TreeProxies.depth_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          xml.depth_=(nd)
+        </td>
+      </tr><tr>
+        <td>
+          25
+        </td>
+        <td>
+          4703
+        </td>
+        <td>
+          840
+          -
+          855
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.TreeProxies.proxy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          xml.proxy(nd)
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          4704
+        </td>
+        <td>
+          862
+          -
+          877
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.TreeProxies.current_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          xml.current_=(c)
+        </td>
+      </tr><tr>
+        <td>
+          27
+        </td>
+        <td>
+          4705
+        </td>
+        <td>
+          884
+          -
+          900
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.mutable.Builder.+=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          c.builder.+=(nt)
+        </td>
+      </tr><tr>
+        <td>
+          27
+        </td>
+        <td>
+          4706
+        </td>
+        <td>
+          896
+          -
+          896
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          4710
+        </td>
+        <td>
+          912
+          -
+          965
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  xml.rootTree_=(nt);
+  xml.depth_=(nd)
+}
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          4708
+        </td>
+        <td>
+          920
+          -
+          937
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.TreeProxies.rootTree_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          xml.rootTree_=(nt)
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          4709
+        </td>
+        <td>
+          945
+          -
+          959
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.TreeProxies.depth_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          xml.depth_=(nd)
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          4711
+        </td>
+        <td>
+          1211
+          -
+          1215
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.strategies.NameValue.text
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          NameValue.this.text
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          4712
+        </td>
+        <td>
+          1206
+          -
+          1216
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Text.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Text.apply(NameValue.this.text)
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          4713
+        </td>
+        <td>
+          1202
+          -
+          1217
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.ImmutableArrayProxy.one
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.collection.ImmutableArrayProxy.one[scales.xml.Text](scales.xml.Text.apply(NameValue.this.text))
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          4714
+        </td>
+        <td>
+          1436
+          -
+          1436
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.XmlTypesImplicits.fromParserDefault
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.ScalesXml.fromParserDefault
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          4715
+        </td>
+        <td>
+          1419
+          -
+          1455
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.parser.strategies.LazyOptimisedTree.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LazyOptimisedTree.apply(section, children)(scales.xml.ScalesXml.fromParserDefault)
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          4716
+        </td>
+        <td>
+          1757
+          -
+          1761
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.strategies.ElemValue.text
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ElemValue.this.text
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          4717
+        </td>
+        <td>
+          1752
+          -
+          1762
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Text.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.xml.Text.apply(ElemValue.this.text)
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          4718
+        </td>
+        <td>
+          1748
+          -
+          1763
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.ImmutableArrayProxy.one
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.utils.collection.ImmutableArrayProxy.one[scales.xml.Text](scales.xml.Text.apply(ElemValue.this.text))
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          4719
+        </td>
+        <td>
+          1982
+          -
+          1982
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.XmlTypesImplicits.fromParserDefault
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.xml.ScalesXml.fromParserDefault
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          4720
+        </td>
+        <td>
+          1965
+          -
+          2001
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.parser.strategies.LazyOptimisedTree.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          LazyOptimisedTree.apply(section, children)(scales.xml.ScalesXml.fromParserDefault)
+        </td>
+      </tr><tr>
+        <td>
+          79
+        </td>
+        <td>
+          4721
+        </td>
+        <td>
+          2565
+          -
+          2581
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.IndexedSeqOptimized.isEmpty
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          children.isEmpty
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          4722
+        </td>
+        <td>
+          2593
+          -
+          2593
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          classOf[scales.utils.EitherLike]
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          4723
+        </td>
+        <td>
+          2593
+          -
+          2593
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.reflect.ClassManifestFactory.classType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem])
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          4724
+        </td>
+        <td>
+          2593
+          -
+          2593
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          classOf[scales.utils.collection.Tree]
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          4725
+        </td>
+        <td>
+          2593
+          -
+          2593
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.reflect.ClassManifestFactory.classType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem])
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          4726
+        </td>
+        <td>
+          2593
+          -
+          2593
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.reflect.ClassManifestFactory.classType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem])
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          4727
+        </td>
+        <td>
+          2593
+          -
+          2593
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.reflect.NoManifest
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.reflect.NoManifest
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          4728
+        </td>
+        <td>
+          2593
+          -
+          2593
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.reflect.ClassManifestFactory.classType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest)
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          4729
+        </td>
+        <td>
+          2593
+          -
+          2593
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.reflect.ClassManifestFactory.classType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest))
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          4730
+        </td>
+        <td>
+          2593
+          -
+          2593
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.ImmutableArrayProxy.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          collection.this.ImmutableArrayProxy.canBuildFrom[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest)))
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          4731
+        </td>
+        <td>
+          2593
+          -
+          2593
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.SeqLikeThing.immutableArrayProxyLikeThing
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          collection.this.SeqLikeThing.immutableArrayProxyLikeThing[scales.xml.XCC[_], scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](collection.this.ImmutableArrayProxy.canBuildFrom[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest))))
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          4732
+        </td>
+        <td>
+          2589
+          -
+          2612
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.Tree.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.utils.collection.Tree.apply[scales.xml.XmlItem, scales.xml.Elem, scales.xml.XCC](section, children)(collection.this.SeqLikeThing.immutableArrayProxyLikeThing[scales.xml.XCC[_], scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](collection.this.ImmutableArrayProxy.canBuildFrom[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest)))))
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          4733
+        </td>
+        <td>
+          2589
+          -
+          2612
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.collection.Tree.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.utils.collection.Tree.apply[scales.xml.XmlItem, scales.xml.Elem, scales.xml.XCC](section, children)(collection.this.SeqLikeThing.immutableArrayProxyLikeThing[scales.xml.XCC[_], scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](collection.this.ImmutableArrayProxy.canBuildFrom[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest)))))
+        </td>
+      </tr><tr>
+        <td>
+          81
+        </td>
+        <td>
+          4794
+        </td>
+        <td>
+          2622
+          -
+          2990
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val head: scales.xml.ItemOrElem = children.head;
+  if (head.isLeft)
+    {
+      val left: scales.xml.XmlItem = head.getLeft;
+      if (left.isInstanceOf[scales.xml.Text].&amp;&amp;(children.size.==(1)))
+        if (section.attributes.isEmpty.&amp;&amp;(section.namespaces.isEmpty))
+          LazyOptimisedTree.this.newNameValue(section.name, left.value)(fromParser, collection.this.SeqLikeThing.immutableArrayProxyLikeThing[scales.xml.XCC[_], scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](collection.this.ImmutableArrayProxy.canBuildFrom[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest)))))
+        else
+          new ElemValue(section, left.value)(collection.this.SeqLikeThing.immutableArrayProxyLikeThing[scales.xml.XCC[_], scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](collection.this.ImmutableArrayProxy.canBuildFrom[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest)))))
+      else
+        scales.utils.collection.Tree.apply[scales.xml.XmlItem, scales.xml.Elem, scales.xml.XCC](section, children)(collection.this.SeqLikeThing.immutableArrayProxyLikeThing[scales.xml.XCC[_], scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](collection.this.ImmutableArrayProxy.canBuildFrom[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest)))))
+    }
+  else
+    scales.utils.collection.Tree.apply[scales.xml.XmlItem, scales.xml.Elem, scales.xml.XCC](section, children)(collection.this.SeqLikeThing.immutableArrayProxyLikeThing[scales.xml.XCC[_], scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](collection.this.ImmutableArrayProxy.canBuildFrom[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest)))))
+}
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          4734
+        </td>
+        <td>
+          2641
+          -
+          2654
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.IndexedSeqOptimized.head
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          children.head
+        </td>
+      </tr><tr>
+        <td>
+          83
+        </td>
+        <td>
+          4735
+        </td>
+        <td>
+          2665
+          -
+          2676
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.EitherLike.isLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          head.isLeft
+        </td>
+      </tr><tr>
+        <td>
+          83
+        </td>
+        <td>
+          4781
+        </td>
+        <td>
+          2678
+          -
+          2955
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val left: scales.xml.XmlItem = head.getLeft;
+  if (left.isInstanceOf[scales.xml.Text].&amp;&amp;(children.size.==(1)))
+    if (section.attributes.isEmpty.&amp;&amp;(section.namespaces.isEmpty))
+      LazyOptimisedTree.this.newNameValue(section.name, left.value)(fromParser, collection.this.SeqLikeThing.immutableArrayProxyLikeThing[scales.xml.XCC[_], scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](collection.this.ImmutableArrayProxy.canBuildFrom[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest)))))
+    else
+      new ElemValue(section, left.value)(collection.this.SeqLikeThing.immutableArrayProxyLikeThing[scales.xml.XCC[_], scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](collection.this.ImmutableArrayProxy.canBuildFrom[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest)))))
+  else
+    scales.utils.collection.Tree.apply[scales.xml.XmlItem, scales.xml.Elem, scales.xml.XCC](section, children)(collection.this.SeqLikeThing.immutableArrayProxyLikeThing[scales.xml.XCC[_], scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](collection.this.ImmutableArrayProxy.canBuildFrom[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest)))))
+}
+        </td>
+      </tr><tr>
+        <td>
+          84
+        </td>
+        <td>
+          4736
+        </td>
+        <td>
+          2692
+          -
+          2704
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.EitherLike.getLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          head.getLeft
+        </td>
+      </tr><tr>
+        <td>
+          85
+        </td>
+        <td>
+          4737
+        </td>
+        <td>
+          2737
+          -
+          2755
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          children.size.==(1)
+        </td>
+      </tr><tr>
+        <td>
+          85
+        </td>
+        <td>
+          4738
+        </td>
+        <td>
+          2710
+          -
+          2755
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          left.isInstanceOf[scales.xml.Text].&amp;&amp;(children.size.==(1))
+        </td>
+      </tr><tr>
+        <td>
+          86
+        </td>
+        <td>
+          4739
+        </td>
+        <td>
+          2796
+          -
+          2822
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.MapLike.isEmpty
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          section.namespaces.isEmpty
+        </td>
+      </tr><tr>
+        <td>
+          86
+        </td>
+        <td>
+          4740
+        </td>
+        <td>
+          2766
+          -
+          2822
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          section.attributes.isEmpty.&amp;&amp;(section.namespaces.isEmpty)
+        </td>
+      </tr><tr>
+        <td>
+          86
+        </td>
+        <td>
+          4768
+        </td>
+        <td>
+          2762
+          -
+          2915
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (section.attributes.isEmpty.&amp;&amp;(section.namespaces.isEmpty))
+  LazyOptimisedTree.this.newNameValue(section.name, left.value)(fromParser, collection.this.SeqLikeThing.immutableArrayProxyLikeThing[scales.xml.XCC[_], scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](collection.this.ImmutableArrayProxy.canBuildFrom[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest)))))
+else
+  new ElemValue(section, left.value)(collection.this.SeqLikeThing.immutableArrayProxyLikeThing[scales.xml.XCC[_], scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](collection.this.ImmutableArrayProxy.canBuildFrom[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest)))))
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          4741
+        </td>
+        <td>
+          2842
+          -
+          2854
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Elem.name
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          section.name
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          4742
+        </td>
+        <td>
+          2856
+          -
+          2866
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.XmlItem.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          left.value
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          4743
+        </td>
+        <td>
+          2841
+          -
+          2841
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          classOf[scales.utils.EitherLike]
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          4744
+        </td>
+        <td>
+          2841
+          -
+          2841
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.reflect.ClassManifestFactory.classType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem])
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          4745
+        </td>
+        <td>
+          2841
+          -
+          2841
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          classOf[scales.utils.collection.Tree]
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          4746
+        </td>
+        <td>
+          2841
+          -
+          2841
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.reflect.ClassManifestFactory.classType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem])
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          4747
+        </td>
+        <td>
+          2841
+          -
+          2841
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.reflect.ClassManifestFactory.classType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem])
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          4748
+        </td>
+        <td>
+          2841
+          -
+          2841
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.reflect.NoManifest
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.reflect.NoManifest
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          4749
+        </td>
+        <td>
+          2841
+          -
+          2841
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.reflect.ClassManifestFactory.classType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest)
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          4750
+        </td>
+        <td>
+          2841
+          -
+          2841
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.reflect.ClassManifestFactory.classType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest))
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          4751
+        </td>
+        <td>
+          2841
+          -
+          2841
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.ImmutableArrayProxy.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.ImmutableArrayProxy.canBuildFrom[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest)))
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          4752
+        </td>
+        <td>
+          2841
+          -
+          2841
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.SeqLikeThing.immutableArrayProxyLikeThing
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.SeqLikeThing.immutableArrayProxyLikeThing[scales.xml.XCC[_], scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](collection.this.ImmutableArrayProxy.canBuildFrom[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest))))
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          4753
+        </td>
+        <td>
+          2829
+          -
+          2867
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.parser.strategies.LazyOptimisedTree.newNameValue
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LazyOptimisedTree.this.newNameValue(section.name, left.value)(fromParser, collection.this.SeqLikeThing.immutableArrayProxyLikeThing[scales.xml.XCC[_], scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](collection.this.ImmutableArrayProxy.canBuildFrom[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest)))))
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          4754
+        </td>
+        <td>
+          2829
+          -
+          2867
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.parser.strategies.LazyOptimisedTree.newNameValue
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LazyOptimisedTree.this.newNameValue(section.name, left.value)(fromParser, collection.this.SeqLikeThing.immutableArrayProxyLikeThing[scales.xml.XCC[_], scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](collection.this.ImmutableArrayProxy.canBuildFrom[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest)))))
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          4755
+        </td>
+        <td>
+          2904
+          -
+          2914
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.XmlItem.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          left.value
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          4756
+        </td>
+        <td>
+          2881
+          -
+          2881
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          classOf[scales.utils.EitherLike]
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          4757
+        </td>
+        <td>
+          2881
+          -
+          2881
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.reflect.ClassManifestFactory.classType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem])
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          4758
+        </td>
+        <td>
+          2881
+          -
+          2881
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          classOf[scales.utils.collection.Tree]
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          4759
+        </td>
+        <td>
+          2881
+          -
+          2881
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.reflect.ClassManifestFactory.classType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem])
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          4760
+        </td>
+        <td>
+          2881
+          -
+          2881
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.reflect.ClassManifestFactory.classType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem])
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          4761
+        </td>
+        <td>
+          2881
+          -
+          2881
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.reflect.NoManifest
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.reflect.NoManifest
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          4762
+        </td>
+        <td>
+          2881
+          -
+          2881
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.reflect.ClassManifestFactory.classType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest)
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          4763
+        </td>
+        <td>
+          2881
+          -
+          2881
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.reflect.ClassManifestFactory.classType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest))
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          4764
+        </td>
+        <td>
+          2881
+          -
+          2881
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.ImmutableArrayProxy.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.ImmutableArrayProxy.canBuildFrom[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest)))
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          4765
+        </td>
+        <td>
+          2881
+          -
+          2881
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.SeqLikeThing.immutableArrayProxyLikeThing
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.SeqLikeThing.immutableArrayProxyLikeThing[scales.xml.XCC[_], scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](collection.this.ImmutableArrayProxy.canBuildFrom[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest))))
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          4766
+        </td>
+        <td>
+          2881
+          -
+          2915
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.parser.strategies.ElemValue.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new ElemValue(section, left.value)(collection.this.SeqLikeThing.immutableArrayProxyLikeThing[scales.xml.XCC[_], scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](collection.this.ImmutableArrayProxy.canBuildFrom[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest)))))
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          4767
+        </td>
+        <td>
+          2881
+          -
+          2915
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.parser.strategies.ElemValue.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new ElemValue(section, left.value)(collection.this.SeqLikeThing.immutableArrayProxyLikeThing[scales.xml.XCC[_], scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](collection.this.ImmutableArrayProxy.canBuildFrom[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest)))))
+        </td>
+      </tr><tr>
+        <td>
+          90
+        </td>
+        <td>
+          4769
+        </td>
+        <td>
+          2928
+          -
+          2928
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          classOf[scales.utils.EitherLike]
+        </td>
+      </tr><tr>
+        <td>
+          90
+        </td>
+        <td>
+          4770
+        </td>
+        <td>
+          2928
+          -
+          2928
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.reflect.ClassManifestFactory.classType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem])
+        </td>
+      </tr><tr>
+        <td>
+          90
+        </td>
+        <td>
+          4771
+        </td>
+        <td>
+          2928
+          -
+          2928
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          classOf[scales.utils.collection.Tree]
+        </td>
+      </tr><tr>
+        <td>
+          90
+        </td>
+        <td>
+          4772
+        </td>
+        <td>
+          2928
+          -
+          2928
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.reflect.ClassManifestFactory.classType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem])
+        </td>
+      </tr><tr>
+        <td>
+          90
+        </td>
+        <td>
+          4773
+        </td>
+        <td>
+          2928
+          -
+          2928
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.reflect.ClassManifestFactory.classType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem])
+        </td>
+      </tr><tr>
+        <td>
+          90
+        </td>
+        <td>
+          4774
+        </td>
+        <td>
+          2928
+          -
+          2928
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.reflect.NoManifest
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.reflect.NoManifest
+        </td>
+      </tr><tr>
+        <td>
+          90
+        </td>
+        <td>
+          4775
+        </td>
+        <td>
+          2928
+          -
+          2928
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.reflect.ClassManifestFactory.classType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest)
+        </td>
+      </tr><tr>
+        <td>
+          90
+        </td>
+        <td>
+          4776
+        </td>
+        <td>
+          2928
+          -
+          2928
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.reflect.ClassManifestFactory.classType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest))
+        </td>
+      </tr><tr>
+        <td>
+          90
+        </td>
+        <td>
+          4777
+        </td>
+        <td>
+          2928
+          -
+          2928
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.ImmutableArrayProxy.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.ImmutableArrayProxy.canBuildFrom[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest)))
+        </td>
+      </tr><tr>
+        <td>
+          90
+        </td>
+        <td>
+          4778
+        </td>
+        <td>
+          2928
+          -
+          2928
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.SeqLikeThing.immutableArrayProxyLikeThing
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.SeqLikeThing.immutableArrayProxyLikeThing[scales.xml.XCC[_], scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](collection.this.ImmutableArrayProxy.canBuildFrom[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest))))
+        </td>
+      </tr><tr>
+        <td>
+          90
+        </td>
+        <td>
+          4779
+        </td>
+        <td>
+          2924
+          -
+          2947
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.Tree.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.collection.Tree.apply[scales.xml.XmlItem, scales.xml.Elem, scales.xml.XCC](section, children)(collection.this.SeqLikeThing.immutableArrayProxyLikeThing[scales.xml.XCC[_], scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](collection.this.ImmutableArrayProxy.canBuildFrom[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest)))))
+        </td>
+      </tr><tr>
+        <td>
+          90
+        </td>
+        <td>
+          4780
+        </td>
+        <td>
+          2924
+          -
+          2947
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.collection.Tree.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.collection.Tree.apply[scales.xml.XmlItem, scales.xml.Elem, scales.xml.XCC](section, children)(collection.this.SeqLikeThing.immutableArrayProxyLikeThing[scales.xml.XCC[_], scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](collection.this.ImmutableArrayProxy.canBuildFrom[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest)))))
+        </td>
+      </tr><tr>
+        <td>
+          91
+        </td>
+        <td>
+          4782
+        </td>
+        <td>
+          2965
+          -
+          2965
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          classOf[scales.utils.EitherLike]
+        </td>
+      </tr><tr>
+        <td>
+          91
+        </td>
+        <td>
+          4783
+        </td>
+        <td>
+          2965
+          -
+          2965
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.reflect.ClassManifestFactory.classType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem])
+        </td>
+      </tr><tr>
+        <td>
+          91
+        </td>
+        <td>
+          4784
+        </td>
+        <td>
+          2965
+          -
+          2965
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          classOf[scales.utils.collection.Tree]
+        </td>
+      </tr><tr>
+        <td>
+          91
+        </td>
+        <td>
+          4785
+        </td>
+        <td>
+          2965
+          -
+          2965
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.reflect.ClassManifestFactory.classType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem])
+        </td>
+      </tr><tr>
+        <td>
+          91
+        </td>
+        <td>
+          4786
+        </td>
+        <td>
+          2965
+          -
+          2965
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.reflect.ClassManifestFactory.classType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem])
+        </td>
+      </tr><tr>
+        <td>
+          91
+        </td>
+        <td>
+          4787
+        </td>
+        <td>
+          2965
+          -
+          2965
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.reflect.NoManifest
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.reflect.NoManifest
+        </td>
+      </tr><tr>
+        <td>
+          91
+        </td>
+        <td>
+          4788
+        </td>
+        <td>
+          2965
+          -
+          2965
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.reflect.ClassManifestFactory.classType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest)
+        </td>
+      </tr><tr>
+        <td>
+          91
+        </td>
+        <td>
+          4789
+        </td>
+        <td>
+          2965
+          -
+          2965
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.reflect.ClassManifestFactory.classType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest))
+        </td>
+      </tr><tr>
+        <td>
+          91
+        </td>
+        <td>
+          4790
+        </td>
+        <td>
+          2965
+          -
+          2965
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.ImmutableArrayProxy.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.ImmutableArrayProxy.canBuildFrom[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest)))
+        </td>
+      </tr><tr>
+        <td>
+          91
+        </td>
+        <td>
+          4791
+        </td>
+        <td>
+          2965
+          -
+          2965
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.SeqLikeThing.immutableArrayProxyLikeThing
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.SeqLikeThing.immutableArrayProxyLikeThing[scales.xml.XCC[_], scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](collection.this.ImmutableArrayProxy.canBuildFrom[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest))))
+        </td>
+      </tr><tr>
+        <td>
+          91
+        </td>
+        <td>
+          4792
+        </td>
+        <td>
+          2961
+          -
+          2984
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.Tree.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.collection.Tree.apply[scales.xml.XmlItem, scales.xml.Elem, scales.xml.XCC](section, children)(collection.this.SeqLikeThing.immutableArrayProxyLikeThing[scales.xml.XCC[_], scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](collection.this.ImmutableArrayProxy.canBuildFrom[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest)))))
+        </td>
+      </tr><tr>
+        <td>
+          91
+        </td>
+        <td>
+          4793
+        </td>
+        <td>
+          2961
+          -
+          2984
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.collection.Tree.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.collection.Tree.apply[scales.xml.XmlItem, scales.xml.Elem, scales.xml.XCC](section, children)(collection.this.SeqLikeThing.immutableArrayProxyLikeThing[scales.xml.XCC[_], scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](collection.this.ImmutableArrayProxy.canBuildFrom[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scala.reflect.ClassManifestFactory.classType[scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.EitherLike], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](classOf[scales.utils.collection.Tree], scala.reflect.ClassManifestFactory.classType[scales.xml.XmlItem](classOf[scales.xml.XmlItem]), scala.reflect.ClassManifestFactory.classType[scales.xml.Elem](classOf[scales.xml.Elem]), scala.reflect.NoManifest)))))
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          4795
+        </td>
+        <td>
+          3194
+          -
+          3207
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.NotFromParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.impl.NotFromParser
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          4796
+        </td>
+        <td>
+          3180
+          -
+          3207
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          fromParser.eq(scales.xml.impl.NotFromParser)
+        </td>
+      </tr><tr>
+        <td>
+          97
+        </td>
+        <td>
+          4800
+        </td>
+        <td>
+          3215
+          -
+          3218
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.strategies.LazyOptimisedTree.$anon.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          97
+        </td>
+        <td>
+          4801
+        </td>
+        <td>
+          3215
+          -
+          3468
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  final class $anon extends NameValue {
+    def &lt;init&gt;(): &lt;$anon: scales.xml.parser.strategies.NameValue&gt; = {
+      $anon.super.&lt;init&gt;(iname, itext);
+      ()
+    };
+    def section: scales.xml.Elem = scales.xml.Elem.apply($anon.this.name, scales.xml.Elem.apply$default$2, scales.xml.Elem.apply$default$3)(scales.xml.impl.NotFromParser);
+    private[this] val seqLikeThing: scales.utils.collection.SeqLikeThing[scales.xml.XCC[_],scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC],scales.xml.XCC] = iseqLikeThing;
+    override implicit &lt;stable&gt; &lt;accessor&gt; def seqLikeThing: scales.utils.collection.SeqLikeThing[scales.xml.XCC[_],scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC],scales.xml.XCC] = $anon.this.seqLikeThing
+  };
+  new $anon()
+}
+        </td>
+      </tr><tr>
+        <td>
+          99
+        </td>
+        <td>
+          4797
+        </td>
+        <td>
+          3281
+          -
+          3285
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.strategies.NameValue.name
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.name
+        </td>
+      </tr><tr>
+        <td>
+          99
+        </td>
+        <td>
+          4798
+        </td>
+        <td>
+          3287
+          -
+          3300
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.NotFromParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.impl.NotFromParser
+        </td>
+      </tr><tr>
+        <td>
+          99
+        </td>
+        <td>
+          4799
+        </td>
+        <td>
+          3276
+          -
+          3301
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Elem.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Elem.apply($anon.this.name, scales.xml.Elem.apply$default$2, scales.xml.Elem.apply$default$3)(scales.xml.impl.NotFromParser)
+        </td>
+      </tr><tr>
+        <td>
+          104
+        </td>
+        <td>
+          4805
+        </td>
+        <td>
+          3484
+          -
+          3487
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.strategies.LazyOptimisedTree.$anon.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          104
+        </td>
+        <td>
+          4806
+        </td>
+        <td>
+          3484
+          -
+          3720
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  final class $anon extends NameValue {
+    def &lt;init&gt;(): &lt;$anon: scales.xml.parser.strategies.NameValue&gt; = {
+      $anon.super.&lt;init&gt;(iname, itext);
+      ()
+    };
+    def section: scales.xml.Elem = scales.xml.Elem.apply($anon.this.name, scales.xml.Elem.apply$default$2, scales.xml.Elem.apply$default$3)(scales.xml.impl.IsFromParser);
+    private[this] val seqLikeThing: scales.utils.collection.SeqLikeThing[scales.xml.XCC[_],scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC],scales.xml.XCC] = iseqLikeThing;
+    override implicit &lt;stable&gt; &lt;accessor&gt; def seqLikeThing: scales.utils.collection.SeqLikeThing[scales.xml.XCC[_],scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC],scales.xml.XCC] = $anon.this.seqLikeThing
+  };
+  new $anon()
+}
+        </td>
+      </tr><tr>
+        <td>
+          106
+        </td>
+        <td>
+          4802
+        </td>
+        <td>
+          3549
+          -
+          3553
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.strategies.NameValue.name
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.name
+        </td>
+      </tr><tr>
+        <td>
+          106
+        </td>
+        <td>
+          4803
+        </td>
+        <td>
+          3555
+          -
+          3567
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.IsFromParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.impl.IsFromParser
+        </td>
+      </tr><tr>
+        <td>
+          106
+        </td>
+        <td>
+          4804
+        </td>
+        <td>
+          3544
+          -
+          3568
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Elem.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Elem.apply($anon.this.name, scales.xml.Elem.apply$default$2, scales.xml.Elem.apply$default$3)(scales.xml.impl.IsFromParser)
+        </td>
+      </tr><tr>
+        <td>
+          119
+        </td>
+        <td>
+          4807
+        </td>
+        <td>
+          4124
+          -
+          4136
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.IsFromParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.impl.IsFromParser
+        </td>
+      </tr><tr>
+        <td>
+          119
+        </td>
+        <td>
+          4808
+        </td>
+        <td>
+          4088
+          -
+          4137
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.strategies.LazyOptimisedTree.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LazyOptimisedTree.apply(elem, children)(scales.xml.impl.IsFromParser)
+        </td>
+      </tr><tr>
+        <td>
+          129
+        </td>
+        <td>
+          4809
+        </td>
+        <td>
+          4622
+          -
+          4634
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.IsFromParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.impl.IsFromParser
+        </td>
+      </tr><tr>
+        <td>
+          129
+        </td>
+        <td>
+          4810
+        </td>
+        <td>
+          4586
+          -
+          4635
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.strategies.LazyOptimisedTree.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LazyOptimisedTree.apply(elem, children)(scales.xml.impl.IsFromParser)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

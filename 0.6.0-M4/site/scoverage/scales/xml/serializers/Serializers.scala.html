@@ -1,0 +1,405 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/xml/serializers/Serializers.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.xml.serializers
+</span>2 <span style=''>
+</span>3 <span style=''>import scales.utils._
+</span>4 <span style=''>
+</span>5 <span style=''>import scales.xml._
+</span>6 <span style=''>
+</span>7 <span style=''>import java.io.Writer
+</span>8 <span style=''>
+</span>9 <span style=''>import java.nio.charset.Charset
+</span>10 <span style=''>
+</span>11 <span style=''>/**
+</span>12 <span style=''> * Interface used for serializing the XML events, same for both stream and tree.
+</span>13 <span style=''> *
+</span>14 <span style=''> * The default implementation validates the output via LSSerializer against a given encoding.
+</span>15 <span style=''> *
+</span>16 <span style=''> * An alternative FastSerializer simply outputs strings and is in no way correct but at least faster then going to StreamWriter for incorrectness.
+</span>17 <span style=''> *
+</span>18 <span style=''> * Serializers should use qName.ncName for serialization purposes of both attributes and elements, the QName is provided to allow for validation of ouput.
+</span>19 <span style=''> *
+</span>20 <span style=''> * If a function returns Some it should signal the termination of the serializing.  Implementations are expected to respect this approach, its for the benefit of all developers.
+</span>21 <span style=''> *
+</span>22 <span style=''> * List[QName] is provided to help if path relevant information is needed for serialization.  For example if a use case requires that a particular path is filtered out.  Purely for performance reasons the list is in reverse order with the current QName at the top and root at the bottom.
+</span>23 <span style=''> *
+</span>24 <span style=''> */
+</span>25 <span style=''>trait Serializer {
+</span>26 <span style=''>
+</span>27 <span style=''>  def item(item: XmlItem, path: List[QName]): Option[Throwable]
+</span>28 <span style=''>
+</span>29 <span style=''>  def emptyElement(qName: QName, attributes: Traversable[Attribute], namespaces: Map[String, String], declareDefaultNS: Option[String], path: List[QName]): Option[Throwable]
+</span>30 <span style=''>  def startElement(qName: QName, attributes: Traversable[Attribute], namespaces: Map[String, String], declareDefaultNS: Option[String], path: List[QName]): Option[Throwable]
+</span>31 <span style=''>  def endElement(qName: QName, path: List[QName]): Option[Throwable]
+</span>32 <span style=''>
+</span>33 <span style=''>  def xmlDeclaration(encoding: Charset, version: XmlVersion): Option[Throwable]
+</span>34 <span style=''>
+</span>35 <span style=''>}
+</span>36 <span style=''>
+</span>37 <span style=''>case class SerializerData(out: Writer, version: XmlVersion = ScalesXml.defaultVersion, encoding: Charset = defaultCharset)
+</span>38 <span style=''>
+</span>39 <span style=''>/**
+</span>40 <span style=''> * Serializer factories are responsible for the life cycle of serializers and
+</span>41 <span style=''> * their resources.
+</span>42 <span style=''> *
+</span>43 <span style=''> */
+</span>44 <span style=''>trait SerializerFactory {
+</span>45 <span style=''>  type ExactSerializer &lt;: Serializer
+</span>46 <span style=''>  
+</span>47 <span style=''>  def apply[R](thunk: Serializer =&gt; R)(data: SerializerData): R
+</span>48 <span style=''>  def borrow(data : SerializerData) : ExactSerializer
+</span>49 <span style=''>  def giveBack(serializer : ExactSerializer) : Unit
+</span>50 <span style=''>}
+</span>51 <span style=''>
+</span>52 <span style=''>object SerializerHelpers {
+</span>53 <span style=''>  /**
+</span>54 <span style=''>   * Outputs the xml document declaration
+</span>55 <span style=''>   */
+</span>56 <span style=''>  def xmlDecl(out: Writer, encoding: java.nio.charset.Charset, version: XmlVersion): Option[Throwable] = {
+</span>57 <span style=''>    </span><span style='background: #AEF1AE'>out.append(&quot;&lt;?xml version=\&quot;&quot; + version.version + &quot;\&quot; encoding=\&quot;&quot; + encoding.displayName + &quot;\&quot;?&gt;&quot;)</span><span style=''>
+</span>58 <span style=''>    </span><span style='background: #AEF1AE'>None</span><span style=''>
+</span>59 <span style=''>  }
+</span>60 <span style=''>
+</span>61 <span style=''>  /**
+</span>62 <span style=''>   * Default serializer for items, usefull for when the contents aren't correct but you want to see them anyway
+</span>63 <span style=''>   */
+</span>64 <span style=''>  def item(out: Writer, item: XmlItem, path: List[QName]): Option[Throwable] = {
+</span>65 <span style=''>    val res = item match {
+</span>66 <span style=''>      case Text(value) =&gt; </span><span style='background: #AEF1AE'>value</span><span style=''>
+</span>67 <span style=''>      case CData(value) =&gt; </span><span style='background: #AEF1AE'>&quot;&lt;![CDATA[&quot; + value + &quot;]]&gt;&quot;</span><span style=''>
+</span>68 <span style=''>      case Comment(value) =&gt; </span><span style='background: #AEF1AE'>&quot;&lt;!--&quot; + value + &quot;--&gt;&quot;</span><span style=''>
+</span>69 <span style=''>      case PI(target, value) =&gt; </span><span style='background: #AEF1AE'>&quot;&lt;?&quot; + target + &quot; &quot; + value + &quot;?&gt;&quot;</span><span style=''>
+</span>70 <span style=''>    }
+</span>71 <span style=''>    </span><span style='background: #AEF1AE'>out.append(res)</span><span style=''>
+</span>72 <span style=''>    </span><span style='background: #AEF1AE'>None</span><span style=''>
+</span>73 <span style=''>  }
+</span>74 <span style=''>
+</span>75 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          5166
+        </td>
+        <td>
+          2363
+          -
+          2450
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;&lt;?xml version=\&quot;&quot;.+(version.version).+(&quot;\&quot; encoding=\&quot;&quot;).+(encoding.displayName()).+(&quot;\&quot;?&gt;&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          5167
+        </td>
+        <td>
+          2352
+          -
+          2451
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.Writer.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          out.append(&quot;&lt;?xml version=\&quot;&quot;.+(version.version).+(&quot;\&quot; encoding=\&quot;&quot;).+(encoding.displayName()).+(&quot;\&quot;?&gt;&quot;))
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          5168
+        </td>
+        <td>
+          2456
+          -
+          2460
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          66
+        </td>
+        <td>
+          5169
+        </td>
+        <td>
+          2724
+          -
+          2729
+        </td>
+        <td>
+          Ident
+        </td>
+        <td>
+          scales.xml.serializers.SerializerHelpers.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          value
+        </td>
+      </tr><tr>
+        <td>
+          67
+        </td>
+        <td>
+          5170
+        </td>
+        <td>
+          2757
+          -
+          2784
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;&lt;![CDATA[&quot;.+(value).+(&quot;]]&gt;&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          67
+        </td>
+        <td>
+          5171
+        </td>
+        <td>
+          2757
+          -
+          2784
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;&lt;![CDATA[&quot;.+(value).+(&quot;]]&gt;&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          68
+        </td>
+        <td>
+          5172
+        </td>
+        <td>
+          2814
+          -
+          2836
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;&lt;!--&quot;.+(value).+(&quot;--&gt;&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          68
+        </td>
+        <td>
+          5173
+        </td>
+        <td>
+          2814
+          -
+          2836
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;&lt;!--&quot;.+(value).+(&quot;--&gt;&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          69
+        </td>
+        <td>
+          5174
+        </td>
+        <td>
+          2869
+          -
+          2903
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;&lt;?&quot;.+(target).+(&quot; &quot;).+(value).+(&quot;?&gt;&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          69
+        </td>
+        <td>
+          5175
+        </td>
+        <td>
+          2869
+          -
+          2903
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;&lt;?&quot;.+(target).+(&quot; &quot;).+(value).+(&quot;?&gt;&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          71
+        </td>
+        <td>
+          5176
+        </td>
+        <td>
+          2914
+          -
+          2929
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.Writer.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          out.append(res)
+        </td>
+      </tr><tr>
+        <td>
+          72
+        </td>
+        <td>
+          5177
+        </td>
+        <td>
+          2934
+          -
+          2938
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

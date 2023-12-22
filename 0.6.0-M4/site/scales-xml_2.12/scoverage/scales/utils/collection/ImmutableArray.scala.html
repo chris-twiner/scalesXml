@@ -1,0 +1,3654 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/utils/collection/ImmutableArray.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.utils.collection
+</span>2 <span style=''>
+</span>3 <span style=''>import scales.utils.collection.array.{IAEmpty, IAOne, IAThree, IATwo, ImmutableArrayAll, ImmutableArrayBuilder, VectorImpl}
+</span>4 <span style=''>
+</span>5 <span style=''>import scala.collection.generic.{CanBuildFrom, GenericCompanion, GenericTraversableTemplate, SeqFactory}
+</span>6 <span style=''>import scala.collection.mutable.Builder
+</span>7 <span style=''>import scala.collection.{IndexedSeq, IndexedSeqOptimized}
+</span>8 <span style=''>import scala.reflect.ClassManifest
+</span>9 <span style=''>
+</span>10 <span style=''>object ImmutableArrayProxyBuilder {
+</span>11 <span style=''>  final val vectorAfter = </span><span style='background: #F0ADAD'>31</span><span style=''>
+</span>12 <span style=''>}
+</span>13 <span style=''>
+</span>14 <span style=''>/**
+</span>15 <span style=''> * Build array first then vector as needed
+</span>16 <span style=''> */
+</span>17 <span style=''>case class ImmutableArrayProxyBuilder[ A ]() extends Builder[A, ImmutableArrayProxy[A]]{
+</span>18 <span style=''>  import ImmutableArrayProxyBuilder._
+</span>19 <span style=''>
+</span>20 <span style=''>  private[this] var arrayBuilder = </span><span style='background: #AEF1AE'>new ImmutableArrayBuilder[A]()</span><span style=''>
+</span>21 <span style=''>  private[this] var vectorBuilder : Builder[A,scala.collection.immutable.Vector[A]] = _
+</span>22 <span style=''>  
+</span>23 <span style=''>  private[this] var inVector = </span><span style='background: #AEF1AE'>false</span><span style=''>
+</span>24 <span style=''>  private[this] var haveChosen = </span><span style='background: #AEF1AE'>false</span><span style=''>
+</span>25 <span style=''>
+</span>26 <span style=''>  /**
+</span>27 <span style=''>   * Can the arrayBuilder be re-used?
+</span>28 <span style=''>   */ 
+</span>29 <span style=''>  private[this] var canReuse = </span><span style='background: #AEF1AE'>true</span><span style=''>
+</span>30 <span style=''>
+</span>31 <span style=''>  // keep it locally
+</span>32 <span style=''>  private[this] var length = </span><span style='background: #AEF1AE'>0</span><span style=''>
+</span>33 <span style=''>
+</span>34 <span style=''>  override def sizeHint( size : Int ) {
+</span>35 <span style=''>    if (</span><span style='background: #AEF1AE'>size &gt; vectorAfter</span><span style=''>) </span><span style='background: #AEF1AE'>{
+</span>36 <span style=''></span><span style='background: #AEF1AE'>      inVector = true
+</span>37 <span style=''></span><span style='background: #AEF1AE'>      haveChosen = true
+</span>38 <span style=''></span><span style='background: #AEF1AE'>      if (vectorBuilder eq null) {
+</span>39 <span style=''></span><span style='background: #AEF1AE'>	vectorBuilder = Vector.newBuilder[A]
+</span>40 <span style=''></span><span style='background: #AEF1AE'>      }
+</span>41 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>42 <span style=''>
+</span>43 <span style=''>    if (</span><span style='background: #AEF1AE'>inVector</span><span style=''>) {
+</span>44 <span style=''>      </span><span style='background: #AEF1AE'>vectorBuilder.sizeHint(size)</span><span style=''>
+</span>45 <span style=''>    } else {
+</span>46 <span style=''>      </span><span style='background: #AEF1AE'>arrayBuilder.sizeHint(size)</span><span style=''>
+</span>47 <span style=''>    }
+</span>48 <span style=''>  }
+</span>49 <span style=''>
+</span>50 <span style=''>  // for the case when we were under 32 but are now over
+</span>51 <span style=''>  @inline final protected def checkVB() {
+</span>52 <span style=''>    if (</span><span style='background: #AEF1AE'>!inVector</span><span style=''>) {
+</span>53 <span style=''>      </span><span style='background: #AEF1AE'>if (length &gt; vectorAfter) {
+</span>54 <span style=''></span><span style='background: #AEF1AE'>	moveToVector
+</span>55 <span style=''></span><span style='background: #AEF1AE'>      }</span><span style=''>
+</span>56 <span style=''>    }
+</span>57 <span style=''>  }
+</span>58 <span style=''>
+</span>59 <span style=''>  protected def moveToVector() {
+</span>60 <span style=''>    // copy over
+</span>61 <span style=''>    val r = </span><span style='background: #AEF1AE'>arrayBuilder.result</span><span style=''>
+</span>62 <span style=''>    if (</span><span style='background: #AEF1AE'>vectorBuilder eq null</span><span style=''>) {
+</span>63 <span style=''>      </span><span style='background: #AEF1AE'>vectorBuilder = Vector.newBuilder[A]</span><span style=''>
+</span>64 <span style=''>    }
+</span>65 <span style=''>    </span><span style='background: #AEF1AE'>vectorBuilder.sizeHint(r.len)</span><span style=''>
+</span>66 <span style=''>    </span><span style='background: #AEF1AE'>vectorBuilder.++=(r)</span><span style=''>
+</span>67 <span style=''>    </span><span style='background: #AEF1AE'>arrayBuilder.clear</span><span style=''>
+</span>68 <span style=''>    inVector = </span><span style='background: #AEF1AE'>true</span><span style=''>
+</span>69 <span style=''>    haveChosen = </span><span style='background: #AEF1AE'>true</span><span style=''>
+</span>70 <span style=''>  }
+</span>71 <span style=''>
+</span>72 <span style=''>  def result : ImmutableArrayProxy[A] =
+</span>73 <span style=''>    if (</span><span style='background: #AEF1AE'>inVector</span><span style=''>) </span><span style='background: #AEF1AE'>VectorImpl(vectorBuilder.result)</span><span style=''>
+</span>74 <span style=''>    else </span><span style='background: #AEF1AE'>{ // do it here as this is the correct type
+</span>75 <span style=''></span><span style='background: #AEF1AE'>      val buf = arrayBuilder.buf
+</span>76 <span style=''></span><span style='background: #AEF1AE'>      import scala.annotation.switch	
+</span>77 <span style=''></span><span style='background: #AEF1AE'>
+</span>78 <span style=''></span><span style='background: #AEF1AE'>      (length : @switch) match {
+</span>79 <span style=''></span><span style='background: #AEF1AE'>	case 0 =&gt;
+</span>80 <span style=''></span><span style='background: #AEF1AE'>	  ImmutableArrayProxy.emptyImmutableArray.asInstanceOf[ImmutableArrayProxy[A]]
+</span>81 <span style=''></span><span style='background: #AEF1AE'>	case 1 =&gt;
+</span>82 <span style=''></span><span style='background: #AEF1AE'>	  IAOne(buf(0).asInstanceOf[A])
+</span>83 <span style=''></span><span style='background: #AEF1AE'>	case 2 =&gt;
+</span>84 <span style=''></span><span style='background: #AEF1AE'>	  IATwo(buf(0).asInstanceOf[A], buf(1).asInstanceOf[A])
+</span>85 <span style=''></span><span style='background: #AEF1AE'>	case 3 =&gt;
+</span>86 <span style=''></span><span style='background: #AEF1AE'>	  IAThree(buf(0).asInstanceOf[A], buf(1).asInstanceOf[A], buf(2).asInstanceOf[A])
+</span>87 <span style=''></span><span style='background: #AEF1AE'>	case _ =&gt; {
+</span>88 <span style=''></span><span style='background: #AEF1AE'>	  canReuse = false
+</span>89 <span style=''></span><span style='background: #AEF1AE'>	  if (length != 0 &amp;&amp; length == buf.length)
+</span>90 <span style=''></span><span style='background: #AEF1AE'>	    ImmutableArrayAll[A](buf)
+</span>91 <span style=''></span><span style='background: #AEF1AE'>	  else
+</span>92 <span style=''></span><span style='background: #AEF1AE'>	    arrayBuilder.result
+</span>93 <span style=''></span><span style='background: #AEF1AE'>	}
+</span>94 <span style=''></span><span style='background: #AEF1AE'>      }
+</span>95 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>96 <span style=''>
+</span>97 <span style=''>  //override def addAll(xs: TraversableOnce[A]): this.type = {
+</span>98 <span style=''>  override def ++=(xs: TraversableOnce[A]): this.type = {
+</span>99 <span style=''>    // if its already a vector don't start with arrays again
+</span>100 <span style=''>    if (</span><span style='background: #AEF1AE'>!haveChosen &amp;&amp; xs.isInstanceOf[VectorImpl[A]]</span><span style=''>) </span><span style='background: #AEF1AE'>{
+</span>101 <span style=''></span><span style='background: #AEF1AE'>      inVector = true
+</span>102 <span style=''></span><span style='background: #AEF1AE'>      haveChosen = true
+</span>103 <span style=''></span><span style='background: #AEF1AE'>      if (vectorBuilder eq null) {
+</span>104 <span style=''></span><span style='background: #AEF1AE'>	vectorBuilder = Vector.newBuilder[A]
+</span>105 <span style=''></span><span style='background: #AEF1AE'>      }
+</span>106 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>107 <span style=''>    
+</span>108 <span style=''>    xs match {
+</span>109 <span style=''>      case p : ImmutableArrayProxy[A] =&gt; 
+</span>110 <span style=''>	</span><span style='background: #AEF1AE'>if (inVector) 
+</span>111 <span style=''></span><span style='background: #AEF1AE'>	  vectorBuilder.++=(p.ar) 
+</span>112 <span style=''></span><span style='background: #AEF1AE'>	else
+</span>113 <span style=''></span><span style='background: #AEF1AE'>	  arrayBuilder.++=(p.ar)</span><span style=''>
+</span>114 <span style=''>      case _ =&gt; 
+</span>115 <span style=''>	</span><span style='background: #AEF1AE'>if (inVector)
+</span>116 <span style=''></span><span style='background: #AEF1AE'>	  vectorBuilder.++=(xs)
+</span>117 <span style=''></span><span style='background: #AEF1AE'>	else
+</span>118 <span style=''></span><span style='background: #AEF1AE'>	  arrayBuilder.++=(xs)</span><span style=''>
+</span>119 <span style=''>    }
+</span>120 <span style=''>
+</span>121 <span style=''>    </span><span style='background: #AEF1AE'>length += xs.size</span><span style=''>
+</span>122 <span style=''>
+</span>123 <span style=''>    </span><span style='background: #AEF1AE'>checkVB</span><span style=''>
+</span>124 <span style=''>    this
+</span>125 <span style=''>  }
+</span>126 <span style=''>
+</span>127 <span style=''>  def +=( elem : A) : this.type = {
+</span>128 <span style=''>  //override def addOne(elem: A): ImmutableArrayProxyBuilder.this.type = {
+</span>129 <span style=''>    </span><span style='background: #AEF1AE'>length += 1</span><span style=''>
+</span>130 <span style=''>    if (</span><span style='background: #AEF1AE'>inVector</span><span style=''>) </span><span style='background: #AEF1AE'>{
+</span>131 <span style=''></span><span style='background: #AEF1AE'>      vectorBuilder.+=(elem)
+</span>132 <span style=''></span><span style='background: #AEF1AE'>      this
+</span>133 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''> else </span><span style='background: #AEF1AE'>{
+</span>134 <span style=''></span><span style='background: #AEF1AE'>      arrayBuilder.+=(elem)
+</span>135 <span style=''></span><span style='background: #AEF1AE'>      checkVB
+</span>136 <span style=''></span><span style='background: #AEF1AE'>      this
+</span>137 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>138 <span style=''>  }
+</span>139 <span style=''>
+</span>140 <span style=''>  def clear() {
+</span>141 <span style=''>    if (</span><span style='background: #AEF1AE'>inVector</span><span style=''>) { // a bit more expensive then resetting the len
+</span>142 <span style=''>      </span><span style='background: #F0ADAD'>vectorBuilder.clear</span><span style=''>
+</span>143 <span style=''>    }
+</span>144 <span style=''>    if (</span><span style='background: #AEF1AE'>!canReuse</span><span style=''>) {
+</span>145 <span style=''>      // array was used but not a vector or IAXxxs
+</span>146 <span style=''>      </span><span style='background: #AEF1AE'>arrayBuilder = new ImmutableArrayBuilder[A]()</span><span style=''>
+</span>147 <span style=''>    } else {
+</span>148 <span style=''>      </span><span style='background: #AEF1AE'>arrayBuilder.clear</span><span style=''>
+</span>149 <span style=''>    }
+</span>150 <span style=''>    inVector = </span><span style='background: #AEF1AE'>false</span><span style=''>
+</span>151 <span style=''>    haveChosen = </span><span style='background: #AEF1AE'>false</span><span style=''>
+</span>152 <span style=''>    canReuse = </span><span style='background: #AEF1AE'>true</span><span style=''>
+</span>153 <span style=''>    length = </span><span style='background: #AEF1AE'>0</span><span style=''>
+</span>154 <span style=''>  }
+</span>155 <span style=''>}
+</span>156 <span style=''>
+</span>157 <span style=''>/**
+</span>158 <span style=''> * Wraps behaviour of ImmutableArray like objects, when the array is greater than 31 it will be swapped to Vector.
+</span>159 <span style=''> *
+</span>160 <span style=''> */ 
+</span>161 <span style=''>trait ImmutableArrayProxy[+A] extends IndexedSeq[A] with IndexedSeqOptimized[A, ImmutableArrayProxy[A]] with GenericTraversableTemplate[A, ImmutableArrayProxy] {
+</span>162 <span style=''>
+</span>163 <span style=''>  @inline override def companion: GenericCompanion[ImmutableArrayProxy] = ImmutableArrayProxy
+</span>164 <span style=''>
+</span>165 <span style=''>  override protected[this] def newBuilder: Builder[A, ImmutableArrayProxy[A]] = </span><span style='background: #AEF1AE'>ImmutableArrayProxy.newBuilder[A]</span><span style=''>
+</span>166 <span style=''>
+</span>167 <span style=''>  def ar : TraversableOnce[A]
+</span>168 <span style=''> 
+</span>169 <span style=''>}
+</span>170 <span style=''>
+</span>171 <span style=''>/**
+</span>172 <span style=''> * Starts an ImmutableArrayProxy and provides the CanBuildFrom
+</span>173 <span style=''> */ 
+</span>174 <span style=''>object ImmutableArrayProxy extends SeqFactory[ImmutableArrayProxy] {
+</span>175 <span style=''>  val emptyImmutableArray = </span><span style='background: #AEF1AE'>IAEmpty[Nothing]()</span><span style=''>
+</span>176 <span style=''>
+</span>177 <span style=''>  // implement directly improved apply (switch and directly build)
+</span>178 <span style=''>
+</span>179 <span style=''>  /**
+</span>180 <span style=''>   * Convenience constructor creates a single cell array
+</span>181 <span style=''>   */ 
+</span>182 <span style=''>  def one[A](a: A): ImmutableArrayProxy[A] = </span><span style='background: #AEF1AE'>IAOne(a)</span><span style=''>
+</span>183 <span style=''>
+</span>184 <span style=''>  @inline final override def empty[ A ] : ImmutableArrayProxy[A]  = </span><span style='background: #F0ADAD'>emptyImmutableArray.asInstanceOf[ImmutableArrayProxy[A]]</span><span style=''>
+</span>185 <span style=''>
+</span>186 <span style=''>  @inline def newBuilder[A]
+</span>187 <span style=''>  : Builder[A, ImmutableArrayProxy[A]] =
+</span>188 <span style=''>    </span><span style='background: #AEF1AE'>ImmutableArrayProxyBuilder()</span><span style=''>
+</span>189 <span style=''>  
+</span>190 <span style=''>  @inline implicit def canBuildFrom[T](implicit ma: ClassManifest[T]): CanBuildFrom[ImmutableArrayProxy[_], T, ImmutableArrayProxy[T]] = </span><span style='background: #AEF1AE'>new</span><span style=''> ImmutableArrayProxyCBF[T]{ val m = ma }
+</span>191 <span style=''>
+</span>192 <span style=''>  trait ImmutableArrayProxyCBF[T] extends CanBuildFrom[ImmutableArrayProxy[_], T, ImmutableArrayProxy[T]] {
+</span>193 <span style=''>    
+</span>194 <span style=''>    val m : ClassManifest[T]
+</span>195 <span style=''>
+</span>196 <span style=''>    def apply(from: ImmutableArrayProxy[_]): Builder[T, ImmutableArrayProxy[T]] = </span><span style='background: #AEF1AE'>newBuilder</span><span style=''>
+</span>197 <span style=''>    def apply: Builder[T, ImmutableArrayProxy[T]] = </span><span style='background: #F0ADAD'>newBuilder</span><span style=''>
+</span>198 <span style=''>  }
+</span>199 <span style=''>    
+</span>200 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          11
+        </td>
+        <td>
+          3
+        </td>
+        <td>
+          459
+          -
+          461
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          31
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          4
+        </td>
+        <td>
+          679
+          -
+          679
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scales.utils.collection.array.ImmutableArrayBuilder.&lt;init&gt;$default$1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          array.this.ImmutableArrayBuilder.&lt;init&gt;$default$1[A]
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          5
+        </td>
+        <td>
+          679
+          -
+          709
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.array.ImmutableArrayBuilder.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new scales.utils.collection.array.ImmutableArrayBuilder[A](array.this.ImmutableArrayBuilder.&lt;init&gt;$default$1[A])
+        </td>
+      </tr><tr>
+        <td>
+          23
+        </td>
+        <td>
+          6
+        </td>
+        <td>
+          832
+          -
+          837
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          24
+        </td>
+        <td>
+          7
+        </td>
+        <td>
+          871
+          -
+          876
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          8
+        </td>
+        <td>
+          960
+          -
+          964
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          9
+        </td>
+        <td>
+          1016
+          -
+          1017
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          35
+        </td>
+        <td>
+          10
+        </td>
+        <td>
+          1067
+          -
+          1085
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          size.&gt;(31)
+        </td>
+      </tr><tr>
+        <td>
+          35
+        </td>
+        <td>
+          18
+        </td>
+        <td>
+          1087
+          -
+          1221
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  ImmutableArrayProxyBuilder.this.inVector = true;
+  ImmutableArrayProxyBuilder.this.haveChosen = true;
+  if (ImmutableArrayProxyBuilder.this.vectorBuilder.eq(null))
+    ImmutableArrayProxyBuilder.this.vectorBuilder = scala.`package`.Vector.newBuilder[A]
+  else
+    ()
+}
+        </td>
+      </tr><tr>
+        <td>
+          35
+        </td>
+        <td>
+          19
+        </td>
+        <td>
+          1063
+          -
+          1063
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          35
+        </td>
+        <td>
+          20
+        </td>
+        <td>
+          1063
+          -
+          1063
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          36
+        </td>
+        <td>
+          11
+        </td>
+        <td>
+          1106
+          -
+          1110
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          12
+        </td>
+        <td>
+          1130
+          -
+          1134
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          13
+        </td>
+        <td>
+          1145
+          -
+          1166
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.vectorBuilder.eq(null)
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          16
+        </td>
+        <td>
+          1141
+          -
+          1141
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          17
+        </td>
+        <td>
+          1141
+          -
+          1141
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          14
+        </td>
+        <td>
+          1187
+          -
+          1207
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.immutable.Vector.newBuilder
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Vector.newBuilder[A]
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          15
+        </td>
+        <td>
+          1171
+          -
+          1207
+        </td>
+        <td>
+          Assign
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.vectorBuilder = scala.`package`.Vector.newBuilder[A]
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          21
+        </td>
+        <td>
+          1231
+          -
+          1239
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.ImmutableArrayProxyBuilder.inVector
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.inVector
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          22
+        </td>
+        <td>
+          1249
+          -
+          1277
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.mutable.Builder.sizeHint
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.vectorBuilder.sizeHint(size)
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          23
+        </td>
+        <td>
+          1249
+          -
+          1277
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.collection.mutable.Builder.sizeHint
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.vectorBuilder.sizeHint(size)
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          24
+        </td>
+        <td>
+          1297
+          -
+          1324
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.array.ImmutableArrayBuilder.sizeHint
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.arrayBuilder.sizeHint(size)
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          25
+        </td>
+        <td>
+          1297
+          -
+          1324
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.collection.array.ImmutableArrayBuilder.sizeHint
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.arrayBuilder.sizeHint(size)
+        </td>
+      </tr><tr>
+        <td>
+          52
+        </td>
+        <td>
+          26
+        </td>
+        <td>
+          1443
+          -
+          1452
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.inVector.unary_!
+        </td>
+      </tr><tr>
+        <td>
+          52
+        </td>
+        <td>
+          33
+        </td>
+        <td>
+          1439
+          -
+          1439
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          52
+        </td>
+        <td>
+          34
+        </td>
+        <td>
+          1439
+          -
+          1439
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          53
+        </td>
+        <td>
+          27
+        </td>
+        <td>
+          1466
+          -
+          1486
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.length.&gt;(31)
+        </td>
+      </tr><tr>
+        <td>
+          53
+        </td>
+        <td>
+          30
+        </td>
+        <td>
+          1462
+          -
+          1462
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          53
+        </td>
+        <td>
+          31
+        </td>
+        <td>
+          1462
+          -
+          1462
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          53
+        </td>
+        <td>
+          32
+        </td>
+        <td>
+          1462
+          -
+          1511
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (ImmutableArrayProxyBuilder.this.length.&gt;(31))
+  ImmutableArrayProxyBuilder.this.moveToVector()
+else
+  ()
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          28
+        </td>
+        <td>
+          1491
+          -
+          1503
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.ImmutableArrayProxyBuilder.moveToVector
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.moveToVector()
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          29
+        </td>
+        <td>
+          1491
+          -
+          1503
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.collection.ImmutableArrayProxyBuilder.moveToVector
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.moveToVector()
+        </td>
+      </tr><tr>
+        <td>
+          61
+        </td>
+        <td>
+          35
+        </td>
+        <td>
+          1585
+          -
+          1604
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.array.ImmutableArrayBuilder.result
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.arrayBuilder.result()
+        </td>
+      </tr><tr>
+        <td>
+          62
+        </td>
+        <td>
+          36
+        </td>
+        <td>
+          1613
+          -
+          1634
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.vectorBuilder.eq(null)
+        </td>
+      </tr><tr>
+        <td>
+          62
+        </td>
+        <td>
+          39
+        </td>
+        <td>
+          1609
+          -
+          1609
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          62
+        </td>
+        <td>
+          40
+        </td>
+        <td>
+          1609
+          -
+          1609
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          37
+        </td>
+        <td>
+          1660
+          -
+          1680
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.immutable.Vector.newBuilder
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Vector.newBuilder[A]
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          38
+        </td>
+        <td>
+          1644
+          -
+          1680
+        </td>
+        <td>
+          Assign
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.vectorBuilder = scala.`package`.Vector.newBuilder[A]
+        </td>
+      </tr><tr>
+        <td>
+          65
+        </td>
+        <td>
+          41
+        </td>
+        <td>
+          1714
+          -
+          1719
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.array.ImmutableArray.len
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          r.len
+        </td>
+      </tr><tr>
+        <td>
+          65
+        </td>
+        <td>
+          42
+        </td>
+        <td>
+          1691
+          -
+          1720
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.mutable.Builder.sizeHint
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.vectorBuilder.sizeHint(r.len)
+        </td>
+      </tr><tr>
+        <td>
+          66
+        </td>
+        <td>
+          43
+        </td>
+        <td>
+          1725
+          -
+          1745
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.generic.Growable.++=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.vectorBuilder.++=(r)
+        </td>
+      </tr><tr>
+        <td>
+          67
+        </td>
+        <td>
+          44
+        </td>
+        <td>
+          1750
+          -
+          1768
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.array.ImmutableArrayBuilder.clear
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.arrayBuilder.clear()
+        </td>
+      </tr><tr>
+        <td>
+          68
+        </td>
+        <td>
+          45
+        </td>
+        <td>
+          1784
+          -
+          1788
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          69
+        </td>
+        <td>
+          46
+        </td>
+        <td>
+          1806
+          -
+          1810
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          47
+        </td>
+        <td>
+          1864
+          -
+          1872
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.ImmutableArrayProxyBuilder.inVector
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.inVector
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          48
+        </td>
+        <td>
+          1885
+          -
+          1905
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.mutable.Builder.result
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.vectorBuilder.result()
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          49
+        </td>
+        <td>
+          1874
+          -
+          1906
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.array.VectorImpl.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.collection.array.VectorImpl.apply[A](ImmutableArrayProxyBuilder.this.vectorBuilder.result())
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          50
+        </td>
+        <td>
+          1874
+          -
+          1906
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.collection.array.VectorImpl.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.collection.array.VectorImpl.apply[A](ImmutableArrayProxyBuilder.this.vectorBuilder.result())
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          83
+        </td>
+        <td>
+          1916
+          -
+          2519
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val buf: Array[AnyRef] = ImmutableArrayProxyBuilder.this.arrayBuilder.buf;
+  import scala.annotation.switch;
+  (ImmutableArrayProxyBuilder.this.length: Int @scala.annotation.switch) match {
+    case 0 =&gt; ImmutableArrayProxy.emptyImmutableArray.asInstanceOf[scales.utils.collection.ImmutableArrayProxy[A]]
+    case 1 =&gt; scales.utils.collection.array.IAOne.apply[A](buf.apply(0).asInstanceOf[A])
+    case 2 =&gt; scales.utils.collection.array.IATwo.apply[A](buf.apply(0).asInstanceOf[A], buf.apply(1).asInstanceOf[A])
+    case 3 =&gt; scales.utils.collection.array.IAThree.apply[A](buf.apply(0).asInstanceOf[A], buf.apply(1).asInstanceOf[A], buf.apply(2).asInstanceOf[A])
+    case _ =&gt; {
+      ImmutableArrayProxyBuilder.this.canReuse = false;
+      if (ImmutableArrayProxyBuilder.this.length.!=(0).&amp;&amp;(ImmutableArrayProxyBuilder.this.length.==(buf.length)))
+        scales.utils.collection.array.ImmutableArrayAll.apply[A](buf)
+      else
+        ImmutableArrayProxyBuilder.this.arrayBuilder.result()
+    }
+  }
+}
+        </td>
+      </tr><tr>
+        <td>
+          75
+        </td>
+        <td>
+          51
+        </td>
+        <td>
+          1976
+          -
+          1992
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.array.ImmutableArrayBuilder.buf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.arrayBuilder.buf
+        </td>
+      </tr><tr>
+        <td>
+          78
+        </td>
+        <td>
+          52
+        </td>
+        <td>
+          2039
+          -
+          2045
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.ImmutableArrayProxyBuilder.length
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.length
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          53
+        </td>
+        <td>
+          2079
+          -
+          2155
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxy.emptyImmutableArray.asInstanceOf[scales.utils.collection.ImmutableArrayProxy[A]]
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          54
+        </td>
+        <td>
+          2079
+          -
+          2155
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxy.emptyImmutableArray.asInstanceOf[scales.utils.collection.ImmutableArrayProxy[A]]
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          55
+        </td>
+        <td>
+          2180
+          -
+          2181
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          56
+        </td>
+        <td>
+          2176
+          -
+          2198
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          buf.apply(0).asInstanceOf[A]
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          57
+        </td>
+        <td>
+          2170
+          -
+          2199
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.array.IAOne.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.collection.array.IAOne.apply[A](buf.apply(0).asInstanceOf[A])
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          58
+        </td>
+        <td>
+          2170
+          -
+          2199
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.collection.array.IAOne.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.collection.array.IAOne.apply[A](buf.apply(0).asInstanceOf[A])
+        </td>
+      </tr><tr>
+        <td>
+          84
+        </td>
+        <td>
+          59
+        </td>
+        <td>
+          2224
+          -
+          2225
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          84
+        </td>
+        <td>
+          60
+        </td>
+        <td>
+          2220
+          -
+          2242
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          buf.apply(0).asInstanceOf[A]
+        </td>
+      </tr><tr>
+        <td>
+          84
+        </td>
+        <td>
+          61
+        </td>
+        <td>
+          2248
+          -
+          2249
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          84
+        </td>
+        <td>
+          62
+        </td>
+        <td>
+          2244
+          -
+          2266
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          buf.apply(1).asInstanceOf[A]
+        </td>
+      </tr><tr>
+        <td>
+          84
+        </td>
+        <td>
+          63
+        </td>
+        <td>
+          2214
+          -
+          2267
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.array.IATwo.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.collection.array.IATwo.apply[A](buf.apply(0).asInstanceOf[A], buf.apply(1).asInstanceOf[A])
+        </td>
+      </tr><tr>
+        <td>
+          84
+        </td>
+        <td>
+          64
+        </td>
+        <td>
+          2214
+          -
+          2267
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.collection.array.IATwo.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.collection.array.IATwo.apply[A](buf.apply(0).asInstanceOf[A], buf.apply(1).asInstanceOf[A])
+        </td>
+      </tr><tr>
+        <td>
+          86
+        </td>
+        <td>
+          65
+        </td>
+        <td>
+          2294
+          -
+          2295
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          86
+        </td>
+        <td>
+          66
+        </td>
+        <td>
+          2290
+          -
+          2312
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          buf.apply(0).asInstanceOf[A]
+        </td>
+      </tr><tr>
+        <td>
+          86
+        </td>
+        <td>
+          67
+        </td>
+        <td>
+          2318
+          -
+          2319
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          86
+        </td>
+        <td>
+          68
+        </td>
+        <td>
+          2314
+          -
+          2336
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          buf.apply(1).asInstanceOf[A]
+        </td>
+      </tr><tr>
+        <td>
+          86
+        </td>
+        <td>
+          69
+        </td>
+        <td>
+          2342
+          -
+          2343
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          2
+        </td>
+      </tr><tr>
+        <td>
+          86
+        </td>
+        <td>
+          70
+        </td>
+        <td>
+          2338
+          -
+          2360
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          buf.apply(2).asInstanceOf[A]
+        </td>
+      </tr><tr>
+        <td>
+          86
+        </td>
+        <td>
+          71
+        </td>
+        <td>
+          2282
+          -
+          2361
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.array.IAThree.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.collection.array.IAThree.apply[A](buf.apply(0).asInstanceOf[A], buf.apply(1).asInstanceOf[A], buf.apply(2).asInstanceOf[A])
+        </td>
+      </tr><tr>
+        <td>
+          86
+        </td>
+        <td>
+          72
+        </td>
+        <td>
+          2282
+          -
+          2361
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.collection.array.IAThree.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.collection.array.IAThree.apply[A](buf.apply(0).asInstanceOf[A], buf.apply(1).asInstanceOf[A], buf.apply(2).asInstanceOf[A])
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          82
+        </td>
+        <td>
+          2373
+          -
+          2505
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  ImmutableArrayProxyBuilder.this.canReuse = false;
+  if (ImmutableArrayProxyBuilder.this.length.!=(0).&amp;&amp;(ImmutableArrayProxyBuilder.this.length.==(buf.length)))
+    scales.utils.collection.array.ImmutableArrayAll.apply[A](buf)
+  else
+    ImmutableArrayProxyBuilder.this.arrayBuilder.result()
+}
+        </td>
+      </tr><tr>
+        <td>
+          88
+        </td>
+        <td>
+          73
+        </td>
+        <td>
+          2389
+          -
+          2394
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          74
+        </td>
+        <td>
+          2412
+          -
+          2413
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          75
+        </td>
+        <td>
+          2427
+          -
+          2437
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Array.length
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          buf.length
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          76
+        </td>
+        <td>
+          2417
+          -
+          2437
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.length.==(buf.length)
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          77
+        </td>
+        <td>
+          2402
+          -
+          2437
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.length.!=(0).&amp;&amp;(ImmutableArrayProxyBuilder.this.length.==(buf.length))
+        </td>
+      </tr><tr>
+        <td>
+          90
+        </td>
+        <td>
+          78
+        </td>
+        <td>
+          2444
+          -
+          2469
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.array.ImmutableArrayAll.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.collection.array.ImmutableArrayAll.apply[A](buf)
+        </td>
+      </tr><tr>
+        <td>
+          90
+        </td>
+        <td>
+          79
+        </td>
+        <td>
+          2444
+          -
+          2469
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.collection.array.ImmutableArrayAll.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.collection.array.ImmutableArrayAll.apply[A](buf)
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          80
+        </td>
+        <td>
+          2483
+          -
+          2502
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.array.ImmutableArrayBuilder.result
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.arrayBuilder.result()
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          81
+        </td>
+        <td>
+          2483
+          -
+          2502
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.collection.array.ImmutableArrayBuilder.result
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.arrayBuilder.result()
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          84
+        </td>
+        <td>
+          2726
+          -
+          2756
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.isInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          xs.isInstanceOf[scales.utils.collection.array.VectorImpl[A]]
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          85
+        </td>
+        <td>
+          2711
+          -
+          2756
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.haveChosen.unary_!.&amp;&amp;(xs.isInstanceOf[scales.utils.collection.array.VectorImpl[A]])
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          93
+        </td>
+        <td>
+          2758
+          -
+          2892
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  ImmutableArrayProxyBuilder.this.inVector = true;
+  ImmutableArrayProxyBuilder.this.haveChosen = true;
+  if (ImmutableArrayProxyBuilder.this.vectorBuilder.eq(null))
+    ImmutableArrayProxyBuilder.this.vectorBuilder = scala.`package`.Vector.newBuilder[A]
+  else
+    ()
+}
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          94
+        </td>
+        <td>
+          2707
+          -
+          2707
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          95
+        </td>
+        <td>
+          2707
+          -
+          2707
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          101
+        </td>
+        <td>
+          86
+        </td>
+        <td>
+          2777
+          -
+          2781
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          102
+        </td>
+        <td>
+          87
+        </td>
+        <td>
+          2801
+          -
+          2805
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          103
+        </td>
+        <td>
+          88
+        </td>
+        <td>
+          2816
+          -
+          2837
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.vectorBuilder.eq(null)
+        </td>
+      </tr><tr>
+        <td>
+          103
+        </td>
+        <td>
+          91
+        </td>
+        <td>
+          2812
+          -
+          2812
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          103
+        </td>
+        <td>
+          92
+        </td>
+        <td>
+          2812
+          -
+          2812
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          104
+        </td>
+        <td>
+          89
+        </td>
+        <td>
+          2858
+          -
+          2878
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.immutable.Vector.newBuilder
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Vector.newBuilder[A]
+        </td>
+      </tr><tr>
+        <td>
+          104
+        </td>
+        <td>
+          90
+        </td>
+        <td>
+          2842
+          -
+          2878
+        </td>
+        <td>
+          Assign
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.vectorBuilder = scala.`package`.Vector.newBuilder[A]
+        </td>
+      </tr><tr>
+        <td>
+          110
+        </td>
+        <td>
+          96
+        </td>
+        <td>
+          2960
+          -
+          2968
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.ImmutableArrayProxyBuilder.inVector
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.inVector
+        </td>
+      </tr><tr>
+        <td>
+          110
+        </td>
+        <td>
+          103
+        </td>
+        <td>
+          2956
+          -
+          3030
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (ImmutableArrayProxyBuilder.this.inVector)
+  ImmutableArrayProxyBuilder.this.vectorBuilder.++=(p.ar)
+else
+  ImmutableArrayProxyBuilder.this.arrayBuilder.++=(p.ar)
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          97
+        </td>
+        <td>
+          2992
+          -
+          2996
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.ImmutableArrayProxy.ar
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          p.ar
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          98
+        </td>
+        <td>
+          2974
+          -
+          2997
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.generic.Growable.++=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.vectorBuilder.++=(p.ar)
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          99
+        </td>
+        <td>
+          2974
+          -
+          2997
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.collection.generic.Growable.++=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.vectorBuilder.++=(p.ar)
+        </td>
+      </tr><tr>
+        <td>
+          113
+        </td>
+        <td>
+          100
+        </td>
+        <td>
+          3025
+          -
+          3029
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.ImmutableArrayProxy.ar
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          p.ar
+        </td>
+      </tr><tr>
+        <td>
+          113
+        </td>
+        <td>
+          101
+        </td>
+        <td>
+          3008
+          -
+          3030
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.array.ImmutableArrayBuilder.++=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.arrayBuilder.++=(p.ar)
+        </td>
+      </tr><tr>
+        <td>
+          113
+        </td>
+        <td>
+          102
+        </td>
+        <td>
+          3008
+          -
+          3030
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.collection.array.ImmutableArrayBuilder.++=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.arrayBuilder.++=(p.ar)
+        </td>
+      </tr><tr>
+        <td>
+          115
+        </td>
+        <td>
+          104
+        </td>
+        <td>
+          3053
+          -
+          3061
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.ImmutableArrayProxyBuilder.inVector
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.inVector
+        </td>
+      </tr><tr>
+        <td>
+          115
+        </td>
+        <td>
+          109
+        </td>
+        <td>
+          3049
+          -
+          3117
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (ImmutableArrayProxyBuilder.this.inVector)
+  ImmutableArrayProxyBuilder.this.vectorBuilder.++=(xs)
+else
+  ImmutableArrayProxyBuilder.this.arrayBuilder.++=(xs)
+        </td>
+      </tr><tr>
+        <td>
+          116
+        </td>
+        <td>
+          105
+        </td>
+        <td>
+          3066
+          -
+          3087
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.generic.Growable.++=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.vectorBuilder.++=(xs)
+        </td>
+      </tr><tr>
+        <td>
+          116
+        </td>
+        <td>
+          106
+        </td>
+        <td>
+          3066
+          -
+          3087
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.collection.generic.Growable.++=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.vectorBuilder.++=(xs)
+        </td>
+      </tr><tr>
+        <td>
+          118
+        </td>
+        <td>
+          107
+        </td>
+        <td>
+          3097
+          -
+          3117
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.array.ImmutableArrayBuilder.++=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.arrayBuilder.++=(xs)
+        </td>
+      </tr><tr>
+        <td>
+          118
+        </td>
+        <td>
+          108
+        </td>
+        <td>
+          3097
+          -
+          3117
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.collection.array.ImmutableArrayBuilder.++=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.arrayBuilder.++=(xs)
+        </td>
+      </tr><tr>
+        <td>
+          121
+        </td>
+        <td>
+          110
+        </td>
+        <td>
+          3139
+          -
+          3146
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.TraversableOnce.size
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          xs.size
+        </td>
+      </tr><tr>
+        <td>
+          121
+        </td>
+        <td>
+          111
+        </td>
+        <td>
+          3129
+          -
+          3146
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.length.+(xs.size)
+        </td>
+      </tr><tr>
+        <td>
+          123
+        </td>
+        <td>
+          112
+        </td>
+        <td>
+          3152
+          -
+          3159
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.ImmutableArrayProxyBuilder.checkVB
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.checkVB()
+        </td>
+      </tr><tr>
+        <td>
+          129
+        </td>
+        <td>
+          113
+        </td>
+        <td>
+          3289
+          -
+          3300
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.length.+(1)
+        </td>
+      </tr><tr>
+        <td>
+          130
+        </td>
+        <td>
+          114
+        </td>
+        <td>
+          3309
+          -
+          3317
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.ImmutableArrayProxyBuilder.inVector
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.inVector
+        </td>
+      </tr><tr>
+        <td>
+          130
+        </td>
+        <td>
+          116
+        </td>
+        <td>
+          3319
+          -
+          3366
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  ImmutableArrayProxyBuilder.this.vectorBuilder.+=(elem);
+  this
+}
+        </td>
+      </tr><tr>
+        <td>
+          131
+        </td>
+        <td>
+          115
+        </td>
+        <td>
+          3327
+          -
+          3349
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.mutable.Builder.+=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.vectorBuilder.+=(elem)
+        </td>
+      </tr><tr>
+        <td>
+          133
+        </td>
+        <td>
+          119
+        </td>
+        <td>
+          3372
+          -
+          3432
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  ImmutableArrayProxyBuilder.this.arrayBuilder.+=(elem);
+  ImmutableArrayProxyBuilder.this.checkVB();
+  this
+}
+        </td>
+      </tr><tr>
+        <td>
+          134
+        </td>
+        <td>
+          117
+        </td>
+        <td>
+          3380
+          -
+          3401
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.array.ImmutableArrayBuilder.+=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.arrayBuilder.+=(elem)
+        </td>
+      </tr><tr>
+        <td>
+          135
+        </td>
+        <td>
+          118
+        </td>
+        <td>
+          3408
+          -
+          3415
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.ImmutableArrayProxyBuilder.checkVB
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.checkVB()
+        </td>
+      </tr><tr>
+        <td>
+          141
+        </td>
+        <td>
+          120
+        </td>
+        <td>
+          3462
+          -
+          3470
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.ImmutableArrayProxyBuilder.inVector
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.inVector
+        </td>
+      </tr><tr>
+        <td>
+          141
+        </td>
+        <td>
+          123
+        </td>
+        <td>
+          3458
+          -
+          3458
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          141
+        </td>
+        <td>
+          124
+        </td>
+        <td>
+          3458
+          -
+          3458
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          142
+        </td>
+        <td>
+          121
+        </td>
+        <td>
+          3527
+          -
+          3546
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.mutable.Builder.clear
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ImmutableArrayProxyBuilder.this.vectorBuilder.clear()
+        </td>
+      </tr><tr>
+        <td>
+          142
+        </td>
+        <td>
+          122
+        </td>
+        <td>
+          3527
+          -
+          3546
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.collection.mutable.Builder.clear
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ImmutableArrayProxyBuilder.this.vectorBuilder.clear()
+        </td>
+      </tr><tr>
+        <td>
+          144
+        </td>
+        <td>
+          125
+        </td>
+        <td>
+          3561
+          -
+          3570
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.canReuse.unary_!
+        </td>
+      </tr><tr>
+        <td>
+          146
+        </td>
+        <td>
+          126
+        </td>
+        <td>
+          3646
+          -
+          3646
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scales.utils.collection.array.ImmutableArrayBuilder.&lt;init&gt;$default$1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          array.this.ImmutableArrayBuilder.&lt;init&gt;$default$1[A]
+        </td>
+      </tr><tr>
+        <td>
+          146
+        </td>
+        <td>
+          127
+        </td>
+        <td>
+          3646
+          -
+          3676
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.array.ImmutableArrayBuilder.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new scales.utils.collection.array.ImmutableArrayBuilder[A](array.this.ImmutableArrayBuilder.&lt;init&gt;$default$1[A])
+        </td>
+      </tr><tr>
+        <td>
+          146
+        </td>
+        <td>
+          128
+        </td>
+        <td>
+          3631
+          -
+          3676
+        </td>
+        <td>
+          Assign
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.arrayBuilder = new scales.utils.collection.array.ImmutableArrayBuilder[A](array.this.ImmutableArrayBuilder.&lt;init&gt;$default$1[A])
+        </td>
+      </tr><tr>
+        <td>
+          148
+        </td>
+        <td>
+          129
+        </td>
+        <td>
+          3696
+          -
+          3714
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.array.ImmutableArrayBuilder.clear
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.arrayBuilder.clear()
+        </td>
+      </tr><tr>
+        <td>
+          148
+        </td>
+        <td>
+          130
+        </td>
+        <td>
+          3696
+          -
+          3714
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.collection.array.ImmutableArrayBuilder.clear
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.this.arrayBuilder.clear()
+        </td>
+      </tr><tr>
+        <td>
+          150
+        </td>
+        <td>
+          131
+        </td>
+        <td>
+          3736
+          -
+          3741
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          151
+        </td>
+        <td>
+          132
+        </td>
+        <td>
+          3759
+          -
+          3764
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          152
+        </td>
+        <td>
+          133
+        </td>
+        <td>
+          3780
+          -
+          3784
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          153
+        </td>
+        <td>
+          134
+        </td>
+        <td>
+          3798
+          -
+          3799
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          165
+        </td>
+        <td>
+          135
+        </td>
+        <td>
+          4272
+          -
+          4305
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scales.utils.collection.ImmutableArrayProxy.newBuilder
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxy.newBuilder[A]
+        </td>
+      </tr><tr>
+        <td>
+          175
+        </td>
+        <td>
+          136
+        </td>
+        <td>
+          4511
+          -
+          4529
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.array.IAEmpty.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.collection.array.IAEmpty.apply[Nothing]()
+        </td>
+      </tr><tr>
+        <td>
+          182
+        </td>
+        <td>
+          137
+        </td>
+        <td>
+          4714
+          -
+          4722
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.array.IAOne.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.collection.array.IAOne.apply[A](a)
+        </td>
+      </tr><tr>
+        <td>
+          184
+        </td>
+        <td>
+          138
+        </td>
+        <td>
+          4792
+          -
+          4848
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ImmutableArrayProxy.this.emptyImmutableArray.asInstanceOf[scales.utils.collection.ImmutableArrayProxy[A]]
+        </td>
+      </tr><tr>
+        <td>
+          188
+        </td>
+        <td>
+          139
+        </td>
+        <td>
+          4923
+          -
+          4951
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.ImmutableArrayProxyBuilder.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxyBuilder.apply[A]()
+        </td>
+      </tr><tr>
+        <td>
+          190
+        </td>
+        <td>
+          140
+        </td>
+        <td>
+          5092
+          -
+          5095
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.ImmutableArrayProxy.$anon.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          196
+        </td>
+        <td>
+          141
+        </td>
+        <td>
+          5362
+          -
+          5372
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scales.utils.collection.ImmutableArrayProxy.newBuilder
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ImmutableArrayProxy.this.newBuilder[T]
+        </td>
+      </tr><tr>
+        <td>
+          197
+        </td>
+        <td>
+          142
+        </td>
+        <td>
+          5425
+          -
+          5435
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scales.utils.collection.ImmutableArrayProxy.newBuilder
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ImmutableArrayProxy.this.newBuilder[T]
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

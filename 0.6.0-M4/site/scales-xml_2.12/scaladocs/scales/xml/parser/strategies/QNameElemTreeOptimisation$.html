@@ -1,0 +1,950 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+          <title>scales-xml 0.6.0-M4 API  - scales.xml.parser.strategies.QNameElemTreeOptimisation</title>
+          <meta name="description" content="scales - xml 0.6.0 - M4 API - scales.xml.parser.strategies.QNameElemTreeOptimisation" />
+          <meta name="keywords" content="scales xml 0.6.0 M4 API scales.xml.parser.strategies.QNameElemTreeOptimisation" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      
+      <link href="../../../../lib/index.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../lib/jquery.min.js"></script>
+      <script type="text/javascript" src="../../../../lib/jquery.panzoom.min.js"></script>
+      <script type="text/javascript" src="../../../../lib/jquery.mousewheel.min.js"></script>
+      <script type="text/javascript" src="../../../../lib/index.js"></script>
+      <script type="text/javascript" src="../../../../index.js"></script>
+      <script type="text/javascript" src="../../../../lib/scheduler.js"></script>
+      <script type="text/javascript" src="../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../lib/modernizr.custom.js"></script><script type="text/javascript" src="../../../../lib/diagrams.js" id="diagrams-js"></script>
+      <script type="text/javascript">
+        /* this variable can be used by the JS to determine the path to the root document */
+        var toRoot = '../../../../';
+      </script>
+    
+        </head>
+        <body>
+      <div id="search">
+        <span id="doc-title">scales-xml 0.6.0-M4 API<span id="doc-version"></span></span>
+        <span class="close-results"><span class="left">&lt;</span> Back</span>
+        <div id="textfilter">
+          <span class="input">
+            <input autocapitalize="none" placeholder="Search" id="index-input" type="text" accesskey="/" />
+            <i class="clear material-icons"></i>
+            <i id="search-icon" class="material-icons"></i>
+          </span>
+        </div>
+    </div>
+      <div id="search-results">
+        <div id="search-progress">
+          <div id="progress-fill"></div>
+        </div>
+        <div id="results-content">
+          <div id="entity-results"></div>
+          <div id="member-results"></div>
+        </div>
+      </div>
+      <div id="content-scroll-container" style="-webkit-overflow-scrolling: touch;">
+        <div id="content-container" style="-webkit-overflow-scrolling: touch;">
+          <div id="subpackage-spacer">
+            <div id="packages">
+              <h1>Packages</h1>
+              <ul>
+                <li name="_root_.root" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="_root_"></a><a id="root:_root_"></a>
+      <span class="permalink">
+      <a href="../../../../index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="../../../../index.html"><span class="name">root</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../../index.html" class="extype" name="_root_">root</a></dd></dl></div>
+    </li><li name="_root_.scales" visbl="pub" class="indented1 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="scales"></a><a id="scales:scales"></a>
+      <span class="permalink">
+      <a href="../../../../scales/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="Scales Xml provides both a more flexible approach to XML handling and a simplified way of interacting with XML." href="../../../index.html"><span class="name">scales</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Scales Xml provides both a more flexible approach to XML handling and a simplified way of interacting with XML.</p><div class="fullcomment"><div class="comment cmt"><p>Scales Xml provides both a more flexible approach to XML handling and a simplified way of interacting with XML.</p><p>It fits nicely with the Java APIs you know, TrAX and javax.xml.validation for example, allowing you to run XSLTs and convert to and from Scales XML and other DOMs.</p><p>It also provides a far more XPath like experience than the normal Scala XML, Paths look like XPaths and work like them too (with many of the same functions and axes).
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../../index.html" class="extype" name="_root_">root</a></dd></dl></div>
+    </li><li name="scales.xml" visbl="pub" class="indented2 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="xml"></a><a id="xml:xml"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="../../index.html"><span class="name">xml</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../index.html" class="extype" name="scales">scales</a></dd></dl></div>
+    </li><li name="scales.xml.parser" visbl="pub" class="indented3 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="parser"></a><a id="parser:parser"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="../index.html"><span class="name">parser</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../index.html" class="extype" name="scales.xml">xml</a></dd></dl></div>
+    </li><li name="scales.xml.parser.strategies" visbl="pub" class="indented4 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="strategies"></a><a id="strategies:strategies"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="index.html"><span class="name">strategies</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="scales.xml.parser">parser</a></dd></dl></div>
+    </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="class" href="BaseToken.html" title=""></a>
+                        <a href="BaseToken.html" title="">BaseToken</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="trait" href="BaseTokenF.html" title=""></a>
+                        <a href="BaseTokenF.html" title="">BaseTokenF</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="object" href="ElemMemoryOptimisation$.html" title=""></a>
+                        <a href="ElemMemoryOptimisation$.html" title="">ElemMemoryOptimisation</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="trait" href="ElemOptimisationT.html" title="Simple hashmap on Elem -&gt; Elem, makes no optimisations across qnames (use QNameOptimisationT for that)"></a>
+                        <a href="ElemOptimisationT.html" title="Simple hashmap on Elem -&gt; Elem, makes no optimisations across qnames (use QNameOptimisationT for that)">ElemOptimisationT</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="trait" href="ElemQNameOptimisationT.html" title=""></a>
+                        <a href="ElemQNameOptimisationT.html" title="">ElemQNameOptimisationT</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="class" href="ElemToken.html" title=""></a>
+                        <a href="ElemToken.html" title="">ElemToken</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="trait" href="ElemTokenF.html" title=""></a>
+                        <a href="ElemTokenF.html" title="">ElemTokenF</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="class" href="ElemValue.html" title="An elem with attributes or namespaces and only one text value."></a>
+                        <a href="ElemValue.html" title="An elem with attributes or namespaces and only one text value.">ElemValue</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="trait" href="FullMemoryOptimisationT.html" title=""></a>
+                        <a href="FullMemoryOptimisationT.html" title="">FullMemoryOptimisationT</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="object" href="HighMemoryOptimisation$.html" title="Optimises on QNames and Elems, reducing duplicates at the cost of CHM lookups."></a>
+                        <a href="HighMemoryOptimisation$.html" title="Optimises on QNames and Elems, reducing duplicates at the cost of CHM lookups.">HighMemoryOptimisation</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="object" href="LazyOptimisedTree$.html" title="Collection of optimisations that reduce memory significantly at the cost of parsing performance, and later non-lazy creation of correct objects for accessing the tree."></a>
+                        <a href="LazyOptimisedTree$.html" title="Collection of optimisations that reduce memory significantly at the cost of parsing performance, and later non-lazy creation of correct objects for accessing the tree.">LazyOptimisedTree</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="trait" href="MemoryOptimisationStrategy.html" title="Memory usage in DOMs is often dominated by repeated elements."></a>
+                        <a href="MemoryOptimisationStrategy.html" title="Memory usage in DOMs is often dominated by repeated elements.">MemoryOptimisationStrategy</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="class" href="NameValue.html" title="An elem with no attributes, namespaces and only one text value."></a>
+                        <a href="NameValue.html" title="An elem with no attributes, namespaces and only one text value.">NameValue</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="object" href="NoOptimisation$.html" title="Performs no optimisation at all"></a>
+                        <a href="NoOptimisation$.html" title="Performs no optimisation at all">NoOptimisation</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="trait" href="OptimisationToken.html" title="Simple marker for per parse optimisation oppurtunties"></a>
+                        <a href="OptimisationToken.html" title="Simple marker for per parse optimisation oppurtunties">OptimisationToken</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="trait" href="OptimisingStrategiesImplicits.html" title=""></a>
+                        <a href="OptimisingStrategiesImplicits.html" title="">OptimisingStrategiesImplicits</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="trait" href="PathOptimisationStrategy.html" title="Certain paths may be repeated (based on QNames of parents etc) and known to be by the developer, its also possible that the developer simply is not interested in this path."></a>
+                        <a href="PathOptimisationStrategy.html" title="Certain paths may be repeated (based on QNames of parents etc) and known to be by the developer, its also possible that the developer simply is not interested in this path.">PathOptimisationStrategy</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="object" href="" title="Optimised QNames, Elems and Tree, heavily reduced memory consumption with LazyOptimisedTree."></a>
+                        <a href="" title="Optimised QNames, Elems and Tree, heavily reduced memory consumption with LazyOptimisedTree.">QNameElemTreeOptimisation</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="object" href="QNameMemoryOptimisation$.html" title="The default as it will equal or better Scala Xml memory consumption at a performance gain."></a>
+                        <a href="QNameMemoryOptimisation$.html" title="The default as it will equal or better Scala Xml memory consumption at a performance gain.">QNameMemoryOptimisation</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="trait" href="QNameOptimisationT.html" title="Threadsafe global cache, assumption is most applications would benefit from this"></a>
+                        <a href="QNameOptimisationT.html" title="Threadsafe global cache, assumption is most applications would benefit from this">QNameOptimisationT</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="class" href="QNameToken.html" title=""></a>
+                        <a href="QNameToken.html" title="">QNameToken</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="trait" href="QNameTokenF.html" title=""></a>
+                        <a href="QNameTokenF.html" title="">QNameTokenF</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="object" href="QNameTreeOptimisation$.html" title="Optimises QNames and Trees according to LazyOptimisedTree"></a>
+                        <a href="QNameTreeOptimisation$.html" title="Optimises QNames and Trees according to LazyOptimisedTree">QNameTreeOptimisation</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="trait" href="TextNodeJoiner.html" title="As this adds extra processing time, but better fits XPath rules (i.e."></a>
+                        <a href="TextNodeJoiner.html" title="As this adds extra processing time, but better fits XPath rules (i.e.">TextNodeJoiner</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="trait" href="TreeOptimisation.html" title="Allows replacing a tree for memory optimisations"></a>
+                        <a href="TreeOptimisation.html" title="Allows replacing a tree for memory optimisations">TreeOptimisation</a>
+                      </li>
+              </ul>
+            </div>
+          </div>
+          <div id="content">
+            <body class="object value">
+      <div id="definition">
+        <div class="big-circle object">o</div>
+        <p id="owner"><a href="../../../index.html" class="extype" name="scales">scales</a>.<a href="../../index.html" class="extype" name="scales.xml">xml</a>.<a href="../index.html" class="extype" name="scales.xml.parser">parser</a>.<a href="index.html" class="extype" name="scales.xml.parser.strategies">strategies</a></p>
+        <h1>QNameElemTreeOptimisation<span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameElemTreeOptimisation$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span></h1>
+        <h3><span class="morelinks"></span></h3>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <span class="name">QNameElemTreeOptimisation</span><span class="result"> extends <a href="PathOptimisationStrategy.html" class="extype" name="scales.xml.parser.strategies.PathOptimisationStrategy">PathOptimisationStrategy</a>[<a href="ElemToken.html" class="extype" name="scales.xml.parser.strategies.ElemToken">ElemToken</a>] with <a href="ElemQNameOptimisationT.html" class="extype" name="scales.xml.parser.strategies.ElemQNameOptimisationT">ElemQNameOptimisationT</a>[<a href="ElemToken.html" class="extype" name="scales.xml.parser.strategies.ElemToken">ElemToken</a>] with <a href="TreeOptimisation.html" class="extype" name="scales.xml.parser.strategies.TreeOptimisation">TreeOptimisation</a>[<a href="ElemToken.html" class="extype" name="scales.xml.parser.strategies.ElemToken">ElemToken</a>] with <a href="ElemTokenF.html" class="extype" name="scales.xml.parser.strategies.ElemTokenF">ElemTokenF</a></span>
+      </span>
+      </h4>
+
+      
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Optimised QNames, Elems and Tree, heavily reduced memory consumption with LazyOptimisedTree.
+</p></div><div class="toggleContainer block">
+          <span class="toggle">
+            Linear Supertypes
+          </span>
+          <div class="superTypes hiddenContent"><a href="ElemTokenF.html" class="extype" name="scales.xml.parser.strategies.ElemTokenF">ElemTokenF</a>, <a href="TreeOptimisation.html" class="extype" name="scales.xml.parser.strategies.TreeOptimisation">TreeOptimisation</a>[<a href="ElemToken.html" class="extype" name="scales.xml.parser.strategies.ElemToken">ElemToken</a>], <a href="ElemQNameOptimisationT.html" class="extype" name="scales.xml.parser.strategies.ElemQNameOptimisationT">ElemQNameOptimisationT</a>[<a href="ElemToken.html" class="extype" name="scales.xml.parser.strategies.ElemToken">ElemToken</a>], <a href="QNameOptimisationT.html" class="extype" name="scales.xml.parser.strategies.QNameOptimisationT">QNameOptimisationT</a>[<a href="ElemToken.html" class="extype" name="scales.xml.parser.strategies.ElemToken">ElemToken</a>], <a href="PathOptimisationStrategy.html" class="extype" name="scales.xml.parser.strategies.PathOptimisationStrategy">PathOptimisationStrategy</a>[<a href="ElemToken.html" class="extype" name="scales.xml.parser.strategies.ElemToken">ElemToken</a>], <a href="MemoryOptimisationStrategy.html" class="extype" name="scales.xml.parser.strategies.MemoryOptimisationStrategy">MemoryOptimisationStrategy</a>[<a href="ElemToken.html" class="extype" name="scales.xml.parser.strategies.ElemToken">ElemToken</a>], <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+        </div></div>
+        
+
+      <div id="mbrsel">
+        <div class="toggle"></div>
+        <div id="memberfilter">
+          <i class="material-icons arrow"></i>
+          <span class="input">
+            <input id="mbrsel-input" placeholder="Filter all members" type="text" accesskey="/" />
+          </span>
+          <i class="clear material-icons"></i>
+        </div>
+        <div id="filterby">
+          <div id="order">
+            <span class="filtertype">Ordering</span>
+            <ol>
+              
+              <li class="alpha in"><span>Alphabetic</span></li>
+              <li class="inherit out"><span>By Inheritance</span></li>
+            </ol>
+          </div>
+          <div class="ancestors">
+                  <span class="filtertype">Inherited<br />
+                  </span>
+                  <ol id="linearization">
+                    <li class="in" name="scales.xml.parser.strategies.QNameElemTreeOptimisation"><span>QNameElemTreeOptimisation</span></li><li class="in" name="scales.xml.parser.strategies.ElemTokenF"><span>ElemTokenF</span></li><li class="in" name="scales.xml.parser.strategies.TreeOptimisation"><span>TreeOptimisation</span></li><li class="in" name="scales.xml.parser.strategies.ElemQNameOptimisationT"><span>ElemQNameOptimisationT</span></li><li class="in" name="scales.xml.parser.strategies.QNameOptimisationT"><span>QNameOptimisationT</span></li><li class="in" name="scales.xml.parser.strategies.PathOptimisationStrategy"><span>PathOptimisationStrategy</span></li><li class="in" name="scales.xml.parser.strategies.MemoryOptimisationStrategy"><span>MemoryOptimisationStrategy</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  </ol>
+                </div><div class="ancestors">
+              <span class="filtertype"></span>
+              <ol>
+                <li class="hideall out"><span>Hide All</span></li>
+                <li class="showall in"><span>Show All</span></li>
+              </ol>
+            </div>
+          <div id="visbl">
+              <span class="filtertype">Visibility</span>
+              <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+            </div>
+        </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        
+
+        
+
+        <div class="values members">
+              <h3>Value Members</h3>
+              <ol>
+                <li name="scala.AnyRef#!=" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="!=(x$1:Any):Boolean"></a><a id="!=(Any):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameElemTreeOptimisation$.html#!=(x$1:Any):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef###" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="##():Int"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameElemTreeOptimisation$.html###():Int" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $hash$hash" class="name">##</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#==" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="==(x$1:Any):Boolean"></a><a id="==(Any):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameElemTreeOptimisation$.html#==(x$1:Any):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.Any#asInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="asInstanceOf[T0]:T0"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameElemTreeOptimisation$.html#asInstanceOf[T0]:T0" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Any.asInstanceOf.T0">T0</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="scales.xml.parser.strategies.MemoryOptimisationStrategy#attribute" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="attribute(qname:scales.xml.AttributeQName,value:String,token:Token):scales.xml.Attribute"></a><a id="attribute(xml.AttributeQName,String,ElemToken):Attribute"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameElemTreeOptimisation$.html#attribute(qname:scales.xml.AttributeQName,value:String,token:Token):scales.xml.Attribute" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">attribute</span><span class="params">(<span name="qname">qname: <a href="../../index.html#AttributeQName=scales.utils.EitherLike[scales.xml.PrefixedQName,scales.xml.NoNamespaceQName]" class="extmbr" name="scales.xml.AttributeQName">xml.AttributeQName</a></span>, <span name="value">value: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="token">token: <a href="ElemToken.html" class="extype" name="scales.xml.parser.strategies.ElemToken">ElemToken</a></span>)</span><span class="result">: <a href="../../Attribute.html" class="extype" name="scales.xml.Attribute">Attribute</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">It is expected that certain attributes have fixed values, ie.</p><div class="fullcomment"><div class="comment cmt"><p>It is expected that certain attributes have fixed values, ie. booleans or based on schema enums etc, this function allows such optimisations.</p><p>The qname will have been obtained via a call to either noNamespaceQName, unprefixedQName or prefixedQName, so any optimisations provided by them can be leveraged.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="MemoryOptimisationStrategy.html" class="extype" name="scales.xml.parser.strategies.MemoryOptimisationStrategy">MemoryOptimisationStrategy</a></dd></dl></div>
+    </li><li name="scales.xml.parser.strategies.PathOptimisationStrategy#beginSubTree" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="beginSubTree(stack:scales.xml.impl.TreeProxies,elem:scales.xml.Elem,token:Token):Unit"></a><a id="beginSubTree(TreeProxies,Elem,ElemToken):Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameElemTreeOptimisation$.html#beginSubTree(stack:scales.xml.impl.TreeProxies,elem:scales.xml.Elem,token:Token):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">beginSubTree</span><span class="params">(<span name="stack">stack: <a href="../../impl/TreeProxies.html" class="extype" name="scales.xml.impl.TreeProxies">TreeProxies</a></span>, <span name="elem">elem: <a href="../../Elem.html" class="extype" name="scales.xml.Elem">Elem</a></span>, <span name="token">token: <a href="ElemToken.html" class="extype" name="scales.xml.parser.strategies.ElemToken">ElemToken</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">Start a new &quot;tree&quot;, pushing the elem to TreeProxies
+</p><div class="fullcomment"><div class="comment cmt"><p>Start a new &quot;tree&quot;, pushing the elem to TreeProxies
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="PathOptimisationStrategy.html" class="extype" name="scales.xml.parser.strategies.PathOptimisationStrategy">PathOptimisationStrategy</a></dd></dl></div>
+    </li><li name="scales.xml.parser.strategies.ElemQNameOptimisationT#cacheAll" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="cacheAll:Boolean"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameElemTreeOptimisation$.html#cacheAll:Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">cacheAll</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ElemQNameOptimisationT.html" class="extype" name="scales.xml.parser.strategies.ElemQNameOptimisationT">ElemQNameOptimisationT</a></dd></dl></div>
+    </li><li name="scala.AnyRef#clone" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="clone():Object"></a><a id="clone():AnyRef"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameElemTreeOptimisation$.html#clone():Object" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<span class="extype" name="java.lang">lang</span>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.CloneNotSupportedException]">...</span>
+    </span>)</span>
+              
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="scales.xml.parser.strategies.ElemTokenF#createToken" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="createToken(implicitver:scales.xml.XmlVersion,implicitfromParser:scales.xml.impl.FromParser):scales.xml.parser.strategies.ElemToken"></a><a id="createToken(XmlVersion,FromParser):ElemToken"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameElemTreeOptimisation$.html#createToken(implicitver:scales.xml.XmlVersion,implicitfromParser:scales.xml.impl.FromParser):scales.xml.parser.strategies.ElemToken" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">createToken</span><span class="params">(<span class="implicit">implicit </span><span name="ver">ver: <a href="../../XmlVersion.html" class="extype" name="scales.xml.XmlVersion">XmlVersion</a></span>, <span name="fromParser">fromParser: <a href="../../impl/FromParser.html" class="extype" name="scales.xml.impl.FromParser">FromParser</a></span>)</span><span class="result">: <a href="ElemToken.html" class="extype" name="scales.xml.parser.strategies.ElemToken">ElemToken</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ElemTokenF.html" class="extype" name="scales.xml.parser.strategies.ElemTokenF">ElemTokenF</a></dd></dl></div>
+    </li><li name="scales.xml.parser.strategies.ElemQNameOptimisationT#ecache" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ecache:java.util.concurrent.ConcurrentHashMap[scales.xml.impl.ElemKey,scales.xml.Elem]"></a><a id="ecache:ConcurrentHashMap[ElemKey,Elem]"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameElemTreeOptimisation$.html#ecache:java.util.concurrent.ConcurrentHashMap[scales.xml.impl.ElemKey,scales.xml.Elem]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ecache</span><span class="result">: <span class="extype" name="java.util.concurrent.ConcurrentHashMap">ConcurrentHashMap</span>[<a href="../../impl/ElemKey.html" class="extype" name="scales.xml.impl.ElemKey">ElemKey</a>, <a href="../../Elem.html" class="extype" name="scales.xml.Elem">Elem</a>]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ElemQNameOptimisationT.html" class="extype" name="scales.xml.parser.strategies.ElemQNameOptimisationT">ElemQNameOptimisationT</a></dd></dl></div>
+    </li><li name="scales.xml.parser.strategies.ElemQNameOptimisationT#elem" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="elem(name:scales.xml.QName,attributes:scales.xml.Attributes,namespaces:Map[String,String],token:Token):scales.xml.Elem"></a><a id="elem(QName,xml.Attributes,Map[String,String],ElemToken):Elem"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameElemTreeOptimisation$.html#elem(name:scales.xml.QName,attributes:scales.xml.Attributes,namespaces:Map[String,String],token:Token):scales.xml.Elem" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">elem</span><span class="params">(<span name="name">name: <a href="../../QName.html" class="extype" name="scales.xml.QName">QName</a></span>, <span name="attributes">attributes: <a href="../../index.html#Attributes=scales.utils.collection.ListSet[scales.xml.Attribute]" class="extmbr" name="scales.xml.Attributes">xml.Attributes</a></span>, <span name="namespaces">namespaces: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="token">token: <a href="ElemToken.html" class="extype" name="scales.xml.parser.strategies.ElemToken">ElemToken</a></span>)</span><span class="result">: <a href="../../Elem.html" class="extype" name="scales.xml.Elem">Elem</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">For files without large (and varied) attribute counts per repeated element it may represent significant space savings to optimise against the entire Elem itself.</p><div class="fullcomment"><div class="comment cmt"><p>For files without large (and varied) attribute counts per repeated element it may represent significant space savings to optimise against the entire Elem itself.</p><p>The Elements QName is garaunteed to be the last QName evaluated via the QName functions (i.e. Attributes are done first then the Elems QName)
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ElemQNameOptimisationT.html" class="extype" name="scales.xml.parser.strategies.ElemQNameOptimisationT">ElemQNameOptimisationT</a> → <a href="MemoryOptimisationStrategy.html" class="extype" name="scales.xml.parser.strategies.MemoryOptimisationStrategy">MemoryOptimisationStrategy</a></dd></dl></div>
+    </li><li name="scales.xml.parser.strategies.ElemQNameOptimisationT#elemValue" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="elemValue(key:scales.xml.impl.ElemKey)(newT:scales.xml.impl.ElemKey=&gt;scales.xml.Elem):scales.xml.Elem"></a><a id="elemValue(ElemKey)((ElemKey)⇒Elem):Elem"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameElemTreeOptimisation$.html#elemValue(key:scales.xml.impl.ElemKey)(newT:scales.xml.impl.ElemKey=&gt;scales.xml.Elem):scales.xml.Elem" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">elemValue</span><span class="params">(<span name="key">key: <a href="../../impl/ElemKey.html" class="extype" name="scales.xml.impl.ElemKey">ElemKey</a></span>)</span><span class="params">(<span name="newT">newT: (<a href="../../impl/ElemKey.html" class="extype" name="scales.xml.impl.ElemKey">ElemKey</a>) ⇒ <a href="../../Elem.html" class="extype" name="scales.xml.Elem">Elem</a></span>)</span><span class="result">: <a href="../../Elem.html" class="extype" name="scales.xml.Elem">Elem</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ElemQNameOptimisationT.html" class="extype" name="scales.xml.parser.strategies.ElemQNameOptimisationT">ElemQNameOptimisationT</a></dd></dl></div>
+    </li><li name="scales.xml.parser.strategies.TreeOptimisation#elementEnd" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="elementEnd(xml:scales.xml.impl.TreeProxies,token:TOKEN):Unit"></a><a id="elementEnd(TreeProxies,ElemToken):Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameElemTreeOptimisation$.html#elementEnd(xml:scales.xml.impl.TreeProxies,token:TOKEN):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">elementEnd</span><span class="params">(<span name="xml">xml: <a href="../../impl/TreeProxies.html" class="extype" name="scales.xml.impl.TreeProxies">TreeProxies</a></span>, <span name="token">token: <a href="ElemToken.html" class="extype" name="scales.xml.parser.strategies.ElemToken">ElemToken</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">By default calls TreeProxies.elementEnd.</p><div class="fullcomment"><div class="comment cmt"><p>By default calls TreeProxies.elementEnd.  Replacing entire subtrees can be performed here.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TreeOptimisation.html" class="extype" name="scales.xml.parser.strategies.TreeOptimisation">TreeOptimisation</a> → <a href="PathOptimisationStrategy.html" class="extype" name="scales.xml.parser.strategies.PathOptimisationStrategy">PathOptimisationStrategy</a></dd></dl></div>
+    </li><li name="scala.AnyRef#eq" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="eq(x$1:AnyRef):Boolean"></a><a id="eq(AnyRef):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameElemTreeOptimisation$.html#eq(x$1:AnyRef):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#equals" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="equals(x$1:Any):Boolean"></a><a id="equals(Any):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameElemTreeOptimisation$.html#equals(x$1:Any):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#finalize" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="finalize():Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameElemTreeOptimisation$.html#finalize():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">finalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<span class="extype" name="java.lang">lang</span>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.lang.Throwable]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#getClass" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getClass():Class[_]"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameElemTreeOptimisation$.html#getClass():Class[_]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getClass</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.Class">Class</span>[_]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd><dt>Annotations</dt><dd>
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#hashCode" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hashCode():Int"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameElemTreeOptimisation$.html#hashCode():Int" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd><dt>Annotations</dt><dd>
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.Any#isInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameElemTreeOptimisation$.html#isInstanceOf[T0]:Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="scala.AnyRef#ne" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ne(x$1:AnyRef):Boolean"></a><a id="ne(AnyRef):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameElemTreeOptimisation$.html#ne(x$1:AnyRef):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scales.xml.parser.strategies.QNameElemTreeOptimisation#newTree" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="newTree(elem:scales.xml.Elem,children:scales.xml.XmlChildren,token:scales.xml.parser.strategies.ElemToken)(implicitseqLikeThing:scales.utils.collection.SeqLikeThing[scales.xml.XCC[_],scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC],scales.xml.XCC]):scales.xml.XmlTree"></a><a id="newTree(Elem,xml.XmlChildren,ElemToken)(SeqLikeThing[xml.XCC[_],utils.ItemOrTree[XmlItem,Elem,xml.XCC],xml.XCC]):xml.XmlTree"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameElemTreeOptimisation$.html#newTree(elem:scales.xml.Elem,children:scales.xml.XmlChildren,token:scales.xml.parser.strategies.ElemToken)(implicitseqLikeThing:scales.utils.collection.SeqLikeThing[scales.xml.XCC[_],scales.utils.ItemOrTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC],scales.xml.XCC]):scales.xml.XmlTree" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">newTree</span><span class="params">(<span name="elem">elem: <a href="../../Elem.html" class="extype" name="scales.xml.Elem">Elem</a></span>, <span name="children">children: <a href="../../index.html#XmlChildren=XmlTypes.this.XCC[XmlTypes.this.ItemOrElem]" class="extmbr" name="scales.xml.XmlChildren">xml.XmlChildren</a></span>, <span name="token">token: <a href="ElemToken.html" class="extype" name="scales.xml.parser.strategies.ElemToken">ElemToken</a></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="seqLikeThing">seqLikeThing: <a href="../../../utils/collection/SeqLikeThing.html" class="extype" name="scales.utils.collection.SeqLikeThing">SeqLikeThing</a>[<a href="../../index.html#XCC[T]=scales.utils.collection.ImmutableArrayProxy[T]" class="extmbr" name="scales.xml.XCC">xml.XCC</a>[_], <a href="../../../utils/index.html#ItemOrTree[Item&lt;:scales.utils.LeftLike[Item,scales.utils.collection.Tree[Item,Section,CC]],Section,CC[_]]=scales.utils.EitherLike[Item,scales.utils.collection.Tree[Item,Section,CC]]" class="extmbr" name="scales.utils.ItemOrTree">utils.ItemOrTree</a>[<a href="../../XmlItem.html" class="extype" name="scales.xml.XmlItem">XmlItem</a>, <a href="../../Elem.html" class="extype" name="scales.xml.Elem">Elem</a>, <a href="../../index.html#XCC[T]=scales.utils.collection.ImmutableArrayProxy[T]" class="extmbr" name="scales.xml.XCC">xml.XCC</a>], <a href="../../index.html#XCC[T]=scales.utils.collection.ImmutableArrayProxy[T]" class="extmbr" name="scales.xml.XCC">xml.XCC</a>]</span>)</span><span class="result">: <a href="../../index.html#XmlTree=scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,XmlTypes.this.XCC]" class="extmbr" name="scales.xml.XmlTree">xml.XmlTree</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.xml.parser.strategies.QNameElemTreeOptimisation">QNameElemTreeOptimisation</a> → <a href="TreeOptimisation.html" class="extype" name="scales.xml.parser.strategies.TreeOptimisation">TreeOptimisation</a></dd></dl></div>
+    </li><li name="scales.xml.parser.strategies.QNameOptimisationT#noNamespaceQName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="noNamespaceQName(local:String,token:Token):scales.xml.NoNamespaceQName"></a><a id="noNamespaceQName(String,ElemToken):NoNamespaceQName"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameElemTreeOptimisation$.html#noNamespaceQName(local:String,token:Token):scales.xml.NoNamespaceQName" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">noNamespaceQName</span><span class="params">(<span name="local">local: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="token">token: <a href="ElemToken.html" class="extype" name="scales.xml.parser.strategies.ElemToken">ElemToken</a></span>)</span><span class="result">: <a href="../../NoNamespaceQName.html" class="extype" name="scales.xml.NoNamespaceQName">NoNamespaceQName</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">The creation costs can also be reduced
+</p><div class="fullcomment"><div class="comment cmt"><p>The creation costs can also be reduced
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="QNameOptimisationT.html" class="extype" name="scales.xml.parser.strategies.QNameOptimisationT">QNameOptimisationT</a> → <a href="MemoryOptimisationStrategy.html" class="extype" name="scales.xml.parser.strategies.MemoryOptimisationStrategy">MemoryOptimisationStrategy</a></dd></dl></div>
+    </li><li name="scala.AnyRef#notify" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notify():Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameElemTreeOptimisation$.html#notify():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notify</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#notifyAll" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notifyAll():Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameElemTreeOptimisation$.html#notifyAll():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notifyAll</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="scales.xml.parser.strategies.QNameOptimisationT#prefixedQName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="prefixedQName(local:String,uri:String,prefix:String,token:Token):scales.xml.PrefixedQName"></a><a id="prefixedQName(String,String,String,ElemToken):PrefixedQName"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameElemTreeOptimisation$.html#prefixedQName(local:String,uri:String,prefix:String,token:Token):scales.xml.PrefixedQName" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">prefixedQName</span><span class="params">(<span name="local">local: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="uri">uri: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="prefix">prefix: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="token">token: <a href="ElemToken.html" class="extype" name="scales.xml.parser.strategies.ElemToken">ElemToken</a></span>)</span><span class="result">: <a href="../../PrefixedQName.html" class="extype" name="scales.xml.PrefixedQName">PrefixedQName</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="QNameOptimisationT.html" class="extype" name="scales.xml.parser.strategies.QNameOptimisationT">QNameOptimisationT</a> → <a href="MemoryOptimisationStrategy.html" class="extype" name="scales.xml.parser.strategies.MemoryOptimisationStrategy">MemoryOptimisationStrategy</a></dd></dl></div>
+    </li><li name="scales.xml.parser.strategies.QNameOptimisationT#qNameCache" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="qNameCache:java.util.concurrent.ConcurrentHashMap[scales.xml.impl.FullEqualQNameKey,scales.xml.QName]"></a><a id="qNameCache:ConcurrentHashMap[FullEqualQNameKey,QName]"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameElemTreeOptimisation$.html#qNameCache:java.util.concurrent.ConcurrentHashMap[scales.xml.impl.FullEqualQNameKey,scales.xml.QName]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">qNameCache</span><span class="result">: <span class="extype" name="java.util.concurrent.ConcurrentHashMap">ConcurrentHashMap</span>[<a href="../../impl/FullEqualQNameKey.html" class="extype" name="scales.xml.impl.FullEqualQNameKey">FullEqualQNameKey</a>, <a href="../../QName.html" class="extype" name="scales.xml.QName">QName</a>]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="QNameOptimisationT.html" class="extype" name="scales.xml.parser.strategies.QNameOptimisationT">QNameOptimisationT</a></dd></dl></div>
+    </li><li name="scala.AnyRef#synchronized" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="synchronized[T0](x$1:=&gt;T0):T0"></a><a id="synchronized[T0](⇒T0):T0"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameElemTreeOptimisation$.html#synchronized[T0](x$1:=&gt;T0):T0" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">synchronized</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="params">(<span name="arg0">arg0: ⇒ <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>)</span><span class="result">: <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#toString" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toString():String"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameElemTreeOptimisation$.html#toString():String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scales.xml.parser.strategies.QNameOptimisationT#unprefixedQName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="unprefixedQName(local:String,uri:String,token:Token):scales.xml.UnprefixedQName"></a><a id="unprefixedQName(String,String,ElemToken):UnprefixedQName"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameElemTreeOptimisation$.html#unprefixedQName(local:String,uri:String,token:Token):scales.xml.UnprefixedQName" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">unprefixedQName</span><span class="params">(<span name="local">local: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="uri">uri: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="token">token: <a href="ElemToken.html" class="extype" name="scales.xml.parser.strategies.ElemToken">ElemToken</a></span>)</span><span class="result">: <a href="../../UnprefixedQName.html" class="extype" name="scales.xml.UnprefixedQName">UnprefixedQName</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="QNameOptimisationT.html" class="extype" name="scales.xml.parser.strategies.QNameOptimisationT">QNameOptimisationT</a> → <a href="MemoryOptimisationStrategy.html" class="extype" name="scales.xml.parser.strategies.MemoryOptimisationStrategy">MemoryOptimisationStrategy</a></dd></dl></div>
+    </li><li name="scales.xml.parser.strategies.QNameOptimisationT#value" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="value[T&lt;:scales.xml.QName](key:scales.xml.impl.FullEqualQNameKey)(newT:scales.xml.impl.FullEqualQNameKey=&gt;T):T"></a><a id="value[T&lt;:QName](FullEqualQNameKey)((FullEqualQNameKey)⇒T):T"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameElemTreeOptimisation$.html#value[T&lt;:scales.xml.QName](key:scales.xml.impl.FullEqualQNameKey)(newT:scales.xml.impl.FullEqualQNameKey=&gt;T):T" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">value</span><span class="tparams">[<span name="T">T &lt;: <a href="../../QName.html" class="extype" name="scales.xml.QName">QName</a></span>]</span><span class="params">(<span name="key">key: <a href="../../impl/FullEqualQNameKey.html" class="extype" name="scales.xml.impl.FullEqualQNameKey">FullEqualQNameKey</a></span>)</span><span class="params">(<span name="newT">newT: (<a href="../../impl/FullEqualQNameKey.html" class="extype" name="scales.xml.impl.FullEqualQNameKey">FullEqualQNameKey</a>) ⇒ <span class="extype" name="scales.xml.parser.strategies.QNameOptimisationT.value.T">T</span></span>)</span><span class="result">: <span class="extype" name="scales.xml.parser.strategies.QNameOptimisationT.value.T">T</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="QNameOptimisationT.html" class="extype" name="scales.xml.parser.strategies.QNameOptimisationT">QNameOptimisationT</a></dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait():Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameElemTreeOptimisation$.html#wait():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long,x$2:Int):Unit"></a><a id="wait(Long,Int):Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameElemTreeOptimisation$.html#wait(x$1:Long,x$2:Int):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long):Unit"></a><a id="wait(Long):Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameElemTreeOptimisation$.html#wait(x$1:Long):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li>
+              </ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="scales.xml.parser.strategies.ElemTokenF">
+              <h3>Inherited from <a href="ElemTokenF.html" class="extype" name="scales.xml.parser.strategies.ElemTokenF">ElemTokenF</a></h3>
+            </div><div class="parent" name="scales.xml.parser.strategies.TreeOptimisation">
+              <h3>Inherited from <a href="TreeOptimisation.html" class="extype" name="scales.xml.parser.strategies.TreeOptimisation">TreeOptimisation</a>[<a href="ElemToken.html" class="extype" name="scales.xml.parser.strategies.ElemToken">ElemToken</a>]</h3>
+            </div><div class="parent" name="scales.xml.parser.strategies.ElemQNameOptimisationT">
+              <h3>Inherited from <a href="ElemQNameOptimisationT.html" class="extype" name="scales.xml.parser.strategies.ElemQNameOptimisationT">ElemQNameOptimisationT</a>[<a href="ElemToken.html" class="extype" name="scales.xml.parser.strategies.ElemToken">ElemToken</a>]</h3>
+            </div><div class="parent" name="scales.xml.parser.strategies.QNameOptimisationT">
+              <h3>Inherited from <a href="QNameOptimisationT.html" class="extype" name="scales.xml.parser.strategies.QNameOptimisationT">QNameOptimisationT</a>[<a href="ElemToken.html" class="extype" name="scales.xml.parser.strategies.ElemToken">ElemToken</a>]</h3>
+            </div><div class="parent" name="scales.xml.parser.strategies.PathOptimisationStrategy">
+              <h3>Inherited from <a href="PathOptimisationStrategy.html" class="extype" name="scales.xml.parser.strategies.PathOptimisationStrategy">PathOptimisationStrategy</a>[<a href="ElemToken.html" class="extype" name="scales.xml.parser.strategies.ElemToken">ElemToken</a>]</h3>
+            </div><div class="parent" name="scales.xml.parser.strategies.MemoryOptimisationStrategy">
+              <h3>Inherited from <a href="MemoryOptimisationStrategy.html" class="extype" name="scales.xml.parser.strategies.MemoryOptimisationStrategy">MemoryOptimisationStrategy</a>[<a href="ElemToken.html" class="extype" name="scales.xml.parser.strategies.ElemToken">ElemToken</a>]</h3>
+            </div><div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+    </body>
+          </div>
+        </div>
+      </div>
+    </body>
+      </html>
