@@ -1,179 +1,87 @@
 package scales.utils.collection
 
-import scales.utils.collection
-
-import scala.collection
-import scala.collection.generic.CanBuildFrom
-import scala.collection.{GenTraversableOnce, IterableFactory, mutable, SeqLike}
+import scala.collection.{GenTraversableOnce, mutable}
 
 /**
- * 2.13 removes seqlike etc. so we need to behave like it, it also deprecates canbuild fromm
+ * 2.13 removes seqlike etc. so we need to behave like it, it also deprecates canbuild fromm.  This interface represents the operations on a seq used by scales
  *
- * @tparam A
+ * @tparam X[_] a seq like container
  */
-trait SeqLikeThing[A] extends scala.collection.SeqOps[A, SeqLikeThing, SeqLikeThing[A]] {
-  type Repr <: SeqLikeThing[A]
+trait SeqLikeThing[Repr, A, X[_]] {
 
-  def apply(i: Int): A = seq.apply(i)
+  @inline def apply(x: X[A])(i: Int): A = seq(x).apply(i)
 
-  def seq: Seq[A]
+  @inline def seq(x: X[A]): Seq[A]
 
-  def iterator: Iterator[A] = seq.iterator
+  @inline def iterator(x: X[A]): Iterator[A] = seq(x).iterator
 
-  def updated(index: Int, elem: A): SeqLikeThing[A] =
-    wrap(seq.updated(index, elem))
-  //def updated[B >: A, That](index: Int, elem: A)(implicit bf: CanBuildFrom[Repr, A, That]): Repr =
-  //  wrap(seq.updated(index, elem))
+  @inline def updated(x: X[A])(index: Int, elem: A): X[A] =
+    wrap(seq(x).updated(index, elem))
 
-  override def splitAt(index: Int): (Repr,Repr) = {
-    val (b, a) = seq.splitAt(index)
-    (wrap(b).asInstanceOf[Repr], wrap(a).asInstanceOf[Repr])
+  @inline def splitAt(x: X[A])(index: Int): (X[A],X[A]) = {
+    val (b, a) = seq(x: X[A]).splitAt(index)
+    (wrap(b), wrap(a))
   }
 
-  override def length: Int = seq.length
+  @inline def length(x: X[A]): Int = seq(x: X[A]).length
 
-  def ++(suffix: IterableOnce[A]): Repr=// concat(suffix)
-  //def ++[That](itr: GenTraversableOnce[A])(implicit bf: CanBuildFrom[Repr, A, That]): Repr =
-    wrap(seq ++ suffix)
+  @inline def ++(x: X[A])(itr: GenTraversableOnce[A]): X[A] =
+    wrap(seq(x: X[A]) ++ itr)
 
-  def wrap(s: Seq[A]): Repr
+  @inline def wrap(s: Seq[A]): X[A]
 
-  def :+[That](elem: A)(implicit bf: _root_.scala.collection.generic.CanBuildFrom[Repr, A, That]): Repr =
-    wrap(seq.:+(elem))
+  @inline def :+(x: X[A])(elem: A): X[A] =
+    wrap(seq(x: X[A]).:+(elem))
 
-  override def dropRight(n: Int): Repr =
-    wrap(seq.dropRight(n))
+  @inline def dropRight(x: X[A])(n: Int): X[A] =
+    wrap(seq(x: X[A]).dropRight(n))
 
-  override def filter(p: A => Boolean): Repr =
-    wrap(seq.filter(p))
+  @inline def filter(x: X[A])(p: A => Boolean): X[A] =
+    wrap(seq(x: X[A]).filter(p))
 
-  override def filterNot(p: A => Boolean): Repr =
-    wrap(seq.filterNot(p))
+  @inline def filterNot(x: X[A])(p: A => Boolean): X[A] =
+    wrap(seq(x: X[A]).filterNot(p))
 
-  protected[this] def newBuilder: mutable.Builder[A, SeqLikeThing[A]]
-
-  def builder: mutable.Builder[A, SeqLikeThing[A]] = newBuilder
-
-  override def toIterable: Iterable[A] = seq.toIterable
-
-  override protected def coll: SeqLikeThing[A] = this
-
-  override protected def fromSpecific(coll: IterableOnce[A]): SeqLikeThing[A] = newBuilder.addAll(coll).result()
-
-  override def iterableFactory: IterableFactory[SeqLikeThing] = {
-    def obuilder = () => newBuilder
-    new IterableFactory[SeqLikeThing] {
-
-      override def from[T](source: IterableOnce[T]): SeqLikeThing[T] = (newBuilder addAll source).result()
-
-      override def empty[T]: SeqLikeThing[T] = newBuilder[T].result()
-
-      override def newBuilder[T]: mutable.Builder[T, SeqLikeThing[T]] = obuilder.asInstanceOf[mutable.Builder[T, SeqLikeThing[T]]] // hideous
-
-    }
-  }
-
-  override protected def newSpecificBuilder: mutable.Builder[A, SeqLikeThing[A]] = newBuilder
+  @inline def builder: mutable.Builder[A, X[A]]
 }
 
-case class ImmutableArrayProxyLikeThing[A](immutableArrayProxy: ImmutableArrayProxy[A]) extends SeqLikeThing[A] {
-  override type Repr = ImmutableArrayProxyLikeThing[A]
+case class ImmutableArrayProxyLikeThing[Repr, A]() extends SeqLikeThing[Repr, A, ImmutableArrayProxy] {
 
-  override def seq: Seq[A] = immutableArrayProxy
+  override def seq(x: ImmutableArrayProxy[A]): Seq[A] = x
 
-  override def wrap(s: Seq[A]): Repr = ImmutableArrayProxyLikeThing(s.asInstanceOf[ImmutableArrayProxy[A]])
+  override def wrap(s: Seq[A]): ImmutableArrayProxy[A] =
+    s.asInstanceOf[ImmutableArrayProxy[A]]
 
-  override protected[this] def newBuilder: mutable.Builder[A, SeqLikeThing[A]] =
-    SeqLikeThingBuilder[A, ImmutableArrayProxyLikeThing](seq.companion.newBuilder)
-}
-
-case class IndexedSeqLikeThing[A](indexedSeq: IndexedSeq[A]) extends SeqLikeThing[A] {
-  override type Repr = IndexedSeqLikeThing[A]
-
-  override def seq: Seq[A] = indexedSeq
-
-  override def wrap(s: Seq[A]): Repr = IndexedSeqLikeThing(s.asInstanceOf[IndexedSeq[A]])
-
-  override protected[this] def newBuilder: mutable.Builder[A, SeqLikeThing[A]] =
-    SeqLikeThingBuilder[A, IndexedSeqLikeThing](seq.companion.newBuilder)
+  override def builder: mutable.Builder[A, ImmutableArrayProxy[A]] =
+    ImmutableArrayProxy.newBuilder
 
 }
 
-case class SeqSeqLikeThing[A](toWrap: Seq[A]) extends SeqLikeThing[A] {
-  override type Repr = SeqSeqLikeThing[A]
+case class IndexedSeqLikeThing[Repr, A]() extends SeqLikeThing[Repr, A, IndexedSeq] {
 
-  override def seq: Seq[A] = toWrap
+  override def seq(x: IndexedSeq[A]): Seq[A] = x
 
-  override def wrap(s: Seq[A]): Repr = SeqSeqLikeThing(s)
+  override def wrap(s: Seq[A]): IndexedSeq[A] = s.asInstanceOf[IndexedSeq[A]]
 
-  override protected[this] def newBuilder: mutable.Builder[A, SeqLikeThing[A]] =
-    SeqLikeThingBuilder[A, SeqSeqLikeThing](seq.companion.newBuilder)
+  override def builder: mutable.Builder[A, IndexedSeq[A]] = IndexedSeq.newBuilder
 }
 
-case class SeqLikeThingBuilder[A, CC[X] <: SeqLikeThing[X]](instance: mutable.Builder[A, Seq[A]])(implicit gen: SeqLikeThingGen[CC[A]]) extends mutable.Builder[A, CC[A]] {
+case class ListSeqLikeThing[Repr, A]() extends SeqLikeThing[Repr, A, List] {
 
-  override def addOne(elem: A): SeqLikeThingBuilder.this.type = {
-    instance.+=( elem )
-    this
-  }
+  override def seq(x: List[A]): Seq[A] = x
 
-  override def clear(): Unit = {
-    instance.clear()
-  }
+  override def wrap(s: Seq[A]): List[A] = s.asInstanceOf[List[A]]
 
-  override def result(): CC[A] = implicitly[SeqLikeThingGen[CC[A]]].wrap( instance.result() ).asInstanceOf[CC[A]]
-}
-
-trait SeqLikeThingGen[+A] {
-  def empty[B]: SeqLikeThing[B]
-  def wrap[B](seq: Seq[B]): SeqLikeThing[B]
-}
-
-object SeqLikeThingGen {
-  implicit def immutableArrayProxyGen[A]: SeqLikeThingGen[ImmutableArrayProxyLikeThing[A]] = new SeqLikeThingGen[ImmutableArrayProxyLikeThing[A]] {
-
-    override def empty[B]: SeqLikeThing[B] = ImmutableArrayProxyLikeThing(ImmutableArrayProxy.empty)
-
-    override def wrap[B](seq: Seq[B]): SeqLikeThing[B] = ImmutableArrayProxyLikeThing(seq.asInstanceOf[ImmutableArrayProxy[B]])
-  }
-
-  implicit def indexedSeqGen[A]: SeqLikeThingGen[IndexedSeqLikeThing[A]] = new SeqLikeThingGen[IndexedSeqLikeThing[A]] {
-
-    override def empty[B]: SeqLikeThing[B] = IndexedSeqLikeThing(IndexedSeq.empty)
-
-    override def wrap[B](seq: Seq[B]): SeqLikeThing[B] = IndexedSeqLikeThing(seq.asInstanceOf[IndexedSeq[B]])
-  }
-
-  implicit def seqGen[A]: SeqLikeThingGen[SeqSeqLikeThing[A]] = new SeqLikeThingGen[SeqSeqLikeThing[A]] {
-
-    override def empty[B]: SeqLikeThing[B] = SeqSeqLikeThing(Seq.empty)
-
-    override def wrap[B](seq: Seq[B]): SeqLikeThing[B] = SeqSeqLikeThing(seq)
-  }
-
-}
-
-case class SeqLikeThingBuildFrom[A, CC[X] <: SeqLikeThing[X]]()(implicit gen: SeqLikeThingGen[CC[A]])  extends CanBuildFrom[CC[_], A, CC[A]] {
-
-  override def apply(from: CC[_]): mutable.Builder[A, CC[A]] = ???
-
-  //override def apply(): mutable.Builder[A, CC[A]] =
-  //  SeqLikeThingBuilder(gen.empty.seq.companion.newBuilder)(gen)
-
-  def fromSpecific(from: CC[_])(it: scala.collection.IterableOnce[A]): CC[A] = SeqLikeThingBuilder(gen.empty.seq.companion.newBuilder)(gen).result()
-  def newBuilder(from: CC[_]): scala.collection.mutable.Builder[A,CC[A]] = SeqLikeThingBuilder(gen.empty.seq.companion.newBuilder)(gen)
-
+  override def builder: mutable.Builder[A, List[A]] = List.newBuilder
 }
 
 object SeqLikeThing {
+  implicit def immutableArrayProxyLikeThing[Repr, A]: SeqLikeThing[Repr, A, ImmutableArrayProxy] =
+    ImmutableArrayProxyLikeThing()
 
-  implicit def buildFrom[A, CC[X] <: SeqLikeThing[X]](implicit gen: SeqLikeThingGen[CC[A]]) =
-    SeqLikeThingBuildFrom()(gen)
+  implicit def indexedSeqLikeThing[Repr, A]: SeqLikeThing[Repr, A, IndexedSeq] =
+    IndexedSeqLikeThing()
 
-  def wrap[A](toWrap: Seq[A]): SeqLikeThing[A] =
-    toWrap match {
-      case t: ImmutableArrayProxy[_] => ImmutableArrayProxyLikeThing(t)
-      case t: IndexedSeq[_] => IndexedSeqLikeThing(t)
-      case t: Seq[_] => SeqSeqLikeThing(t)
-    }
+  implicit def listSeqLikeThing[Repr, A]: SeqLikeThing[Repr, A, List] =
+    ListSeqLikeThing()
 }

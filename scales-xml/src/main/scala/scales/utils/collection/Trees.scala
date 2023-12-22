@@ -6,14 +6,14 @@ import scales.utils.{LeftLike, RightLike, EitherLike}
 
 trait Trees {
 
-  type ItemOrTree[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: SeqLikeThing[X]] = EitherLike[Item, Tree[Item, Section, CC]]
+  type ItemOrTree[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]] = EitherLike[Item, Tree[Item, Section, CC]]
 
   /** badly named the boolean should indicate if it has any children */
   type ItemOrSectionWalk[Item, Section] = Either[Item, SectionWalk[Section]]
 
-  type TreeCBF[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: SeqLikeThing[X]] = CanBuildFrom[CC[_], ItemOrTree[Item, Section, CC], CC[ItemOrTree[Item, Section, CC]]]
+  type TreeCBF[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]] = CanBuildFrom[CC[_], ItemOrTree[Item, Section, CC], CC[ItemOrTree[Item, Section, CC]]]
 
-  final def fold[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: SeqLikeThing[X], A](a: A)(folder: (ItemOrSectionWalk[Item, Section], A) => A)(tree: Tree[Item, Section, CC]): A =
+  final def fold[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_], A](a: A)(folder: (ItemOrSectionWalk[Item, Section], A) => A)(tree: Tree[Item, Section, CC]): A =
     tree.fold(a)(folder)
 
 }
@@ -31,19 +31,24 @@ case class SectionWalk[Section](section: Section, hasChildren: Boolean = false, 
 
 
 object Tree {
-  def apply[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: SeqLikeThing[X]](isection: Section, ichildren: CC[ItemOrTree[Item, Section, CC]]) : Tree[Item, Section, CC] = new Tree[Item, Section, CC] {
-    val section = isection
-    val children = ichildren
+  def apply[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]](isection: Section, ichildren: CC[ItemOrTree[Item, Section, CC]])
+                                                                            (implicit iseqLikeThing: SeqLikeThing[CC[_], ItemOrTree[Item, Section, CC], CC]) : Tree[Item, Section, CC] =
+    new Tree[Item, Section, CC] {
+      val section = isection
+      val children = ichildren
 
-    def copy( section : Section = section, children : CC[ItemOrTree[Item,Section,CC]] = children) = apply(section, children)
+      def copy( section : Section = section, children : CC[ItemOrTree[Item,Section,CC]] = children) = apply(section, children)(iseqLikeThing)
 
-  }
+      override implicit val seqLikeThing: SeqLikeThing[CC[_], ItemOrTree[Item, Section, CC], CC] = iseqLikeThing
+    }
 
-  def unapply[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: SeqLikeThing[X]]( t : Tree[Item, Section, CC] ) : Option[(Section, CC[ItemOrTree[Item,Section,CC]])] = Some((t.section, t.children))
+  def unapply[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]]( t : Tree[Item, Section, CC] ) : Option[(Section, CC[ItemOrTree[Item,Section,CC]])] = Some((t.section, t.children))
 }
 
 
-trait Tree[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: SeqLikeThing[X]] extends RightLike[Item, Tree[Item, Section, CC]] {
+trait Tree[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]] extends RightLike[Item, Tree[Item, Section, CC]] {
+
+  implicit val seqLikeThing: SeqLikeThing[CC[_], ItemOrTree[Item, Section, CC], CC]
 
   def section: Section
   def children: CC[ItemOrTree[Item, Section, CC]]
@@ -57,14 +62,14 @@ trait Tree[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: Se
       tree: Tree[Item, Section, CC]): A =
       // match against
       tree match {
-        case Tree(top, x) if (x.seq.isEmpty) => folder(Right(SectionWalk(top)), a)
+        case Tree(top, x) if (seqLikeThing.seq(x).isEmpty) => folder(Right(SectionWalk(top)), a)
         case Tree(top, children) =>
           val temp = folder(Right(SectionWalk(top, hasChildren = true)), a)
-          val fres = children.seq.foldLeft(temp) { (foldeda, iort) =>
+          val fres = seqLikeThing.seq(children).foldLeft(temp) { (foldeda, iort) =>
             iort.fold( 
-	      (item : Item) => folder(Left(item), foldeda), 
-	      (rtree : Tree[Item,Section,CC]) => ifold(foldeda, folder, rtree)
-	    )
+              (item : Item) => folder(Left(item), foldeda),
+              (rtree : Tree[Item,Section,CC]) => ifold(foldeda, folder, rtree)
+            )
           }
           folder(Right(SectionWalk(top, hasChildren = true, isStart = false)), fres)
       }

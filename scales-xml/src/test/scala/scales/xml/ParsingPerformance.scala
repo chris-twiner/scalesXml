@@ -9,14 +9,11 @@ import java.io.StringReader
 import javax.xml.transform._
 import dom._
 import stream._
-
 import parser.strategies._
-import scales.xml.impl.{DefaultDOMFactoryPool, IsFromParser}
-
+import scales.xml.impl.{DefaultDOMFactoryPool, FromParser, IsFromParser}
 import collection.path._
-import collection.{Tree, ImmutableArrayProxy}
+import collection.{ImmutableArrayProxy, SeqLikeThing, Tree}
 import ImmutableArrayProxy.{one => IAOne}
-
 import scalaz._
 import Scalaz._
 
@@ -93,26 +90,36 @@ object KnownTrees extends TreeOptimisation[QNameToken] with QNameOptimisationT[Q
    )
   }
 
-  def newTree( elem : Elem, children : XmlChildren, token : QNameToken ) : XmlTree = // not sure how this should be generated
+  def newTree( elem : Elem, children : XmlChildren, token : QNameToken )( implicit iseqLikeThing: SeqLikeThing[XCC[_], ItemOrTree[XmlItem, Elem, XCC], XCC] )  : XmlTree = // not sure how this should be generated
     if (elem.name eq id)
       new KnownTextValue(children.head.getLeft.value) {
-	def section = Elem(id)
+      	def section = Elem(id)
+
+        override implicit val seqLikeThing: SeqLikeThing[XCC[_], ItemOrTree[XmlItem, Elem, XCC], XCC] = iseqLikeThing
       }
     else if (elem.name eq version)
       new KnownTextValue(children.head.getLeft.value) {
-	def section = Elem(version)
+	      def section = Elem(version)
+
+        override implicit val seqLikeThing: SeqLikeThing[XCC[_], ItemOrTree[XmlItem, Elem, XCC], XCC] = iseqLikeThing
       }//KnownName
     else if (elem.name eq part)
       new KnownName(children) {
-	def section = Elem(part)
+        def section = Elem(part)
+
+        override implicit val seqLikeThing: SeqLikeThing[XCC[_], ItemOrTree[XmlItem, Elem, XCC], XCC] = iseqLikeThing
       }
     else if (elem.name eq bom)
       new KnownName(children) {
-	def section = Elem(bom)
+      	def section = Elem(bom)
+
+        override implicit val seqLikeThing: SeqLikeThing[XCC[_], ItemOrTree[XmlItem, Elem, XCC], XCC] = iseqLikeThing
       }
     else if (elem.name eq record)
       new KnownName(children) {
-	def section = Elem(record)
+      	def section = Elem(record)
+
+        override implicit val seqLikeThing: SeqLikeThing[XCC[_], ItemOrTree[XmlItem, Elem, XCC], XCC] = iseqLikeThing
       }
     else
       LazyOptimisedTree( elem, children )(IsFromParser)

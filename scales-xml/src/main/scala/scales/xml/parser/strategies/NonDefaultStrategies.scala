@@ -1,11 +1,9 @@
 package scales.xml.parser.strategies
 
 import scales.xml._
-import scales.utils.collection.Tree
-import scales.utils.valueOf
-
-import scales.xml.impl.{NotFromParser, FromParser}
-
+import scales.utils.collection.{SeqLikeThing, Tree}
+import scales.utils.{ItemOrTree, valueOf}
+import scales.xml.impl.{FromParser, NotFromParser}
 import impl.ElemKey
 
 class ElemToken(implicit ver : XmlVersion, fromParser : FromParser) extends QNameToken {
@@ -83,10 +81,8 @@ object HighMemoryOptimisation extends PathOptimisationStrategy[ElemToken] with E
  * This also removes any extra parsing time from string joining.
  */ 
 trait TextNodeJoiner[Token <: OptimisationToken] extends TreeOptimisation[Token] {
-    
-  import ScalesXml.xmlCBF
 
-  def newTree( elem : Elem, children : XmlChildren, token : Token ) : XmlTree =
+  def newTree( elem : Elem, children : XmlChildren, token : Token )(implicit seqLikeThing: SeqLikeThing[XCC[_], ItemOrTree[XmlItem, Elem, XCC], XCC]) : XmlTree =
     Tree(elem, joinTextNodes(children))
 
 }

@@ -12,13 +12,8 @@ import scales.xml.impl.{NotFromParser, IsFromParser, FromParser}
 import impl.{NameCreators, TreeProxies}
 
 class Handler[Token <: OptimisationToken](strategy : PathOptimisationStrategy[Token])(implicit val defaultVersion : XmlVersion) extends org.xml.sax.ext.DefaultHandler2 {
-  import scales.xml.ScalesXml.xmlCBF
 
-  import scales.utils.{noPath, top, ScalesUtils }
-  import scales.utils.collection.path.Path
   import org.xml.sax._
-
-  import ScalesUtils._
 
   import NameCreators._
   

@@ -1,17 +1,9 @@
 package scales.xml.impl
 
-import scales.xml.{ItemOrElem, XmlChildren, 
-		   XmlItem, Text, XmlTree, XmlVersion, 
-		   ScalesXml, defaultPathOptimisation, 
-		   Doc, loadXmlReader, convertFromScalaXml, 
-		   emptyChildren, AttributeQName,
-		   Namespace, Xml10}
-
-import ScalesXml.xmlCBF
+import scales.utils.collection.SeqLikeThing.immutableArrayProxyLikeThing
+import scales.xml.{AttributeQName, Doc, ItemOrElem, Namespace, ScalesXml, Text, XCC, Xml10, XmlChildren, XmlItem, XmlTree, XmlVersion, convertFromScalaXml, defaultPathOptimisation, emptyChildren, loadXmlReader, xmlSeqLikeThing}
 import scales.utils.resources.Loaner
-  
-import scales.xml.parser.strategies.{PathOptimisationStrategy, OptimisationToken}
-
+import scales.xml.parser.strategies.{OptimisationToken, PathOptimisationStrategy}
 import scales.xml.parser.sax.SaxSupport
 
 /**
@@ -19,8 +11,6 @@ import scales.xml.parser.sax.SaxSupport
  */
 trait Whitespace {
   import scales.utils.collection.Tree
-
-//  import scala.collection.generic.CanBuildFrom
 
   /**
    * XPath normalize-space function, replaces all consecutive whitespace with " " and trims.
@@ -40,10 +30,10 @@ trait Whitespace {
         val text = Text(pair._1.get.value + item.left.get.value)
 
         // replace the last
-        (Some(text), (pair._2.dropRight(1) :+ (text)) : XmlChildren)//Left(
-      } else (Some(item.left.get), (pair._2 :+ (item)) : XmlChildren)
+        (Some(text), xmlSeqLikeThing.:+(xmlSeqLikeThing.dropRight(pair._2)(1))(text))//Left(
+      } else (Some(item.left.get), xmlSeqLikeThing.:+(pair._2)(item) : XmlChildren)
     else
-      (None, (pair._2 :+ (item)) : XmlChildren)
+      (None, xmlSeqLikeThing.:+(pair._2)(item) : XmlChildren)
   
   /**
    * Joins adjacent text nodes for the immediate children only (make a tree more XPath friendly) 

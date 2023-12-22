@@ -26,9 +26,9 @@ package object utils extends collection.IterableUtils
   
   import collection.Tree
 
-  @inline final def item[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: SeqLikeThing[X]](item: Item): ItemOrTree[Item, Section, CC] = item
+  @inline final def item[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]](item: Item): ItemOrTree[Item, Section, CC] = item
 
-  @inline final def subtree[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X] <: SeqLikeThing[X]](section: Section, children: CC[ItemOrTree[Item, Section, CC]])(implicit cbf : TreeCBF[Item, Section, CC]): ItemOrTree[Item, Section, CC] = Tree[Item, Section, CC](section, children)
+  @inline final def subtree[Item <: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]](section: Section, children: CC[ItemOrTree[Item, Section, CC]])(implicit iseqLikeThing: SeqLikeThing[CC[_], ItemOrTree[Item, Section, CC], CC]): ItemOrTree[Item, Section, CC] = Tree[Item, Section, CC](section, children)
 
   @inline final def one[T]( i : T ) : List[T] =
       i :: Nil

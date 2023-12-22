@@ -53,7 +53,7 @@ trait XmlTypesImplicits {
   /**
    * Default cbf for xml trees
    */ 
-  implicit val xmlCBF = implicitly[XmlCBF]
+  //implicit val xmlCBF = implicitly[XmlCBF]
 
   /**
    * Implicit manifest for sorting positions, big silent cpu eater otherwise, just like the builders.
