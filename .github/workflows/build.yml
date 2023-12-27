@@ -45,7 +45,7 @@ jobs:
       - name: target
         uses: actions/upload-artifact@v4
         with:
-          name: target
+          name: target-${{ matrix.profile }}
           path: target
 
   # Scala_2_12 used as scaladocs fail on 2.13 without any context as to why, which is nice
@@ -90,7 +90,7 @@ jobs:
       - name: target
         uses: actions/upload-artifact@v4
         with:
-          name: target
+          name: target-mvn_site
           path: |
             target/site
             scales-xml/target/site
@@ -149,7 +149,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/download-artifact@v4
         with:
-          name: target
+          name: target-mvn_site
           path: target
       - uses: ./.github/workflows/mkdocs #sparkutils/quality/.github/workflows/mkdocs/action.yml@e8cd720ee2cb495a6a020363441a81da3bb70b23
         with:
