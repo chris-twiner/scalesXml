@@ -1,0 +1,791 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+          <title>scales-xml 0.6.0-M5 API  - scales.xml.parser.strategies</title>
+          <meta name="description" content="scales - xml 0.6.0 - M5 API - scales.xml.parser.strategies" />
+          <meta name="keywords" content="scales xml 0.6.0 M5 API scales.xml.parser.strategies" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      
+      <link href="../../../../lib/index.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../lib/jquery.min.js"></script>
+      <script type="text/javascript" src="../../../../lib/jquery.panzoom.min.js"></script>
+      <script type="text/javascript" src="../../../../lib/jquery.mousewheel.min.js"></script>
+      <script type="text/javascript" src="../../../../lib/index.js"></script>
+      <script type="text/javascript" src="../../../../index.js"></script>
+      <script type="text/javascript" src="../../../../lib/scheduler.js"></script>
+      <script type="text/javascript" src="../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../lib/modernizr.custom.js"></script><script type="text/javascript" src="../../../../lib/diagrams.js" id="diagrams-js"></script>
+      <script type="text/javascript">
+        /* this variable can be used by the JS to determine the path to the root document */
+        var toRoot = '../../../../';
+      </script>
+    
+        </head>
+        <body>
+      <div id="search">
+        <span id="doc-title">scales-xml 0.6.0-M5 API<span id="doc-version"></span></span>
+        <span class="close-results"><span class="left">&lt;</span> Back</span>
+        <div id="textfilter">
+          <span class="input">
+            <input autocapitalize="none" placeholder="Search" id="index-input" type="text" accesskey="/" />
+            <i class="clear material-icons"></i>
+            <i id="search-icon" class="material-icons"></i>
+          </span>
+        </div>
+    </div>
+      <div id="search-results">
+        <div id="search-progress">
+          <div id="progress-fill"></div>
+        </div>
+        <div id="results-content">
+          <div id="entity-results"></div>
+          <div id="member-results"></div>
+        </div>
+      </div>
+      <div id="content-scroll-container" style="-webkit-overflow-scrolling: touch;">
+        <div id="content-container" style="-webkit-overflow-scrolling: touch;">
+          <div id="subpackage-spacer">
+            <div id="packages">
+              <h1>Packages</h1>
+              <ul>
+                <li name="_root_.root" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="_root_"></a><a id="root:_root_"></a>
+      <span class="permalink">
+      <a href="../../../../index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="../../../../index.html"><span class="name">root</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../../index.html" class="extype" name="_root_">root</a></dd></dl></div>
+    </li><li name="_root_.scales" visbl="pub" class="indented1 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="scales"></a><a id="scales:scales"></a>
+      <span class="permalink">
+      <a href="../../../../scales/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="Scales Xml provides both a more flexible approach to XML handling and a simplified way of interacting with XML." href="../../../index.html"><span class="name">scales</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Scales Xml provides both a more flexible approach to XML handling and a simplified way of interacting with XML.</p><div class="fullcomment"><div class="comment cmt"><p>Scales Xml provides both a more flexible approach to XML handling and a simplified way of interacting with XML.</p><p>It fits nicely with the Java APIs you know, TrAX and javax.xml.validation for example, allowing you to run XSLTs and convert to and from Scales XML and other DOMs.</p><p>It also provides a far more XPath like experience than the normal Scala XML, Paths look like XPaths and work like them too (with many of the same functions and axes).
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../../index.html" class="extype" name="_root_">root</a></dd></dl></div>
+    </li><li name="scales.xml" visbl="pub" class="indented2 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="xml"></a><a id="xml:xml"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="../../index.html"><span class="name">xml</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../index.html" class="extype" name="scales">scales</a></dd></dl></div>
+    </li><li name="scales.xml.parser" visbl="pub" class="indented3 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="parser"></a><a id="parser:parser"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="../index.html"><span class="name">parser</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../index.html" class="extype" name="scales.xml">xml</a></dd></dl></div>
+    </li><li name="scales.xml.parser.pull" visbl="pub" class="indented4 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="pull"></a><a id="pull:pull"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/pull/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="../pull/index.html"><span class="name">pull</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="scales.xml.parser">parser</a></dd></dl></div>
+    </li><li name="scales.xml.parser.sax" visbl="pub" class="indented4 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="sax"></a><a id="sax:sax"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="../sax/index.html"><span class="name">sax</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="scales.xml.parser">parser</a></dd></dl></div>
+    </li><li name="scales.xml.parser.strategies" visbl="pub" class="indented4 current" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="strategies"></a><a id="strategies:strategies"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">strategies</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="scales.xml.parser">parser</a></dd></dl></div>
+    </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="class" href="BaseToken.html" title=""></a>
+                        <a href="BaseToken.html" title="">BaseToken</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="trait" href="BaseTokenF.html" title=""></a>
+                        <a href="BaseTokenF.html" title="">BaseTokenF</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="object" href="ElemMemoryOptimisation$.html" title=""></a>
+                        <a href="ElemMemoryOptimisation$.html" title="">ElemMemoryOptimisation</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="trait" href="ElemOptimisationT.html" title="Simple hashmap on Elem -&gt; Elem, makes no optimisations across qnames (use QNameOptimisationT for that)"></a>
+                        <a href="ElemOptimisationT.html" title="Simple hashmap on Elem -&gt; Elem, makes no optimisations across qnames (use QNameOptimisationT for that)">ElemOptimisationT</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="trait" href="ElemQNameOptimisationT.html" title=""></a>
+                        <a href="ElemQNameOptimisationT.html" title="">ElemQNameOptimisationT</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="class" href="ElemToken.html" title=""></a>
+                        <a href="ElemToken.html" title="">ElemToken</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="trait" href="ElemTokenF.html" title=""></a>
+                        <a href="ElemTokenF.html" title="">ElemTokenF</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="class" href="ElemValue.html" title="An elem with attributes or namespaces and only one text value."></a>
+                        <a href="ElemValue.html" title="An elem with attributes or namespaces and only one text value.">ElemValue</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="trait" href="FullMemoryOptimisationT.html" title=""></a>
+                        <a href="FullMemoryOptimisationT.html" title="">FullMemoryOptimisationT</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="object" href="HighMemoryOptimisation$.html" title="Optimises on QNames and Elems, reducing duplicates at the cost of CHM lookups."></a>
+                        <a href="HighMemoryOptimisation$.html" title="Optimises on QNames and Elems, reducing duplicates at the cost of CHM lookups.">HighMemoryOptimisation</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="object" href="LazyOptimisedTree$.html" title="Collection of optimisations that reduce memory significantly at the cost of parsing performance, and later non-lazy creation of correct objects for accessing the tree."></a>
+                        <a href="LazyOptimisedTree$.html" title="Collection of optimisations that reduce memory significantly at the cost of parsing performance, and later non-lazy creation of correct objects for accessing the tree.">LazyOptimisedTree</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="trait" href="MemoryOptimisationStrategy.html" title="Memory usage in DOMs is often dominated by repeated elements."></a>
+                        <a href="MemoryOptimisationStrategy.html" title="Memory usage in DOMs is often dominated by repeated elements.">MemoryOptimisationStrategy</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="class" href="NameValue.html" title="An elem with no attributes, namespaces and only one text value."></a>
+                        <a href="NameValue.html" title="An elem with no attributes, namespaces and only one text value.">NameValue</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="object" href="NoOptimisation$.html" title="Performs no optimisation at all"></a>
+                        <a href="NoOptimisation$.html" title="Performs no optimisation at all">NoOptimisation</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="trait" href="OptimisationToken.html" title="Simple marker for per parse optimisation oppurtunties"></a>
+                        <a href="OptimisationToken.html" title="Simple marker for per parse optimisation oppurtunties">OptimisationToken</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="trait" href="OptimisingStrategiesImplicits.html" title=""></a>
+                        <a href="OptimisingStrategiesImplicits.html" title="">OptimisingStrategiesImplicits</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="trait" href="PathOptimisationStrategy.html" title="Certain paths may be repeated (based on QNames of parents etc) and known to be by the developer, its also possible that the developer simply is not interested in this path."></a>
+                        <a href="PathOptimisationStrategy.html" title="Certain paths may be repeated (based on QNames of parents etc) and known to be by the developer, its also possible that the developer simply is not interested in this path.">PathOptimisationStrategy</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="object" href="QNameElemTreeOptimisation$.html" title="Optimised QNames, Elems and Tree, heavily reduced memory consumption with LazyOptimisedTree."></a>
+                        <a href="QNameElemTreeOptimisation$.html" title="Optimised QNames, Elems and Tree, heavily reduced memory consumption with LazyOptimisedTree.">QNameElemTreeOptimisation</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="object" href="QNameMemoryOptimisation$.html" title="The default as it will equal or better Scala Xml memory consumption at a performance gain."></a>
+                        <a href="QNameMemoryOptimisation$.html" title="The default as it will equal or better Scala Xml memory consumption at a performance gain.">QNameMemoryOptimisation</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="trait" href="QNameOptimisationT.html" title="Threadsafe global cache, assumption is most applications would benefit from this"></a>
+                        <a href="QNameOptimisationT.html" title="Threadsafe global cache, assumption is most applications would benefit from this">QNameOptimisationT</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="class" href="QNameToken.html" title=""></a>
+                        <a href="QNameToken.html" title="">QNameToken</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="trait" href="QNameTokenF.html" title=""></a>
+                        <a href="QNameTokenF.html" title="">QNameTokenF</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="object" href="QNameTreeOptimisation$.html" title="Optimises QNames and Trees according to LazyOptimisedTree"></a>
+                        <a href="QNameTreeOptimisation$.html" title="Optimises QNames and Trees according to LazyOptimisedTree">QNameTreeOptimisation</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="trait" href="TextNodeJoiner.html" title="As this adds extra processing time, but better fits XPath rules (i.e."></a>
+                        <a href="TextNodeJoiner.html" title="As this adds extra processing time, but better fits XPath rules (i.e.">TextNodeJoiner</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="trait" href="TreeOptimisation.html" title="Allows replacing a tree for memory optimisations"></a>
+                        <a href="TreeOptimisation.html" title="Allows replacing a tree for memory optimisations">TreeOptimisation</a>
+                      </li>
+              </ul>
+            </div>
+          </div>
+          <div id="content">
+            <body class="package value">
+      <div id="definition">
+        <div class="big-circle package">p</div>
+        <p id="owner"><a href="../../../index.html" class="extype" name="scales">scales</a>.<a href="../../index.html" class="extype" name="scales.xml">xml</a>.<a href="../index.html" class="extype" name="scales.xml.parser">parser</a></p>
+        <h1>strategies<span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span></h1>
+        
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">strategies</span>
+      </span>
+      </h4>
+
+      
+          <div id="comment" class="fullcommenttop"><div class="toggleContainer block diagram-container" id="content-diagram-container">
+                <span class="toggle diagram-link">
+                  Content Hierarchy
+                </span>
+                <div class="diagram" id="content-diagram"><svg class="package-diagram" id="graph1" width="1325pt" height="216pt" viewBox="0.00 0.00 1324.50 216.00" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><g id="page0,1_graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 212)"><polygon fill="white" stroke="transparent" points="-4,4 -4,-212 1320.5,-212 1320.5,4 -4,4"></polygon><!-- node0 --><g class="node object" id="graph1_0"><g id="a_object|graph1_0"><a xlink:href="QNameElemTreeOptimisation$.html#inheritance-diagram" xlink:title="scales.xml.parser.strategies.QNameElemTreeOptimisation"><path fill="#103a51" stroke="#103a51" d="M743.17,-25C743.17,-25 600.83,-25 600.83,-25 596.67,-25 592.5,-20.83 592.5,-16.67 592.5,-16.67 592.5,-8.33 592.5,-8.33 592.5,-4.17 596.67,0 600.83,0 600.83,0 743.17,0 743.17,0 747.33,0 751.5,-4.17 751.5,-8.33 751.5,-8.33 751.5,-16.67 751.5,-16.67 751.5,-20.83 747.33,-25 743.17,-25"></path><image xlink:href="../../../../lib/object_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="603" y="-19.5"></image><text text-anchor="start" x="624" y="-10.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">QNameElemTreeOptimisation</text></a></g></g><!-- node1 --><g class="node object" id="graph1_1"><g id="a_object|graph1_1"><a xlink:href="QNameTreeOptimisation$.html#inheritance-diagram" xlink:title="scales.xml.parser.strategies.QNameTreeOptimisation"><path fill="#103a51" stroke="#103a51" d="M208.17,-25C208.17,-25 83.83,-25 83.83,-25 79.67,-25 75.5,-20.83 75.5,-16.67 75.5,-16.67 75.5,-8.33 75.5,-8.33 75.5,-4.17 79.67,0 83.83,0 83.83,0 208.17,0 208.17,0 212.33,0 216.5,-4.17 216.5,-8.33 216.5,-8.33 216.5,-16.67 216.5,-16.67 216.5,-20.83 212.33,-25 208.17,-25"></path><image xlink:href="../../../../lib/object_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="86" y="-19.5"></image><text text-anchor="start" x="107" y="-10.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">QNameTreeOptimisation</text></a></g></g><!-- node2 --><g class="node trait" id="graph1_2"><g id="a_trait|graph1_2"><a xlink:href="TreeOptimisation.html#inheritance-diagram" xlink:title="scales.xml.parser.strategies.TreeOptimisation"><path fill="#2e6d82" stroke="#2e6d82" d="M371.67,-86C371.67,-86 238.33,-86 238.33,-86 234.17,-86 230,-81.83 230,-77.67 230,-77.67 230,-69.33 230,-69.33 230,-65.17 234.17,-61 238.33,-61 238.33,-61 371.67,-61 371.67,-61 375.83,-61 380,-65.17 380,-69.33 380,-69.33 380,-77.67 380,-77.67 380,-81.83 375.83,-86 371.67,-86"></path><image xlink:href="../../../../lib/trait_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="240" y="-80.5"></image><text text-anchor="start" x="261" y="-71.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">TreeOptimisation[TOKEN]</text></a></g></g><!-- node2&#45;&gt;node0 --><g class="edge inheritance" id="graph1_2_0"><g id="a_inheritance|graph1_2_0"><a xlink:title="QNameElemTreeOptimisation is a subtype of TreeOptimisation[TOKEN]"><path fill="none" stroke="#d4d4d4" d="M383.55,-59.87C447.8,-49.54 537.9,-35.06 600.24,-25.04"></path><polygon fill="none" stroke="#d4d4d4" points="383.15,-57.45 376.63,-60.98 383.93,-62.29 383.15,-57.45"></polygon></a></g></g><!-- node2&#45;&gt;node1 --><g class="edge inheritance" id="graph1_2_1"><g id="a_inheritance|graph1_2_1"><a xlink:title="QNameTreeOptimisation is a subtype of TreeOptimisation[TOKEN]"><path fill="none" stroke="#d4d4d4" d="M267.2,-58.47C239.74,-48.28 203.03,-34.66 177.23,-25.09"></path><polygon fill="none" stroke="#d4d4d4" points="266.55,-60.85 273.97,-60.98 268.26,-56.25 266.55,-60.85"></polygon></a></g></g><!-- node13 --><g class="node trait" id="graph1_13"><g id="a_trait|graph1_13"><a xlink:href="TextNodeJoiner.html#inheritance-diagram" xlink:title="scales.xml.parser.strategies.TextNodeJoiner"><path fill="#2e6d82" stroke="#2e6d82" d="M367.17,-25C367.17,-25 242.83,-25 242.83,-25 238.67,-25 234.5,-20.83 234.5,-16.67 234.5,-16.67 234.5,-8.33 234.5,-8.33 234.5,-4.17 238.67,0 242.83,0 242.83,0 367.17,0 367.17,0 371.33,0 375.5,-4.17 375.5,-8.33 375.5,-8.33 375.5,-16.67 375.5,-16.67 375.5,-20.83 371.33,-25 367.17,-25"></path><image xlink:href="../../../../lib/trait_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="245" y="-19.5"></image><text text-anchor="start" x="266" y="-10.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">TextNodeJoiner[Token]</text></a></g></g><!-- node2&#45;&gt;node13 --><g class="edge inheritance" id="graph1_2_13"><g id="a_inheritance|graph1_2_13"><a xlink:title="TextNodeJoiner[Token] is a subtype of TreeOptimisation[TOKEN]"><path fill="none" stroke="#d4d4d4" d="M305,-53.76C305,-44.37 305,-33.29 305,-25.13"></path><polygon fill="none" stroke="#d4d4d4" points="302.55,-53.84 305,-60.84 307.45,-53.84 302.55,-53.84"></polygon></a></g></g><!-- node3 --><g class="node object" id="graph1_3"><g id="a_object|graph1_3"><a xlink:href="QNameMemoryOptimisation$.html#inheritance-diagram" xlink:title="scales.xml.parser.strategies.QNameMemoryOptimisation"><path fill="#103a51" stroke="#103a51" d="M165.67,-86C165.67,-86 32.33,-86 32.33,-86 28.17,-86 24,-81.83 24,-77.67 24,-77.67 24,-69.33 24,-69.33 24,-65.17 28.17,-61 32.33,-61 32.33,-61 165.67,-61 165.67,-61 169.83,-61 174,-65.17 174,-69.33 174,-69.33 174,-77.67 174,-77.67 174,-81.83 169.83,-86 165.67,-86"></path><image xlink:href="../../../../lib/object_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="34" y="-80.5"></image><text text-anchor="start" x="55" y="-71.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">QNameMemoryOptimisation</text></a></g></g><!-- node4 --><g class="node trait" id="graph1_4"><g id="a_trait|graph1_4"><a xlink:href="QNameOptimisationT.html#inheritance-diagram" xlink:title="scales.xml.parser.strategies.QNameOptimisationT"><path fill="#2e6d82" stroke="#2e6d82" d="M459.17,-147C459.17,-147 316.83,-147 316.83,-147 312.67,-147 308.5,-142.83 308.5,-138.67 308.5,-138.67 308.5,-130.33 308.5,-130.33 308.5,-126.17 312.67,-122 316.83,-122 316.83,-122 459.17,-122 459.17,-122 463.33,-122 467.5,-126.17 467.5,-130.33 467.5,-130.33 467.5,-138.67 467.5,-138.67 467.5,-142.83 463.33,-147 459.17,-147"></path><image xlink:href="../../../../lib/trait_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="319" y="-141.5"></image><text text-anchor="start" x="340" y="-132.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">QNameOptimisationT[Token]</text></a></g></g><!-- node4&#45;&gt;node1 --><g class="edge inheritance" id="graph1_4_1"><g id="a_inheritance|graph1_4_1"><a xlink:title="QNameTreeOptimisation is a subtype of QNameOptimisationT[Token]"><path fill="none" stroke="#d4d4d4" d="M312.48,-120.31C282.66,-113.03 248.93,-102.09 221,-86 193.07,-69.9 167.72,-41.14 154.87,-25.11"></path><polygon fill="none" stroke="#d4d4d4" points="312.19,-122.76 319.57,-121.99 313.32,-117.99 312.19,-122.76"></polygon></a></g></g><!-- node4&#45;&gt;node3 --><g class="edge inheritance" id="graph1_4_3"><g id="a_inheritance|graph1_4_3"><a xlink:title="QNameMemoryOptimisation is a subtype of QNameOptimisationT[Token]"><path fill="none" stroke="#d4d4d4" d="M324.61,-120.56C274.21,-110.27 204.34,-96.01 155.76,-86.09"></path><polygon fill="none" stroke="#d4d4d4" points="324.24,-122.98 331.59,-121.98 325.22,-118.18 324.24,-122.98"></polygon></a></g></g><!-- node14 --><g class="node object" id="graph1_14"><g id="a_object|graph1_14"><a xlink:href="HighMemoryOptimisation$.html#inheritance-diagram" xlink:title="scales.xml.parser.strategies.HighMemoryOptimisation"><path fill="#103a51" stroke="#103a51" d="M894.17,-86C894.17,-86 765.83,-86 765.83,-86 761.67,-86 757.5,-81.83 757.5,-77.67 757.5,-77.67 757.5,-69.33 757.5,-69.33 757.5,-65.17 761.67,-61 765.83,-61 765.83,-61 894.17,-61 894.17,-61 898.33,-61 902.5,-65.17 902.5,-69.33 902.5,-69.33 902.5,-77.67 902.5,-77.67 902.5,-81.83 898.33,-86 894.17,-86"></path><image xlink:href="../../../../lib/object_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="768" y="-80.5"></image><text text-anchor="start" x="789" y="-71.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">HighMemoryOptimisation</text></a></g></g><!-- node4&#45;&gt;node14 --><g class="edge inheritance" id="graph1_4_14"><g id="a_inheritance|graph1_4_14"><a xlink:title="HighMemoryOptimisation is a subtype of QNameOptimisationT[Token]"><path fill="none" stroke="#d4d4d4" d="M474.92,-122.11C564.14,-110.41 696.91,-92.95 748,-86 750.99,-85.59 754.04,-85.18 757.13,-84.75"></path><polygon fill="none" stroke="#d4d4d4" points="474.39,-119.71 467.77,-123.05 475.03,-124.57 474.39,-119.71"></polygon></a></g></g><!-- node18 --><g class="node trait" id="graph1_18"><g id="a_trait|graph1_18"><a xlink:href="ElemQNameOptimisationT.html#inheritance-diagram" xlink:title="scales.xml.parser.strategies.ElemQNameOptimisationT"><path fill="#2e6d82" stroke="#2e6d82" d="M566.17,-86C566.17,-86 405.83,-86 405.83,-86 401.67,-86 397.5,-81.83 397.5,-77.67 397.5,-77.67 397.5,-69.33 397.5,-69.33 397.5,-65.17 401.67,-61 405.83,-61 405.83,-61 566.17,-61 566.17,-61 570.33,-61 574.5,-65.17 574.5,-69.33 574.5,-69.33 574.5,-77.67 574.5,-77.67 574.5,-81.83 570.33,-86 566.17,-86"></path><image xlink:href="../../../../lib/trait_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="408" y="-80.5"></image><text text-anchor="start" x="429" y="-71.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">ElemQNameOptimisationT[Token]</text></a></g></g><!-- node4&#45;&gt;node18 --><g class="edge inheritance" id="graph1_4_18"><g id="a_inheritance|graph1_4_18"><a xlink:title="ElemQNameOptimisationT[Token] is a subtype of QNameOptimisationT[Token]"><path fill="none" stroke="#d4d4d4" d="M413.7,-118.03C430.29,-108.04 451.52,-95.26 466.68,-86.13"></path><polygon fill="none" stroke="#d4d4d4" points="412.1,-116.13 407.36,-121.84 414.62,-120.33 412.1,-116.13"></polygon></a></g></g><!-- node5 --><g class="node trait" id="graph1_5"><g id="a_trait|graph1_5"><a xlink:href="QNameTokenF.html#inheritance-diagram" xlink:title="scales.xml.parser.strategies.QNameTokenF"><path fill="#2e6d82" stroke="#2e6d82" d="M87.67,-147C87.67,-147 8.33,-147 8.33,-147 4.17,-147 0,-142.83 0,-138.67 0,-138.67 0,-130.33 0,-130.33 0,-126.17 4.17,-122 8.33,-122 8.33,-122 87.67,-122 87.67,-122 91.83,-122 96,-126.17 96,-130.33 96,-130.33 96,-138.67 96,-138.67 96,-142.83 91.83,-147 87.67,-147"></path><image xlink:href="../../../../lib/trait_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="10" y="-141.5"></image><text text-anchor="start" x="31" y="-132.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">QNameTokenF</text></a></g></g><!-- node5&#45;&gt;node1 --><g class="edge inheritance" id="graph1_5_1"><g id="a_inheritance|graph1_5_1"><a xlink:title="QNameTreeOptimisation is a subtype of QNameTokenF"><path fill="none" stroke="#d4d4d4" d="M30.66,-116.47C17.21,-101.16 2.77,-78.45 15,-61 28.96,-41.09 52.15,-29.49 75.17,-22.75"></path><polygon fill="none" stroke="#d4d4d4" points="28.97,-118.26 35.51,-121.76 32.58,-114.94 28.97,-118.26"></polygon></a></g></g><!-- node5&#45;&gt;node3 --><g class="edge inheritance" id="graph1_5_3"><g id="a_inheritance|graph1_5_3"><a xlink:title="QNameMemoryOptimisation is a subtype of QNameTokenF"><path fill="none" stroke="#d4d4d4" d="M62.77,-116.42C71.17,-106.69 81.48,-94.77 88.94,-86.13"></path><polygon fill="none" stroke="#d4d4d4" points="60.8,-114.95 58.08,-121.84 64.51,-118.15 60.8,-114.95"></polygon></a></g></g><!-- node6 --><g class="node class" id="graph1_6"><g id="a_class|graph1_6"><a xlink:href="QNameToken.html#inheritance-diagram" xlink:title="scales.xml.parser.strategies.QNameToken"><path fill="#418565" stroke="#418565" d="M1203.17,-147C1203.17,-147 1128.83,-147 1128.83,-147 1124.67,-147 1120.5,-142.83 1120.5,-138.67 1120.5,-138.67 1120.5,-130.33 1120.5,-130.33 1120.5,-126.17 1124.67,-122 1128.83,-122 1128.83,-122 1203.17,-122 1203.17,-122 1207.33,-122 1211.5,-126.17 1211.5,-130.33 1211.5,-130.33 1211.5,-138.67 1211.5,-138.67 1211.5,-142.83 1207.33,-147 1203.17,-147"></path><image xlink:href="../../../../lib/class_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="1131" y="-141.5"></image><text text-anchor="start" x="1152" y="-132.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">QNameToken</text></a></g></g><!-- node20 --><g class="node class" id="graph1_20"><g id="a_class|graph1_20"><a xlink:href="ElemToken.html#inheritance-diagram" xlink:title="scales.xml.parser.strategies.ElemToken"><path fill="#418565" stroke="#418565" d="M1201.17,-86C1201.17,-86 1130.83,-86 1130.83,-86 1126.67,-86 1122.5,-81.83 1122.5,-77.67 1122.5,-77.67 1122.5,-69.33 1122.5,-69.33 1122.5,-65.17 1126.67,-61 1130.83,-61 1130.83,-61 1201.17,-61 1201.17,-61 1205.33,-61 1209.5,-65.17 1209.5,-69.33 1209.5,-69.33 1209.5,-77.67 1209.5,-77.67 1209.5,-81.83 1205.33,-86 1201.17,-86"></path><image xlink:href="../../../../lib/class_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="1133" y="-80.5"></image><text text-anchor="start" x="1154" y="-71.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">ElemToken</text></a></g></g><!-- node6&#45;&gt;node20 --><g class="edge inheritance" id="graph1_6_20"><g id="a_inheritance|graph1_6_20"><a xlink:title="ElemToken is a subtype of QNameToken"><path fill="none" stroke="#d4d4d4" d="M1166,-114.76C1166,-105.37 1166,-94.29 1166,-86.13"></path><polygon fill="none" stroke="#d4d4d4" points="1163.55,-114.84 1166,-121.84 1168.45,-114.84 1163.55,-114.84"></polygon></a></g></g><!-- node7 --><g class="node trait" id="graph1_7"><g id="a_trait|graph1_7"><a xlink:href="PathOptimisationStrategy.html#inheritance-diagram" xlink:title="scales.xml.parser.strategies.PathOptimisationStrategy"><path fill="#2e6d82" stroke="#2e6d82" d="M662.67,-147C662.67,-147 493.33,-147 493.33,-147 489.17,-147 485,-142.83 485,-138.67 485,-138.67 485,-130.33 485,-130.33 485,-126.17 489.17,-122 493.33,-122 493.33,-122 662.67,-122 662.67,-122 666.83,-122 671,-126.17 671,-130.33 671,-130.33 671,-138.67 671,-138.67 671,-142.83 666.83,-147 662.67,-147"></path><image xlink:href="../../../../lib/trait_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="495" y="-141.5"></image><text text-anchor="start" x="516" y="-132.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">PathOptimisationStrategy[Token]</text></a></g></g><!-- node7&#45;&gt;node0 --><g class="edge inheritance" id="graph1_7_0"><g id="a_inheritance|graph1_7_0"><a xlink:title="QNameElemTreeOptimisation is a subtype of PathOptimisationStrategy[Token]"><path fill="none" stroke="#d4d4d4" d="M586.93,-115.3C594.83,-100.05 607.23,-78.1 621,-61 631.93,-47.43 646.7,-34.1 657.53,-25.03"></path><polygon fill="none" stroke="#d4d4d4" points="584.61,-114.45 583.62,-121.8 588.98,-116.67 584.61,-114.45"></polygon></a></g></g><!-- node7&#45;&gt;node2 --><g class="edge inheritance" id="graph1_7_2"><g id="a_inheritance|graph1_7_2"><a xlink:title="TreeOptimisation[TOKEN] is a subtype of PathOptimisationStrategy[Token]"><path fill="none" stroke="#d4d4d4" d="M517.83,-120.5C470.24,-110.21 404.41,-95.99 358.62,-86.09"></path><polygon fill="none" stroke="#d4d4d4" points="517.36,-122.9 524.71,-121.98 518.39,-118.11 517.36,-122.9"></polygon></a></g></g><!-- node7&#45;&gt;node3 --><g class="edge inheritance" id="graph1_7_3"><g id="a_inheritance|graph1_7_3"><a xlink:title="QNameMemoryOptimisation is a subtype of PathOptimisationStrategy[Token]"><path fill="none" stroke="#d4d4d4" d="M477.8,-121.16C387.29,-110.01 256.1,-93.85 174.26,-83.77"></path><polygon fill="none" stroke="#d4d4d4" points="477.54,-123.6 484.79,-122.02 478.14,-118.73 477.54,-123.6"></polygon></a></g></g><!-- node8 --><g class="node object" id="graph1_8"><g id="a_object|graph1_8"><a xlink:href="NoOptimisation$.html#inheritance-diagram" xlink:title="scales.xml.parser.strategies.NoOptimisation"><path fill="#103a51" stroke="#103a51" d="M731.17,-86C731.17,-86 638.83,-86 638.83,-86 634.67,-86 630.5,-81.83 630.5,-77.67 630.5,-77.67 630.5,-69.33 630.5,-69.33 630.5,-65.17 634.67,-61 638.83,-61 638.83,-61 731.17,-61 731.17,-61 735.33,-61 739.5,-65.17 739.5,-69.33 739.5,-69.33 739.5,-77.67 739.5,-77.67 739.5,-81.83 735.33,-86 731.17,-86"></path><image xlink:href="../../../../lib/object_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="641" y="-80.5"></image><text text-anchor="start" x="662" y="-71.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">NoOptimisation</text></a></g></g><!-- node7&#45;&gt;node8 --><g class="edge inheritance" id="graph1_7_8"><g id="a_inheritance|graph1_7_8"><a xlink:title="NoOptimisation is a subtype of PathOptimisationStrategy[Token]"><path fill="none" stroke="#d4d4d4" d="M605.32,-118.44C623.5,-108.41 647.03,-95.43 663.8,-86.19"></path><polygon fill="none" stroke="#d4d4d4" points="603.83,-116.46 598.88,-121.98 606.2,-120.75 603.83,-116.46"></polygon></a></g></g><!-- node7&#45;&gt;node14 --><g class="edge inheritance" id="graph1_7_14"><g id="a_inheritance|graph1_7_14"><a xlink:title="HighMemoryOptimisation is a subtype of PathOptimisationStrategy[Token]"><path fill="none" stroke="#d4d4d4" d="M634.08,-120.37C677.97,-110.1 738.41,-95.94 780.51,-86.09"></path><polygon fill="none" stroke="#d4d4d4" points="633.44,-118 627.19,-121.98 634.56,-122.77 633.44,-118"></polygon></a></g></g><!-- node15 --><g class="node object" id="graph1_15"><g id="a_object|graph1_15"><a xlink:href="ElemMemoryOptimisation$.html#inheritance-diagram" xlink:title="scales.xml.parser.strategies.ElemMemoryOptimisation"><path fill="#103a51" stroke="#103a51" d="M1057.17,-86C1057.17,-86 928.83,-86 928.83,-86 924.67,-86 920.5,-81.83 920.5,-77.67 920.5,-77.67 920.5,-69.33 920.5,-69.33 920.5,-65.17 924.67,-61 928.83,-61 928.83,-61 1057.17,-61 1057.17,-61 1061.33,-61 1065.5,-65.17 1065.5,-69.33 1065.5,-69.33 1065.5,-77.67 1065.5,-77.67 1065.5,-81.83 1061.33,-86 1057.17,-86"></path><image xlink:href="../../../../lib/object_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="931" y="-80.5"></image><text text-anchor="start" x="952" y="-71.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">ElemMemoryOptimisation</text></a></g></g><!-- node7&#45;&gt;node15 --><g class="edge inheritance" id="graph1_7_15"><g id="a_inheritance|graph1_7_15"><a xlink:title="ElemMemoryOptimisation is a subtype of PathOptimisationStrategy[Token]"><path fill="none" stroke="#d4d4d4" d="M666.22,-120.96C741.82,-110.21 849.41,-94.91 920.19,-84.85"></path><polygon fill="none" stroke="#d4d4d4" points="665.59,-118.57 659,-121.98 666.28,-123.42 665.59,-118.57"></polygon></a></g></g><!-- node9 --><g class="node trait" id="graph1_9"><g id="a_trait|graph1_9"><a xlink:href="BaseTokenF.html#inheritance-diagram" xlink:title="scales.xml.parser.strategies.BaseTokenF"><path fill="#2e6d82" stroke="#2e6d82" d="M772.17,-147C772.17,-147 697.83,-147 697.83,-147 693.67,-147 689.5,-142.83 689.5,-138.67 689.5,-138.67 689.5,-130.33 689.5,-130.33 689.5,-126.17 693.67,-122 697.83,-122 697.83,-122 772.17,-122 772.17,-122 776.33,-122 780.5,-126.17 780.5,-130.33 780.5,-130.33 780.5,-138.67 780.5,-138.67 780.5,-142.83 776.33,-147 772.17,-147"></path><image xlink:href="../../../../lib/trait_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="700" y="-141.5"></image><text text-anchor="start" x="721" y="-132.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">BaseTokenF</text></a></g></g><!-- node9&#45;&gt;node8 --><g class="edge inheritance" id="graph1_9_8"><g id="a_inheritance|graph1_9_8"><a xlink:title="NoOptimisation is a subtype of BaseTokenF"><path fill="none" stroke="#d4d4d4" d="M720.52,-116.42C712.28,-106.69 702.18,-94.77 694.86,-86.13"></path><polygon fill="none" stroke="#d4d4d4" points="718.73,-118.09 725.12,-121.84 722.47,-114.92 718.73,-118.09"></polygon></a></g></g><!-- node10 --><g class="node trait" id="graph1_10"><g id="a_trait|graph1_10"><a xlink:href="MemoryOptimisationStrategy.html#inheritance-diagram" xlink:title="scales.xml.parser.strategies.MemoryOptimisationStrategy"><path fill="#2e6d82" stroke="#2e6d82" d="M667.17,-208C667.17,-208 488.83,-208 488.83,-208 484.67,-208 480.5,-203.83 480.5,-199.67 480.5,-199.67 480.5,-191.33 480.5,-191.33 480.5,-187.17 484.67,-183 488.83,-183 488.83,-183 667.17,-183 667.17,-183 671.33,-183 675.5,-187.17 675.5,-191.33 675.5,-191.33 675.5,-199.67 675.5,-199.67 675.5,-203.83 671.33,-208 667.17,-208"></path><image xlink:href="../../../../lib/trait_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="491" y="-202.5"></image><text text-anchor="start" x="512" y="-193.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">MemoryOptimisationStrategy[Token]</text></a></g></g><!-- node10&#45;&gt;node4 --><g class="edge inheritance" id="graph1_10_4"><g id="a_inheritance|graph1_10_4"><a xlink:title="QNameOptimisationT[Token] is a subtype of MemoryOptimisationStrategy[Token]"><path fill="none" stroke="#d4d4d4" d="M534.07,-180.86C501.13,-170.63 456.54,-156.78 425.32,-147.09"></path><polygon fill="none" stroke="#d4d4d4" points="533.5,-183.25 540.92,-182.98 534.96,-178.57 533.5,-183.25"></polygon></a></g></g><!-- node10&#45;&gt;node7 --><g class="edge inheritance" id="graph1_10_7"><g id="a_inheritance|graph1_10_7"><a xlink:title="PathOptimisationStrategy[Token] is a subtype of MemoryOptimisationStrategy[Token]"><path fill="none" stroke="#d4d4d4" d="M578,-175.76C578,-166.37 578,-155.29 578,-147.13"></path><polygon fill="none" stroke="#d4d4d4" points="575.55,-175.84 578,-182.84 580.45,-175.84 575.55,-175.84"></polygon></a></g></g><!-- node16 --><g class="node trait" id="graph1_16"><g id="a_trait|graph1_16"><a xlink:href="ElemOptimisationT.html#inheritance-diagram" xlink:title="scales.xml.parser.strategies.ElemOptimisationT"><path fill="#2e6d82" stroke="#2e6d82" d="M944.67,-147C944.67,-147 807.33,-147 807.33,-147 803.17,-147 799,-142.83 799,-138.67 799,-138.67 799,-130.33 799,-130.33 799,-126.17 803.17,-122 807.33,-122 807.33,-122 944.67,-122 944.67,-122 948.83,-122 953,-126.17 953,-130.33 953,-130.33 953,-138.67 953,-138.67 953,-142.83 948.83,-147 944.67,-147"></path><image xlink:href="../../../../lib/trait_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="809" y="-141.5"></image><text text-anchor="start" x="830" y="-132.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">ElemOptimisationT[Token]</text></a></g></g><!-- node10&#45;&gt;node16 --><g class="edge inheritance" id="graph1_10_16"><g id="a_inheritance|graph1_10_16"><a xlink:title="ElemOptimisationT[Token] is a subtype of MemoryOptimisationStrategy[Token]"><path fill="none" stroke="#d4d4d4" d="M643.05,-181.62C695.13,-171.31 767.53,-156.98 817.73,-147.04"></path><polygon fill="none" stroke="#d4d4d4" points="642.56,-179.22 636.16,-182.98 643.51,-184.03 642.56,-179.22"></polygon></a></g></g><!-- node11 --><g class="node class" id="graph1_11"><g id="a_class|graph1_11"><a xlink:href="BaseToken.html#inheritance-diagram" xlink:title="scales.xml.parser.strategies.BaseToken"><path fill="#418565" stroke="#418565" d="M1308.17,-147C1308.17,-147 1237.83,-147 1237.83,-147 1233.67,-147 1229.5,-142.83 1229.5,-138.67 1229.5,-138.67 1229.5,-130.33 1229.5,-130.33 1229.5,-126.17 1233.67,-122 1237.83,-122 1237.83,-122 1308.17,-122 1308.17,-122 1312.33,-122 1316.5,-126.17 1316.5,-130.33 1316.5,-130.33 1316.5,-138.67 1316.5,-138.67 1316.5,-142.83 1312.33,-147 1308.17,-147"></path><image xlink:href="../../../../lib/class_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="1240" y="-141.5"></image><text text-anchor="start" x="1261" y="-132.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">BaseToken</text></a></g></g><!-- node12 --><g class="node trait" id="graph1_12"><g id="a_trait|graph1_12"><a xlink:href="OptimisationToken.html#inheritance-diagram" xlink:title="scales.xml.parser.strategies.OptimisationToken"><path fill="#2e6d82" stroke="#2e6d82" d="M1272.17,-208C1272.17,-208 1165.83,-208 1165.83,-208 1161.67,-208 1157.5,-203.83 1157.5,-199.67 1157.5,-199.67 1157.5,-191.33 1157.5,-191.33 1157.5,-187.17 1161.67,-183 1165.83,-183 1165.83,-183 1272.17,-183 1272.17,-183 1276.33,-183 1280.5,-187.17 1280.5,-191.33 1280.5,-191.33 1280.5,-199.67 1280.5,-199.67 1280.5,-203.83 1276.33,-208 1272.17,-208"></path><image xlink:href="../../../../lib/trait_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="1168" y="-202.5"></image><text text-anchor="start" x="1189" y="-193.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">OptimisationToken</text></a></g></g><!-- node12&#45;&gt;node6 --><g class="edge inheritance" id="graph1_12_6"><g id="a_inheritance|graph1_12_6"><a xlink:title="QNameToken is a subtype of OptimisationToken"><path fill="none" stroke="#d4d4d4" d="M1203.65,-177.42C1194.92,-167.69 1184.21,-155.77 1176.45,-147.13"></path><polygon fill="none" stroke="#d4d4d4" points="1202.03,-179.27 1208.53,-182.84 1205.67,-176 1202.03,-179.27"></polygon></a></g></g><!-- node12&#45;&gt;node11 --><g class="edge inheritance" id="graph1_12_11"><g id="a_inheritance|graph1_12_11"><a xlink:title="BaseToken is a subtype of OptimisationToken"><path fill="none" stroke="#d4d4d4" d="M1234.64,-177.42C1243.53,-167.69 1254.45,-155.77 1262.35,-147.13"></path><polygon fill="none" stroke="#d4d4d4" points="1232.59,-176.03 1229.67,-182.84 1236.2,-179.33 1232.59,-176.03"></polygon></a></g></g><!-- node16&#45;&gt;node14 --><g class="edge inheritance" id="graph1_16_14"><g id="a_inheritance|graph1_16_14"><a xlink:title="HighMemoryOptimisation is a subtype of ElemOptimisationT[Token]"><path fill="none" stroke="#d4d4d4" d="M862.47,-116.14C854.93,-106.47 845.74,-94.69 839.07,-86.13"></path><polygon fill="none" stroke="#d4d4d4" points="860.68,-117.83 866.91,-121.84 864.54,-114.82 860.68,-117.83"></polygon></a></g></g><!-- node16&#45;&gt;node15 --><g class="edge inheritance" id="graph1_16_15"><g id="a_inheritance|graph1_16_15"><a xlink:title="ElemMemoryOptimisation is a subtype of ElemOptimisationT[Token]"><path fill="none" stroke="#d4d4d4" d="M905.09,-118.83C925.07,-108.75 951.24,-95.56 969.82,-86.19"></path><polygon fill="none" stroke="#d4d4d4" points="903.98,-116.64 898.84,-121.98 906.19,-121.02 903.98,-116.64"></polygon></a></g></g><!-- node17 --><g class="node trait" id="graph1_17"><g id="a_trait|graph1_17"><a xlink:href="FullMemoryOptimisationT.html#inheritance-diagram" xlink:title="scales.xml.parser.strategies.FullMemoryOptimisationT"><path fill="#2e6d82" stroke="#2e6d82" d="M566.17,-25C566.17,-25 401.83,-25 401.83,-25 397.67,-25 393.5,-20.83 393.5,-16.67 393.5,-16.67 393.5,-8.33 393.5,-8.33 393.5,-4.17 397.67,0 401.83,0 401.83,0 566.17,0 566.17,0 570.33,0 574.5,-4.17 574.5,-8.33 574.5,-8.33 574.5,-16.67 574.5,-16.67 574.5,-20.83 570.33,-25 566.17,-25"></path><image xlink:href="../../../../lib/trait_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="404" y="-19.5"></image><text text-anchor="start" x="425" y="-10.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">FullMemoryOptimisationT[Token]</text></a></g></g><!-- node18&#45;&gt;node0 --><g class="edge inheritance" id="graph1_18_0"><g id="a_inheritance|graph1_18_0"><a xlink:title="QNameElemTreeOptimisation is a subtype of ElemQNameOptimisationT[Token]"><path fill="none" stroke="#d4d4d4" d="M529,-58.86C561.25,-48.63 604.91,-34.78 635.47,-25.09"></path><polygon fill="none" stroke="#d4d4d4" points="528.24,-56.53 522.3,-60.98 529.72,-61.2 528.24,-56.53"></polygon></a></g></g><!-- node18&#45;&gt;node17 --><g class="edge inheritance" id="graph1_18_17"><g id="a_inheritance|graph1_18_17"><a xlink:title="FullMemoryOptimisationT[Token] is a subtype of ElemQNameOptimisationT[Token]"><path fill="none" stroke="#d4d4d4" d="M485.36,-53.76C485.05,-44.37 484.67,-33.29 484.39,-25.13"></path><polygon fill="none" stroke="#d4d4d4" points="482.92,-53.93 485.6,-60.84 487.82,-53.76 482.92,-53.93"></polygon></a></g></g><!-- node19 --><g class="node trait" id="graph1_19"><g id="a_trait|graph1_19"><a xlink:href="ElemTokenF.html#inheritance-diagram" xlink:title="scales.xml.parser.strategies.ElemTokenF"><path fill="#2e6d82" stroke="#2e6d82" d="M1054.17,-147C1054.17,-147 979.83,-147 979.83,-147 975.67,-147 971.5,-142.83 971.5,-138.67 971.5,-138.67 971.5,-130.33 971.5,-130.33 971.5,-126.17 975.67,-122 979.83,-122 979.83,-122 1054.17,-122 1054.17,-122 1058.33,-122 1062.5,-126.17 1062.5,-130.33 1062.5,-130.33 1062.5,-138.67 1062.5,-138.67 1062.5,-142.83 1058.33,-147 1054.17,-147"></path><image xlink:href="../../../../lib/trait_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="982" y="-141.5"></image><text text-anchor="start" x="1003" y="-132.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">ElemTokenF</text></a></g></g><!-- node19&#45;&gt;node0 --><g class="edge inheritance" id="graph1_19_0"><g id="a_inheritance|graph1_19_0"><a xlink:title="QNameElemTreeOptimisation is a subtype of ElemTokenF"><path fill="none" stroke="#d4d4d4" d="M1043.38,-117.85C1065.41,-102.86 1090.72,-79.81 1074,-61 1052.99,-37.36 862.78,-23.48 751.7,-17.32"></path><polygon fill="none" stroke="#d4d4d4" points="1041.8,-115.96 1037.29,-121.85 1044.49,-120.05 1041.8,-115.96"></polygon></a></g></g><!-- node19&#45;&gt;node14 --><g class="edge inheritance" id="graph1_19_14"><g id="a_inheritance|graph1_19_14"><a xlink:title="HighMemoryOptimisation is a subtype of ElemTokenF"><path fill="none" stroke="#d4d4d4" d="M973.77,-119.86C941.35,-109.63 897.45,-95.78 866.73,-86.09"></path><polygon fill="none" stroke="#d4d4d4" points="973.09,-122.21 980.5,-121.98 974.56,-117.54 973.09,-122.21"></polygon></a></g></g><!-- node19&#45;&gt;node15 --><g class="edge inheritance" id="graph1_19_15"><g id="a_inheritance|graph1_19_15"><a xlink:title="ElemMemoryOptimisation is a subtype of ElemTokenF"><path fill="none" stroke="#d4d4d4" d="M1009.6,-115.32C1005.74,-105.81 1001.12,-94.45 997.73,-86.13"></path><polygon fill="none" stroke="#d4d4d4" points="1007.35,-116.28 1012.26,-121.84 1011.89,-114.44 1007.35,-116.28"></polygon></a></g></g></g></svg></div>
+                <div id="diagram-controls" class="hiddenContent">
+                  <button id="diagram-zoom-out" class="diagram-btn"><i class="material-icons"></i></button>
+                  <button id="diagram-zoom-in" class="diagram-btn"><i class="material-icons"></i></button>
+                  <button title="Toggle full-screen" id="diagram-fs" class="diagram-btn to-full"><i class="material-icons"></i></button>
+                </div>
+              </div></div>
+        
+
+      <div id="mbrsel">
+        <div class="toggle"></div>
+        <div id="memberfilter">
+          <i class="material-icons arrow"></i>
+          <span class="input">
+            <input id="mbrsel-input" placeholder="Filter all members" type="text" accesskey="/" />
+          </span>
+          <i class="clear material-icons"></i>
+        </div>
+        <div id="filterby">
+          <div id="order">
+            <span class="filtertype">Ordering</span>
+            <ol>
+              
+              <li class="alpha in"><span>Alphabetic</span></li>
+              
+            </ol>
+          </div>
+          
+          <div id="visbl">
+              <span class="filtertype">Visibility</span>
+              <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+            </div>
+        </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="scales.xml.parser.strategies.BaseToken" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BaseTokenextendsOptimisationToken"></a><a id="BaseToken:BaseToken"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/BaseToken.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="BaseToken.html"><span class="name">BaseToken</span></a><span class="result"> extends <a href="OptimisationToken.html" class="extype" name="scales.xml.parser.strategies.OptimisationToken">OptimisationToken</a></span>
+      </span>
+      
+      
+    </li><li name="scales.xml.parser.strategies.BaseTokenF" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="BaseTokenFextendsAnyRef"></a><a id="BaseTokenF:BaseTokenF"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/BaseTokenF.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="BaseTokenF.html"><span class="name">BaseTokenF</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      
+      
+    </li><li name="scales.xml.parser.strategies.ElemOptimisationT" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="ElemOptimisationT[Token&lt;:scales.xml.parser.strategies.OptimisationToken]extendsMemoryOptimisationStrategy[Token]"></a><a id="ElemOptimisationT[Token&lt;:OptimisationToken]:ElemOptimisationT[Token]"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/ElemOptimisationT.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a title="Simple hashmap on Elem -&gt; Elem, makes no optimisations across qnames (use QNameOptimisationT for that)" href="ElemOptimisationT.html"><span class="name">ElemOptimisationT</span></a><span class="tparams">[<span name="Token">Token &lt;: <a href="OptimisationToken.html" class="extype" name="scales.xml.parser.strategies.OptimisationToken">OptimisationToken</a></span>]</span><span class="result"> extends <a href="MemoryOptimisationStrategy.html" class="extype" name="scales.xml.parser.strategies.MemoryOptimisationStrategy">MemoryOptimisationStrategy</a>[<span class="extype" name="scales.xml.parser.strategies.ElemOptimisationT.Token">Token</span>]</span>
+      </span>
+      
+      <p class="shortcomment cmt">Simple hashmap on Elem -&gt; Elem, makes no optimisations across qnames (use QNameOptimisationT for that)
+</p>
+    </li><li name="scales.xml.parser.strategies.ElemQNameOptimisationT" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="ElemQNameOptimisationT[Token&lt;:scales.xml.parser.strategies.ElemToken]extendsQNameOptimisationT[Token]"></a><a id="ElemQNameOptimisationT[Token&lt;:ElemToken]:ElemQNameOptimisationT[Token]"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/ElemQNameOptimisationT.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="ElemQNameOptimisationT.html"><span class="name">ElemQNameOptimisationT</span></a><span class="tparams">[<span name="Token">Token &lt;: <a href="ElemToken.html" class="extype" name="scales.xml.parser.strategies.ElemToken">ElemToken</a></span>]</span><span class="result"> extends <a href="QNameOptimisationT.html" class="extype" name="scales.xml.parser.strategies.QNameOptimisationT">QNameOptimisationT</a>[<span class="extype" name="scales.xml.parser.strategies.ElemQNameOptimisationT.Token">Token</span>]</span>
+      </span>
+      
+      
+    </li><li name="scales.xml.parser.strategies.ElemToken" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ElemTokenextendsQNameToken"></a><a id="ElemToken:ElemToken"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/ElemToken.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="ElemToken.html"><span class="name">ElemToken</span></a><span class="result"> extends <a href="QNameToken.html" class="extype" name="scales.xml.parser.strategies.QNameToken">QNameToken</a></span>
+      </span>
+      
+      
+    </li><li name="scales.xml.parser.strategies.ElemTokenF" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="ElemTokenFextendsAnyRef"></a><a id="ElemTokenF:ElemTokenF"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/ElemTokenF.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="ElemTokenF.html"><span class="name">ElemTokenF</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      
+      
+    </li><li name="scales.xml.parser.strategies.ElemValue" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ElemValueextendsTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]"></a><a id="ElemValue:ElemValue"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/ElemValue.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="An elem with attributes or namespaces and only one text value." href="ElemValue.html"><span class="name">ElemValue</span></a><span class="result"> extends <a href="../../../utils/collection/Tree.html" class="extype" name="scales.utils.collection.Tree">Tree</a>[<a href="../../XmlItem.html" class="extype" name="scales.xml.XmlItem">XmlItem</a>, <a href="../../Elem.html" class="extype" name="scales.xml.Elem">Elem</a>, <a href="../../index.html#XCC[T]=scales.utils.collection.ImmutableArrayProxy[T]" class="extmbr" name="scales.xml.XCC">xml.XCC</a>]</span>
+      </span>
+      
+      <p class="shortcomment cmt">An elem with attributes or namespaces and only one text value.</p>
+    </li><li name="scales.xml.parser.strategies.FullMemoryOptimisationT" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="FullMemoryOptimisationT[Token&lt;:scales.xml.parser.strategies.ElemToken]extendsElemQNameOptimisationT[Token]"></a><a id="FullMemoryOptimisationT[Token&lt;:ElemToken]:FullMemoryOptimisationT[Token]"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/FullMemoryOptimisationT.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="FullMemoryOptimisationT.html"><span class="name">FullMemoryOptimisationT</span></a><span class="tparams">[<span name="Token">Token &lt;: <a href="ElemToken.html" class="extype" name="scales.xml.parser.strategies.ElemToken">ElemToken</a></span>]</span><span class="result"> extends <a href="ElemQNameOptimisationT.html" class="extype" name="scales.xml.parser.strategies.ElemQNameOptimisationT">ElemQNameOptimisationT</a>[<span class="extype" name="scales.xml.parser.strategies.FullMemoryOptimisationT.Token">Token</span>]</span>
+      </span>
+      
+      
+    </li><li name="scales.xml.parser.strategies.MemoryOptimisationStrategy" visbl="pub" class="indented0 " data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="MemoryOptimisationStrategy[Token&lt;:scales.xml.parser.strategies.OptimisationToken]extendsAnyRef"></a><a id="MemoryOptimisationStrategy[Token&lt;:OptimisationToken]:MemoryOptimisationStrategy[Token]"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/MemoryOptimisationStrategy.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a title="Memory usage in DOMs is often dominated by repeated elements." href="MemoryOptimisationStrategy.html"><span class="name">MemoryOptimisationStrategy</span></a><span class="tparams">[<span name="Token">Token &lt;: <a href="OptimisationToken.html" class="extype" name="scales.xml.parser.strategies.OptimisationToken">OptimisationToken</a></span>]</span><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">Memory usage in DOMs is often dominated by repeated elements.</p><div class="fullcomment"><div class="comment cmt"><p>Memory usage in DOMs is often dominated by repeated elements.  Xerces and co use string tables to optimise memory usage, with DTM a key example.</p><p>Performing lookups is expensive so the strategies can have selective levels of lookup.  Developers may therefore choose appropriate levels that best fit their trade-off between space and time.</p><p>There will, of course, be temporary garbage created for such a scheme but it should pay off for larger messages.</p></div></div>
+    </li><li name="scales.xml.parser.strategies.NameValue" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="NameValueextendsTree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]"></a><a id="NameValue:NameValue"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/NameValue.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="An elem with no attributes, namespaces and only one text value." href="NameValue.html"><span class="name">NameValue</span></a><span class="result"> extends <a href="../../../utils/collection/Tree.html" class="extype" name="scales.utils.collection.Tree">Tree</a>[<a href="../../XmlItem.html" class="extype" name="scales.xml.XmlItem">XmlItem</a>, <a href="../../Elem.html" class="extype" name="scales.xml.Elem">Elem</a>, <a href="../../index.html#XCC[T]=scales.utils.collection.ImmutableArrayProxy[T]" class="extmbr" name="scales.xml.XCC">xml.XCC</a>]</span>
+      </span>
+      
+      <p class="shortcomment cmt">An elem with no attributes, namespaces and only one text value.</p>
+    </li><li name="scales.xml.parser.strategies.OptimisationToken" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="OptimisationTokenextendsAnyRef"></a><a id="OptimisationToken:OptimisationToken"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/OptimisationToken.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a title="Simple marker for per parse optimisation oppurtunties" href="OptimisationToken.html"><span class="name">OptimisationToken</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">Simple marker for per parse optimisation oppurtunties
+</p>
+    </li><li name="scales.xml.parser.strategies.OptimisingStrategiesImplicits" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="OptimisingStrategiesImplicitsextendsAnyRef"></a><a id="OptimisingStrategiesImplicits:OptimisingStrategiesImplicits"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/OptimisingStrategiesImplicits.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="OptimisingStrategiesImplicits.html"><span class="name">OptimisingStrategiesImplicits</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      
+      
+    </li><li name="scales.xml.parser.strategies.PathOptimisationStrategy" visbl="pub" class="indented0 " data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="PathOptimisationStrategy[Token&lt;:scales.xml.parser.strategies.OptimisationToken]extendsMemoryOptimisationStrategy[Token]"></a><a id="PathOptimisationStrategy[Token&lt;:OptimisationToken]:PathOptimisationStrategy[Token]"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/PathOptimisationStrategy.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a title="Certain paths may be repeated (based on QNames of parents etc) and known to be by the developer, its also possible that the developer simply is not interested in this path." href="PathOptimisationStrategy.html"><span class="name">PathOptimisationStrategy</span></a><span class="tparams">[<span name="Token">Token &lt;: <a href="OptimisationToken.html" class="extype" name="scales.xml.parser.strategies.OptimisationToken">OptimisationToken</a></span>]</span><span class="result"> extends <a href="MemoryOptimisationStrategy.html" class="extype" name="scales.xml.parser.strategies.MemoryOptimisationStrategy">MemoryOptimisationStrategy</a>[<span class="extype" name="scales.xml.parser.strategies.PathOptimisationStrategy.Token">Token</span>]</span>
+      </span>
+      
+      <p class="shortcomment cmt">Certain paths may be repeated (based on QNames of parents etc) and known to be by the developer, its also possible that the developer simply is not interested in this path.</p><div class="fullcomment"><div class="comment cmt"><p>Certain paths may be repeated (based on QNames of parents etc) and known to be by the developer, its also possible that the developer simply is not interested in this path.</p><p>Developers may also customise the creation of paths, for example adding starting children, replacing the XmlChildren implementation or replacing entire subtrees.
+</p></div></div>
+    </li><li name="scales.xml.parser.strategies.QNameOptimisationT" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="QNameOptimisationT[Token&lt;:scales.xml.parser.strategies.QNameToken]extendsMemoryOptimisationStrategy[Token]"></a><a id="QNameOptimisationT[Token&lt;:QNameToken]:QNameOptimisationT[Token]"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameOptimisationT.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a title="Threadsafe global cache, assumption is most applications would benefit from this" href="QNameOptimisationT.html"><span class="name">QNameOptimisationT</span></a><span class="tparams">[<span name="Token">Token &lt;: <a href="QNameToken.html" class="extype" name="scales.xml.parser.strategies.QNameToken">QNameToken</a></span>]</span><span class="result"> extends <a href="MemoryOptimisationStrategy.html" class="extype" name="scales.xml.parser.strategies.MemoryOptimisationStrategy">MemoryOptimisationStrategy</a>[<span class="extype" name="scales.xml.parser.strategies.QNameOptimisationT.Token">Token</span>]</span>
+      </span>
+      
+      <p class="shortcomment cmt">Threadsafe global cache, assumption is most applications would benefit from this
+</p>
+    </li><li name="scales.xml.parser.strategies.QNameToken" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="QNameTokenextendsOptimisationToken"></a><a id="QNameToken:QNameToken"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameToken.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="QNameToken.html"><span class="name">QNameToken</span></a><span class="result"> extends <a href="OptimisationToken.html" class="extype" name="scales.xml.parser.strategies.OptimisationToken">OptimisationToken</a></span>
+      </span>
+      
+      
+    </li><li name="scales.xml.parser.strategies.QNameTokenF" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="QNameTokenFextendsAnyRef"></a><a id="QNameTokenF:QNameTokenF"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameTokenF.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="QNameTokenF.html"><span class="name">QNameTokenF</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      
+      
+    </li><li name="scales.xml.parser.strategies.TextNodeJoiner" visbl="pub" class="indented0 " data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="TextNodeJoiner[Token&lt;:scales.xml.parser.strategies.OptimisationToken]extendsTreeOptimisation[Token]"></a><a id="TextNodeJoiner[Token&lt;:OptimisationToken]:TextNodeJoiner[Token]"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/TextNodeJoiner.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a title="As this adds extra processing time, but better fits XPath rules (i.e." href="TextNodeJoiner.html"><span class="name">TextNodeJoiner</span></a><span class="tparams">[<span name="Token">Token &lt;: <a href="OptimisationToken.html" class="extype" name="scales.xml.parser.strategies.OptimisationToken">OptimisationToken</a></span>]</span><span class="result"> extends <a href="TreeOptimisation.html" class="extype" name="scales.xml.parser.strategies.TreeOptimisation">TreeOptimisation</a>[<span class="extype" name="scales.xml.parser.strategies.TextNodeJoiner.Token">Token</span>]</span>
+      </span>
+      
+      <p class="shortcomment cmt">As this adds extra processing time, but better fits XPath rules (i.e.</p><div class="fullcomment"><div class="comment cmt"><p>As this adds extra processing time, but better fits XPath rules (i.e. all text children below are joined) its available to be mixed in, but isn't added by default.</p><p>This also removes any extra parsing time from string joining.
+</p></div></div>
+    </li><li name="scales.xml.parser.strategies.TreeOptimisation" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TreeOptimisation[TOKEN&lt;:scales.xml.parser.strategies.OptimisationToken]extendsPathOptimisationStrategy[TOKEN]"></a><a id="TreeOptimisation[TOKEN&lt;:OptimisationToken]:TreeOptimisation[TOKEN]"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/TreeOptimisation.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a title="Allows replacing a tree for memory optimisations" href="TreeOptimisation.html"><span class="name">TreeOptimisation</span></a><span class="tparams">[<span name="TOKEN">TOKEN &lt;: <a href="OptimisationToken.html" class="extype" name="scales.xml.parser.strategies.OptimisationToken">OptimisationToken</a></span>]</span><span class="result"> extends <a href="PathOptimisationStrategy.html" class="extype" name="scales.xml.parser.strategies.PathOptimisationStrategy">PathOptimisationStrategy</a>[<span class="extype" name="scales.xml.parser.strategies.TreeOptimisation.TOKEN">TOKEN</span>]</span>
+      </span>
+      
+      <p class="shortcomment cmt">Allows replacing a tree for memory optimisations
+</p>
+    </li></ol>
+            </div>
+
+        
+
+        <div class="values members">
+              <h3>Value Members</h3>
+              <ol>
+                <li name="scales.xml.parser.strategies.ElemMemoryOptimisation" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ElemMemoryOptimisation"></a><a id="ElemMemoryOptimisation:ElemMemoryOptimisation"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/ElemMemoryOptimisation$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="ElemMemoryOptimisation$.html"><span class="name">ElemMemoryOptimisation</span></a><span class="result"> extends <a href="PathOptimisationStrategy.html" class="extype" name="scales.xml.parser.strategies.PathOptimisationStrategy">PathOptimisationStrategy</a>[<a href="ElemToken.html" class="extype" name="scales.xml.parser.strategies.ElemToken">ElemToken</a>] with <a href="ElemOptimisationT.html" class="extype" name="scales.xml.parser.strategies.ElemOptimisationT">ElemOptimisationT</a>[<a href="ElemToken.html" class="extype" name="scales.xml.parser.strategies.ElemToken">ElemToken</a>] with <a href="ElemTokenF.html" class="extype" name="scales.xml.parser.strategies.ElemTokenF">ElemTokenF</a></span>
+      </span>
+      
+      
+    </li><li name="scales.xml.parser.strategies.HighMemoryOptimisation" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="HighMemoryOptimisation"></a><a id="HighMemoryOptimisation:HighMemoryOptimisation"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/HighMemoryOptimisation$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Optimises on QNames and Elems, reducing duplicates at the cost of CHM lookups." href="HighMemoryOptimisation$.html"><span class="name">HighMemoryOptimisation</span></a><span class="result"> extends <a href="PathOptimisationStrategy.html" class="extype" name="scales.xml.parser.strategies.PathOptimisationStrategy">PathOptimisationStrategy</a>[<a href="ElemToken.html" class="extype" name="scales.xml.parser.strategies.ElemToken">ElemToken</a>] with <a href="ElemOptimisationT.html" class="extype" name="scales.xml.parser.strategies.ElemOptimisationT">ElemOptimisationT</a>[<a href="ElemToken.html" class="extype" name="scales.xml.parser.strategies.ElemToken">ElemToken</a>] with <a href="QNameOptimisationT.html" class="extype" name="scales.xml.parser.strategies.QNameOptimisationT">QNameOptimisationT</a>[<a href="ElemToken.html" class="extype" name="scales.xml.parser.strategies.ElemToken">ElemToken</a>] with <a href="ElemTokenF.html" class="extype" name="scales.xml.parser.strategies.ElemTokenF">ElemTokenF</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Optimises on QNames and Elems, reducing duplicates at the cost of CHM lookups.</p>
+    </li><li name="scales.xml.parser.strategies.LazyOptimisedTree" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="LazyOptimisedTree"></a><a id="LazyOptimisedTree:LazyOptimisedTree"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/LazyOptimisedTree$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Collection of optimisations that reduce memory significantly at the cost of parsing performance, and later non-lazy creation of correct objects for accessing the tree." href="LazyOptimisedTree$.html"><span class="name">LazyOptimisedTree</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Collection of optimisations that reduce memory significantly at the cost of parsing performance, and later non-lazy creation of correct objects for accessing the tree.</p><div class="fullcomment"><div class="comment cmt"><p>Collection of optimisations that reduce memory significantly at the cost of parsing performance, and later non-lazy creation of correct objects for accessing the tree.</p><p>This can have confusing runtime evaluation of XPaths etc.  These optimisations are appropriate for trees that are seldom read, repeated reads may generate too much garbage.
+</p></div></div>
+    </li><li name="scales.xml.parser.strategies.NoOptimisation" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="NoOptimisation"></a><a id="NoOptimisation:NoOptimisation"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/NoOptimisation$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Performs no optimisation at all" href="NoOptimisation$.html"><span class="name">NoOptimisation</span></a><span class="result"> extends <a href="PathOptimisationStrategy.html" class="extype" name="scales.xml.parser.strategies.PathOptimisationStrategy">PathOptimisationStrategy</a>[<a href="BaseToken.html" class="extype" name="scales.xml.parser.strategies.BaseToken">BaseToken</a>] with <a href="BaseTokenF.html" class="extype" name="scales.xml.parser.strategies.BaseTokenF">BaseTokenF</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Performs no optimisation at all
+</p>
+    </li><li name="scales.xml.parser.strategies.QNameElemTreeOptimisation" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="QNameElemTreeOptimisation"></a><a id="QNameElemTreeOptimisation:QNameElemTreeOptimisation"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameElemTreeOptimisation$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Optimised QNames, Elems and Tree, heavily reduced memory consumption with LazyOptimisedTree." href="QNameElemTreeOptimisation$.html"><span class="name">QNameElemTreeOptimisation</span></a><span class="result"> extends <a href="PathOptimisationStrategy.html" class="extype" name="scales.xml.parser.strategies.PathOptimisationStrategy">PathOptimisationStrategy</a>[<a href="ElemToken.html" class="extype" name="scales.xml.parser.strategies.ElemToken">ElemToken</a>] with <a href="ElemQNameOptimisationT.html" class="extype" name="scales.xml.parser.strategies.ElemQNameOptimisationT">ElemQNameOptimisationT</a>[<a href="ElemToken.html" class="extype" name="scales.xml.parser.strategies.ElemToken">ElemToken</a>] with <a href="TreeOptimisation.html" class="extype" name="scales.xml.parser.strategies.TreeOptimisation">TreeOptimisation</a>[<a href="ElemToken.html" class="extype" name="scales.xml.parser.strategies.ElemToken">ElemToken</a>] with <a href="ElemTokenF.html" class="extype" name="scales.xml.parser.strategies.ElemTokenF">ElemTokenF</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Optimised QNames, Elems and Tree, heavily reduced memory consumption with LazyOptimisedTree.</p>
+    </li><li name="scales.xml.parser.strategies.QNameMemoryOptimisation" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="QNameMemoryOptimisation"></a><a id="QNameMemoryOptimisation:QNameMemoryOptimisation"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameMemoryOptimisation$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="The default as it will equal or better Scala Xml memory consumption at a performance gain." href="QNameMemoryOptimisation$.html"><span class="name">QNameMemoryOptimisation</span></a><span class="result"> extends <a href="PathOptimisationStrategy.html" class="extype" name="scales.xml.parser.strategies.PathOptimisationStrategy">PathOptimisationStrategy</a>[<a href="QNameToken.html" class="extype" name="scales.xml.parser.strategies.QNameToken">QNameToken</a>] with <a href="QNameOptimisationT.html" class="extype" name="scales.xml.parser.strategies.QNameOptimisationT">QNameOptimisationT</a>[<a href="QNameToken.html" class="extype" name="scales.xml.parser.strategies.QNameToken">QNameToken</a>] with <a href="QNameTokenF.html" class="extype" name="scales.xml.parser.strategies.QNameTokenF">QNameTokenF</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">The default as it will equal or better Scala Xml memory consumption at a performance gain.</p><div class="fullcomment"><div class="comment cmt"><p>The default as it will equal or better Scala Xml memory consumption at a performance gain.</p><p>For the lowest memory consumption possible, for example where memory is more important than raw performance, see QNameElemTreeOptimisation
+</p></div><dl class="attributes block"> <dt>See also</dt><dd><span class="cmt"><p>scales.xml.strategies.QNameElemTreeOptimisation</p></span></dd></dl></div>
+    </li><li name="scales.xml.parser.strategies.QNameTreeOptimisation" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="QNameTreeOptimisation"></a><a id="QNameTreeOptimisation:QNameTreeOptimisation"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/strategies/QNameTreeOptimisation$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Optimises QNames and Trees according to LazyOptimisedTree" href="QNameTreeOptimisation$.html"><span class="name">QNameTreeOptimisation</span></a><span class="result"> extends <a href="TreeOptimisation.html" class="extype" name="scales.xml.parser.strategies.TreeOptimisation">TreeOptimisation</a>[<a href="QNameToken.html" class="extype" name="scales.xml.parser.strategies.QNameToken">QNameToken</a>] with <a href="QNameOptimisationT.html" class="extype" name="scales.xml.parser.strategies.QNameOptimisationT">QNameOptimisationT</a>[<a href="QNameToken.html" class="extype" name="scales.xml.parser.strategies.QNameToken">QNameToken</a>] with <a href="QNameTokenF.html" class="extype" name="scales.xml.parser.strategies.QNameTokenF">QNameTokenF</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Optimises QNames and Trees according to LazyOptimisedTree
+</p>
+    </li>
+              </ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+    </body>
+          </div>
+        </div>
+      </div>
+    </body>
+      </html>

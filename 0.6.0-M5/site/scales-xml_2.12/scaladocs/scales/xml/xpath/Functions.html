@@ -1,0 +1,1368 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+          <title>scales-xml 0.6.0-M5 API  - scales.xml.xpath.Functions</title>
+          <meta name="description" content="scales - xml 0.6.0 - M5 API - scales.xml.xpath.Functions" />
+          <meta name="keywords" content="scales xml 0.6.0 M5 API scales.xml.xpath.Functions" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      
+      <link href="../../../lib/index.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../lib/jquery.min.js"></script>
+      <script type="text/javascript" src="../../../lib/jquery.panzoom.min.js"></script>
+      <script type="text/javascript" src="../../../lib/jquery.mousewheel.min.js"></script>
+      <script type="text/javascript" src="../../../lib/index.js"></script>
+      <script type="text/javascript" src="../../../index.js"></script>
+      <script type="text/javascript" src="../../../lib/scheduler.js"></script>
+      <script type="text/javascript" src="../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../lib/modernizr.custom.js"></script><script type="text/javascript" src="../../../lib/diagrams.js" id="diagrams-js"></script>
+      <script type="text/javascript">
+        /* this variable can be used by the JS to determine the path to the root document */
+        var toRoot = '../../../';
+      </script>
+    
+        </head>
+        <body>
+      <div id="search">
+        <span id="doc-title">scales-xml 0.6.0-M5 API<span id="doc-version"></span></span>
+        <span class="close-results"><span class="left">&lt;</span> Back</span>
+        <div id="textfilter">
+          <span class="input">
+            <input autocapitalize="none" placeholder="Search" id="index-input" type="text" accesskey="/" />
+            <i class="clear material-icons"></i>
+            <i id="search-icon" class="material-icons"></i>
+          </span>
+        </div>
+    </div>
+      <div id="search-results">
+        <div id="search-progress">
+          <div id="progress-fill"></div>
+        </div>
+        <div id="results-content">
+          <div id="entity-results"></div>
+          <div id="member-results"></div>
+        </div>
+      </div>
+      <div id="content-scroll-container" style="-webkit-overflow-scrolling: touch;">
+        <div id="content-container" style="-webkit-overflow-scrolling: touch;">
+          <div id="subpackage-spacer">
+            <div id="packages">
+              <h1>Packages</h1>
+              <ul>
+                <li name="_root_.root" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="_root_"></a><a id="root:_root_"></a>
+      <span class="permalink">
+      <a href="../../../index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="../../../index.html"><span class="name">root</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../index.html" class="extype" name="_root_">root</a></dd></dl></div>
+    </li><li name="_root_.scales" visbl="pub" class="indented1 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="scales"></a><a id="scales:scales"></a>
+      <span class="permalink">
+      <a href="../../../scales/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="Scales Xml provides both a more flexible approach to XML handling and a simplified way of interacting with XML." href="../../index.html"><span class="name">scales</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Scales Xml provides both a more flexible approach to XML handling and a simplified way of interacting with XML.</p><div class="fullcomment"><div class="comment cmt"><p>Scales Xml provides both a more flexible approach to XML handling and a simplified way of interacting with XML.</p><p>It fits nicely with the Java APIs you know, TrAX and javax.xml.validation for example, allowing you to run XSLTs and convert to and from Scales XML and other DOMs.</p><p>It also provides a far more XPath like experience than the normal Scala XML, Paths look like XPaths and work like them too (with many of the same functions and axes).
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../index.html" class="extype" name="_root_">root</a></dd></dl></div>
+    </li><li name="scales.xml" visbl="pub" class="indented2 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="xml"></a><a id="xml:xml"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="../index.html"><span class="name">xml</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../index.html" class="extype" name="scales">scales</a></dd></dl></div>
+    </li><li name="scales.xml.xpath" visbl="pub" class="indented3 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="xpath"></a><a id="xpath:xpath"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="index.html"><span class="name">xpath</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="scales.xml">xml</a></dd></dl></div>
+    </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="object" href="AQNameNames$.html" title=""></a>
+                        <a href="AQNameNames$.html" title="">AQNameNames</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="class" href="Ancestors.html" title="Returns the ancestors / parents of the path"></a>
+                        <a href="Ancestors.html" title="Returns the ancestors / parents of the path">Ancestors</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="trait" href="AttributeAxis.html" title="The * and @ must be swapped otherwise its an annotation"></a>
+                        <a href="AttributeAxis.html" title="The * and @ must be swapped otherwise its an annotation">AttributeAxis</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="object" href="AttributeNames$.html" title=""></a>
+                        <a href="AttributeNames$.html" title="">AttributeNames</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="class" href="AttributePath.html" title="Simple container for keeping relationship between the parent and attribute"></a>
+                        <a href="AttributePath.html" title="Simple container for keeping relationship between the parent and attribute">AttributePath</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="class" href="AttributePathComparisoms.html" title=""></a>
+                        <a href="AttributePathComparisoms.html" title="">AttributePathComparisoms</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="object" href="AttributePathNames$.html" title=""></a>
+                        <a href="AttributePathNames$.html" title="">AttributePathNames</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="object" href="AttributePathText$.html" title=""></a>
+                        <a href="AttributePathText$.html" title="">AttributePathText</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="class" href="AttributePaths.html" title="Attributes that have been selected"></a>
+                        <a href="AttributePaths.html" title="Attributes that have been selected">AttributePaths</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="object" href="AttributePathsNames$.html" title=""></a>
+                        <a href="AttributePathsNames$.html" title="">AttributePathsNames</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="object" href="AttributePathsText$.html" title=""></a>
+                        <a href="AttributePathsText$.html" title="">AttributePathsText</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="object" href="AttributeText$.html" title=""></a>
+                        <a href="AttributeText$.html" title="">AttributeText</a>
+                      </li><li class="current-entities indented3">
+                        <a class="object" href="Axis$.html" title=""></a>
+                        <a class="trait" href="Axis.html" title="Base trait for XPath Axis, also provides common functionality"></a>
+                        <a href="Axis.html" title="Base trait for XPath Axis, also provides common functionality">Axis</a>
+                      </li><li class="current-entities indented3">
+                        <a class="object" href="DIF$.html" title=""></a>
+                        <a class="class" href="DIF.html" title="Dummy implicit filler for easing interface issues"></a>
+                        <a href="DIF.html" title="Dummy implicit filler for easing interface issues">DIF</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="class" href="DirectXPath.html" title="Pos and filter for a direct access does not flatmap."></a>
+                        <a href="DirectXPath.html" title="Pos and filter for a direct access does not flatmap.">DirectXPath</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="trait" href="DocumentSplitters.html" title="Following and preceding split the document in two"></a>
+                        <a href="DocumentSplitters.html" title="Following and preceding split the document in two">DocumentSplitters</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="object" href="DslNames$.html" title=""></a>
+                        <a href="DslNames$.html" title="">DslNames</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="object" href="DslText$.html" title=""></a>
+                        <a href="DslText$.html" title="">DslText</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="object" href="ElemNames$.html" title=""></a>
+                        <a href="ElemNames$.html" title="">ElemNames</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="trait" href="ElementStep.html" title=""></a>
+                        <a href="ElementStep.html" title="">ElementStep</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="object" href="EmptyQName$.html" title="Represents an empty qname for those cases that should return empty string"></a>
+                        <a href="EmptyQName$.html" title="Represents an empty qname for those cases that should return empty string">EmptyQName</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="class" href="Following.html" title="Iterates over paths using the document order as per the following_:: axis."></a>
+                        <a href="Following.html" title="Iterates over paths using the document order as per the following_:: axis.">Following</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="trait" href="FunctionImplicits.html" title=""></a>
+                        <a href="FunctionImplicits.html" title="">FunctionImplicits</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="trait" href="" title="Collects all type class based xpath functions, exposed via Functions in package"></a>
+                        <a href="" title="Collects all type class based xpath functions, exposed via Functions in package">Functions</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="object" href="ItemOrElemText$.html" title=""></a>
+                        <a href="ItemOrElemText$.html" title="">ItemOrElemText</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="trait" href="NameFunctions.html" title="Functions providing access to QNames"></a>
+                        <a href="NameFunctions.html" title="Functions providing access to QNames">NameFunctions</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="trait" href="Names.html" title="Type class representing Xml objects which provide qnames."></a>
+                        <a href="Names.html" title="Type class representing Xml objects which provide qnames.">Names</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="trait" href="NamesImplicits.html" title="Name type classes"></a>
+                        <a href="NamesImplicits.html" title="Name type classes">NamesImplicits</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="trait" href="OtherNodeTypes.html" title="Little depature from standard, rather than duplicate all of the \ and \\ nodes, just a simple \\*() comment() will do"></a>
+                        <a href="OtherNodeTypes.html" title="Little depature from standard, rather than duplicate all of the \ and \\ nodes, just a simple \\*() comment() will do">OtherNodeTypes</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="object" href="PositionalEquals$.html" title=""></a>
+                        <a href="PositionalEquals$.html" title="">PositionalEquals</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="class" href="Preceding.html" title="Iterates over paths using reverse document order and, as per the preceding_:: axis, skips all ancestors."></a>
+                        <a href="Preceding.html" title="Iterates over paths using reverse document order and, as per the preceding_:: axis, skips all ancestors.">Preceding</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="object" href="QNameNames$.html" title=""></a>
+                        <a href="QNameNames$.html" title="">QNameNames</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="trait" href="SiblingsAxis.html" title="Unlike XPath spec no reverse axis are directly provided by the dsl"></a>
+                        <a href="SiblingsAxis.html" title="Unlike XPath spec no reverse axis are directly provided by the dsl">SiblingsAxis</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="trait" href="TextFunctions.html" title=""></a>
+                        <a href="TextFunctions.html" title="">TextFunctions</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="trait" href="TextImplicits.html" title=""></a>
+                        <a href="TextImplicits.html" title="">TextImplicits</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="trait" href="TextValue.html" title="Type class for text values"></a>
+                        <a href="TextValue.html" title="Type class for text values">TextValue</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="class" href="XPath.html" title="In contrast to the specs reverse axis are not supported."></a>
+                        <a href="XPath.html" title="In contrast to the specs reverse axis are not supported.">XPath</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="class" href="XPathInfo.html" title="XPaths need sorting upon unions etc, and duplicate filtering on \^ parents"></a>
+                        <a href="XPathInfo.html" title="XPaths need sorting upon unions etc, and duplicate filtering on \^ parents">XPathInfo</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="object" href="XPathNames$.html" title=""></a>
+                        <a href="XPathNames$.html" title="">XPathNames</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="object" href="XPathText$.html" title=""></a>
+                        <a href="XPathText$.html" title="">XPathText</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="object" href="XmlItemText$.html" title=""></a>
+                        <a href="XmlItemText$.html" title="">XmlItemText</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="class" href="XmlPathComparisoms.html" title=""></a>
+                        <a href="XmlPathComparisoms.html" title="">XmlPathComparisoms</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="trait" href="XmlPathImplicits.html" title=""></a>
+                        <a href="XmlPathImplicits.html" title="">XmlPathImplicits</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="object" href="XmlPathNames$.html" title=""></a>
+                        <a href="XmlPathNames$.html" title="">XmlPathNames</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="object" href="XmlPathText$.html" title=""></a>
+                        <a href="XmlPathText$.html" title="">XmlPathText</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="trait" href="XmlPaths.html" title=""></a>
+                        <a href="XmlPaths.html" title="">XmlPaths</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="object" href="XmlTreeNames$.html" title=""></a>
+                        <a href="XmlTreeNames$.html" title="">XmlTreeNames</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="object" href="XmlTreeText$.html" title=""></a>
+                        <a href="XmlTreeText$.html" title="">XmlTreeText</a>
+                      </li>
+              </ul>
+            </div>
+          </div>
+          <div id="content">
+            <body class="trait type">
+      <div id="definition">
+        <div class="big-circle trait">t</div>
+        <p id="owner"><a href="../../index.html" class="extype" name="scales">scales</a>.<a href="../index.html" class="extype" name="scales.xml">xml</a>.<a href="index.html" class="extype" name="scales.xml.xpath">xpath</a></p>
+        <h1>Functions<span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span></h1>
+        <h3><span class="morelinks"></span></h3>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Functions</span><span class="result"> extends <a href="NameFunctions.html" class="extype" name="scales.xml.xpath.NameFunctions">NameFunctions</a> with <a href="TextFunctions.html" class="extype" name="scales.xml.xpath.TextFunctions">TextFunctions</a></span>
+      </span>
+      </h4>
+
+      
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Collects all type class based xpath functions, exposed via Functions in package</p><p>Also adds aliases for the common functions
+</p></div><div class="toggleContainer block">
+          <span class="toggle">
+            Linear Supertypes
+          </span>
+          <div class="superTypes hiddenContent"><a href="TextFunctions.html" class="extype" name="scales.xml.xpath.TextFunctions">TextFunctions</a>, <a href="NameFunctions.html" class="extype" name="scales.xml.xpath.NameFunctions">NameFunctions</a>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+        </div><div class="toggleContainer block diagram-container" id="inheritance-diagram-container">
+                <span class="toggle diagram-link">
+                  Type Hierarchy
+                </span>
+                <div class="diagram" id="inheritance-diagram"><svg class="class-diagram" id="graph1" width="236pt" height="118pt" viewBox="0.00 0.00 236.00 118.00" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><g id="page0,1_graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 114)"><polygon fill="white" stroke="transparent" points="-4,4 -4,-114 232,-114 232,4 -4,4"></polygon><g id="clust1" class="cluster"></g><g id="clust2" class="cluster"></g><!-- node0 --><g class="node this trait" id="graph1_0"><g id="a_this trait|graph1_0"><a xlink:href="#inheritance-diagram" xlink:title="scales.xml.xpath.Functions (this trait)"><path fill="#2e6d82" stroke="#2e6d82" d="M148.67,-49C148.67,-49 78.33,-49 78.33,-49 74.17,-49 70,-44.83 70,-40.67 70,-40.67 70,-32.33 70,-32.33 70,-28.17 74.17,-24 78.33,-24 78.33,-24 148.67,-24 148.67,-24 152.83,-24 157,-28.17 157,-32.33 157,-32.33 157,-40.67 157,-40.67 157,-44.83 152.83,-49 148.67,-49"></path><image xlink:href="../../../lib/trait_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="80.5" y="-43.5"></image><text text-anchor="start" x="101.5" y="-34.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">Functions</text></a></g></g><!-- node1 --><g class="node trait" id="graph1_1"><g id="a_trait|graph1_1"><a xlink:href="NameFunctions.html#inheritance-diagram" xlink:title="scales.xml.xpath.NameFunctions"><path fill="#2e6d82" stroke="#2e6d82" d="M96.67,-110C96.67,-110 8.33,-110 8.33,-110 4.17,-110 0,-105.83 0,-101.67 0,-101.67 0,-93.33 0,-93.33 0,-89.17 4.17,-85 8.33,-85 8.33,-85 96.67,-85 96.67,-85 100.83,-85 105,-89.17 105,-93.33 105,-93.33 105,-101.67 105,-101.67 105,-105.83 100.83,-110 96.67,-110"></path><image xlink:href="../../../lib/trait_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="10.5" y="-104.5"></image><text text-anchor="start" x="31.5" y="-95.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">NameFunctions</text></a></g></g><!-- node1&#45;&gt;node0 --><g class="edge inheritance" id="graph1_1_0"><g id="a_inheritance|graph1_1_0"><a xlink:title="Functions is a subtype of NameFunctions"><path fill="none" stroke="#d4d4d4" d="M69.6,-79.96C79.75,-70.14 92.37,-57.93 101.47,-49.13"></path><polygon fill="none" stroke="#d4d4d4" points="67.88,-78.22 64.55,-84.84 71.29,-81.74 67.88,-78.22"></polygon></a></g></g><!-- node2 --><g class="node trait" id="graph1_2"><g id="a_trait|graph1_2"><a xlink:href="TextFunctions.html#inheritance-diagram" xlink:title="scales.xml.xpath.TextFunctions"><path fill="#2e6d82" stroke="#2e6d82" d="M219.67,-110C219.67,-110 131.33,-110 131.33,-110 127.17,-110 123,-105.83 123,-101.67 123,-101.67 123,-93.33 123,-93.33 123,-89.17 127.17,-85 131.33,-85 131.33,-85 219.67,-85 219.67,-85 223.83,-85 228,-89.17 228,-93.33 228,-93.33 228,-101.67 228,-101.67 228,-105.83 223.83,-110 219.67,-110"></path><image xlink:href="../../../lib/trait_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="133.5" y="-104.5"></image><text text-anchor="start" x="154.5" y="-95.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">TextFunctions</text></a></g></g><!-- node2&#45;&gt;node0 --><g class="edge inheritance" id="graph1_2_0"><g id="a_inheritance|graph1_2_0"><a xlink:title="Functions is a subtype of TextFunctions"><path fill="none" stroke="#d4d4d4" d="M158.12,-79.96C147.8,-70.14 134.97,-57.93 125.72,-49.13"></path><polygon fill="none" stroke="#d4d4d4" points="156.49,-81.79 163.25,-84.84 159.87,-78.24 156.49,-81.79"></polygon></a></g></g></g></svg></div>
+                <div id="diagram-controls" class="hiddenContent">
+                  <button id="diagram-zoom-out" class="diagram-btn"><i class="material-icons"></i></button>
+                  <button id="diagram-zoom-in" class="diagram-btn"><i class="material-icons"></i></button>
+                  <button title="Toggle full-screen" id="diagram-fs" class="diagram-btn to-full"><i class="material-icons"></i></button>
+                </div>
+              </div></div>
+        
+
+      <div id="mbrsel">
+        <div class="toggle"></div>
+        <div id="memberfilter">
+          <i class="material-icons arrow"></i>
+          <span class="input">
+            <input id="mbrsel-input" placeholder="Filter all members" type="text" accesskey="/" />
+          </span>
+          <i class="clear material-icons"></i>
+        </div>
+        <div id="filterby">
+          <div id="order">
+            <span class="filtertype">Ordering</span>
+            <ol>
+              
+              <li class="alpha in"><span>Alphabetic</span></li>
+              <li class="inherit out"><span>By Inheritance</span></li>
+            </ol>
+          </div>
+          <div class="ancestors">
+                  <span class="filtertype">Inherited<br />
+                  </span>
+                  <ol id="linearization">
+                    <li class="in" name="scales.xml.xpath.Functions"><span>Functions</span></li><li class="in" name="scales.xml.xpath.TextFunctions"><span>TextFunctions</span></li><li class="in" name="scales.xml.xpath.NameFunctions"><span>NameFunctions</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  </ol>
+                </div><div class="ancestors">
+              <span class="filtertype"></span>
+              <ol>
+                <li class="hideall out"><span>Hide All</span></li>
+                <li class="showall in"><span>Show All</span></li>
+              </ol>
+            </div>
+          <div id="visbl">
+              <span class="filtertype">Visibility</span>
+              <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+            </div>
+        </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        
+
+        
+
+        <div class="values members">
+              <h3>Value Members</h3>
+              <ol>
+                <li name="scala.AnyRef#!=" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="!=(x$1:Any):Boolean"></a><a id="!=(Any):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#!=(x$1:Any):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef###" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="##():Int"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html###():Int" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $hash$hash" class="name">##</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#==" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="==(x$1:Any):Boolean"></a><a id="==(Any):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#==(x$1:Any):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.Any#asInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="asInstanceOf[T0]:T0"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#asInstanceOf[T0]:T0" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Any.asInstanceOf.T0">T0</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="scala.AnyRef#clone" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="clone():Object"></a><a id="clone():AnyRef"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#clone():Object" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<span class="extype" name="java.lang">lang</span>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.CloneNotSupportedException]">...</span>
+    </span>)</span>
+              
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#eq" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="eq(x$1:AnyRef):Boolean"></a><a id="eq(AnyRef):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#eq(x$1:AnyRef):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#equals" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="equals(x$1:Any):Boolean"></a><a id="equals(Any):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#equals(x$1:Any):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#finalize" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="finalize():Unit"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#finalize():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">finalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<span class="extype" name="java.lang">lang</span>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.lang.Throwable]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#getClass" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getClass():Class[_]"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#getClass():Class[_]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getClass</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.Class">Class</span>[_]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd><dt>Annotations</dt><dd>
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="scales.xml.xpath.NameFunctions#hasLocalName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hasLocalName[T](localName:String)(implicitname:scales.xml.xpath.Names[T]):T=&gt;Boolean"></a><a id="hasLocalName[T](String)(Names[T]):(T)⇒Boolean"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#hasLocalName[T](localName:String)(implicitname:scales.xml.xpath.Names[T]):T=&gt;Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hasLocalName</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="localName">localName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="name">name: <a href="Names.html" class="extype" name="scales.xml.xpath.Names">Names</a>[<span class="extype" name="scales.xml.xpath.NameFunctions.hasLocalName.T">T</span>]</span>)</span><span class="result">: (<span class="extype" name="scales.xml.xpath.NameFunctions.hasLocalName.T">T</span>) ⇒ <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">curried to allow direct drop in for predicates, if it is an item then it will return false
+</p><div class="fullcomment"><div class="comment cmt"><p>curried to allow direct drop in for predicates, if it is an item then it will return false
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="NameFunctions.html" class="extype" name="scales.xml.xpath.NameFunctions">NameFunctions</a></dd></dl></div>
+    </li><li name="scales.xml.xpath.Functions#hasLocalNameA" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="hasLocalNameA(local:String):scales.xml.xpath.AttributePath=&gt;Boolean"></a><a id="hasLocalNameA(String):(AttributePath)⇒Boolean"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#hasLocalNameA(local:String):scales.xml.xpath.AttributePath=&gt;Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hasLocalNameA</span><span class="params">(<span name="local">local: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: (<a href="AttributePath.html" class="extype" name="scales.xml.xpath.AttributePath">AttributePath</a>) ⇒ <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">hasLocalName for AttributePaths
+</p>
+    </li><li name="scales.xml.xpath.Functions#hasLocalNameX" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="hasLocalNameX(local:String):scales.xml.XmlPath=&gt;Boolean"></a><a id="hasLocalNameX(String):(xml.XmlPath)⇒Boolean"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#hasLocalNameX(local:String):scales.xml.XmlPath=&gt;Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hasLocalNameX</span><span class="params">(<span name="local">local: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: (<a href="../index.html#XmlPath=scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,XmlTypes.this.XCC]" class="extmbr" name="scales.xml.XmlPath">xml.XmlPath</a>) ⇒ <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">hasLocalName for XmlPaths
+</p>
+    </li><li name="scales.xml.xpath.NameFunctions#hasNamespace" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hasNamespace[T](namespaceUri:String)(implicitname:scales.xml.xpath.Names[T],implicitd:scales.xml.xpath.DIF):T=&gt;Boolean"></a><a id="hasNamespace[T](String)(Names[T],DIF):(T)⇒Boolean"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#hasNamespace[T](namespaceUri:String)(implicitname:scales.xml.xpath.Names[T],implicitd:scales.xml.xpath.DIF):T=&gt;Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hasNamespace</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="namespaceUri">namespaceUri: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="name">name: <a href="Names.html" class="extype" name="scales.xml.xpath.Names">Names</a>[<span class="extype" name="scales.xml.xpath.NameFunctions.hasNamespace.T">T</span>]</span>, <span name="d">d: <a href="DIF.html" class="extype" name="scales.xml.xpath.DIF">DIF</a></span>)</span><span class="result">: (<span class="extype" name="scales.xml.xpath.NameFunctions.hasNamespace.T">T</span>) ⇒ <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">matches only the namespace
+</p><div class="fullcomment"><div class="comment cmt"><p>matches only the namespace
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="NameFunctions.html" class="extype" name="scales.xml.xpath.NameFunctions">NameFunctions</a></dd></dl></div>
+    </li><li name="scales.xml.xpath.NameFunctions#hasNamespace" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hasNamespace[T](namespace:scales.xml.Namespace)(implicitname:scales.xml.xpath.Names[T]):T=&gt;Boolean"></a><a id="hasNamespace[T](Namespace)(Names[T]):(T)⇒Boolean"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#hasNamespace[T](namespace:scales.xml.Namespace)(implicitname:scales.xml.xpath.Names[T]):T=&gt;Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hasNamespace</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="namespace">namespace: <a href="../Namespace.html" class="extype" name="scales.xml.Namespace">Namespace</a></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="name">name: <a href="Names.html" class="extype" name="scales.xml.xpath.Names">Names</a>[<span class="extype" name="scales.xml.xpath.NameFunctions.hasNamespace.T">T</span>]</span>)</span><span class="result">: (<span class="extype" name="scales.xml.xpath.NameFunctions.hasNamespace.T">T</span>) ⇒ <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">matches only the namespace
+</p><div class="fullcomment"><div class="comment cmt"><p>matches only the namespace
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="NameFunctions.html" class="extype" name="scales.xml.xpath.NameFunctions">NameFunctions</a></dd></dl></div>
+    </li><li name="scales.xml.xpath.NameFunctions#hasQName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hasQName[T](t:T)(implicitname:scales.xml.xpath.Names[T]):Boolean"></a><a id="hasQName[T](T)(Names[T]):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#hasQName[T](t:T)(implicitname:scales.xml.xpath.Names[T]):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hasQName</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="t">t: <span class="extype" name="scales.xml.xpath.NameFunctions.hasQName.T">T</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="name">name: <a href="Names.html" class="extype" name="scales.xml.xpath.Names">Names</a>[<span class="extype" name="scales.xml.xpath.NameFunctions.hasQName.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">Will be true for all values of T except when the resulting QName is &quot;empty&quot;.</p><div class="fullcomment"><div class="comment cmt"><p>Will be true for all values of T except when the resulting QName is &quot;empty&quot;.</p><p>If hasQName is false then calling name will throw
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="NameFunctions.html" class="extype" name="scales.xml.xpath.NameFunctions">NameFunctions</a></dd></dl></div>
+    </li><li name="scales.xml.xpath.NameFunctions#hasQName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hasQName[T](implicitt:T,implicitname:scales.xml.xpath.Names[T],implicitd:scales.xml.xpath.DIF):Boolean"></a><a id="hasQName[T](T,Names[T],DIF):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#hasQName[T](implicitt:T,implicitname:scales.xml.xpath.Names[T],implicitd:scales.xml.xpath.DIF):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hasQName</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span class="implicit">implicit </span><span name="t">t: <span class="extype" name="scales.xml.xpath.NameFunctions.hasQName.T">T</span></span>, <span name="name">name: <a href="Names.html" class="extype" name="scales.xml.xpath.Names">Names</a>[<span class="extype" name="scales.xml.xpath.NameFunctions.hasQName.T">T</span>]</span>, <span name="d">d: <a href="DIF.html" class="extype" name="scales.xml.xpath.DIF">DIF</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">Will be true for all values of T except when the resulting QName is &quot;empty&quot;.</p><div class="fullcomment"><div class="comment cmt"><p>Will be true for all values of T except when the resulting QName is &quot;empty&quot;.</p><p>If hasQName is false then calling name will throw
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="NameFunctions.html" class="extype" name="scales.xml.xpath.NameFunctions">NameFunctions</a></dd></dl></div>
+    </li><li name="scala.AnyRef#hashCode" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hashCode():Int"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#hashCode():Int" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd><dt>Annotations</dt><dd>
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="scales.xml.xpath.NameFunctions#isEquivalent" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isEquivalent[T](qname:scales.xml.QName)(implicitname:scales.xml.xpath.Names[T]):T=&gt;Boolean"></a><a id="isEquivalent[T](QName)(Names[T]):(T)⇒Boolean"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#isEquivalent[T](qname:scales.xml.QName)(implicitname:scales.xml.xpath.Names[T]):T=&gt;Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isEquivalent</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="qname">qname: <a href="../QName.html" class="extype" name="scales.xml.QName">QName</a></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="name">name: <a href="Names.html" class="extype" name="scales.xml.xpath.Names">Names</a>[<span class="extype" name="scales.xml.xpath.NameFunctions.isEquivalent.T">T</span>]</span>)</span><span class="result">: (<span class="extype" name="scales.xml.xpath.NameFunctions.isEquivalent.T">T</span>) ⇒ <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">Matches on prefix and namespace only
+</p><div class="fullcomment"><div class="comment cmt"><p>Matches on prefix and namespace only
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="NameFunctions.html" class="extype" name="scales.xml.xpath.NameFunctions">NameFunctions</a></dd></dl></div>
+    </li><li name="scales.xml.xpath.NameFunctions#isExactly" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isExactly[T](qname:scales.xml.QName)(implicitname:scales.xml.xpath.Names[T]):T=&gt;Boolean"></a><a id="isExactly[T](QName)(Names[T]):(T)⇒Boolean"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#isExactly[T](qname:scales.xml.QName)(implicitname:scales.xml.xpath.Names[T]):T=&gt;Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isExactly</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="qname">qname: <a href="../QName.html" class="extype" name="scales.xml.QName">QName</a></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="name">name: <a href="Names.html" class="extype" name="scales.xml.xpath.Names">Names</a>[<span class="extype" name="scales.xml.xpath.NameFunctions.isExactly.T">T</span>]</span>)</span><span class="result">: (<span class="extype" name="scales.xml.xpath.NameFunctions.isExactly.T">T</span>) ⇒ <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">Does the qname match exactly (prefix included if present)
+</p><div class="fullcomment"><div class="comment cmt"><p>Does the qname match exactly (prefix included if present)
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="NameFunctions.html" class="extype" name="scales.xml.xpath.NameFunctions">NameFunctions</a></dd></dl></div>
+    </li><li name="scala.Any#isInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#isInstanceOf[T0]:Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="scales.xml.xpath.NameFunctions#localName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="localName[T](t:T)(implicitname:scales.xml.xpath.Names[T]):String"></a><a id="localName[T](T)(Names[T]):String"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#localName[T](t:T)(implicitname:scales.xml.xpath.Names[T]):String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">localName</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="t">t: <span class="extype" name="scales.xml.xpath.NameFunctions.localName.T">T</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="name">name: <a href="Names.html" class="extype" name="scales.xml.xpath.Names">Names</a>[<span class="extype" name="scales.xml.xpath.NameFunctions.localName.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">Returns the localName
+</p><div class="fullcomment"><div class="comment cmt"><p>Returns the localName
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="NameFunctions.html" class="extype" name="scales.xml.xpath.NameFunctions">NameFunctions</a></dd></dl></div>
+    </li><li name="scales.xml.xpath.NameFunctions#localName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="localName[T](implicitt:T,implicitname:scales.xml.xpath.Names[T],implicitd:scales.xml.xpath.DIF):String"></a><a id="localName[T](T,Names[T],DIF):String"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#localName[T](implicitt:T,implicitname:scales.xml.xpath.Names[T],implicitd:scales.xml.xpath.DIF):String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">localName</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span class="implicit">implicit </span><span name="t">t: <span class="extype" name="scales.xml.xpath.NameFunctions.localName.T">T</span></span>, <span name="name">name: <a href="Names.html" class="extype" name="scales.xml.xpath.Names">Names</a>[<span class="extype" name="scales.xml.xpath.NameFunctions.localName.T">T</span>]</span>, <span name="d">d: <a href="DIF.html" class="extype" name="scales.xml.xpath.DIF">DIF</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">Returns the localName
+</p><div class="fullcomment"><div class="comment cmt"><p>Returns the localName
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="NameFunctions.html" class="extype" name="scales.xml.xpath.NameFunctions">NameFunctions</a></dd></dl></div>
+    </li><li name="scales.xml.xpath.NameFunctions#name" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="name[T](t:T)(implicitiname:scales.xml.xpath.Names[T]):scales.xml.QName"></a><a id="name[T](T)(Names[T]):QName"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#name[T](t:T)(implicitiname:scales.xml.xpath.Names[T]):scales.xml.QName" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">name</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="t">t: <span class="extype" name="scales.xml.xpath.NameFunctions.name.T">T</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="iname">iname: <a href="Names.html" class="extype" name="scales.xml.xpath.Names">Names</a>[<span class="extype" name="scales.xml.xpath.NameFunctions.name.T">T</span>]</span>)</span><span class="result">: <a href="../QName.html" class="extype" name="scales.xml.QName">QName</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Returns the QName, will throw if the QName is &quot;empty&quot;
+</p><div class="fullcomment"><div class="comment cmt"><p>Returns the QName, will throw if the QName is &quot;empty&quot;
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="NameFunctions.html" class="extype" name="scales.xml.xpath.NameFunctions">NameFunctions</a></dd></dl></div>
+    </li><li name="scales.xml.xpath.NameFunctions#name" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="name[T](implicitt:T,implicitname:scales.xml.xpath.Names[T],implicitd:scales.xml.xpath.DIF):scales.xml.QName"></a><a id="name[T](T,Names[T],DIF):QName"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#name[T](implicitt:T,implicitname:scales.xml.xpath.Names[T],implicitd:scales.xml.xpath.DIF):scales.xml.QName" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">name</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span class="implicit">implicit </span><span name="t">t: <span class="extype" name="scales.xml.xpath.NameFunctions.name.T">T</span></span>, <span name="name">name: <a href="Names.html" class="extype" name="scales.xml.xpath.Names">Names</a>[<span class="extype" name="scales.xml.xpath.NameFunctions.name.T">T</span>]</span>, <span name="d">d: <a href="DIF.html" class="extype" name="scales.xml.xpath.DIF">DIF</a></span>)</span><span class="result">: <a href="../QName.html" class="extype" name="scales.xml.QName">QName</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Returns the QName, will throw if the QName is &quot;empty&quot;
+</p><div class="fullcomment"><div class="comment cmt"><p>Returns the QName, will throw if the QName is &quot;empty&quot;
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="NameFunctions.html" class="extype" name="scales.xml.xpath.NameFunctions">NameFunctions</a></dd></dl></div>
+    </li><li name="scales.xml.xpath.NameFunctions#namespace" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="namespace[T](implicitt:T,implicitname:scales.xml.xpath.Names[T],implicitd:scales.xml.xpath.DIF):scales.xml.UnderlyingNamespace"></a><a id="namespace[T](T,Names[T],DIF):UnderlyingNamespace"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#namespace[T](implicitt:T,implicitname:scales.xml.xpath.Names[T],implicitd:scales.xml.xpath.DIF):scales.xml.UnderlyingNamespace" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">namespace</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span class="implicit">implicit </span><span name="t">t: <span class="extype" name="scales.xml.xpath.NameFunctions.namespace.T">T</span></span>, <span name="name">name: <a href="Names.html" class="extype" name="scales.xml.xpath.Names">Names</a>[<span class="extype" name="scales.xml.xpath.NameFunctions.namespace.T">T</span>]</span>, <span name="d">d: <a href="DIF.html" class="extype" name="scales.xml.xpath.DIF">DIF</a></span>)</span><span class="result">: <a href="../UnderlyingNamespace.html" class="extype" name="scales.xml.UnderlyingNamespace">UnderlyingNamespace</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Returns the underlying namespace object
+</p><div class="fullcomment"><div class="comment cmt"><p>Returns the underlying namespace object
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="NameFunctions.html" class="extype" name="scales.xml.xpath.NameFunctions">NameFunctions</a></dd></dl></div>
+    </li><li name="scales.xml.xpath.NameFunctions#namespaceUri" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="namespaceUri[T](t:T)(implicitname:scales.xml.xpath.Names[T]):String"></a><a id="namespaceUri[T](T)(Names[T]):String"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#namespaceUri[T](t:T)(implicitname:scales.xml.xpath.Names[T]):String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">namespaceUri</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="t">t: <span class="extype" name="scales.xml.xpath.NameFunctions.namespaceUri.T">T</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="name">name: <a href="Names.html" class="extype" name="scales.xml.xpath.Names">Names</a>[<span class="extype" name="scales.xml.xpath.NameFunctions.namespaceUri.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">XPath namespace-uri function, returns the uri
+</p><div class="fullcomment"><div class="comment cmt"><p>XPath namespace-uri function, returns the uri
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="NameFunctions.html" class="extype" name="scales.xml.xpath.NameFunctions">NameFunctions</a></dd></dl></div>
+    </li><li name="scales.xml.xpath.NameFunctions#namespaceUri" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="namespaceUri[T](implicitt:T,implicitname:scales.xml.xpath.Names[T],implicitd:scales.xml.xpath.DIF):String"></a><a id="namespaceUri[T](T,Names[T],DIF):String"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#namespaceUri[T](implicitt:T,implicitname:scales.xml.xpath.Names[T],implicitd:scales.xml.xpath.DIF):String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">namespaceUri</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span class="implicit">implicit </span><span name="t">t: <span class="extype" name="scales.xml.xpath.NameFunctions.namespaceUri.T">T</span></span>, <span name="name">name: <a href="Names.html" class="extype" name="scales.xml.xpath.Names">Names</a>[<span class="extype" name="scales.xml.xpath.NameFunctions.namespaceUri.T">T</span>]</span>, <span name="d">d: <a href="DIF.html" class="extype" name="scales.xml.xpath.DIF">DIF</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">XPath namespace-uri function, returns the uri
+</p><div class="fullcomment"><div class="comment cmt"><p>XPath namespace-uri function, returns the uri
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="NameFunctions.html" class="extype" name="scales.xml.xpath.NameFunctions">NameFunctions</a></dd></dl></div>
+    </li><li name="scala.AnyRef#ne" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ne(x$1:AnyRef):Boolean"></a><a id="ne(AnyRef):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#ne(x$1:AnyRef):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scales.xml.xpath.TextFunctions#normalizeSpace" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="normalizeSpace[T](t:T)(implicitvalue:scales.xml.xpath.TextValue[T]):String"></a><a id="normalizeSpace[T](T)(TextValue[T]):String"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#normalizeSpace[T](t:T)(implicitvalue:scales.xml.xpath.TextValue[T]):String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">normalizeSpace</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="t">t: <span class="extype" name="scales.xml.xpath.TextFunctions.normalizeSpace.T">T</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="value">value: <a href="TextValue.html" class="extype" name="scales.xml.xpath.TextValue">TextValue</a>[<span class="extype" name="scales.xml.xpath.TextFunctions.normalizeSpace.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">XPath normalize-space function, replaces all consecutive whitespace with &quot; &quot; and trims.</p><div class="fullcomment"><div class="comment cmt"><p>XPath normalize-space function, replaces all consecutive whitespace with &quot; &quot; and trims.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TextFunctions.html" class="extype" name="scales.xml.xpath.TextFunctions">TextFunctions</a></dd></dl></div>
+    </li><li name="scales.xml.xpath.TextFunctions#normalizeSpace" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="normalizeSpace[T](implicitt:T,implicitvalue:scales.xml.xpath.TextValue[T],implicitd:scales.xml.xpath.DIF):String"></a><a id="normalizeSpace[T](T,TextValue[T],DIF):String"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#normalizeSpace[T](implicitt:T,implicitvalue:scales.xml.xpath.TextValue[T],implicitd:scales.xml.xpath.DIF):String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">normalizeSpace</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span class="implicit">implicit </span><span name="t">t: <span class="extype" name="scales.xml.xpath.TextFunctions.normalizeSpace.T">T</span></span>, <span name="value">value: <a href="TextValue.html" class="extype" name="scales.xml.xpath.TextValue">TextValue</a>[<span class="extype" name="scales.xml.xpath.TextFunctions.normalizeSpace.T">T</span>]</span>, <span name="d">d: <a href="DIF.html" class="extype" name="scales.xml.xpath.DIF">DIF</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">XPath normalize-space function, replaces all consecutive whitespace with &quot; &quot; and trims.</p><div class="fullcomment"><div class="comment cmt"><p>XPath normalize-space function, replaces all consecutive whitespace with &quot; &quot; and trims.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TextFunctions.html" class="extype" name="scales.xml.xpath.TextFunctions">TextFunctions</a></dd></dl></div>
+    </li><li name="scala.AnyRef#notify" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notify():Unit"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#notify():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notify</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#notifyAll" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notifyAll():Unit"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#notifyAll():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notifyAll</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="scales.xml.xpath.NameFunctions#pqName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="pqName[T](t:T)(implicitname:scales.xml.xpath.Names[T]):String"></a><a id="pqName[T](T)(Names[T]):String"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#pqName[T](t:T)(implicitname:scales.xml.xpath.Names[T]):String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">pqName</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="t">t: <span class="extype" name="scales.xml.xpath.NameFunctions.pqName.T">T</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="name">name: <a href="Names.html" class="extype" name="scales.xml.xpath.Names">Names</a>[<span class="extype" name="scales.xml.xpath.NameFunctions.pqName.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">Returns either qualifiedName or prefix:{namespace}local when a prefix is present
+</p><div class="fullcomment"><div class="comment cmt"><p>Returns either qualifiedName or prefix:{namespace}local when a prefix is present
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="NameFunctions.html" class="extype" name="scales.xml.xpath.NameFunctions">NameFunctions</a></dd></dl></div>
+    </li><li name="scales.xml.xpath.NameFunctions#pqName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="pqName[T](implicitt:T,implicitname:scales.xml.xpath.Names[T],implicitd:scales.xml.xpath.DIF):String"></a><a id="pqName[T](T,Names[T],DIF):String"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#pqName[T](implicitt:T,implicitname:scales.xml.xpath.Names[T],implicitd:scales.xml.xpath.DIF):String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">pqName</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span class="implicit">implicit </span><span name="t">t: <span class="extype" name="scales.xml.xpath.NameFunctions.pqName.T">T</span></span>, <span name="name">name: <a href="Names.html" class="extype" name="scales.xml.xpath.Names">Names</a>[<span class="extype" name="scales.xml.xpath.NameFunctions.pqName.T">T</span>]</span>, <span name="d">d: <a href="DIF.html" class="extype" name="scales.xml.xpath.DIF">DIF</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">Returns either qualifiedName or prefix:{namespace}local when a prefix is present
+</p><div class="fullcomment"><div class="comment cmt"><p>Returns either qualifiedName or prefix:{namespace}local when a prefix is present
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="NameFunctions.html" class="extype" name="scales.xml.xpath.NameFunctions">NameFunctions</a></dd></dl></div>
+    </li><li name="scales.xml.xpath.NameFunctions#qName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="qName[T](t:T)(implicitname:scales.xml.xpath.Names[T]):String"></a><a id="qName[T](T)(Names[T]):String"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#qName[T](t:T)(implicitname:scales.xml.xpath.Names[T]):String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">qName</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="t">t: <span class="extype" name="scales.xml.xpath.NameFunctions.qName.T">T</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="name">name: <a href="Names.html" class="extype" name="scales.xml.xpath.Names">Names</a>[<span class="extype" name="scales.xml.xpath.NameFunctions.qName.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">Returns the XPath QName - prefix:local or local
+</p><div class="fullcomment"><div class="comment cmt"><p>Returns the XPath QName - prefix:local or local
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="NameFunctions.html" class="extype" name="scales.xml.xpath.NameFunctions">NameFunctions</a></dd></dl></div>
+    </li><li name="scales.xml.xpath.NameFunctions#qName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="qName[T](implicitt:T,implicitname:scales.xml.xpath.Names[T],implicitd:scales.xml.xpath.DIF):String"></a><a id="qName[T](T,Names[T],DIF):String"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#qName[T](implicitt:T,implicitname:scales.xml.xpath.Names[T],implicitd:scales.xml.xpath.DIF):String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">qName</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span class="implicit">implicit </span><span name="t">t: <span class="extype" name="scales.xml.xpath.NameFunctions.qName.T">T</span></span>, <span name="name">name: <a href="Names.html" class="extype" name="scales.xml.xpath.Names">Names</a>[<span class="extype" name="scales.xml.xpath.NameFunctions.qName.T">T</span>]</span>, <span name="d">d: <a href="DIF.html" class="extype" name="scales.xml.xpath.DIF">DIF</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">Returns the XPath QName - prefix:local or local
+</p><div class="fullcomment"><div class="comment cmt"><p>Returns the XPath QName - prefix:local or local
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="NameFunctions.html" class="extype" name="scales.xml.xpath.NameFunctions">NameFunctions</a></dd></dl></div>
+    </li><li name="scales.xml.xpath.NameFunctions#qname" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="qname[T](t:T)(implicitname:scales.xml.xpath.Names[T]):String"></a><a id="qname[T](T)(Names[T]):String"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#qname[T](t:T)(implicitname:scales.xml.xpath.Names[T]):String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">qname</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="t">t: <span class="extype" name="scales.xml.xpath.NameFunctions.qname.T">T</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="name">name: <a href="Names.html" class="extype" name="scales.xml.xpath.Names">Names</a>[<span class="extype" name="scales.xml.xpath.NameFunctions.qname.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">Returns the XPath QName - prefix:local or local
+</p><div class="fullcomment"><div class="comment cmt"><p>Returns the XPath QName - prefix:local or local
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="NameFunctions.html" class="extype" name="scales.xml.xpath.NameFunctions">NameFunctions</a></dd></dl></div>
+    </li><li name="scales.xml.xpath.NameFunctions#qname" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="qname[T](implicitt:T,implicitname:scales.xml.xpath.Names[T],implicitd:scales.xml.xpath.DIF):String"></a><a id="qname[T](T,Names[T],DIF):String"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#qname[T](implicitt:T,implicitname:scales.xml.xpath.Names[T],implicitd:scales.xml.xpath.DIF):String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">qname</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span class="implicit">implicit </span><span name="t">t: <span class="extype" name="scales.xml.xpath.NameFunctions.qname.T">T</span></span>, <span name="name">name: <a href="Names.html" class="extype" name="scales.xml.xpath.Names">Names</a>[<span class="extype" name="scales.xml.xpath.NameFunctions.qname.T">T</span>]</span>, <span name="d">d: <a href="DIF.html" class="extype" name="scales.xml.xpath.DIF">DIF</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">Returns the XPath QName - prefix:local or local
+</p><div class="fullcomment"><div class="comment cmt"><p>Returns the XPath QName - prefix:local or local
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="NameFunctions.html" class="extype" name="scales.xml.xpath.NameFunctions">NameFunctions</a></dd></dl></div>
+    </li><li name="scales.xml.xpath.NameFunctions#qualifiedName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="qualifiedName[T](t:T)(implicitname:scales.xml.xpath.Names[T]):String"></a><a id="qualifiedName[T](T)(Names[T]):String"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#qualifiedName[T](t:T)(implicitname:scales.xml.xpath.Names[T]):String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">qualifiedName</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="t">t: <span class="extype" name="scales.xml.xpath.NameFunctions.qualifiedName.T">T</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="name">name: <a href="Names.html" class="extype" name="scales.xml.xpath.Names">Names</a>[<span class="extype" name="scales.xml.xpath.NameFunctions.qualifiedName.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">Returns the qualified name {namespace}local
+</p><div class="fullcomment"><div class="comment cmt"><p>Returns the qualified name {namespace}local
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="NameFunctions.html" class="extype" name="scales.xml.xpath.NameFunctions">NameFunctions</a></dd></dl></div>
+    </li><li name="scales.xml.xpath.NameFunctions#qualifiedName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="qualifiedName[T](implicitt:T,implicitname:scales.xml.xpath.Names[T],implicitd:scales.xml.xpath.DIF):String"></a><a id="qualifiedName[T](T,Names[T],DIF):String"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#qualifiedName[T](implicitt:T,implicitname:scales.xml.xpath.Names[T],implicitd:scales.xml.xpath.DIF):String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">qualifiedName</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span class="implicit">implicit </span><span name="t">t: <span class="extype" name="scales.xml.xpath.NameFunctions.qualifiedName.T">T</span></span>, <span name="name">name: <a href="Names.html" class="extype" name="scales.xml.xpath.Names">Names</a>[<span class="extype" name="scales.xml.xpath.NameFunctions.qualifiedName.T">T</span>]</span>, <span name="d">d: <a href="DIF.html" class="extype" name="scales.xml.xpath.DIF">DIF</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">Returns the qualified name {namespace}local
+</p><div class="fullcomment"><div class="comment cmt"><p>Returns the qualified name {namespace}local
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="NameFunctions.html" class="extype" name="scales.xml.xpath.NameFunctions">NameFunctions</a></dd></dl></div>
+    </li><li name="scales.xml.xpath.TextFunctions#string" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="string[T](t:T)(implicitvalue:scales.xml.xpath.TextValue[T]):String"></a><a id="string[T](T)(TextValue[T]):String"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#string[T](t:T)(implicitvalue:scales.xml.xpath.TextValue[T]):String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">string</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="t">t: <span class="extype" name="scales.xml.xpath.TextFunctions.string.T">T</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="value">value: <a href="TextValue.html" class="extype" name="scales.xml.xpath.TextValue">TextValue</a>[<span class="extype" name="scales.xml.xpath.TextFunctions.string.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">XPath name for text
+</p><div class="fullcomment"><div class="comment cmt"><p>XPath name for text
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TextFunctions.html" class="extype" name="scales.xml.xpath.TextFunctions">TextFunctions</a></dd></dl></div>
+    </li><li name="scales.xml.xpath.TextFunctions#string" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="string[T](implicitt:T,implicitvalue:scales.xml.xpath.TextValue[T],implicitd:scales.xml.xpath.DIF):String"></a><a id="string[T](T,TextValue[T],DIF):String"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#string[T](implicitt:T,implicitvalue:scales.xml.xpath.TextValue[T],implicitd:scales.xml.xpath.DIF):String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">string</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span class="implicit">implicit </span><span name="t">t: <span class="extype" name="scales.xml.xpath.TextFunctions.string.T">T</span></span>, <span name="value">value: <a href="TextValue.html" class="extype" name="scales.xml.xpath.TextValue">TextValue</a>[<span class="extype" name="scales.xml.xpath.TextFunctions.string.T">T</span>]</span>, <span name="d">d: <a href="DIF.html" class="extype" name="scales.xml.xpath.DIF">DIF</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">XPath name for text
+</p><div class="fullcomment"><div class="comment cmt"><p>XPath name for text
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TextFunctions.html" class="extype" name="scales.xml.xpath.TextFunctions">TextFunctions</a></dd></dl></div>
+    </li><li name="scala.AnyRef#synchronized" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="synchronized[T0](x$1:=&gt;T0):T0"></a><a id="synchronized[T0](⇒T0):T0"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#synchronized[T0](x$1:=&gt;T0):T0" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">synchronized</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="params">(<span name="arg0">arg0: ⇒ <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>)</span><span class="result">: <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scales.xml.xpath.TextFunctions#text" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="text[T](t:T)(implicitvalue:scales.xml.xpath.TextValue[T]):String"></a><a id="text[T](T)(TextValue[T]):String"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#text[T](t:T)(implicitvalue:scales.xml.xpath.TextValue[T]):String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">text</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="t">t: <span class="extype" name="scales.xml.xpath.TextFunctions.text.T">T</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="value">value: <a href="TextValue.html" class="extype" name="scales.xml.xpath.TextValue">TextValue</a>[<span class="extype" name="scales.xml.xpath.TextFunctions.text.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">The text value of a given object, .value for attributes &amp; items, the accumalated text if its an elem
+</p><div class="fullcomment"><div class="comment cmt"><p>The text value of a given object, .value for attributes &amp; items, the accumalated text if its an elem
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TextFunctions.html" class="extype" name="scales.xml.xpath.TextFunctions">TextFunctions</a></dd></dl></div>
+    </li><li name="scales.xml.xpath.TextFunctions#text" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="text[T](implicitt:T,implicitvalue:scales.xml.xpath.TextValue[T],implicitd:scales.xml.xpath.DIF):String"></a><a id="text[T](T,TextValue[T],DIF):String"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#text[T](implicitt:T,implicitvalue:scales.xml.xpath.TextValue[T],implicitd:scales.xml.xpath.DIF):String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">text</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span class="implicit">implicit </span><span name="t">t: <span class="extype" name="scales.xml.xpath.TextFunctions.text.T">T</span></span>, <span name="value">value: <a href="TextValue.html" class="extype" name="scales.xml.xpath.TextValue">TextValue</a>[<span class="extype" name="scales.xml.xpath.TextFunctions.text.T">T</span>]</span>, <span name="d">d: <a href="DIF.html" class="extype" name="scales.xml.xpath.DIF">DIF</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">The text value of a given object, .value for attributes &amp; items, the accumalated text if its an elem
+</p><div class="fullcomment"><div class="comment cmt"><p>The text value of a given object, .value for attributes &amp; items, the accumalated text if its an elem
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TextFunctions.html" class="extype" name="scales.xml.xpath.TextFunctions">TextFunctions</a></dd></dl></div>
+    </li><li name="scala.AnyRef#toString" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toString():String"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#toString():String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scales.xml.xpath.TextFunctions#value" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="value[T](t:T)(implicitvalue:scales.xml.xpath.TextValue[T]):String"></a><a id="value[T](T)(TextValue[T]):String"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#value[T](t:T)(implicitvalue:scales.xml.xpath.TextValue[T]):String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">value</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="t">t: <span class="extype" name="scales.xml.xpath.TextFunctions.value.T">T</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="value">value: <a href="TextValue.html" class="extype" name="scales.xml.xpath.TextValue">TextValue</a>[<span class="extype" name="scales.xml.xpath.TextFunctions.value.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">More readable version for XmlItems and Attributes, same as text
+</p><div class="fullcomment"><div class="comment cmt"><p>More readable version for XmlItems and Attributes, same as text
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TextFunctions.html" class="extype" name="scales.xml.xpath.TextFunctions">TextFunctions</a></dd></dl></div>
+    </li><li name="scales.xml.xpath.TextFunctions#value" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="value[T](implicitt:T,implicitvalue:scales.xml.xpath.TextValue[T],implicitd:scales.xml.xpath.DIF):String"></a><a id="value[T](T,TextValue[T],DIF):String"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#value[T](implicitt:T,implicitvalue:scales.xml.xpath.TextValue[T],implicitd:scales.xml.xpath.DIF):String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">value</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span class="implicit">implicit </span><span name="t">t: <span class="extype" name="scales.xml.xpath.TextFunctions.value.T">T</span></span>, <span name="value">value: <a href="TextValue.html" class="extype" name="scales.xml.xpath.TextValue">TextValue</a>[<span class="extype" name="scales.xml.xpath.TextFunctions.value.T">T</span>]</span>, <span name="d">d: <a href="DIF.html" class="extype" name="scales.xml.xpath.DIF">DIF</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">More readable version for XmlItems and Attributes, same as text
+</p><div class="fullcomment"><div class="comment cmt"><p>More readable version for XmlItems and Attributes, same as text
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TextFunctions.html" class="extype" name="scales.xml.xpath.TextFunctions">TextFunctions</a></dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait():Unit"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#wait():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long,x$2:Int):Unit"></a><a id="wait(Long,Int):Unit"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#wait(x$1:Long,x$2:Int):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long):Unit"></a><a id="wait(Long):Unit"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/xpath/Functions.html#wait(x$1:Long):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li>
+              </ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="scales.xml.xpath.TextFunctions">
+              <h3>Inherited from <a href="TextFunctions.html" class="extype" name="scales.xml.xpath.TextFunctions">TextFunctions</a></h3>
+            </div><div class="parent" name="scales.xml.xpath.NameFunctions">
+              <h3>Inherited from <a href="NameFunctions.html" class="extype" name="scales.xml.xpath.NameFunctions">NameFunctions</a></h3>
+            </div><div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+    </body>
+          </div>
+        </div>
+      </div>
+    </body>
+      </html>

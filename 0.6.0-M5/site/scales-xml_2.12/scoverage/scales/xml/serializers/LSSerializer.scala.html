@@ -1,0 +1,6345 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/xml/serializers/LSSerializer.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.xml.serializers
+</span>2 <span style=''>
+</span>3 <span style=''>import java.io.Writer
+</span>4 <span style=''>
+</span>5 <span style=''>import java.nio.charset.Charset
+</span>6 <span style=''>
+</span>7 <span style=''>import scales.xml._
+</span>8 <span style=''>import impl._
+</span>9 <span style=''>
+</span>10 <span style=''>import scales.utils._
+</span>11 <span style=''>import resources._
+</span>12 <span style=''>
+</span>13 <span style=''>import javax.xml.parsers._
+</span>14 <span style=''>
+</span>15 <span style=''>/**
+</span>16 <span style=''> * Base implementation for a correct serializer using LSSerializer to provide escape character references.
+</span>17 <span style=''> *
+</span>18 <span style=''> * Developers can override this directly implementing encF, or choose to override createSerializer to further change serialization behaviour
+</span>19 <span style=''> */ 
+</span>20 <span style=''>trait LSSerializerFactoryBase extends SerializerFactory {
+</span>21 <span style=''>  import org.w3c.dom._
+</span>22 <span style=''>  import ls._
+</span>23 <span style=''>
+</span>24 <span style=''>  type ExactSerializer = serializers.LSSerializer
+</span>25 <span style=''>
+</span>26 <span style=''>  /**
+</span>27 <span style=''>   * Override to create the serialazer
+</span>28 <span style=''>   */ 
+</span>29 <span style=''>  def createSerializer( sdata: SerializerData, dbf : DocumentBuilderFactory) : serializers.LSSerializer = {
+</span>30 <span style=''>    val db = </span><span style='background: #AEF1AE'>dbf.newDocumentBuilder</span><span style=''>
+</span>31 <span style=''>    val ndoc = </span><span style='background: #AEF1AE'>db.newDocument()</span><span style=''>
+</span>32 <span style=''>    </span><span style='background: #AEF1AE'>ndoc.setXmlVersion(sdata.version.version)</span><span style=''>
+</span>33 <span style=''>
+</span>34 <span style=''>    </span><span style='background: #AEF1AE'>new</span><span style=''> serializers.LSSerializer {
+</span>35 <span style=''>      val docBuilderF = dbf
+</span>36 <span style=''>      val data = sdata
+</span>37 <span style=''>      val encMap = </span><span style='background: #AEF1AE'>encF(sdata.encoding)</span><span style=''>
+</span>38 <span style=''>      lazy val doc = ndoc
+</span>39 <span style=''>      lazy val impl = doc.getImplementation().asInstanceOf[DOMImplementationLS]
+</span>40 <span style=''>      lazy val lsout = impl.createLSOutput()
+</span>41 <span style=''>      lazy val lsaout = impl.createLSOutput()
+</span>42 <span style=''>      lazy val lss = impl.createLSSerializer()
+</span>43 <span style=''>    }
+</span>44 <span style=''>  }
+</span>45 <span style=''>
+</span>46 <span style=''>  /**
+</span>47 <span style=''>   * Can the content be encoded in a given charset
+</span>48 <span style=''>   */
+</span>49 <span style=''>  val encF: Charset =&gt; String =&gt; Option[Throwable]
+</span>50 <span style=''>
+</span>51 <span style=''>  def borrow( sdata : SerializerData ) : ExactSerializer = {
+</span>52 <span style=''>    val dbf = </span><span style='background: #AEF1AE'>DefaultDOMFactoryPool.grab</span><span style=''>
+</span>53 <span style=''>
+</span>54 <span style=''>    val s = </span><span style='background: #AEF1AE'>createSerializer(sdata, dbf)</span><span style=''>
+</span>55 <span style=''>    </span><span style='background: #AEF1AE'>s.lsout.setEncoding(sdata.encoding.displayName)</span><span style=''>
+</span>56 <span style=''>    </span><span style='background: #AEF1AE'>s.lsout.setCharacterStream(sdata.out)</span><span style=''>
+</span>57 <span style=''>    </span><span style='background: #AEF1AE'>s.lsaout.setEncoding(sdata.encoding.displayName)</span><span style=''>
+</span>58 <span style=''>
+</span>59 <span style=''>    val dc = </span><span style='background: #AEF1AE'>s.lss.getDomConfig</span><span style=''> // got to be the lss, as the xalan impl is unrelated 
+</span>60 <span style=''>    //println(&quot;Configured with LSSerializer &quot; + s.lss.getClass.getName)
+</span>61 <span style=''>    //val xs = new org.apache.xml.serializer.dom3.LSSerializerImpl
+</span>62 <span style=''>    // if the user wants to add a cdata then we shouldn't split it, but &quot;throw&quot;
+</span>63 <span style=''>    // NOTE that no implementation does this for ä and only for ]]&gt;
+</span>64 <span style=''>    </span><span style='background: #AEF1AE'>dc.setParameter(&quot;split-cdata-sections&quot;, false)</span><span style=''>
+</span>65 <span style=''>    </span><span style='background: #AEF1AE'>dc.setParameter(&quot;well-formed&quot;, true)</span><span style=''>
+</span>66 <span style=''>    </span><span style='background: #AEF1AE'>dc.setParameter(&quot;xml-declaration&quot;, false)</span><span style=''>
+</span>67 <span style=''>
+</span>68 <span style=''>    s    
+</span>69 <span style=''>  }
+</span>70 <span style=''>
+</span>71 <span style=''>  def giveBack( serializer : ExactSerializer ) {
+</span>72 <span style=''>    </span><span style='background: #AEF1AE'>DefaultDOMFactoryPool.giveBack( serializer.docBuilderF )</span><span style=''>
+</span>73 <span style=''>  }
+</span>74 <span style=''>
+</span>75 <span style=''>  def apply[R](thunk: Serializer =&gt; R)(sdata: SerializerData): R = {
+</span>76 <span style=''>    val s = </span><span style='background: #AEF1AE'>borrow(sdata)</span><span style=''>
+</span>77 <span style=''>    try {
+</span>78 <span style=''>      </span><span style='background: #AEF1AE'>thunk(s)</span><span style=''>
+</span>79 <span style=''>    } finally {
+</span>80 <span style=''>      </span><span style='background: #AEF1AE'>giveBack(s)</span><span style=''>
+</span>81 <span style=''>    }
+</span>82 <span style=''>  }
+</span>83 <span style=''>
+</span>84 <span style=''>}
+</span>85 <span style=''>
+</span>86 <span style=''>/**
+</span>87 <span style=''> * XHTML serialization extra touches
+</span>88 <span style=''> */ 
+</span>89 <span style=''>object LSSerializerFactoryXHTML extends LSSerializerConcurrentCacheFactoryXHTML {
+</span>90 <span style=''>  val xhtmlNS = </span><span style='background: #AEF1AE'>&quot;http://www.w3.org/1999/xhtml&quot;</span><span style=''>
+</span>91 <span style=''>
+</span>92 <span style=''>  /**
+</span>93 <span style=''>   * Local names of all 10 xhtml elements that can be empty, issue #6
+</span>94 <span style=''>   */ 
+</span>95 <span style=''>  val canBeEmpty = </span><span style='background: #AEF1AE'>Set( &quot;area&quot;, &quot;base&quot;, &quot;br&quot;, &quot;col&quot;, &quot;hr&quot;,
+</span>96 <span style=''></span><span style='background: #AEF1AE'>		       &quot;img&quot;, &quot;input&quot;, &quot;link&quot;, &quot;meta&quot;, &quot;param&quot; )</span><span style=''>
+</span>97 <span style=''>}
+</span>98 <span style=''>
+</span>99 <span style=''>trait LSSerializerConcurrentCacheFactoryXHTML extends LSSerializerConcurrentCacheFactory {
+</span>100 <span style=''>  import org.w3c.dom._
+</span>101 <span style=''>  import ls._
+</span>102 <span style=''>
+</span>103 <span style=''>  /**
+</span>104 <span style=''>   * Override to create the serialazer
+</span>105 <span style=''>   */ 
+</span>106 <span style=''>  override def createSerializer( sdata: SerializerData, dbf : DocumentBuilderFactory) : serializers.LSSerializer = {
+</span>107 <span style=''>    val db = </span><span style='background: #AEF1AE'>dbf.newDocumentBuilder</span><span style=''>
+</span>108 <span style=''>    val ndoc = </span><span style='background: #AEF1AE'>db.newDocument()</span><span style=''>
+</span>109 <span style=''>    </span><span style='background: #AEF1AE'>ndoc.setXmlVersion(sdata.version.version)</span><span style=''>
+</span>110 <span style=''>
+</span>111 <span style=''>    </span><span style='background: #AEF1AE'>new</span><span style=''> serializers.XHTMLLSSerializer {
+</span>112 <span style=''>      val docBuilderF = dbf
+</span>113 <span style=''>      val data = sdata
+</span>114 <span style=''>      val encMap = </span><span style='background: #AEF1AE'>encF(sdata.encoding)</span><span style=''>
+</span>115 <span style=''>      lazy val doc = ndoc
+</span>116 <span style=''>      lazy val impl = doc.getImplementation().asInstanceOf[DOMImplementationLS]
+</span>117 <span style=''>      lazy val lsout = impl.createLSOutput()
+</span>118 <span style=''>      lazy val lsaout = impl.createLSOutput()
+</span>119 <span style=''>      lazy val lss = impl.createLSSerializer()
+</span>120 <span style=''>    }
+</span>121 <span style=''>  }
+</span>122 <span style=''>}
+</span>123 <span style=''>
+</span>124 <span style=''>
+</span>125 <span style=''>/**
+</span>126 <span style=''> * Default implmementation of serialization
+</span>127 <span style=''> */ 
+</span>128 <span style=''>object LSSerializerFactory extends LSSerializerConcurrentCacheFactory {
+</span>129 <span style=''>}
+</span>130 <span style=''>
+</span>131 <span style=''>trait LSSerializerConcurrentCacheFactory extends LSSerializerFactoryBase {
+</span>132 <span style=''>  import java.util.concurrent.ConcurrentHashMap
+</span>133 <span style=''>  import scales.utils.collection.Once
+</span>134 <span style=''>
+</span>135 <span style=''>  /**
+</span>136 <span style=''>   * On the assumption that a given apps qname population is larger than that of its possible encodings.
+</span>137 <span style=''>   */
+</span>138 <span style=''>  val globalEncMap = </span><span style='background: #AEF1AE'>new ConcurrentHashMap[String, ConcurrentHashMap[Charset, Once[Option[Throwable]]]]</span><span style=''>
+</span>139 <span style=''>
+</span>140 <span style=''>  val encF = { encoding: Charset =&gt;
+</span>141 <span style=''>    val encoder = </span><span style='background: #AEF1AE'>encoding.newEncoder</span><span style=''>
+</span>142 <span style=''>
+</span>143 <span style=''>    /**
+</span>144 <span style=''>     * Perhaps silly optimisation given a bug about it but worth trying
+</span>145 <span style=''>     *
+</span>146 <span style=''>     * If the charset contains utf8 then its able to support all unicode characters that utf8 can.  Wierdly I would also have expected utf8 to contain32 as it contains utf16 - must verify.
+</span>147 <span style=''>     */
+</span>148 <span style=''>    if (</span><span style='background: #AEF1AE'>encoding.contains(defaultCharset)</span><span style=''>) { </span><span style='background: #AEF1AE'>s: String =&gt; None</span><span style=''> }
+</span>149 <span style=''>    else { </span><span style='background: #AEF1AE'>s: String =&gt;
+</span>150 <span style=''></span><span style='background: #AEF1AE'>
+</span>151 <span style=''></span><span style='background: #AEF1AE'>      calcOnce(encoding, valueOf(s, globalEncMap)(new ConcurrentHashMap[Charset, Once[Option[Throwable]]]())) {
+</span>152 <span style=''></span><span style='background: #AEF1AE'>        if (encoder.canEncode(s))
+</span>153 <span style=''></span><span style='background: #AEF1AE'>          None // it can do it
+</span>154 <span style=''></span><span style='background: #AEF1AE'>        else
+</span>155 <span style=''></span><span style='background: #AEF1AE'>          Some(InvalidCharacterInMarkup(s))
+</span>156 <span style=''></span><span style='background: #AEF1AE'>      }</span><span style=''>
+</span>157 <span style=''>    }
+</span>158 <span style=''>  }
+</span>159 <span style=''>
+</span>160 <span style=''>}
+</span>161 <span style=''>
+</span>162 <span style=''>object LSSerializerNoCacheFactory extends LSSerializerNoCacheFactoryT {
+</span>163 <span style=''>}
+</span>164 <span style=''>
+</span>165 <span style=''>/**
+</span>166 <span style=''> * This variety does not use a thread safe global cache, use when your data
+</span>167 <span style=''> * is progressivly radically different for each run.
+</span>168 <span style=''> *
+</span>169 <span style=''> * If you don't like this scheme either simply implement LSSerializerFactoryBase with your own caching needs.
+</span>170 <span style=''> */
+</span>171 <span style=''>trait LSSerializerNoCacheFactoryT extends LSSerializerFactoryBase {
+</span>172 <span style=''>  import java.util.HashMap
+</span>173 <span style=''>
+</span>174 <span style=''>  val encF = { encoding: Charset =&gt;
+</span>175 <span style=''>    val encoder = </span><span style='background: #AEF1AE'>encoding.newEncoder</span><span style=''>
+</span>176 <span style=''>    val map = </span><span style='background: #AEF1AE'>new HashMap[String, Option[Throwable]]</span><span style=''>
+</span>177 <span style=''>
+</span>178 <span style=''>    /**
+</span>179 <span style=''>     * See the above explanation for this
+</span>180 <span style=''>     */
+</span>181 <span style=''>    if (</span><span style='background: #AEF1AE'>encoding.contains(defaultCharset)</span><span style=''>) { </span><span style='background: #AEF1AE'>s: String =&gt; None</span><span style=''> }
+</span>182 <span style=''>    else { </span><span style='background: #AEF1AE'>s: String =&gt;
+</span>183 <span style=''></span><span style='background: #AEF1AE'>
+</span>184 <span style=''></span><span style='background: #AEF1AE'>      var r = map.get(s)
+</span>185 <span style=''></span><span style='background: #AEF1AE'>      if (r eq null) {
+</span>186 <span style=''></span><span style='background: #AEF1AE'>        r = if (encoder.canEncode(s))
+</span>187 <span style=''></span><span style='background: #AEF1AE'>          </span><span style='background: #F0ADAD'>None</span><span style='background: #AEF1AE'> // it can do it
+</span>188 <span style=''></span><span style='background: #AEF1AE'>        else
+</span>189 <span style=''></span><span style='background: #AEF1AE'>          Some(InvalidCharacterInMarkup(s))
+</span>190 <span style=''></span><span style='background: #AEF1AE'>
+</span>191 <span style=''></span><span style='background: #AEF1AE'>        map.put(s, r)
+</span>192 <span style=''></span><span style='background: #AEF1AE'>      }
+</span>193 <span style=''></span><span style='background: #AEF1AE'>
+</span>194 <span style=''></span><span style='background: #AEF1AE'>      r</span><span style=''>
+</span>195 <span style=''>    }
+</span>196 <span style=''>  }
+</span>197 <span style=''>
+</span>198 <span style=''>}
+</span>199 <span style=''>
+</span>200 <span style=''>/**
+</span>201 <span style=''> * Adds an extra space after an empty element
+</span>202 <span style=''> */ 
+</span>203 <span style=''>trait XHTMLLSSerializer extends LSSerializer {
+</span>204 <span style=''>  import data._
+</span>205 <span style=''>
+</span>206 <span style=''>  override def emptyElement(qName: QName, attributes: Traversable[Attribute], namespaces: Map[String, String], declareDefaultNS: Option[String], path: List[QName]): Option[Throwable] =
+</span>207 <span style=''>    </span><span style='background: #AEF1AE'>doElem(qName, attributes, namespaces, declareDefaultNS) orElse {
+</span>208 <span style=''></span><span style='background: #AEF1AE'>      // #6 
+</span>209 <span style=''></span><span style='background: #AEF1AE'>      val canBeEmpty = 
+</span>210 <span style=''></span><span style='background: #AEF1AE'>	if (qName.namespace.uri == LSSerializerFactoryXHTML.xhtmlNS)
+</span>211 <span style=''></span><span style='background: #AEF1AE'>	  if (LSSerializerFactoryXHTML.canBeEmpty(qName.local))
+</span>212 <span style=''></span><span style='background: #AEF1AE'>	    true
+</span>213 <span style=''></span><span style='background: #AEF1AE'>	  else
+</span>214 <span style=''></span><span style='background: #AEF1AE'>	    false // all others must be &lt;&gt;&lt;/&gt;
+</span>215 <span style=''></span><span style='background: #AEF1AE'>	else
+</span>216 <span style=''></span><span style='background: #AEF1AE'>	  true
+</span>217 <span style=''></span><span style='background: #AEF1AE'>      
+</span>218 <span style=''></span><span style='background: #AEF1AE'>      if (canBeEmpty) {
+</span>219 <span style=''></span><span style='background: #AEF1AE'>	out.append(&quot; /&gt;&quot;)
+</span>220 <span style=''></span><span style='background: #AEF1AE'>	None
+</span>221 <span style=''></span><span style='background: #AEF1AE'>      } else {
+</span>222 <span style=''></span><span style='background: #AEF1AE'>	out.append(&quot;&gt;&quot;)
+</span>223 <span style=''></span><span style='background: #AEF1AE'>	endElement(qName, path)
+</span>224 <span style=''></span><span style='background: #AEF1AE'>      }
+</span>225 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>226 <span style=''>}
+</span>227 <span style=''>
+</span>228 <span style=''>/**
+</span>229 <span style=''> * Default serializer, correctness first.  Uses the LSSerializer present in each DOM L3 impl.  XmlItems are always serialized with the LS, elements and attributes are however for speed reasons, verified for encoding once per QName; the attribute values themselves are written via Text nodes and LS.
+</span>230 <span style=''> */
+</span>231 <span style=''>trait LSSerializer extends Serializer {
+</span>232 <span style=''>  import javax.xml.parsers._
+</span>233 <span style=''>  import org.w3c.dom._
+</span>234 <span style=''>  import ls._
+</span>235 <span style=''>  import java.util.concurrent.ConcurrentHashMap
+</span>236 <span style=''>
+</span>237 <span style=''>  val data: SerializerData
+</span>238 <span style=''>  import data._
+</span>239 <span style=''>
+</span>240 <span style=''>  val docBuilderF: DocumentBuilderFactory
+</span>241 <span style=''>  val doc: Document
+</span>242 <span style=''>  val impl: DOMImplementationLS
+</span>243 <span style=''>  val lsout: LSOutput
+</span>244 <span style=''>  val lss: ls.LSSerializer
+</span>245 <span style=''>
+</span>246 <span style=''>  val lsaout: LSOutput
+</span>247 <span style=''>
+</span>248 <span style=''>  /**
+</span>249 <span style=''>   * Can the ncName be mapped for a given encoding
+</span>250 <span style=''>   */
+</span>251 <span style=''>  val encMap: String =&gt; Option[Throwable]
+</span>252 <span style=''>
+</span>253 <span style=''>  lazy val textNode = doc.createTextNode(&quot;&quot;)
+</span>254 <span style=''>
+</span>255 <span style=''>  lazy val encoder = encoding.newEncoder()
+</span>256 <span style=''>
+</span>257 <span style=''>  /**
+</span>258 <span style=''>   * See default SF for logic on this, however faulty :-)
+</span>259 <span style=''>   */
+</span>260 <span style=''>  lazy val canEncode =
+</span>261 <span style=''>    if (encoding.contains(defaultCharset)) { s: String =&gt; true }
+</span>262 <span style=''>    else { s: String =&gt; encoder.canEncode(s) }
+</span>263 <span style=''>
+</span>264 <span style=''>  def ct(t: =&gt; Boolean, s: =&gt; String): Option[Throwable] = {
+</span>265 <span style=''>    try {
+</span>266 <span style=''>      </span><span style='background: #AEF1AE'>if (t)
+</span>267 <span style=''></span><span style='background: #AEF1AE'>        None
+</span>268 <span style=''></span><span style='background: #AEF1AE'>      else
+</span>269 <span style=''></span><span style='background: #AEF1AE'>        </span><span style='background: #F0ADAD'>Some(CannotSerialize(s))</span><span style=''>
+</span>270 <span style=''>    } catch {
+</span>271 <span style=''>      case t: Throwable =&gt; </span><span style='background: #F0ADAD'>Some(t)</span><span style=''>
+</span>272 <span style=''>    }
+</span>273 <span style=''>  }
+</span>274 <span style=''>
+</span>275 <span style=''>  /**
+</span>276 <span style=''>   * Performs the actual write for Comments/CData/PI, due to LSSerializer issues this function is seperated for easy overriding, should anyone really trust their DOM/JAXP versions.
+</span>277 <span style=''>   *
+</span>278 <span style=''>   * For this method to be called the encoding has already been verified.
+</span>279 <span style=''>   */
+</span>280 <span style=''>  def writeNonText(item: XmlItem, path: List[QName]): Option[Throwable] =
+</span>281 <span style=''>    </span><span style='background: #AEF1AE'>SerializerHelpers.item(out, item, path)</span><span style=''>
+</span>282 <span style=''>
+</span>283 <span style=''>  /**
+</span>284 <span style=''>   * LSSerializer in 6_24 is garbage, but the xalan one isn't much better.  jre uses hex, xalan numberic character refs.  And jre is totally useless for cdata, writing no end part, both ignore the split-cdata-sections option when escaping, choosing to split, I assume this is only being done for character refs but follows the DOMConfiguration (instead of the load and save spec) for end sequence splitting.
+</span>285 <span style=''>   *
+</span>286 <span style=''>   * As such there only seems to be one safe way to handle this:
+</span>287 <span style=''>   *   # Use the encoder to check if a CData or Comment can be written without splitting, throw if it can't.
+</span>288 <span style=''>   *   # Write the start and end CData directly
+</span>289 <span style=''>   */
+</span>290 <span style=''>  def item(item: XmlItem, path: List[QName]): Option[Throwable] = {
+</span>291 <span style=''>    val canEncodeI: Option[Throwable] = item match {
+</span>292 <span style=''>      case x: scales.xml.Text =&gt;
+</span>293 <span style=''>        </span><span style='background: #AEF1AE'>None</span><span style=''> // never a problem
+</span>294 <span style=''>      case x: CData =&gt;
+</span>295 <span style=''>        </span><span style='background: #AEF1AE'>if (canEncode(item.value))
+</span>296 <span style=''></span><span style='background: #AEF1AE'>          None
+</span>297 <span style=''></span><span style='background: #AEF1AE'>        else
+</span>298 <span style=''></span><span style='background: #AEF1AE'>          Some(CDataCannotBeEncoded(item.value))</span><span style=''>
+</span>299 <span style=''>      case x: scales.xml.Comment =&gt;
+</span>300 <span style=''>        </span><span style='background: #AEF1AE'>if (canEncode(item.value))
+</span>301 <span style=''></span><span style='background: #AEF1AE'>          None
+</span>302 <span style=''></span><span style='background: #AEF1AE'>        else
+</span>303 <span style=''></span><span style='background: #AEF1AE'>          Some(CommentCannotBeEncoded(item.value))</span><span style=''>
+</span>304 <span style=''>      case x: scales.xml.PI =&gt;
+</span>305 <span style=''>        </span><span style='background: #AEF1AE'>if (canEncode(x.value) &amp;&amp; canEncode(x.target))
+</span>306 <span style=''></span><span style='background: #AEF1AE'>          None
+</span>307 <span style=''></span><span style='background: #AEF1AE'>        else
+</span>308 <span style=''></span><span style='background: #AEF1AE'>          Some(PICannotBeEncoded(&quot;Target: &quot; + x.target + &quot; value: &quot; + x.value))</span><span style=''>
+</span>309 <span style=''>    }
+</span>310 <span style=''>    </span><span style='background: #AEF1AE'>canEncodeI orElse { // its serializeable, without cdata breaks
+</span>311 <span style=''></span><span style='background: #AEF1AE'>
+</span>312 <span style=''></span><span style='background: #AEF1AE'>      item match {
+</span>313 <span style=''></span><span style='background: #AEF1AE'>        case x: scales.xml.Text =&gt;
+</span>314 <span style=''></span><span style='background: #AEF1AE'>          textNode.setNodeValue(item.value) // twice for pi's but I'm not going to work around them
+</span>315 <span style=''></span><span style='background: #AEF1AE'>          ct(lss.write(textNode, lsout),
+</span>316 <span style=''></span><span style='background: #AEF1AE'>            {
+</span>317 <span style=''></span><span style='background: #AEF1AE'>              val str = </span><span style='background: #F0ADAD'>new java.io.StringWriter()</span><span style='background: #AEF1AE'>;
+</span>318 <span style=''></span><span style='background: #AEF1AE'>              </span><span style='background: #F0ADAD'>SerializerHelpers.item(str, item, path)</span><span style='background: #AEF1AE'>
+</span>319 <span style=''></span><span style='background: #AEF1AE'>              </span><span style='background: #F0ADAD'>str.toString</span><span style='background: #AEF1AE'>
+</span>320 <span style=''></span><span style='background: #AEF1AE'>            })
+</span>321 <span style=''></span><span style='background: #AEF1AE'>        case _ =&gt;
+</span>322 <span style=''></span><span style='background: #AEF1AE'>          writeNonText(item, path)
+</span>323 <span style=''></span><span style='background: #AEF1AE'>      }
+</span>324 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>325 <span style=''>  }
+</span>326 <span style=''>
+</span>327 <span style=''>  def writeAttr(before: =&gt; String, toCt: =&gt; String, after: =&gt; String) =
+</span>328 <span style=''>    </span><span style='background: #AEF1AE'>ct({
+</span>329 <span style=''></span><span style='background: #AEF1AE'>      out.append(before)
+</span>330 <span style=''></span><span style='background: #AEF1AE'>      // every other escape takes place
+</span>331 <span style=''></span><span style='background: #AEF1AE'>      // 
+</span>332 <span style=''></span><span style='background: #AEF1AE'>      textNode.setNodeValue(toCt)
+</span>333 <span style=''></span><span style='background: #AEF1AE'>      val str = new java.io.StringWriter();
+</span>334 <span style=''></span><span style='background: #AEF1AE'>      lsaout.setCharacterStream(str)
+</span>335 <span style=''></span><span style='background: #AEF1AE'>      val r = lss.write(textNode, lsaout)
+</span>336 <span style=''></span><span style='background: #AEF1AE'>      lsaout.setCharacterStream(null) // let it be collected
+</span>337 <span style=''></span><span style='background: #AEF1AE'>      if (r) {
+</span>338 <span style=''></span><span style='background: #AEF1AE'>        out.append(str.toString.replaceAll(&quot;\&quot;&quot;, &quot;&amp;quot;&quot;))
+</span>339 <span style=''></span><span style='background: #AEF1AE'>        out.append(after)
+</span>340 <span style=''></span><span style='background: #AEF1AE'>      }
+</span>341 <span style=''></span><span style='background: #AEF1AE'>      r
+</span>342 <span style=''></span><span style='background: #AEF1AE'>    }, </span><span style='background: #F0ADAD'>before + toCt + after</span><span style='background: #AEF1AE'>)</span><span style=''>
+</span>343 <span style=''>
+</span>344 <span style=''>  /**
+</span>345 <span style=''>   * Override this to order the attributes.
+</span>346 <span style=''>   */
+</span>347 <span style=''>  def doElem(qName: QName, attribs: Traversable[Attribute], ns: Map[String, String], declareDefaultNS: Option[String]): Option[Throwable] = {
+</span>348 <span style=''>
+</span>349 <span style=''>    {
+</span>350 <span style=''>      </span><span style='background: #AEF1AE'>if (qName.qNameVersion == Xml11 &amp;&amp; version == Xml10)
+</span>351 <span style=''></span><span style='background: #AEF1AE'>        Some(IncompatibleQNameVersions(qName.qName))
+</span>352 <span style=''></span><span style='background: #AEF1AE'>      else
+</span>353 <span style=''></span><span style='background: #AEF1AE'>        None
+</span>354 <span style=''></span><span style='background: #AEF1AE'>    } orElse {
+</span>355 <span style=''></span><span style='background: #AEF1AE'>      // we don't have to encode it, just check it can be encoded, the writer will do the rest for markup
+</span>356 <span style=''></span><span style='background: #AEF1AE'>      encMap(qName.qName)
+</span>357 <span style=''></span><span style='background: #AEF1AE'>    } orElse {
+</span>358 <span style=''></span><span style='background: #AEF1AE'>
+</span>359 <span style=''></span><span style='background: #AEF1AE'>      out.append(&quot;&lt;&quot; + qName.qName)
+</span>360 <span style=''></span><span style='background: #AEF1AE'>      None
+</span>361 <span style=''></span><span style='background: #AEF1AE'>
+</span>362 <span style=''></span><span style='background: #AEF1AE'>    } orElse {
+</span>363 <span style=''></span><span style='background: #AEF1AE'>
+</span>364 <span style=''></span><span style='background: #AEF1AE'>      declareDefaultNS.flatMap { dns =&gt;
+</span>365 <span style=''></span><span style='background: #AEF1AE'>        writeAttr(&quot; xmlns=\&quot;&quot;, dns, &quot;\&quot;&quot;)
+</span>366 <span style=''></span><span style='background: #AEF1AE'>      }
+</span>367 <span style=''></span><span style='background: #AEF1AE'>    } orElse {
+</span>368 <span style=''></span><span style='background: #AEF1AE'>
+</span>369 <span style=''></span><span style='background: #AEF1AE'>      ns.foldLeft(None: Option[Throwable]) { (r, x) =&gt;
+</span>370 <span style=''></span><span style='background: #AEF1AE'>        r orElse {
+</span>371 <span style=''></span><span style='background: #AEF1AE'>          // check the prefix is valid
+</span>372 <span style=''></span><span style='background: #AEF1AE'>          if (QNameCharUtils.validXmlPrefix(x._1)(version) &amp;&amp;
+</span>373 <span style=''></span><span style='background: #AEF1AE'>	    QNameCharUtils.validXmlNamespace(x._2)(version)) {
+</span>374 <span style=''></span><span style='background: #AEF1AE'>            out.append(&quot; xmlns:&quot;)
+</span>375 <span style=''></span><span style='background: #AEF1AE'>            encMap(x._1) orElse
+</span>376 <span style=''></span><span style='background: #AEF1AE'>              writeAttr(x._1 + &quot;=\&quot;&quot;, x._2, &quot;\&quot;&quot;)
+</span>377 <span style=''></span><span style='background: #AEF1AE'>          } else
+</span>378 <span style=''></span><span style='background: #AEF1AE'>            Some(IncompatibleQNameVersions(&quot;NS:&quot;+x._1+&quot;-&gt;&quot;+x._2))
+</span>379 <span style=''></span><span style='background: #AEF1AE'>        }
+</span>380 <span style=''></span><span style='background: #AEF1AE'>      }
+</span>381 <span style=''></span><span style='background: #AEF1AE'>
+</span>382 <span style=''></span><span style='background: #AEF1AE'>    } orElse {
+</span>383 <span style=''></span><span style='background: #AEF1AE'>
+</span>384 <span style=''></span><span style='background: #AEF1AE'>      import ScalesXml._
+</span>385 <span style=''></span><span style='background: #AEF1AE'>
+</span>386 <span style=''></span><span style='background: #AEF1AE'>      attribs.foldLeft(None: Option[Throwable]) { (r, x) =&gt;
+</span>387 <span style=''></span><span style='background: #AEF1AE'>        r orElse {
+</span>388 <span style=''></span><span style='background: #AEF1AE'>	  val name = x.name
+</span>389 <span style=''></span><span style='background: #AEF1AE'>          // is the name valid
+</span>390 <span style=''></span><span style='background: #AEF1AE'>          if (name.qNameVersion == Xml11 &amp;&amp; version == Xml10)
+</span>391 <span style=''></span><span style='background: #AEF1AE'>            Some(IncompatibleQNameVersions(&quot;Attr:&quot;+name.qName))
+</span>392 <span style=''></span><span style='background: #AEF1AE'>          else {
+</span>393 <span style=''></span><span style='background: #AEF1AE'>            val n = name.qName
+</span>394 <span style=''></span><span style='background: #AEF1AE'>            encMap(n) orElse
+</span>395 <span style=''></span><span style='background: #AEF1AE'>              writeAttr(&quot; &quot; + n + &quot;=\&quot;&quot;, x.value, &quot;\&quot;&quot;)
+</span>396 <span style=''></span><span style='background: #AEF1AE'>          }
+</span>397 <span style=''></span><span style='background: #AEF1AE'>        }
+</span>398 <span style=''></span><span style='background: #AEF1AE'>      }
+</span>399 <span style=''></span><span style='background: #AEF1AE'>
+</span>400 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>401 <span style=''>  }
+</span>402 <span style=''>
+</span>403 <span style=''>  def emptyElement(qName: QName, attributes: Traversable[Attribute], namespaces: Map[String, String], declareDefaultNS: Option[String], path: List[QName]): Option[Throwable] =
+</span>404 <span style=''>    </span><span style='background: #AEF1AE'>doElem(qName, attributes, namespaces, declareDefaultNS) orElse {
+</span>405 <span style=''></span><span style='background: #AEF1AE'>      out.append(&quot;/&gt;&quot;)
+</span>406 <span style=''></span><span style='background: #AEF1AE'>      None
+</span>407 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>408 <span style=''>
+</span>409 <span style=''>  def startElement(qName: QName, attributes: Traversable[Attribute], namespaces: Map[String, String], declareDefaultNS: Option[String], path: List[QName]): Option[Throwable] =
+</span>410 <span style=''>    </span><span style='background: #AEF1AE'>doElem(qName, attributes, namespaces, declareDefaultNS) orElse {
+</span>411 <span style=''></span><span style='background: #AEF1AE'>      out.append(&quot;&gt;&quot;)
+</span>412 <span style=''></span><span style='background: #AEF1AE'>      None
+</span>413 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>414 <span style=''>
+</span>415 <span style=''>  def endElement(qName: QName, path: List[QName]): Option[Throwable] = {
+</span>416 <span style=''>    </span><span style='background: #AEF1AE'>out.append(&quot;&lt;/&quot; + qName.qName + &quot;&gt;&quot;)</span><span style=''> // to get here it must be valid
+</span>417 <span style=''>    </span><span style='background: #AEF1AE'>None</span><span style=''>
+</span>418 <span style=''>  }
+</span>419 <span style=''>
+</span>420 <span style=''>  def xmlDeclaration(encoding: Charset, version: XmlVersion): Option[Throwable] = </span><span style='background: #AEF1AE'>SerializerHelpers.xmlDecl(out, encoding, version)</span><span style=''>
+</span>421 <span style=''>
+</span>422 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          4811
+        </td>
+        <td>
+          773
+          -
+          795
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.parsers.DocumentBuilderFactory.newDocumentBuilder
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          dbf.newDocumentBuilder()
+        </td>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          4812
+        </td>
+        <td>
+          811
+          -
+          827
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.parsers.DocumentBuilder.newDocument
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          db.newDocument()
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          4813
+        </td>
+        <td>
+          851
+          -
+          872
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.XmlVersion.version
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          sdata.version.version
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          4814
+        </td>
+        <td>
+          832
+          -
+          873
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.w3c.dom.Document.setXmlVersion
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ndoc.setXmlVersion(sdata.version.version)
+        </td>
+      </tr><tr>
+        <td>
+          34
+        </td>
+        <td>
+          4817
+        </td>
+        <td>
+          879
+          -
+          882
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.LSSerializerFactoryBase.$anon.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          4815
+        </td>
+        <td>
+          985
+          -
+          999
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.SerializerData.encoding
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          sdata.encoding
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          4816
+        </td>
+        <td>
+          980
+          -
+          1000
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializerFactoryBase.this.encF.apply(sdata.encoding)
+        </td>
+      </tr><tr>
+        <td>
+          52
+        </td>
+        <td>
+          4818
+        </td>
+        <td>
+          1446
+          -
+          1472
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.resources.SimpleUnboundedPool.grab
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.impl.DefaultDOMFactoryPool.grab
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          4819
+        </td>
+        <td>
+          1486
+          -
+          1514
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.LSSerializerFactoryBase.createSerializer
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializerFactoryBase.this.createSerializer(sdata, dbf)
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          4820
+        </td>
+        <td>
+          1539
+          -
+          1565
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.nio.charset.Charset.displayName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          sdata.encoding.displayName()
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          4821
+        </td>
+        <td>
+          1519
+          -
+          1566
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.w3c.dom.ls.LSOutput.setEncoding
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          s.lsout.setEncoding(sdata.encoding.displayName())
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          4822
+        </td>
+        <td>
+          1598
+          -
+          1607
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.SerializerData.out
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          sdata.out
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          4823
+        </td>
+        <td>
+          1571
+          -
+          1608
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.w3c.dom.ls.LSOutput.setCharacterStream
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          s.lsout.setCharacterStream(sdata.out)
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          4824
+        </td>
+        <td>
+          1634
+          -
+          1660
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.nio.charset.Charset.displayName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          sdata.encoding.displayName()
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          4825
+        </td>
+        <td>
+          1613
+          -
+          1661
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.w3c.dom.ls.LSOutput.setEncoding
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          s.lsaout.setEncoding(sdata.encoding.displayName())
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          4826
+        </td>
+        <td>
+          1676
+          -
+          1694
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.w3c.dom.ls.LSSerializer.getDomConfig
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          s.lss.getDomConfig()
+        </td>
+      </tr><tr>
+        <td>
+          64
+        </td>
+        <td>
+          4827
+        </td>
+        <td>
+          2040
+          -
+          2086
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.w3c.dom.DOMConfiguration.setParameter
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          dc.setParameter(&quot;split-cdata-sections&quot;, false)
+        </td>
+      </tr><tr>
+        <td>
+          65
+        </td>
+        <td>
+          4828
+        </td>
+        <td>
+          2091
+          -
+          2127
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.w3c.dom.DOMConfiguration.setParameter
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          dc.setParameter(&quot;well-formed&quot;, true)
+        </td>
+      </tr><tr>
+        <td>
+          66
+        </td>
+        <td>
+          4829
+        </td>
+        <td>
+          2132
+          -
+          2173
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.w3c.dom.DOMConfiguration.setParameter
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          dc.setParameter(&quot;xml-declaration&quot;, false)
+        </td>
+      </tr><tr>
+        <td>
+          72
+        </td>
+        <td>
+          4830
+        </td>
+        <td>
+          2275
+          -
+          2297
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.LSSerializer.docBuilderF
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          serializer.docBuilderF
+        </td>
+      </tr><tr>
+        <td>
+          72
+        </td>
+        <td>
+          4831
+        </td>
+        <td>
+          2243
+          -
+          2299
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.resources.SimpleUnboundedPool.giveBack
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.impl.DefaultDOMFactoryPool.giveBack(serializer.docBuilderF)
+        </td>
+      </tr><tr>
+        <td>
+          76
+        </td>
+        <td>
+          4832
+        </td>
+        <td>
+          2386
+          -
+          2399
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.LSSerializerFactoryBase.borrow
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializerFactoryBase.this.borrow(sdata)
+        </td>
+      </tr><tr>
+        <td>
+          78
+        </td>
+        <td>
+          4833
+        </td>
+        <td>
+          2416
+          -
+          2424
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          thunk.apply(s)
+        </td>
+      </tr><tr>
+        <td>
+          78
+        </td>
+        <td>
+          4834
+        </td>
+        <td>
+          2416
+          -
+          2424
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          thunk.apply(s)
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          4835
+        </td>
+        <td>
+          2447
+          -
+          2458
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.LSSerializerFactoryBase.giveBack
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializerFactoryBase.this.giveBack(s)
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          4836
+        </td>
+        <td>
+          2447
+          -
+          2458
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.serializers.LSSerializerFactoryBase.giveBack
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializerFactoryBase.this.giveBack(s)
+        </td>
+      </tr><tr>
+        <td>
+          90
+        </td>
+        <td>
+          4837
+        </td>
+        <td>
+          2617
+          -
+          2647
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;http://www.w3.org/1999/xhtml&quot;
+        </td>
+      </tr><tr>
+        <td>
+          95
+        </td>
+        <td>
+          4838
+        </td>
+        <td>
+          2751
+          -
+          2841
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.generic.GenericCompanion.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.Set.apply[String](&quot;area&quot;, &quot;base&quot;, &quot;br&quot;, &quot;col&quot;, &quot;hr&quot;, &quot;img&quot;, &quot;input&quot;, &quot;link&quot;, &quot;meta&quot;, &quot;param&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          107
+        </td>
+        <td>
+          4839
+        </td>
+        <td>
+          3156
+          -
+          3178
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.parsers.DocumentBuilderFactory.newDocumentBuilder
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          dbf.newDocumentBuilder()
+        </td>
+      </tr><tr>
+        <td>
+          108
+        </td>
+        <td>
+          4840
+        </td>
+        <td>
+          3194
+          -
+          3210
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.parsers.DocumentBuilder.newDocument
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          db.newDocument()
+        </td>
+      </tr><tr>
+        <td>
+          109
+        </td>
+        <td>
+          4841
+        </td>
+        <td>
+          3234
+          -
+          3255
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.XmlVersion.version
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          sdata.version.version
+        </td>
+      </tr><tr>
+        <td>
+          109
+        </td>
+        <td>
+          4842
+        </td>
+        <td>
+          3215
+          -
+          3256
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.w3c.dom.Document.setXmlVersion
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ndoc.setXmlVersion(sdata.version.version)
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          4845
+        </td>
+        <td>
+          3262
+          -
+          3265
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.LSSerializerConcurrentCacheFactoryXHTML.$anon.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          114
+        </td>
+        <td>
+          4843
+        </td>
+        <td>
+          3373
+          -
+          3387
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.SerializerData.encoding
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          sdata.encoding
+        </td>
+      </tr><tr>
+        <td>
+          114
+        </td>
+        <td>
+          4844
+        </td>
+        <td>
+          3368
+          -
+          3388
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializerConcurrentCacheFactoryXHTML.this.encF.apply(sdata.encoding)
+        </td>
+      </tr><tr>
+        <td>
+          138
+        </td>
+        <td>
+          4846
+        </td>
+        <td>
+          4075
+          -
+          4157
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.concurrent.ConcurrentHashMap.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new java.util.concurrent.ConcurrentHashMap[String,java.util.concurrent.ConcurrentHashMap[java.nio.charset.Charset,scales.utils.collection.Once[Option[Throwable]]]]()
+        </td>
+      </tr><tr>
+        <td>
+          141
+        </td>
+        <td>
+          4847
+        </td>
+        <td>
+          4213
+          -
+          4232
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.nio.charset.Charset.newEncoder
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          encoding.newEncoder()
+        </td>
+      </tr><tr>
+        <td>
+          148
+        </td>
+        <td>
+          4848
+        </td>
+        <td>
+          4544
+          -
+          4558
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.defaultCharset
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.defaultCharset
+        </td>
+      </tr><tr>
+        <td>
+          148
+        </td>
+        <td>
+          4849
+        </td>
+        <td>
+          4526
+          -
+          4559
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.nio.charset.Charset.contains
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          encoding.contains(scales.utils.`package`.defaultCharset)
+        </td>
+      </tr><tr>
+        <td>
+          148
+        </td>
+        <td>
+          4850
+        </td>
+        <td>
+          4576
+          -
+          4580
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          148
+        </td>
+        <td>
+          4851
+        </td>
+        <td>
+          4563
+          -
+          4580
+        </td>
+        <td>
+          Function
+        </td>
+        <td>
+          scales.xml.serializers.LSSerializerConcurrentCacheFactory.$anonfun
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ((s: String) =&gt; scala.None)
+        </td>
+      </tr><tr>
+        <td>
+          149
+        </td>
+        <td>
+          4862
+        </td>
+        <td>
+          4594
+          -
+          4849
+        </td>
+        <td>
+          Function
+        </td>
+        <td>
+          scales.xml.serializers.LSSerializerConcurrentCacheFactory.$anonfun
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ((s: String) =&gt; scales.utils.`package`.calcOnce[java.nio.charset.Charset, Option[Throwable]](encoding, scales.utils.`package`.valueOf[String, java.util.concurrent.ConcurrentHashMap[java.nio.charset.Charset,scales.utils.collection.Once[Option[Throwable]]]](s, LSSerializerConcurrentCacheFactory.this.globalEncMap)(new java.util.concurrent.ConcurrentHashMap[java.nio.charset.Charset,scales.utils.collection.Once[Option[Throwable]]]()))(if (encoder.canEncode(s))
+  scala.None
+else
+  scala.Some.apply[scales.xml.serializers.InvalidCharacterInMarkup](InvalidCharacterInMarkup.apply(s))))
+        </td>
+      </tr><tr>
+        <td>
+          151
+        </td>
+        <td>
+          4852
+        </td>
+        <td>
+          4644
+          -
+          4656
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.LSSerializerConcurrentCacheFactory.globalEncMap
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializerConcurrentCacheFactory.this.globalEncMap
+        </td>
+      </tr><tr>
+        <td>
+          151
+        </td>
+        <td>
+          4853
+        </td>
+        <td>
+          4658
+          -
+          4715
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.concurrent.ConcurrentHashMap.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new java.util.concurrent.ConcurrentHashMap[java.nio.charset.Charset,scales.utils.collection.Once[Option[Throwable]]]()
+        </td>
+      </tr><tr>
+        <td>
+          151
+        </td>
+        <td>
+          4854
+        </td>
+        <td>
+          4633
+          -
+          4716
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.ConcurrentMapUtils.valueOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.valueOf[String, java.util.concurrent.ConcurrentHashMap[java.nio.charset.Charset,scales.utils.collection.Once[Option[Throwable]]]](s, LSSerializerConcurrentCacheFactory.this.globalEncMap)(new java.util.concurrent.ConcurrentHashMap[java.nio.charset.Charset,scales.utils.collection.Once[Option[Throwable]]]())
+        </td>
+      </tr><tr>
+        <td>
+          151
+        </td>
+        <td>
+          4861
+        </td>
+        <td>
+          4614
+          -
+          4849
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.ConcurrentMapUtils.calcOnce
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.calcOnce[java.nio.charset.Charset, Option[Throwable]](encoding, scales.utils.`package`.valueOf[String, java.util.concurrent.ConcurrentHashMap[java.nio.charset.Charset,scales.utils.collection.Once[Option[Throwable]]]](s, LSSerializerConcurrentCacheFactory.this.globalEncMap)(new java.util.concurrent.ConcurrentHashMap[java.nio.charset.Charset,scales.utils.collection.Once[Option[Throwable]]]()))(if (encoder.canEncode(s))
+  scala.None
+else
+  scala.Some.apply[scales.xml.serializers.InvalidCharacterInMarkup](InvalidCharacterInMarkup.apply(s)))
+        </td>
+      </tr><tr>
+        <td>
+          152
+        </td>
+        <td>
+          4855
+        </td>
+        <td>
+          4732
+          -
+          4752
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.nio.charset.CharsetEncoder.canEncode
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          encoder.canEncode(s)
+        </td>
+      </tr><tr>
+        <td>
+          153
+        </td>
+        <td>
+          4856
+        </td>
+        <td>
+          4764
+          -
+          4768
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          153
+        </td>
+        <td>
+          4857
+        </td>
+        <td>
+          4764
+          -
+          4768
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          155
+        </td>
+        <td>
+          4858
+        </td>
+        <td>
+          4813
+          -
+          4840
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.InvalidCharacterInMarkup.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          InvalidCharacterInMarkup.apply(s)
+        </td>
+      </tr><tr>
+        <td>
+          155
+        </td>
+        <td>
+          4859
+        </td>
+        <td>
+          4808
+          -
+          4841
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[scales.xml.serializers.InvalidCharacterInMarkup](InvalidCharacterInMarkup.apply(s))
+        </td>
+      </tr><tr>
+        <td>
+          155
+        </td>
+        <td>
+          4860
+        </td>
+        <td>
+          4808
+          -
+          4841
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[scales.xml.serializers.InvalidCharacterInMarkup](InvalidCharacterInMarkup.apply(s))
+        </td>
+      </tr><tr>
+        <td>
+          175
+        </td>
+        <td>
+          4863
+        </td>
+        <td>
+          5339
+          -
+          5358
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.nio.charset.Charset.newEncoder
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          encoding.newEncoder()
+        </td>
+      </tr><tr>
+        <td>
+          176
+        </td>
+        <td>
+          4864
+        </td>
+        <td>
+          5373
+          -
+          5411
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.HashMap.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new java.util.HashMap[String,Option[Throwable]]()
+        </td>
+      </tr><tr>
+        <td>
+          181
+        </td>
+        <td>
+          4865
+        </td>
+        <td>
+          5497
+          -
+          5511
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.defaultCharset
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.defaultCharset
+        </td>
+      </tr><tr>
+        <td>
+          181
+        </td>
+        <td>
+          4866
+        </td>
+        <td>
+          5479
+          -
+          5512
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.nio.charset.Charset.contains
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          encoding.contains(scales.utils.`package`.defaultCharset)
+        </td>
+      </tr><tr>
+        <td>
+          181
+        </td>
+        <td>
+          4867
+        </td>
+        <td>
+          5529
+          -
+          5533
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          181
+        </td>
+        <td>
+          4868
+        </td>
+        <td>
+          5516
+          -
+          5533
+        </td>
+        <td>
+          Function
+        </td>
+        <td>
+          scales.xml.serializers.LSSerializerNoCacheFactoryT.$anonfun
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ((s: String) =&gt; scala.None)
+        </td>
+      </tr><tr>
+        <td>
+          182
+        </td>
+        <td>
+          4881
+        </td>
+        <td>
+          5547
+          -
+          5774
+        </td>
+        <td>
+          Function
+        </td>
+        <td>
+          scales.xml.serializers.LSSerializerNoCacheFactoryT.$anonfun
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ((s: String) =&gt; {
+  var r: Option[Throwable] = map.get(s);
+  if (r.eq(null))
+    {
+      r = if (encoder.canEncode(s))
+        scala.None
+      else
+        scala.Some.apply[scales.xml.serializers.InvalidCharacterInMarkup](InvalidCharacterInMarkup.apply(s));
+      map.put(s, r)
+    }
+  else
+    ();
+  r
+})
+        </td>
+      </tr><tr>
+        <td>
+          184
+        </td>
+        <td>
+          4869
+        </td>
+        <td>
+          5575
+          -
+          5585
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.HashMap.get
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          map.get(s)
+        </td>
+      </tr><tr>
+        <td>
+          185
+        </td>
+        <td>
+          4870
+        </td>
+        <td>
+          5596
+          -
+          5605
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          r.eq(null)
+        </td>
+      </tr><tr>
+        <td>
+          185
+        </td>
+        <td>
+          4878
+        </td>
+        <td>
+          5607
+          -
+          5765
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  r = if (encoder.canEncode(s))
+    scala.None
+  else
+    scala.Some.apply[scales.xml.serializers.InvalidCharacterInMarkup](InvalidCharacterInMarkup.apply(s));
+  map.put(s, r)
+}
+        </td>
+      </tr><tr>
+        <td>
+          185
+        </td>
+        <td>
+          4879
+        </td>
+        <td>
+          5592
+          -
+          5592
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          185
+        </td>
+        <td>
+          4880
+        </td>
+        <td>
+          5592
+          -
+          5592
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          186
+        </td>
+        <td>
+          4871
+        </td>
+        <td>
+          5625
+          -
+          5645
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.nio.charset.CharsetEncoder.canEncode
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          encoder.canEncode(s)
+        </td>
+      </tr><tr>
+        <td>
+          187
+        </td>
+        <td>
+          4872
+        </td>
+        <td>
+          5657
+          -
+          5661
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          187
+        </td>
+        <td>
+          4873
+        </td>
+        <td>
+          5657
+          -
+          5661
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          189
+        </td>
+        <td>
+          4874
+        </td>
+        <td>
+          5706
+          -
+          5733
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.InvalidCharacterInMarkup.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          InvalidCharacterInMarkup.apply(s)
+        </td>
+      </tr><tr>
+        <td>
+          189
+        </td>
+        <td>
+          4875
+        </td>
+        <td>
+          5701
+          -
+          5734
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[scales.xml.serializers.InvalidCharacterInMarkup](InvalidCharacterInMarkup.apply(s))
+        </td>
+      </tr><tr>
+        <td>
+          189
+        </td>
+        <td>
+          4876
+        </td>
+        <td>
+          5701
+          -
+          5734
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[scales.xml.serializers.InvalidCharacterInMarkup](InvalidCharacterInMarkup.apply(s))
+        </td>
+      </tr><tr>
+        <td>
+          191
+        </td>
+        <td>
+          4877
+        </td>
+        <td>
+          5744
+          -
+          5757
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.HashMap.put
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          map.put(s, r)
+        </td>
+      </tr><tr>
+        <td>
+          207
+        </td>
+        <td>
+          4899
+        </td>
+        <td>
+          6097
+          -
+          6515
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.orElse
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XHTMLLSSerializer.this.doElem(qName, attributes, namespaces, declareDefaultNS).orElse[Throwable]({
+  val canBeEmpty: Boolean = if (qName.namespace.uri.==(LSSerializerFactoryXHTML.xhtmlNS))
+    if (LSSerializerFactoryXHTML.canBeEmpty.apply(qName.local))
+      true
+    else
+      false
+  else
+    true;
+  if (canBeEmpty)
+    {
+      XHTMLLSSerializer.this.data.out.append(&quot; /&gt;&quot;);
+      scala.None
+    }
+  else
+    {
+      XHTMLLSSerializer.this.data.out.append(&quot;&gt;&quot;);
+      XHTMLLSSerializer.this.endElement(qName, path)
+    }
+})
+        </td>
+      </tr><tr>
+        <td>
+          210
+        </td>
+        <td>
+          4882
+        </td>
+        <td>
+          6227
+          -
+          6259
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.LSSerializerFactoryXHTML.xhtmlNS
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializerFactoryXHTML.xhtmlNS
+        </td>
+      </tr><tr>
+        <td>
+          210
+        </td>
+        <td>
+          4883
+        </td>
+        <td>
+          6204
+          -
+          6259
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          qName.namespace.uri.==(LSSerializerFactoryXHTML.xhtmlNS)
+        </td>
+      </tr><tr>
+        <td>
+          211
+        </td>
+        <td>
+          4884
+        </td>
+        <td>
+          6304
+          -
+          6315
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.QName.local
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          qName.local
+        </td>
+      </tr><tr>
+        <td>
+          211
+        </td>
+        <td>
+          4885
+        </td>
+        <td>
+          6268
+          -
+          6316
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.GenSetLike.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializerFactoryXHTML.canBeEmpty.apply(qName.local)
+        </td>
+      </tr><tr>
+        <td>
+          211
+        </td>
+        <td>
+          4890
+        </td>
+        <td>
+          6264
+          -
+          6346
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (LSSerializerFactoryXHTML.canBeEmpty.apply(qName.local))
+  true
+else
+  false
+        </td>
+      </tr><tr>
+        <td>
+          212
+        </td>
+        <td>
+          4886
+        </td>
+        <td>
+          6323
+          -
+          6327
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          212
+        </td>
+        <td>
+          4887
+        </td>
+        <td>
+          6323
+          -
+          6327
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          214
+        </td>
+        <td>
+          4888
+        </td>
+        <td>
+          6341
+          -
+          6346
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          214
+        </td>
+        <td>
+          4889
+        </td>
+        <td>
+          6341
+          -
+          6346
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          216
+        </td>
+        <td>
+          4891
+        </td>
+        <td>
+          6384
+          -
+          6388
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          216
+        </td>
+        <td>
+          4892
+        </td>
+        <td>
+          6384
+          -
+          6388
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          218
+        </td>
+        <td>
+          4895
+        </td>
+        <td>
+          6418
+          -
+          6452
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  XHTMLLSSerializer.this.data.out.append(&quot; /&gt;&quot;);
+  scala.None
+}
+        </td>
+      </tr><tr>
+        <td>
+          219
+        </td>
+        <td>
+          4893
+        </td>
+        <td>
+          6421
+          -
+          6438
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.Writer.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XHTMLLSSerializer.this.data.out.append(&quot; /&gt;&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          220
+        </td>
+        <td>
+          4894
+        </td>
+        <td>
+          6440
+          -
+          6444
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          221
+        </td>
+        <td>
+          4898
+        </td>
+        <td>
+          6458
+          -
+          6509
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  XHTMLLSSerializer.this.data.out.append(&quot;&gt;&quot;);
+  XHTMLLSSerializer.this.endElement(qName, path)
+}
+        </td>
+      </tr><tr>
+        <td>
+          222
+        </td>
+        <td>
+          4896
+        </td>
+        <td>
+          6461
+          -
+          6476
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.Writer.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XHTMLLSSerializer.this.data.out.append(&quot;&gt;&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          223
+        </td>
+        <td>
+          4897
+        </td>
+        <td>
+          6478
+          -
+          6501
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.LSSerializer.endElement
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XHTMLLSSerializer.this.endElement(qName, path)
+        </td>
+      </tr><tr>
+        <td>
+          266
+        </td>
+        <td>
+          4905
+        </td>
+        <td>
+          7672
+          -
+          7735
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (t)
+  scala.None
+else
+  scala.Some.apply[scales.xml.serializers.CannotSerialize](CannotSerialize.apply(s))
+        </td>
+      </tr><tr>
+        <td>
+          267
+        </td>
+        <td>
+          4900
+        </td>
+        <td>
+          7687
+          -
+          7691
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          267
+        </td>
+        <td>
+          4901
+        </td>
+        <td>
+          7687
+          -
+          7691
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          269
+        </td>
+        <td>
+          4902
+        </td>
+        <td>
+          7716
+          -
+          7734
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.CannotSerialize.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          CannotSerialize.apply(s)
+        </td>
+      </tr><tr>
+        <td>
+          269
+        </td>
+        <td>
+          4903
+        </td>
+        <td>
+          7711
+          -
+          7735
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Some.apply[scales.xml.serializers.CannotSerialize](CannotSerialize.apply(s))
+        </td>
+      </tr><tr>
+        <td>
+          269
+        </td>
+        <td>
+          4904
+        </td>
+        <td>
+          7711
+          -
+          7735
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Some.apply[scales.xml.serializers.CannotSerialize](CannotSerialize.apply(s))
+        </td>
+      </tr><tr>
+        <td>
+          271
+        </td>
+        <td>
+          4906
+        </td>
+        <td>
+          7777
+          -
+          7784
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Some.apply[Throwable](t)
+        </td>
+      </tr><tr>
+        <td>
+          271
+        </td>
+        <td>
+          4907
+        </td>
+        <td>
+          7777
+          -
+          7784
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Some.apply[Throwable](t)
+        </td>
+      </tr><tr>
+        <td>
+          281
+        </td>
+        <td>
+          4908
+        </td>
+        <td>
+          8169
+          -
+          8172
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.SerializerData.out
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializer.this.data.out
+        </td>
+      </tr><tr>
+        <td>
+          281
+        </td>
+        <td>
+          4909
+        </td>
+        <td>
+          8146
+          -
+          8185
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.SerializerHelpers.item
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SerializerHelpers.item(LSSerializer.this.data.out, item, path)
+        </td>
+      </tr><tr>
+        <td>
+          293
+        </td>
+        <td>
+          4910
+        </td>
+        <td>
+          8996
+          -
+          9000
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          293
+        </td>
+        <td>
+          4911
+        </td>
+        <td>
+          8996
+          -
+          9000
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          295
+        </td>
+        <td>
+          4912
+        </td>
+        <td>
+          9065
+          -
+          9075
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.XmlItem.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          item.value
+        </td>
+      </tr><tr>
+        <td>
+          295
+        </td>
+        <td>
+          4913
+        </td>
+        <td>
+          9055
+          -
+          9076
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializer.this.canEncode.apply(item.value)
+        </td>
+      </tr><tr>
+        <td>
+          295
+        </td>
+        <td>
+          4920
+        </td>
+        <td>
+          9051
+          -
+          9154
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (LSSerializer.this.canEncode.apply(item.value))
+  scala.None
+else
+  scala.Some.apply[scales.xml.serializers.CDataCannotBeEncoded](CDataCannotBeEncoded.apply(item.value))
+        </td>
+      </tr><tr>
+        <td>
+          296
+        </td>
+        <td>
+          4914
+        </td>
+        <td>
+          9088
+          -
+          9092
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          296
+        </td>
+        <td>
+          4915
+        </td>
+        <td>
+          9088
+          -
+          9092
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          298
+        </td>
+        <td>
+          4916
+        </td>
+        <td>
+          9142
+          -
+          9152
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.XmlItem.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          item.value
+        </td>
+      </tr><tr>
+        <td>
+          298
+        </td>
+        <td>
+          4917
+        </td>
+        <td>
+          9121
+          -
+          9153
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.CDataCannotBeEncoded.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          CDataCannotBeEncoded.apply(item.value)
+        </td>
+      </tr><tr>
+        <td>
+          298
+        </td>
+        <td>
+          4918
+        </td>
+        <td>
+          9116
+          -
+          9154
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[scales.xml.serializers.CDataCannotBeEncoded](CDataCannotBeEncoded.apply(item.value))
+        </td>
+      </tr><tr>
+        <td>
+          298
+        </td>
+        <td>
+          4919
+        </td>
+        <td>
+          9116
+          -
+          9154
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[scales.xml.serializers.CDataCannotBeEncoded](CDataCannotBeEncoded.apply(item.value))
+        </td>
+      </tr><tr>
+        <td>
+          300
+        </td>
+        <td>
+          4921
+        </td>
+        <td>
+          9213
+          -
+          9223
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.XmlItem.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          item.value
+        </td>
+      </tr><tr>
+        <td>
+          300
+        </td>
+        <td>
+          4922
+        </td>
+        <td>
+          9203
+          -
+          9224
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializer.this.canEncode.apply(item.value)
+        </td>
+      </tr><tr>
+        <td>
+          300
+        </td>
+        <td>
+          4929
+        </td>
+        <td>
+          9199
+          -
+          9304
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (LSSerializer.this.canEncode.apply(item.value))
+  scala.None
+else
+  scala.Some.apply[scales.xml.serializers.CommentCannotBeEncoded](CommentCannotBeEncoded.apply(item.value))
+        </td>
+      </tr><tr>
+        <td>
+          301
+        </td>
+        <td>
+          4923
+        </td>
+        <td>
+          9236
+          -
+          9240
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          301
+        </td>
+        <td>
+          4924
+        </td>
+        <td>
+          9236
+          -
+          9240
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          303
+        </td>
+        <td>
+          4925
+        </td>
+        <td>
+          9292
+          -
+          9302
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.XmlItem.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          item.value
+        </td>
+      </tr><tr>
+        <td>
+          303
+        </td>
+        <td>
+          4926
+        </td>
+        <td>
+          9269
+          -
+          9303
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.CommentCannotBeEncoded.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          CommentCannotBeEncoded.apply(item.value)
+        </td>
+      </tr><tr>
+        <td>
+          303
+        </td>
+        <td>
+          4927
+        </td>
+        <td>
+          9264
+          -
+          9304
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[scales.xml.serializers.CommentCannotBeEncoded](CommentCannotBeEncoded.apply(item.value))
+        </td>
+      </tr><tr>
+        <td>
+          303
+        </td>
+        <td>
+          4928
+        </td>
+        <td>
+          9264
+          -
+          9304
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[scales.xml.serializers.CommentCannotBeEncoded](CommentCannotBeEncoded.apply(item.value))
+        </td>
+      </tr><tr>
+        <td>
+          305
+        </td>
+        <td>
+          4930
+        </td>
+        <td>
+          9358
+          -
+          9365
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.XmlItem.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x.value
+        </td>
+      </tr><tr>
+        <td>
+          305
+        </td>
+        <td>
+          4931
+        </td>
+        <td>
+          9380
+          -
+          9388
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.PI.target
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x.target
+        </td>
+      </tr><tr>
+        <td>
+          305
+        </td>
+        <td>
+          4932
+        </td>
+        <td>
+          9370
+          -
+          9389
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializer.this.canEncode.apply(x.target)
+        </td>
+      </tr><tr>
+        <td>
+          305
+        </td>
+        <td>
+          4933
+        </td>
+        <td>
+          9348
+          -
+          9389
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializer.this.canEncode.apply(x.value).&amp;&amp;(LSSerializer.this.canEncode.apply(x.target))
+        </td>
+      </tr><tr>
+        <td>
+          305
+        </td>
+        <td>
+          4944
+        </td>
+        <td>
+          9344
+          -
+          9498
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (LSSerializer.this.canEncode.apply(x.value).&amp;&amp;(LSSerializer.this.canEncode.apply(x.target)))
+  scala.None
+else
+  scala.Some.apply[scales.xml.serializers.PICannotBeEncoded](PICannotBeEncoded.apply(&quot;Target: &quot;.+(x.target).+(&quot; value: &quot;).+(x.value)))
+        </td>
+      </tr><tr>
+        <td>
+          306
+        </td>
+        <td>
+          4934
+        </td>
+        <td>
+          9401
+          -
+          9405
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          306
+        </td>
+        <td>
+          4935
+        </td>
+        <td>
+          9401
+          -
+          9405
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          308
+        </td>
+        <td>
+          4936
+        </td>
+        <td>
+          9452
+          -
+          9462
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;Target: &quot;
+        </td>
+      </tr><tr>
+        <td>
+          308
+        </td>
+        <td>
+          4937
+        </td>
+        <td>
+          9465
+          -
+          9473
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.PI.target
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x.target
+        </td>
+      </tr><tr>
+        <td>
+          308
+        </td>
+        <td>
+          4938
+        </td>
+        <td>
+          9476
+          -
+          9486
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot; value: &quot;
+        </td>
+      </tr><tr>
+        <td>
+          308
+        </td>
+        <td>
+          4939
+        </td>
+        <td>
+          9489
+          -
+          9496
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.XmlItem.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x.value
+        </td>
+      </tr><tr>
+        <td>
+          308
+        </td>
+        <td>
+          4940
+        </td>
+        <td>
+          9452
+          -
+          9496
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;Target: &quot;.+(x.target).+(&quot; value: &quot;).+(x.value)
+        </td>
+      </tr><tr>
+        <td>
+          308
+        </td>
+        <td>
+          4941
+        </td>
+        <td>
+          9434
+          -
+          9497
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.PICannotBeEncoded.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          PICannotBeEncoded.apply(&quot;Target: &quot;.+(x.target).+(&quot; value: &quot;).+(x.value))
+        </td>
+      </tr><tr>
+        <td>
+          308
+        </td>
+        <td>
+          4942
+        </td>
+        <td>
+          9429
+          -
+          9498
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[scales.xml.serializers.PICannotBeEncoded](PICannotBeEncoded.apply(&quot;Target: &quot;.+(x.target).+(&quot; value: &quot;).+(x.value)))
+        </td>
+      </tr><tr>
+        <td>
+          308
+        </td>
+        <td>
+          4943
+        </td>
+        <td>
+          9429
+          -
+          9498
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[scales.xml.serializers.PICannotBeEncoded](PICannotBeEncoded.apply(&quot;Target: &quot;.+(x.target).+(&quot; value: &quot;).+(x.value)))
+        </td>
+      </tr><tr>
+        <td>
+          310
+        </td>
+        <td>
+          4956
+        </td>
+        <td>
+          9509
+          -
+          9996
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.orElse
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          canEncodeI.orElse[Throwable](item match {
+  case (x @ (_: scales.xml.Text)) =&gt; {
+    LSSerializer.this.textNode.setNodeValue(item.value);
+    LSSerializer.this.ct(LSSerializer.this.lss.write(LSSerializer.this.textNode, LSSerializer.this.lsout), {
+      val str: java.io.StringWriter = new java.io.StringWriter();
+      SerializerHelpers.item(str, item, path);
+      str.toString()
+    })
+  }
+  case _ =&gt; LSSerializer.this.writeNonText(item, path)
+})
+        </td>
+      </tr><tr>
+        <td>
+          313
+        </td>
+        <td>
+          4953
+        </td>
+        <td>
+          9624
+          -
+          9929
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  LSSerializer.this.textNode.setNodeValue(item.value);
+  LSSerializer.this.ct(LSSerializer.this.lss.write(LSSerializer.this.textNode, LSSerializer.this.lsout), {
+    val str: java.io.StringWriter = new java.io.StringWriter();
+    SerializerHelpers.item(str, item, path);
+    str.toString()
+  })
+}
+        </td>
+      </tr><tr>
+        <td>
+          314
+        </td>
+        <td>
+          4945
+        </td>
+        <td>
+          9659
+          -
+          9669
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.XmlItem.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          item.value
+        </td>
+      </tr><tr>
+        <td>
+          314
+        </td>
+        <td>
+          4946
+        </td>
+        <td>
+          9637
+          -
+          9670
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.w3c.dom.Node.setNodeValue
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializer.this.textNode.setNodeValue(item.value)
+        </td>
+      </tr><tr>
+        <td>
+          315
+        </td>
+        <td>
+          4947
+        </td>
+        <td>
+          9760
+          -
+          9765
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.LSSerializer.lsout
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializer.this.lsout
+        </td>
+      </tr><tr>
+        <td>
+          315
+        </td>
+        <td>
+          4948
+        </td>
+        <td>
+          9740
+          -
+          9766
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.w3c.dom.ls.LSSerializer.write
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializer.this.lss.write(LSSerializer.this.textNode, LSSerializer.this.lsout)
+        </td>
+      </tr><tr>
+        <td>
+          315
+        </td>
+        <td>
+          4952
+        </td>
+        <td>
+          9737
+          -
+          9929
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.LSSerializer.ct
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializer.this.ct(LSSerializer.this.lss.write(LSSerializer.this.textNode, LSSerializer.this.lsout), {
+  val str: java.io.StringWriter = new java.io.StringWriter();
+  SerializerHelpers.item(str, item, path);
+  str.toString()
+})
+        </td>
+      </tr><tr>
+        <td>
+          317
+        </td>
+        <td>
+          4949
+        </td>
+        <td>
+          9806
+          -
+          9832
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.StringWriter.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new java.io.StringWriter()
+        </td>
+      </tr><tr>
+        <td>
+          318
+        </td>
+        <td>
+          4950
+        </td>
+        <td>
+          9848
+          -
+          9887
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.SerializerHelpers.item
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          SerializerHelpers.item(str, item, path)
+        </td>
+      </tr><tr>
+        <td>
+          319
+        </td>
+        <td>
+          4951
+        </td>
+        <td>
+          9902
+          -
+          9914
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.StringWriter.toString
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          str.toString()
+        </td>
+      </tr><tr>
+        <td>
+          322
+        </td>
+        <td>
+          4954
+        </td>
+        <td>
+          9958
+          -
+          9982
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.LSSerializer.writeNonText
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializer.this.writeNonText(item, path)
+        </td>
+      </tr><tr>
+        <td>
+          322
+        </td>
+        <td>
+          4955
+        </td>
+        <td>
+          9958
+          -
+          9982
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.serializers.LSSerializer.writeNonText
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializer.this.writeNonText(item, path)
+        </td>
+      </tr><tr>
+        <td>
+          328
+        </td>
+        <td>
+          4971
+        </td>
+        <td>
+          10078
+          -
+          10522
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.LSSerializer.ct
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializer.this.ct({
+  LSSerializer.this.data.out.append(before);
+  LSSerializer.this.textNode.setNodeValue(toCt);
+  val str: java.io.StringWriter = new java.io.StringWriter();
+  LSSerializer.this.lsaout.setCharacterStream(str);
+  val r: Boolean = LSSerializer.this.lss.write(LSSerializer.this.textNode, LSSerializer.this.lsaout);
+  LSSerializer.this.lsaout.setCharacterStream(null);
+  if (r)
+    {
+      LSSerializer.this.data.out.append(str.toString().replaceAll(&quot;\&quot;&quot;, &quot;&amp;quot;&quot;));
+      LSSerializer.this.data.out.append(after)
+    }
+  else
+    ();
+  r
+}, before.+(toCt).+(after))
+        </td>
+      </tr><tr>
+        <td>
+          329
+        </td>
+        <td>
+          4957
+        </td>
+        <td>
+          10089
+          -
+          10107
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.Writer.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializer.this.data.out.append(before)
+        </td>
+      </tr><tr>
+        <td>
+          332
+        </td>
+        <td>
+          4958
+        </td>
+        <td>
+          10164
+          -
+          10191
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.w3c.dom.Node.setNodeValue
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializer.this.textNode.setNodeValue(toCt)
+        </td>
+      </tr><tr>
+        <td>
+          333
+        </td>
+        <td>
+          4959
+        </td>
+        <td>
+          10208
+          -
+          10234
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.StringWriter.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new java.io.StringWriter()
+        </td>
+      </tr><tr>
+        <td>
+          334
+        </td>
+        <td>
+          4960
+        </td>
+        <td>
+          10242
+          -
+          10272
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.w3c.dom.ls.LSOutput.setCharacterStream
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializer.this.lsaout.setCharacterStream(str)
+        </td>
+      </tr><tr>
+        <td>
+          335
+        </td>
+        <td>
+          4961
+        </td>
+        <td>
+          10307
+          -
+          10313
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.LSSerializer.lsaout
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializer.this.lsaout
+        </td>
+      </tr><tr>
+        <td>
+          335
+        </td>
+        <td>
+          4962
+        </td>
+        <td>
+          10287
+          -
+          10314
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.w3c.dom.ls.LSSerializer.write
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializer.this.lss.write(LSSerializer.this.textNode, LSSerializer.this.lsaout)
+        </td>
+      </tr><tr>
+        <td>
+          336
+        </td>
+        <td>
+          4963
+        </td>
+        <td>
+          10321
+          -
+          10352
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.w3c.dom.ls.LSOutput.setCharacterStream
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializer.this.lsaout.setCharacterStream(null)
+        </td>
+      </tr><tr>
+        <td>
+          337
+        </td>
+        <td>
+          4967
+        </td>
+        <td>
+          10389
+          -
+          10484
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  LSSerializer.this.data.out.append(str.toString().replaceAll(&quot;\&quot;&quot;, &quot;&amp;quot;&quot;));
+  LSSerializer.this.data.out.append(after)
+}
+        </td>
+      </tr><tr>
+        <td>
+          337
+        </td>
+        <td>
+          4968
+        </td>
+        <td>
+          10382
+          -
+          10382
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          337
+        </td>
+        <td>
+          4969
+        </td>
+        <td>
+          10382
+          -
+          10382
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          338
+        </td>
+        <td>
+          4964
+        </td>
+        <td>
+          10410
+          -
+          10449
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.replaceAll
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          str.toString().replaceAll(&quot;\&quot;&quot;, &quot;&amp;quot;&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          338
+        </td>
+        <td>
+          4965
+        </td>
+        <td>
+          10399
+          -
+          10450
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.Writer.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializer.this.data.out.append(str.toString().replaceAll(&quot;\&quot;&quot;, &quot;&amp;quot;&quot;))
+        </td>
+      </tr><tr>
+        <td>
+          339
+        </td>
+        <td>
+          4966
+        </td>
+        <td>
+          10459
+          -
+          10476
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.Writer.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializer.this.data.out.append(after)
+        </td>
+      </tr><tr>
+        <td>
+          342
+        </td>
+        <td>
+          4970
+        </td>
+        <td>
+          10500
+          -
+          10521
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          before.+(toCt).+(after)
+        </td>
+      </tr><tr>
+        <td>
+          350
+        </td>
+        <td>
+          4972
+        </td>
+        <td>
+          10761
+          -
+          10766
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Xml11
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Xml11
+        </td>
+      </tr><tr>
+        <td>
+          350
+        </td>
+        <td>
+          4973
+        </td>
+        <td>
+          10781
+          -
+          10786
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Xml10
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Xml10
+        </td>
+      </tr><tr>
+        <td>
+          350
+        </td>
+        <td>
+          4974
+        </td>
+        <td>
+          10770
+          -
+          10786
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializer.this.data.version.==(scales.xml.Xml10)
+        </td>
+      </tr><tr>
+        <td>
+          350
+        </td>
+        <td>
+          4975
+        </td>
+        <td>
+          10739
+          -
+          10786
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          qName.qNameVersion.==(scales.xml.Xml11).&amp;&amp;(LSSerializer.this.data.version.==(scales.xml.Xml10))
+        </td>
+      </tr><tr>
+        <td>
+          351
+        </td>
+        <td>
+          4976
+        </td>
+        <td>
+          10827
+          -
+          10838
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.QName.qName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          qName.qName
+        </td>
+      </tr><tr>
+        <td>
+          351
+        </td>
+        <td>
+          4977
+        </td>
+        <td>
+          10801
+          -
+          10839
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.IncompatibleQNameVersions.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          IncompatibleQNameVersions.apply(qName.qName)
+        </td>
+      </tr><tr>
+        <td>
+          351
+        </td>
+        <td>
+          4978
+        </td>
+        <td>
+          10796
+          -
+          10840
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[scales.xml.serializers.IncompatibleQNameVersions](IncompatibleQNameVersions.apply(qName.qName))
+        </td>
+      </tr><tr>
+        <td>
+          351
+        </td>
+        <td>
+          4979
+        </td>
+        <td>
+          10796
+          -
+          10840
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[scales.xml.serializers.IncompatibleQNameVersions](IncompatibleQNameVersions.apply(qName.qName))
+        </td>
+      </tr><tr>
+        <td>
+          353
+        </td>
+        <td>
+          4980
+        </td>
+        <td>
+          10860
+          -
+          10864
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          353
+        </td>
+        <td>
+          4981
+        </td>
+        <td>
+          10860
+          -
+          10864
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          356
+        </td>
+        <td>
+          4982
+        </td>
+        <td>
+          10999
+          -
+          11010
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.QName.qName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          qName.qName
+        </td>
+      </tr><tr>
+        <td>
+          356
+        </td>
+        <td>
+          4983
+        </td>
+        <td>
+          10992
+          -
+          11011
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializer.this.encMap.apply(qName.qName)
+        </td>
+      </tr><tr>
+        <td>
+          359
+        </td>
+        <td>
+          4984
+        </td>
+        <td>
+          11045
+          -
+          11048
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;&lt;&quot;
+        </td>
+      </tr><tr>
+        <td>
+          359
+        </td>
+        <td>
+          4985
+        </td>
+        <td>
+          11051
+          -
+          11062
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.QName.qName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          qName.qName
+        </td>
+      </tr><tr>
+        <td>
+          359
+        </td>
+        <td>
+          4986
+        </td>
+        <td>
+          11045
+          -
+          11062
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;&lt;&quot;.+(qName.qName)
+        </td>
+      </tr><tr>
+        <td>
+          359
+        </td>
+        <td>
+          4987
+        </td>
+        <td>
+          11034
+          -
+          11063
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.Writer.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializer.this.data.out.append(&quot;&lt;&quot;.+(qName.qName))
+        </td>
+      </tr><tr>
+        <td>
+          360
+        </td>
+        <td>
+          4988
+        </td>
+        <td>
+          11070
+          -
+          11074
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          364
+        </td>
+        <td>
+          4990
+        </td>
+        <td>
+          11098
+          -
+          11181
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.flatMap
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          declareDefaultNS.flatMap[Throwable](((dns: String) =&gt; LSSerializer.this.writeAttr(&quot; xmlns=\&quot;&quot;, dns, &quot;\&quot;&quot;)))
+        </td>
+      </tr><tr>
+        <td>
+          365
+        </td>
+        <td>
+          4989
+        </td>
+        <td>
+          11140
+          -
+          11173
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.LSSerializer.writeAttr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializer.this.writeAttr(&quot; xmlns=\&quot;&quot;, dns, &quot;\&quot;&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          369
+        </td>
+        <td>
+          4991
+        </td>
+        <td>
+          11216
+          -
+          11220
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          369
+        </td>
+        <td>
+          5015
+        </td>
+        <td>
+          11204
+          -
+          11645
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.TraversableOnce.foldLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ns.foldLeft[Option[Throwable]]((scala.None: Option[Throwable]))(((r: Option[Throwable], x: (String, String)) =&gt; r.orElse[Throwable](if (scales.xml.impl.QNameCharUtils.validXmlPrefix(x._1)(LSSerializer.this.data.version).&amp;&amp;(scales.xml.impl.QNameCharUtils.validXmlNamespace(x._2)(LSSerializer.this.data.version)))
+  {
+    LSSerializer.this.data.out.append(&quot; xmlns:&quot;);
+    LSSerializer.this.encMap.apply(x._1).orElse[Throwable](LSSerializer.this.writeAttr(x._1.+(&quot;=\&quot;&quot;), x._2, &quot;\&quot;&quot;))
+  }
+else
+  scala.Some.apply[scales.xml.serializers.IncompatibleQNameVersions](IncompatibleQNameVersions.apply(&quot;NS:&quot;.+(x._1).+(&quot;-&gt;&quot;).+(x._2))))))
+        </td>
+      </tr><tr>
+        <td>
+          370
+        </td>
+        <td>
+          5014
+        </td>
+        <td>
+          11261
+          -
+          11637
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.orElse
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          r.orElse[Throwable](if (scales.xml.impl.QNameCharUtils.validXmlPrefix(x._1)(LSSerializer.this.data.version).&amp;&amp;(scales.xml.impl.QNameCharUtils.validXmlNamespace(x._2)(LSSerializer.this.data.version)))
+  {
+    LSSerializer.this.data.out.append(&quot; xmlns:&quot;);
+    LSSerializer.this.encMap.apply(x._1).orElse[Throwable](LSSerializer.this.writeAttr(x._1.+(&quot;=\&quot;&quot;), x._2, &quot;\&quot;&quot;))
+  }
+else
+  scala.Some.apply[scales.xml.serializers.IncompatibleQNameVersions](IncompatibleQNameVersions.apply(&quot;NS:&quot;.+(x._1).+(&quot;-&gt;&quot;).+(x._2))))
+        </td>
+      </tr><tr>
+        <td>
+          372
+        </td>
+        <td>
+          4992
+        </td>
+        <td>
+          11355
+          -
+          11359
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x._1
+        </td>
+      </tr><tr>
+        <td>
+          372
+        </td>
+        <td>
+          4993
+        </td>
+        <td>
+          11361
+          -
+          11368
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.SerializerData.version
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializer.this.data.version
+        </td>
+      </tr><tr>
+        <td>
+          372
+        </td>
+        <td>
+          4997
+        </td>
+        <td>
+          11325
+          -
+          11425
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.impl.QNameCharUtils.validXmlPrefix(x._1)(LSSerializer.this.data.version).&amp;&amp;(scales.xml.impl.QNameCharUtils.validXmlNamespace(x._2)(LSSerializer.this.data.version))
+        </td>
+      </tr><tr>
+        <td>
+          373
+        </td>
+        <td>
+          4994
+        </td>
+        <td>
+          11411
+          -
+          11415
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x._2
+        </td>
+      </tr><tr>
+        <td>
+          373
+        </td>
+        <td>
+          4995
+        </td>
+        <td>
+          11417
+          -
+          11424
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.SerializerData.version
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializer.this.data.version
+        </td>
+      </tr><tr>
+        <td>
+          373
+        </td>
+        <td>
+          4996
+        </td>
+        <td>
+          11378
+          -
+          11425
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.QNameCharUtils.validXmlNamespace
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.impl.QNameCharUtils.validXmlNamespace(x._2)(LSSerializer.this.data.version)
+        </td>
+      </tr><tr>
+        <td>
+          373
+        </td>
+        <td>
+          5005
+        </td>
+        <td>
+          11427
+          -
+          11556
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  LSSerializer.this.data.out.append(&quot; xmlns:&quot;);
+  LSSerializer.this.encMap.apply(x._1).orElse[Throwable](LSSerializer.this.writeAttr(x._1.+(&quot;=\&quot;&quot;), x._2, &quot;\&quot;&quot;))
+}
+        </td>
+      </tr><tr>
+        <td>
+          374
+        </td>
+        <td>
+          4998
+        </td>
+        <td>
+          11441
+          -
+          11462
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.Writer.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializer.this.data.out.append(&quot; xmlns:&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          375
+        </td>
+        <td>
+          4999
+        </td>
+        <td>
+          11482
+          -
+          11486
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x._1
+        </td>
+      </tr><tr>
+        <td>
+          375
+        </td>
+        <td>
+          5004
+        </td>
+        <td>
+          11475
+          -
+          11544
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.orElse
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializer.this.encMap.apply(x._1).orElse[Throwable](LSSerializer.this.writeAttr(x._1.+(&quot;=\&quot;&quot;), x._2, &quot;\&quot;&quot;))
+        </td>
+      </tr><tr>
+        <td>
+          376
+        </td>
+        <td>
+          5000
+        </td>
+        <td>
+          11519
+          -
+          11531
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x._1.+(&quot;=\&quot;&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          376
+        </td>
+        <td>
+          5001
+        </td>
+        <td>
+          11533
+          -
+          11537
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x._2
+        </td>
+      </tr><tr>
+        <td>
+          376
+        </td>
+        <td>
+          5002
+        </td>
+        <td>
+          11539
+          -
+          11543
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;\&quot;&quot;
+        </td>
+      </tr><tr>
+        <td>
+          376
+        </td>
+        <td>
+          5003
+        </td>
+        <td>
+          11509
+          -
+          11544
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.LSSerializer.writeAttr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializer.this.writeAttr(x._1.+(&quot;=\&quot;&quot;), x._2, &quot;\&quot;&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          378
+        </td>
+        <td>
+          5006
+        </td>
+        <td>
+          11605
+          -
+          11610
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;NS:&quot;
+        </td>
+      </tr><tr>
+        <td>
+          378
+        </td>
+        <td>
+          5007
+        </td>
+        <td>
+          11611
+          -
+          11615
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x._1
+        </td>
+      </tr><tr>
+        <td>
+          378
+        </td>
+        <td>
+          5008
+        </td>
+        <td>
+          11616
+          -
+          11620
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;-&gt;&quot;
+        </td>
+      </tr><tr>
+        <td>
+          378
+        </td>
+        <td>
+          5009
+        </td>
+        <td>
+          11621
+          -
+          11625
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x._2
+        </td>
+      </tr><tr>
+        <td>
+          378
+        </td>
+        <td>
+          5010
+        </td>
+        <td>
+          11605
+          -
+          11625
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;NS:&quot;.+(x._1).+(&quot;-&gt;&quot;).+(x._2)
+        </td>
+      </tr><tr>
+        <td>
+          378
+        </td>
+        <td>
+          5011
+        </td>
+        <td>
+          11579
+          -
+          11626
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.IncompatibleQNameVersions.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          IncompatibleQNameVersions.apply(&quot;NS:&quot;.+(x._1).+(&quot;-&gt;&quot;).+(x._2))
+        </td>
+      </tr><tr>
+        <td>
+          378
+        </td>
+        <td>
+          5012
+        </td>
+        <td>
+          11574
+          -
+          11627
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[scales.xml.serializers.IncompatibleQNameVersions](IncompatibleQNameVersions.apply(&quot;NS:&quot;.+(x._1).+(&quot;-&gt;&quot;).+(x._2)))
+        </td>
+      </tr><tr>
+        <td>
+          378
+        </td>
+        <td>
+          5013
+        </td>
+        <td>
+          11574
+          -
+          11627
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[scales.xml.serializers.IncompatibleQNameVersions](IncompatibleQNameVersions.apply(&quot;NS:&quot;.+(x._1).+(&quot;-&gt;&quot;).+(x._2)))
+        </td>
+      </tr><tr>
+        <td>
+          382
+        </td>
+        <td>
+          5037
+        </td>
+        <td>
+          10735
+          -
+          12115
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.orElse
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (qName.qNameVersion.==(scales.xml.Xml11).&amp;&amp;(LSSerializer.this.data.version.==(scales.xml.Xml10)))
+  scala.Some.apply[scales.xml.serializers.IncompatibleQNameVersions](IncompatibleQNameVersions.apply(qName.qName))
+else
+  scala.None.orElse[Throwable](LSSerializer.this.encMap.apply(qName.qName)).orElse[Throwable]({
+  LSSerializer.this.data.out.append(&quot;&lt;&quot;.+(qName.qName));
+  scala.None
+}).orElse[Throwable](declareDefaultNS.flatMap[Throwable](((dns: String) =&gt; LSSerializer.this.writeAttr(&quot; xmlns=\&quot;&quot;, dns, &quot;\&quot;&quot;)))).orElse[Throwable](ns.foldLeft[Option[Throwable]]((scala.None: Option[Throwable]))(((r: Option[Throwable], x: (String, String)) =&gt; r.orElse[Throwable](if (scales.xml.impl.QNameCharUtils.validXmlPrefix(x._1)(LSSerializer.this.data.version).&amp;&amp;(scales.xml.impl.QNameCharUtils.validXmlNamespace(x._2)(LSSerializer.this.data.version)))
+  {
+    LSSerializer.this.data.out.append(&quot; xmlns:&quot;);
+    LSSerializer.this.encMap.apply(x._1).orElse[Throwable](LSSerializer.this.writeAttr(x._1.+(&quot;=\&quot;&quot;), x._2, &quot;\&quot;&quot;))
+  }
+else
+  scala.Some.apply[scales.xml.serializers.IncompatibleQNameVersions](IncompatibleQNameVersions.apply(&quot;NS:&quot;.+(x._1).+(&quot;-&gt;&quot;).+(x._2))))))).orElse[Throwable]({
+  import scales.xml.ScalesXml._;
+  attribs.foldLeft[Option[Throwable]]((scala.None: Option[Throwable]))(((r: Option[Throwable], x: scales.xml.Attribute) =&gt; r.orElse[Throwable]({
+    val name: scales.xml.AttributeQName = x.name;
+    if (scales.xml.ScalesXml.toQName(name).qNameVersion.==(scales.xml.Xml11).&amp;&amp;(LSSerializer.this.data.version.==(scales.xml.Xml10)))
+      scala.Some.apply[scales.xml.serializers.IncompatibleQNameVersions](IncompatibleQNameVersions.apply(&quot;Attr:&quot;.+(scales.xml.ScalesXml.toQName(name).qName)))
+    else
+      {
+        val n: String = scales.xml.ScalesXml.toQName(name).qName;
+        LSSerializer.this.encMap.apply(n).orElse[Throwable](LSSerializer.this.writeAttr(&quot; &quot;.+(n).+(&quot;=\&quot;&quot;), x.value, &quot;\&quot;&quot;))
+      }
+  })))
+})
+        </td>
+      </tr><tr>
+        <td>
+          386
+        </td>
+        <td>
+          5016
+        </td>
+        <td>
+          11712
+          -
+          11716
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          386
+        </td>
+        <td>
+          5036
+        </td>
+        <td>
+          11695
+          -
+          12108
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.TraversableOnce.foldLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          attribs.foldLeft[Option[Throwable]]((scala.None: Option[Throwable]))(((r: Option[Throwable], x: scales.xml.Attribute) =&gt; r.orElse[Throwable]({
+  val name: scales.xml.AttributeQName = x.name;
+  if (scales.xml.ScalesXml.toQName(name).qNameVersion.==(scales.xml.Xml11).&amp;&amp;(LSSerializer.this.data.version.==(scales.xml.Xml10)))
+    scala.Some.apply[scales.xml.serializers.IncompatibleQNameVersions](IncompatibleQNameVersions.apply(&quot;Attr:&quot;.+(scales.xml.ScalesXml.toQName(name).qName)))
+  else
+    {
+      val n: String = scales.xml.ScalesXml.toQName(name).qName;
+      LSSerializer.this.encMap.apply(n).orElse[Throwable](LSSerializer.this.writeAttr(&quot; &quot;.+(n).+(&quot;=\&quot;&quot;), x.value, &quot;\&quot;&quot;))
+    }
+})))
+        </td>
+      </tr><tr>
+        <td>
+          387
+        </td>
+        <td>
+          5035
+        </td>
+        <td>
+          11757
+          -
+          12100
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.orElse
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          r.orElse[Throwable]({
+  val name: scales.xml.AttributeQName = x.name;
+  if (scales.xml.ScalesXml.toQName(name).qNameVersion.==(scales.xml.Xml11).&amp;&amp;(LSSerializer.this.data.version.==(scales.xml.Xml10)))
+    scala.Some.apply[scales.xml.serializers.IncompatibleQNameVersions](IncompatibleQNameVersions.apply(&quot;Attr:&quot;.+(scales.xml.ScalesXml.toQName(name).qName)))
+  else
+    {
+      val n: String = scales.xml.ScalesXml.toQName(name).qName;
+      LSSerializer.this.encMap.apply(n).orElse[Throwable](LSSerializer.this.writeAttr(&quot; &quot;.+(n).+(&quot;=\&quot;&quot;), x.value, &quot;\&quot;&quot;))
+    }
+})
+        </td>
+      </tr><tr>
+        <td>
+          388
+        </td>
+        <td>
+          5017
+        </td>
+        <td>
+          11782
+          -
+          11788
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Attribute.name
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x.name
+        </td>
+      </tr><tr>
+        <td>
+          390
+        </td>
+        <td>
+          5018
+        </td>
+        <td>
+          11855
+          -
+          11860
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Xml11
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Xml11
+        </td>
+      </tr><tr>
+        <td>
+          390
+        </td>
+        <td>
+          5019
+        </td>
+        <td>
+          11875
+          -
+          11880
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Xml10
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Xml10
+        </td>
+      </tr><tr>
+        <td>
+          390
+        </td>
+        <td>
+          5020
+        </td>
+        <td>
+          11864
+          -
+          11880
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializer.this.data.version.==(scales.xml.Xml10)
+        </td>
+      </tr><tr>
+        <td>
+          390
+        </td>
+        <td>
+          5021
+        </td>
+        <td>
+          11834
+          -
+          11880
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.ScalesXml.toQName(name).qNameVersion.==(scales.xml.Xml11).&amp;&amp;(LSSerializer.this.data.version.==(scales.xml.Xml10))
+        </td>
+      </tr><tr>
+        <td>
+          391
+        </td>
+        <td>
+          5022
+        </td>
+        <td>
+          11925
+          -
+          11932
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;Attr:&quot;
+        </td>
+      </tr><tr>
+        <td>
+          391
+        </td>
+        <td>
+          5023
+        </td>
+        <td>
+          11933
+          -
+          11943
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.QName.qName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.ScalesXml.toQName(name).qName
+        </td>
+      </tr><tr>
+        <td>
+          391
+        </td>
+        <td>
+          5024
+        </td>
+        <td>
+          11925
+          -
+          11943
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;Attr:&quot;.+(scales.xml.ScalesXml.toQName(name).qName)
+        </td>
+      </tr><tr>
+        <td>
+          391
+        </td>
+        <td>
+          5025
+        </td>
+        <td>
+          11899
+          -
+          11944
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.IncompatibleQNameVersions.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          IncompatibleQNameVersions.apply(&quot;Attr:&quot;.+(scales.xml.ScalesXml.toQName(name).qName))
+        </td>
+      </tr><tr>
+        <td>
+          391
+        </td>
+        <td>
+          5026
+        </td>
+        <td>
+          11894
+          -
+          11945
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[scales.xml.serializers.IncompatibleQNameVersions](IncompatibleQNameVersions.apply(&quot;Attr:&quot;.+(scales.xml.ScalesXml.toQName(name).qName)))
+        </td>
+      </tr><tr>
+        <td>
+          391
+        </td>
+        <td>
+          5027
+        </td>
+        <td>
+          11894
+          -
+          11945
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[scales.xml.serializers.IncompatibleQNameVersions](IncompatibleQNameVersions.apply(&quot;Attr:&quot;.+(scales.xml.ScalesXml.toQName(name).qName)))
+        </td>
+      </tr><tr>
+        <td>
+          392
+        </td>
+        <td>
+          5034
+        </td>
+        <td>
+          11961
+          -
+          12090
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val n: String = scales.xml.ScalesXml.toQName(name).qName;
+  LSSerializer.this.encMap.apply(n).orElse[Throwable](LSSerializer.this.writeAttr(&quot; &quot;.+(n).+(&quot;=\&quot;&quot;), x.value, &quot;\&quot;&quot;))
+}
+        </td>
+      </tr><tr>
+        <td>
+          393
+        </td>
+        <td>
+          5028
+        </td>
+        <td>
+          11983
+          -
+          11993
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.QName.qName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.ScalesXml.toQName(name).qName
+        </td>
+      </tr><tr>
+        <td>
+          394
+        </td>
+        <td>
+          5033
+        </td>
+        <td>
+          12006
+          -
+          12078
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.orElse
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializer.this.encMap.apply(n).orElse[Throwable](LSSerializer.this.writeAttr(&quot; &quot;.+(n).+(&quot;=\&quot;&quot;), x.value, &quot;\&quot;&quot;))
+        </td>
+      </tr><tr>
+        <td>
+          395
+        </td>
+        <td>
+          5029
+        </td>
+        <td>
+          12047
+          -
+          12062
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot; &quot;.+(n).+(&quot;=\&quot;&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          395
+        </td>
+        <td>
+          5030
+        </td>
+        <td>
+          12064
+          -
+          12071
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Attribute.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x.value
+        </td>
+      </tr><tr>
+        <td>
+          395
+        </td>
+        <td>
+          5031
+        </td>
+        <td>
+          12073
+          -
+          12077
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;\&quot;&quot;
+        </td>
+      </tr><tr>
+        <td>
+          395
+        </td>
+        <td>
+          5032
+        </td>
+        <td>
+          12037
+          -
+          12078
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.LSSerializer.writeAttr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializer.this.writeAttr(&quot; &quot;.+(n).+(&quot;=\&quot;&quot;), x.value, &quot;\&quot;&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          404
+        </td>
+        <td>
+          5040
+        </td>
+        <td>
+          12301
+          -
+          12405
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.orElse
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializer.this.doElem(qName, attributes, namespaces, declareDefaultNS).orElse[Throwable]({
+  LSSerializer.this.data.out.append(&quot;/&gt;&quot;);
+  scala.None
+})
+        </td>
+      </tr><tr>
+        <td>
+          405
+        </td>
+        <td>
+          5038
+        </td>
+        <td>
+          12372
+          -
+          12388
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.Writer.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializer.this.data.out.append(&quot;/&gt;&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          406
+        </td>
+        <td>
+          5039
+        </td>
+        <td>
+          12395
+          -
+          12399
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          410
+        </td>
+        <td>
+          5043
+        </td>
+        <td>
+          12587
+          -
+          12690
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.orElse
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializer.this.doElem(qName, attributes, namespaces, declareDefaultNS).orElse[Throwable]({
+  LSSerializer.this.data.out.append(&quot;&gt;&quot;);
+  scala.None
+})
+        </td>
+      </tr><tr>
+        <td>
+          411
+        </td>
+        <td>
+          5041
+        </td>
+        <td>
+          12658
+          -
+          12673
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.Writer.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializer.this.data.out.append(&quot;&gt;&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          412
+        </td>
+        <td>
+          5042
+        </td>
+        <td>
+          12680
+          -
+          12684
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          416
+        </td>
+        <td>
+          5044
+        </td>
+        <td>
+          12780
+          -
+          12804
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;&lt;/&quot;.+(qName.qName).+(&quot;&gt;&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          416
+        </td>
+        <td>
+          5045
+        </td>
+        <td>
+          12769
+          -
+          12805
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.Writer.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializer.this.data.out.append(&quot;&lt;/&quot;.+(qName.qName).+(&quot;&gt;&quot;))
+        </td>
+      </tr><tr>
+        <td>
+          417
+        </td>
+        <td>
+          5046
+        </td>
+        <td>
+          12842
+          -
+          12846
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          420
+        </td>
+        <td>
+          5047
+        </td>
+        <td>
+          12960
+          -
+          12963
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.SerializerData.out
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          LSSerializer.this.data.out
+        </td>
+      </tr><tr>
+        <td>
+          420
+        </td>
+        <td>
+          5048
+        </td>
+        <td>
+          12934
+          -
+          12983
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.SerializerHelpers.xmlDecl
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SerializerHelpers.xmlDecl(LSSerializer.this.data.out, encoding, version)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

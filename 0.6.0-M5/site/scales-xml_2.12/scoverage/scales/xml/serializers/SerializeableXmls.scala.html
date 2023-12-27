@@ -1,0 +1,3288 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/xml/serializers/SerializeableXmls.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.xml.serializers
+</span>2 <span style=''>
+</span>3 <span style=''>import scales.xml._
+</span>4 <span style=''>
+</span>5 <span style=''>import dsl.DslBuilder
+</span>6 <span style=''>
+</span>7 <span style=''>import scales.utils._
+</span>8 <span style=''>
+</span>9 <span style=''>/**
+</span>10 <span style=''> * Status of stream processing
+</span>11 <span style=''> */
+</span>12 <span style=''>case class StreamStatus(output : XmlOutput, thrown: Option[Throwable] = None, isEmpty : Boolean = false)
+</span>13 <span style=''>
+</span>14 <span style=''>/**
+</span>15 <span style=''> * Provides basis for serialisation of streams.
+</span>16 <span style=''> */ 
+</span>17 <span style=''>object StreamSerializer {
+</span>18 <span style=''>  import ScalesXml._
+</span>19 <span style=''>
+</span>20 <span style=''>  val dummy = </span><span style='background: #AEF1AE'>Left(Elem(&quot;dummy&quot;l))</span><span style=''>
+</span>21 <span style=''>  val dummyIterable : Iterable[PullType] = </span><span style='background: #AEF1AE'>List(dummy)</span><span style=''>
+</span>22 <span style=''>
+</span>23 <span style=''>  /**
+</span>24 <span style=''>   * Pushes a single PullType to the given output, requires pairing of events
+</span>25 <span style=''>  def pump(event: (PullType, PullType), out: XmlOutput, serializer: Serializer) : (XmlOutput, Option[Throwable]) = {
+</span>26 <span style=''>   */ 
+</span>27 <span style=''>
+</span>28 <span style=''>  /**
+</span>29 <span style=''>   * Pushes a single PullType to the given output, requires pairing of events.
+</span>30 <span style=''>   * If status.thrown is defined status is returned
+</span>31 <span style=''>   */ 
+</span>32 <span style=''>  def pump(event: (PullType, PullType), status : StreamStatus, serializer: Serializer) : StreamStatus = {
+</span>33 <span style=''>    // shadow it
+</span>34 <span style=''>    import status.output.{serializerF =&gt; defaultSerializerFactory}
+</span>35 <span style=''>    import status.{output, isEmpty}
+</span>36 <span style=''>
+</span>37 <span style=''>    if (</span><span style='background: #AEF1AE'>status.thrown.isDefined</span><span style=''>) </span><span style='background: #F0ADAD'>status</span><span style=''>
+</span>38 <span style=''>    else </span><span style='background: #AEF1AE'>{
+</span>39 <span style=''></span><span style='background: #AEF1AE'>      
+</span>40 <span style=''></span><span style='background: #AEF1AE'>      val (ev, next) = event
+</span>41 <span style=''></span><span style='background: #AEF1AE'>      ev match {
+</span>42 <span style=''></span><span style='background: #AEF1AE'>	case Left(i: XmlItem) =&gt;
+</span>43 <span style=''></span><span style='background: #AEF1AE'>	  StreamStatus(output, serializer.item(i, output.path), false)
+</span>44 <span style=''></span><span style='background: #AEF1AE'>	case Left(x: Elem) =&gt;
+</span>45 <span style=''></span><span style='background: #AEF1AE'>	  // if next is an end elem then its an empty
+</span>46 <span style=''></span><span style='background: #AEF1AE'>	  if (next.isRight) {
+</span>47 <span style=''></span><span style='background: #AEF1AE'>
+</span>48 <span style=''></span><span style='background: #AEF1AE'>	    // x.namespaces can't be used any further
+</span>49 <span style=''></span><span style='background: #AEF1AE'>	    val nc = doElement(x, output.currentMappings.head)
+</span>50 <span style=''></span><span style='background: #AEF1AE'>	    StreamStatus(output, serializer.emptyElement(x.name, x.attributes, nc.declMap, nc.addDefault, x.name :: output.path), true) // let us know to ignore the next end
+</span>51 <span style=''></span><span style='background: #AEF1AE'>	  } else {
+</span>52 <span style=''></span><span style='background: #AEF1AE'>	    val npath = x.name :: output.path
+</span>53 <span style=''></span><span style='background: #AEF1AE'>
+</span>54 <span style=''></span><span style='background: #AEF1AE'>	    val nc = doElement(x, output.currentMappings.head)
+</span>55 <span style=''></span><span style='background: #AEF1AE'>	    StreamStatus(output.copy(currentMappings = nc.mappings +: output.currentMappings, path = npath),
+</span>56 <span style=''></span><span style='background: #AEF1AE'>	      serializer.startElement(x.name, x.attributes, nc.declMap, nc.addDefault, npath), false)
+</span>57 <span style=''></span><span style='background: #AEF1AE'>	  }
+</span>58 <span style=''></span><span style='background: #AEF1AE'>	case Right(endElem) =&gt;
+</span>59 <span style=''></span><span style='background: #AEF1AE'>	  if (isEmpty)
+</span>60 <span style=''></span><span style='background: #AEF1AE'>	    StreamStatus(output, None, false)
+</span>61 <span style=''></span><span style='background: #AEF1AE'>	  else
+</span>62 <span style=''></span><span style='background: #AEF1AE'>	    // pop the last ones
+</span>63 <span style=''></span><span style='background: #AEF1AE'>	    StreamStatus(output.copy(currentMappings = output.currentMappings.tail,
+</span>64 <span style=''></span><span style='background: #AEF1AE'>				     path = output.path.tail), 
+</span>65 <span style=''></span><span style='background: #AEF1AE'>	      serializer.endElement(endElem.name, output.path), false)
+</span>66 <span style=''></span><span style='background: #AEF1AE'>
+</span>67 <span style=''></span><span style='background: #AEF1AE'>      }
+</span>68 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>69 <span style=''>  }
+</span>70 <span style=''>}
+</span>71 <span style=''>
+</span>72 <span style=''>/**
+</span>73 <span style=''> * Provides a base class for steam handling
+</span>74 <span style=''> */ 
+</span>75 <span style=''>class StreamSerializer[T](toP : T =&gt; Iterator[PullType]) extends SerializeableXml[T] {
+</span>76 <span style=''>  import StreamSerializer._ 
+</span>77 <span style=''>  
+</span>78 <span style=''>  /**
+</span>79 <span style=''>   * Override to provide an actual doc
+</span>80 <span style=''>   */ 
+</span>81 <span style=''>  def doc(it: T) : DocLike = </span><span style='background: #AEF1AE'>EmptyDoc()</span><span style=''>
+</span>82 <span style=''>  def apply(itT: T)(out: XmlOutput, serializer: Serializer): (XmlOutput, Option[Throwable]) = {
+</span>83 <span style=''>    // 2.10 forces implicits at copy use site NOT at declaration site
+</span>84 <span style=''>    import out.serializerF
+</span>85 <span style=''>
+</span>86 <span style=''>    val it = </span><span style='background: #AEF1AE'>toP(itT)</span><span style=''>
+</span>87 <span style=''>    // left of the sequence is our actual, 
+</span>88 <span style=''>    val r = </span><span style='background: #AEF1AE'>it.++(dummyIterable.iterator).sliding(2).foldLeft(StreamStatus(out)) {  (status, two) =&gt;
+</span>89 <span style=''></span><span style='background: #AEF1AE'>      if (status.thrown.isDefined) </span><span style='background: #F0ADAD'>status</span><span style='background: #AEF1AE'>
+</span>90 <span style=''></span><span style='background: #AEF1AE'>      else {
+</span>91 <span style=''></span><span style='background: #AEF1AE'>	val asList = two.toList
+</span>92 <span style=''></span><span style='background: #AEF1AE'>	if (!((asList.size == 1) &amp;&amp; (asList.head eq dummy))) { // only == 1 with an empty input Iterator
+</span>93 <span style=''></span><span style='background: #AEF1AE'>	  val List(ev, next) = asList
+</span>94 <span style=''></span><span style='background: #AEF1AE'>	  pump((ev, next), status, serializer)
+</span>95 <span style=''></span><span style='background: #AEF1AE'>	} else StreamStatus(status.output, Some(NoDataInStream()), true)
+</span>96 <span style=''></span><span style='background: #AEF1AE'>      }
+</span>97 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>98 <span style=''>    </span><span style='background: #AEF1AE'>(r.output, r.thrown)</span><span style=''>
+</span>99 <span style=''>  }
+</span>100 <span style=''>}
+</span>101 <span style=''>
+</span>102 <span style=''>/**
+</span>103 <span style=''> * SerializeableXml instances for the core types
+</span>104 <span style=''> */ 
+</span>105 <span style=''>trait SerializerImplicits {
+</span>106 <span style=''>
+</span>107 <span style=''>  /**
+</span>108 <span style=''>   * Serializes an XmlTree
+</span>109 <span style=''>   */
+</span>110 <span style=''>  implicit val treeSerializeable: SerializeableXml[XmlTree] = </span><span style='background: #AEF1AE'>new</span><span style=''> SerializeableXml[XmlTree] {
+</span>111 <span style=''>    def doc(it: XmlTree) = </span><span style='background: #AEF1AE'>Doc(it)</span><span style=''>
+</span>112 <span style=''>    def apply(it: XmlTree)(out: XmlOutput, serializer: Serializer): (XmlOutput, Option[Throwable]) = {
+</span>113 <span style=''>      // 2.10 forces implicits at copy use site NOT at declaration site
+</span>114 <span style=''>      import out.serializerF
+</span>115 <span style=''>
+</span>116 <span style=''>      </span><span style='background: #AEF1AE'>fold[XmlItem, Elem, XCC, (XmlOutput, Option[Throwable])]((out, None)) { (iorsw, pair) =&gt;
+</span>117 <span style=''></span><span style='background: #AEF1AE'>        val (output, y) = pair
+</span>118 <span style=''></span><span style='background: #AEF1AE'>
+</span>119 <span style=''></span><span style='background: #AEF1AE'>        if (y.isDefined) pair
+</span>120 <span style=''></span><span style='background: #AEF1AE'>        else
+</span>121 <span style=''></span><span style='background: #AEF1AE'>          iorsw match {
+</span>122 <span style=''></span><span style='background: #AEF1AE'>            case Left(item) =&gt; (output, serializer.item(item, output.path))
+</span>123 <span style=''></span><span style='background: #AEF1AE'>            case Right(walk) =&gt;
+</span>124 <span style=''></span><span style='background: #AEF1AE'>              val x = walk.section
+</span>125 <span style=''></span><span style='background: #AEF1AE'>              if (!walk.hasChildren) {
+</span>126 <span style=''></span><span style='background: #AEF1AE'>
+</span>127 <span style=''></span><span style='background: #AEF1AE'>                // x.namespaces can't be used any further
+</span>128 <span style=''></span><span style='background: #AEF1AE'>                val nc = doElement(x, output.currentMappings.head)
+</span>129 <span style=''></span><span style='background: #AEF1AE'>                (output, serializer.emptyElement(x.name, x.attributes, nc.declMap, nc.addDefault, x.name :: output.path))
+</span>130 <span style=''></span><span style='background: #AEF1AE'>              } else {
+</span>131 <span style=''></span><span style='background: #AEF1AE'>                if (walk.isStart) {
+</span>132 <span style=''></span><span style='background: #AEF1AE'>
+</span>133 <span style=''></span><span style='background: #AEF1AE'>                  val npath = x.name :: output.path
+</span>134 <span style=''></span><span style='background: #AEF1AE'>
+</span>135 <span style=''></span><span style='background: #AEF1AE'>                  val nc = doElement(x, output.currentMappings.head)
+</span>136 <span style=''></span><span style='background: #AEF1AE'>                  (output.copy(currentMappings = nc.mappings +: output.currentMappings,
+</span>137 <span style=''></span><span style='background: #AEF1AE'>                    path = npath),
+</span>138 <span style=''></span><span style='background: #AEF1AE'>                    serializer.startElement(x.name, x.attributes, nc.declMap, nc.addDefault, npath))
+</span>139 <span style=''></span><span style='background: #AEF1AE'>                } else {
+</span>140 <span style=''></span><span style='background: #AEF1AE'>                  // pop the last ones
+</span>141 <span style=''></span><span style='background: #AEF1AE'>                  (output.copy(currentMappings = output.currentMappings.tail,
+</span>142 <span style=''></span><span style='background: #AEF1AE'>                    path = output.path.tail), serializer.endElement(x.name, output.path))
+</span>143 <span style=''></span><span style='background: #AEF1AE'>                }
+</span>144 <span style=''></span><span style='background: #AEF1AE'>              }
+</span>145 <span style=''></span><span style='background: #AEF1AE'>          }
+</span>146 <span style=''></span><span style='background: #AEF1AE'>      }(it)</span><span style=''>
+</span>147 <span style=''>  } }
+</span>148 <span style=''>
+</span>149 <span style=''>  /**
+</span>150 <span style=''>   * Serializes a DslBuilder
+</span>151 <span style=''>   */
+</span>152 <span style=''>  implicit val builderSerializeable : SerializeableXml[DslBuilder] = </span><span style='background: #AEF1AE'>new</span><span style=''> SerializeableXml[DslBuilder] {
+</span>153 <span style=''>    def doc(it: DslBuilder) = </span><span style='background: #AEF1AE'>Doc(it.toTree)</span><span style=''>
+</span>154 <span style=''>    def apply(it: DslBuilder)(out: XmlOutput, serializer: Serializer): (XmlOutput, Option[Throwable]) = </span><span style='background: #AEF1AE'>treeSerializeable(it.toTree)(out, serializer)</span><span style=''>
+</span>155 <span style=''>  }
+</span>156 <span style=''>
+</span>157 <span style=''>  /**
+</span>158 <span style=''>   * Serializes a Doc (Wrapped XmlTree)
+</span>159 <span style=''>   */
+</span>160 <span style=''>  implicit val docSerializeable : SerializeableXml[Doc]= </span><span style='background: #AEF1AE'>new</span><span style=''> SerializeableXml[Doc] {
+</span>161 <span style=''>    def doc(it: Doc) = it
+</span>162 <span style=''>    def apply(it: Doc)(out: XmlOutput, serializer: Serializer): (XmlOutput, Option[Throwable]) = </span><span style='background: #AEF1AE'>treeSerializeable(it.rootElem)(out, serializer)</span><span style=''>
+</span>163 <span style=''>  }
+</span>164 <span style=''>  
+</span>165 <span style=''>  /**
+</span>166 <span style=''>   * Simple Elem serializer
+</span>167 <span style=''>   */
+</span>168 <span style=''>  implicit val elemSerializable : SerializeableXml[Elem] = </span><span style='background: #AEF1AE'>new</span><span style=''> SerializeableXml[Elem] {
+</span>169 <span style=''>    def doc(it: Elem) = </span><span style='background: #AEF1AE'>Doc(DslBuilder.elem2tree(it))</span><span style=''>
+</span>170 <span style=''>    def apply(it: Elem)(out: XmlOutput, serializer: Serializer): (XmlOutput, Option[Throwable]) = </span><span style='background: #AEF1AE'>treeSerializeable(DslBuilder.elem2tree(it))(out, serializer)</span><span style=''>
+</span>171 <span style=''>  } 
+</span>172 <span style=''>
+</span>173 <span style=''>
+</span>174 <span style=''>
+</span>175 <span style=''>
+</span>176 <span style=''>  /**
+</span>177 <span style=''>   * Serializes an Xml Stream
+</span>178 <span style=''>   */
+</span>179 <span style=''>  implicit val streamSerializeable: SerializeableXml[Iterator[PullType]] = </span><span style='background: #AEF1AE'>new StreamSerializer(identity)</span><span style=''>
+</span>180 <span style=''>
+</span>181 <span style=''>  /**
+</span>182 <span style=''>   * Serializes an XmlPull
+</span>183 <span style=''>   */
+</span>184 <span style=''>  implicit val pullCloseableOnlySerializeable: SerializeableXml[CloseablePull] = </span><span style='background: #AEF1AE'>new</span><span style=''> StreamSerializer[CloseablePull](identity){
+</span>185 <span style=''>    override def doc(it: CloseablePull) = it
+</span>186 <span style=''>  }
+</span>187 <span style=''>
+</span>188 <span style=''>  /**
+</span>189 <span style=''>   * Serializes an XmlPull Resource
+</span>190 <span style=''>   */
+</span>191 <span style=''>  implicit val pullOnlySerializeable: SerializeableXml[XmlPull] = </span><span style='background: #AEF1AE'>new</span><span style=''> StreamSerializer[XmlPull](identity) {
+</span>192 <span style=''>    override def doc(it: XmlPull) = it
+</span>193 <span style=''>  }
+</span>194 <span style=''>
+</span>195 <span style=''>  /**
+</span>196 <span style=''>   * Serializes an Iterator and DocLike
+</span>197 <span style=''>   */
+</span>198 <span style=''>  implicit val pullAndDocSerializeable: SerializeableXml[(Iterator[PullType], DocLike)] = </span><span style='background: #AEF1AE'>new</span><span style=''> StreamSerializer[(Iterator[PullType], DocLike)](_._1) {
+</span>199 <span style=''>    override def doc(it: (Iterator[PullType], DocLike)) = </span><span style='background: #F0ADAD'>it._2</span><span style=''>
+</span>200 <span style=''>  }
+</span>201 <span style=''>
+</span>202 <span style=''>
+</span>203 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          5049
+        </td>
+        <td>
+          373
+          -
+          380
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;dummy&quot;
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          5050
+        </td>
+        <td>
+          373
+          -
+          373
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.DefaultXmlVersion.defaultVersion
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.ScalesXml.defaultVersion
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          5051
+        </td>
+        <td>
+          373
+          -
+          373
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.XmlTypesImplicits.fromParserDefault
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.ScalesXml.fromParserDefault
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          5052
+        </td>
+        <td>
+          380
+          -
+          380
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.DefaultXmlVersion.defaultVersion
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.ScalesXml.defaultVersion
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          5053
+        </td>
+        <td>
+          380
+          -
+          380
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.XmlTypesImplicits.fromParserDefault
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.ScalesXml.fromParserDefault
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          5054
+        </td>
+        <td>
+          373
+          -
+          381
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.impl.StringToNSBuilder.l
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.ScalesXml.localStringToNSBuilder(&quot;dummy&quot;)(scales.xml.ScalesXml.defaultVersion, scales.xml.ScalesXml.fromParserDefault).l(scales.xml.ScalesXml.defaultVersion, scales.xml.ScalesXml.fromParserDefault)
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          5055
+        </td>
+        <td>
+          372
+          -
+          372
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.XmlTypesImplicits.fromParserDefault
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.ScalesXml.fromParserDefault
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          5056
+        </td>
+        <td>
+          368
+          -
+          382
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.Elem.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Elem.apply(scales.xml.ScalesXml.localStringToNSBuilder(&quot;dummy&quot;)(scales.xml.ScalesXml.defaultVersion, scales.xml.ScalesXml.fromParserDefault).l(scales.xml.ScalesXml.defaultVersion, scales.xml.ScalesXml.fromParserDefault), scales.xml.Elem.apply$default$2, scales.xml.Elem.apply$default$3)(scales.xml.ScalesXml.fromParserDefault)
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          5057
+        </td>
+        <td>
+          363
+          -
+          383
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Left.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Left.apply[scales.xml.Elem, Nothing](scales.xml.Elem.apply(scales.xml.ScalesXml.localStringToNSBuilder(&quot;dummy&quot;)(scales.xml.ScalesXml.defaultVersion, scales.xml.ScalesXml.fromParserDefault).l(scales.xml.ScalesXml.defaultVersion, scales.xml.ScalesXml.fromParserDefault), scales.xml.Elem.apply$default$2, scales.xml.Elem.apply$default$3)(scales.xml.ScalesXml.fromParserDefault))
+        </td>
+      </tr><tr>
+        <td>
+          21
+        </td>
+        <td>
+          5058
+        </td>
+        <td>
+          432
+          -
+          437
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.StreamSerializer.dummy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          StreamSerializer.this.dummy
+        </td>
+      </tr><tr>
+        <td>
+          21
+        </td>
+        <td>
+          5059
+        </td>
+        <td>
+          427
+          -
+          438
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.List.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.collection.immutable.List.apply[scala.util.Left[scales.xml.Elem,Nothing]](StreamSerializer.this.dummy)
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          5060
+        </td>
+        <td>
+          1028
+          -
+          1051
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Option.isDefined
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          status.thrown.isDefined
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          5061
+        </td>
+        <td>
+          1053
+          -
+          1059
+        </td>
+        <td>
+          Ident
+        </td>
+        <td>
+          scales.xml.serializers.StreamSerializer.status
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          status
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          5116
+        </td>
+        <td>
+          1069
+          -
+          2192
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  &lt;synthetic&gt; &lt;artifact&gt; private[this] val x$1: (scales.xml.PullType, scales.xml.PullType) = (event: (scales.xml.PullType, scales.xml.PullType) @unchecked) match {
+    case (_1: scales.xml.PullType, _2: scales.xml.PullType)(scales.xml.PullType, scales.xml.PullType)((ev @ _), (next @ _)) =&gt; scala.Tuple2.apply[scales.xml.PullType, scales.xml.PullType](ev, next)
+  };
+  val ev: scales.xml.PullType = x$1._1;
+  val next: scales.xml.PullType = x$1._2;
+  ev match {
+    case (value: scales.xml.XmlEvent)scala.util.Left[scales.xml.XmlEvent,scales.xml.EndElem]((i @ (_: scales.xml.XmlItem))) =&gt; StreamStatus.apply(status.output, serializer.item(i, status.output.path), false)
+    case (value: scales.xml.XmlEvent)scala.util.Left[scales.xml.XmlEvent,scales.xml.EndElem]((x @ (_: scales.xml.Elem))) =&gt; if (next.isRight)
+      {
+        val nc: scales.xml.serializers.NamespaceContext = scales.xml.`package`.doElement(x, status.output.currentMappings.head);
+        StreamStatus.apply(status.output, serializer.emptyElement(x.name, x.attributes, nc.declMap, nc.addDefault, {
+          &lt;synthetic&gt; &lt;artifact&gt; val x$2: scales.xml.QName = x.name;
+          status.output.path.::[scales.xml.QName](x$2)
+        }), true)
+      }
+    else
+      {
+        val npath: List[scales.xml.QName] = {
+          &lt;synthetic&gt; &lt;artifact&gt; val x$3: scales.xml.QName = x.name;
+          status.output.path.::[scales.xml.QName](x$3)
+        };
+        val nc: scales.xml.serializers.NamespaceContext = scales.xml.`package`.doElement(x, status.output.currentMappings.head);
+        StreamStatus.apply({
+          &lt;artifact&gt; val x$1: List[scala.collection.immutable.Map[String,String]] = {
+            &lt;synthetic&gt; &lt;artifact&gt; val x$4: scala.collection.immutable.Map[String,String] = nc.mappings;
+            status.output.currentMappings.+:[scala.collection.immutable.Map[String,String], List[scala.collection.immutable.Map[String,String]]](x$4)(immutable.this.List.canBuildFrom[scala.collection.immutable.Map[String,String]])
+          };
+          &lt;artifact&gt; val x$2: List[scales.xml.QName] = npath;
+          &lt;artifact&gt; val x$3: scales.xml.serializers.SerializerData = status.output.copy$default$1;
+          status.output.copy(x$3, x$1, x$2)(status.output.serializerF)
+        }, serializer.startElement(x.name, x.attributes, nc.declMap, nc.addDefault, npath), false)
+      }
+    case (value: scales.xml.EndElem)scala.util.Right[scales.xml.XmlEvent,scales.xml.EndElem]((endElem @ _)) =&gt; if (status.isEmpty)
+      StreamStatus.apply(status.output, scala.None, false)
+    else
+      StreamStatus.apply({
+        &lt;artifact&gt; val x$4: List[scala.collection.immutable.Map[String,String]] = status.output.currentMappings.tail;
+        &lt;artifact&gt; val x$5: List[scales.xml.QName] = status.output.path.tail;
+        &lt;artifact&gt; val x$6: scales.xml.serializers.SerializerData = status.output.copy$default$1;
+        status.output.copy(x$6, x$4, x$5)(status.output.serializerF)
+      }, serializer.endElement(endElem.name, status.output.path), false)
+  }
+}
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          5062
+        </td>
+        <td>
+          1089
+          -
+          1089
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$1._1
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          5063
+        </td>
+        <td>
+          1093
+          -
+          1093
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$1._2
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          5064
+        </td>
+        <td>
+          1166
+          -
+          1172
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.StreamStatus.output
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          status.output
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          5065
+        </td>
+        <td>
+          1193
+          -
+          1204
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.XmlOutput.path
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          status.output.path
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          5066
+        </td>
+        <td>
+          1174
+          -
+          1205
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.Serializer.item
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          serializer.item(i, status.output.path)
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          5067
+        </td>
+        <td>
+          1207
+          -
+          1212
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          5068
+        </td>
+        <td>
+          1153
+          -
+          1213
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.StreamStatus.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          StreamStatus.apply(status.output, serializer.item(i, status.output.path), false)
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          5069
+        </td>
+        <td>
+          1153
+          -
+          1213
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.serializers.StreamStatus.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          StreamStatus.apply(status.output, serializer.item(i, status.output.path), false)
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          5070
+        </td>
+        <td>
+          1291
+          -
+          1303
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.util.Either.isRight
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          next.isRight
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          5082
+        </td>
+        <td>
+          1305
+          -
+          1582
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val nc: scales.xml.serializers.NamespaceContext = scales.xml.`package`.doElement(x, status.output.currentMappings.head);
+  StreamStatus.apply(status.output, serializer.emptyElement(x.name, x.attributes, nc.declMap, nc.addDefault, {
+    &lt;synthetic&gt; &lt;artifact&gt; val x$2: scales.xml.QName = x.name;
+    status.output.path.::[scales.xml.QName](x$2)
+  }), true)
+}
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          5098
+        </td>
+        <td>
+          1287
+          -
+          1887
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (next.isRight)
+  {
+    val nc: scales.xml.serializers.NamespaceContext = scales.xml.`package`.doElement(x, status.output.currentMappings.head);
+    StreamStatus.apply(status.output, serializer.emptyElement(x.name, x.attributes, nc.declMap, nc.addDefault, {
+      &lt;synthetic&gt; &lt;artifact&gt; val x$2: scales.xml.QName = x.name;
+      status.output.path.::[scales.xml.QName](x$2)
+    }), true)
+  }
+else
+  {
+    val npath: List[scales.xml.QName] = {
+      &lt;synthetic&gt; &lt;artifact&gt; val x$3: scales.xml.QName = x.name;
+      status.output.path.::[scales.xml.QName](x$3)
+    };
+    val nc: scales.xml.serializers.NamespaceContext = scales.xml.`package`.doElement(x, status.output.currentMappings.head);
+    StreamStatus.apply({
+      &lt;artifact&gt; val x$1: List[scala.collection.immutable.Map[String,String]] = {
+        &lt;synthetic&gt; &lt;artifact&gt; val x$4: scala.collection.immutable.Map[String,String] = nc.mappings;
+        status.output.currentMappings.+:[scala.collection.immutable.Map[String,String], List[scala.collection.immutable.Map[String,String]]](x$4)(immutable.this.List.canBuildFrom[scala.collection.immutable.Map[String,String]])
+      };
+      &lt;artifact&gt; val x$2: List[scales.xml.QName] = npath;
+      &lt;artifact&gt; val x$3: scales.xml.serializers.SerializerData = status.output.copy$default$1;
+      status.output.copy(x$3, x$1, x$2)(status.output.serializerF)
+    }, serializer.startElement(x.name, x.attributes, nc.declMap, nc.addDefault, npath), false)
+  }
+        </td>
+      </tr><tr>
+        <td>
+          49
+        </td>
+        <td>
+          5071
+        </td>
+        <td>
+          1382
+          -
+          1409
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.IterableLike.head
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          status.output.currentMappings.head
+        </td>
+      </tr><tr>
+        <td>
+          49
+        </td>
+        <td>
+          5072
+        </td>
+        <td>
+          1369
+          -
+          1410
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.XmlPrinter.doElement
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.`package`.doElement(x, status.output.currentMappings.head)
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          5073
+        </td>
+        <td>
+          1429
+          -
+          1435
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.StreamStatus.output
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          status.output
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          5074
+        </td>
+        <td>
+          1461
+          -
+          1467
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Elem.name
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x.name
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          5075
+        </td>
+        <td>
+          1469
+          -
+          1481
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Elem.attributes
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x.attributes
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          5076
+        </td>
+        <td>
+          1483
+          -
+          1493
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.NamespaceContext.declMap
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          nc.declMap
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          5077
+        </td>
+        <td>
+          1495
+          -
+          1508
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.NamespaceContext.addDefault
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          nc.addDefault
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          5078
+        </td>
+        <td>
+          1510
+          -
+          1531
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.List.::
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          status.output.path.::[scales.xml.QName](x$2)
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          5079
+        </td>
+        <td>
+          1437
+          -
+          1532
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.Serializer.emptyElement
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          serializer.emptyElement(x.name, x.attributes, nc.declMap, nc.addDefault, {
+  &lt;synthetic&gt; &lt;artifact&gt; val x$2: scales.xml.QName = x.name;
+  status.output.path.::[scales.xml.QName](x$2)
+})
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          5080
+        </td>
+        <td>
+          1534
+          -
+          1538
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          5081
+        </td>
+        <td>
+          1416
+          -
+          1539
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.StreamStatus.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          StreamStatus.apply(status.output, serializer.emptyElement(x.name, x.attributes, nc.declMap, nc.addDefault, {
+  &lt;synthetic&gt; &lt;artifact&gt; val x$2: scales.xml.QName = x.name;
+  status.output.path.::[scales.xml.QName](x$2)
+}), true)
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          5097
+        </td>
+        <td>
+          1588
+          -
+          1887
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val npath: List[scales.xml.QName] = {
+    &lt;synthetic&gt; &lt;artifact&gt; val x$3: scales.xml.QName = x.name;
+    status.output.path.::[scales.xml.QName](x$3)
+  };
+  val nc: scales.xml.serializers.NamespaceContext = scales.xml.`package`.doElement(x, status.output.currentMappings.head);
+  StreamStatus.apply({
+    &lt;artifact&gt; val x$1: List[scala.collection.immutable.Map[String,String]] = {
+      &lt;synthetic&gt; &lt;artifact&gt; val x$4: scala.collection.immutable.Map[String,String] = nc.mappings;
+      status.output.currentMappings.+:[scala.collection.immutable.Map[String,String], List[scala.collection.immutable.Map[String,String]]](x$4)(immutable.this.List.canBuildFrom[scala.collection.immutable.Map[String,String]])
+    };
+    &lt;artifact&gt; val x$2: List[scales.xml.QName] = npath;
+    &lt;artifact&gt; val x$3: scales.xml.serializers.SerializerData = status.output.copy$default$1;
+    status.output.copy(x$3, x$1, x$2)(status.output.serializerF)
+  }, serializer.startElement(x.name, x.attributes, nc.declMap, nc.addDefault, npath), false)
+}
+        </td>
+      </tr><tr>
+        <td>
+          52
+        </td>
+        <td>
+          5083
+        </td>
+        <td>
+          1607
+          -
+          1628
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.List.::
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          status.output.path.::[scales.xml.QName](x$3)
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          5084
+        </td>
+        <td>
+          1657
+          -
+          1684
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.IterableLike.head
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          status.output.currentMappings.head
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          5085
+        </td>
+        <td>
+          1644
+          -
+          1685
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.XmlPrinter.doElement
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.`package`.doElement(x, status.output.currentMappings.head)
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          5086
+        </td>
+        <td>
+          1746
+          -
+          1746
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.immutable.List.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          immutable.this.List.canBuildFrom[scala.collection.immutable.Map[String,String]]
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          5087
+        </td>
+        <td>
+          1734
+          -
+          1771
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.immutable.List.+:
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          status.output.currentMappings.+:[scala.collection.immutable.Map[String,String], List[scala.collection.immutable.Map[String,String]]](x$4)(immutable.this.List.canBuildFrom[scala.collection.immutable.Map[String,String]])
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          5088
+        </td>
+        <td>
+          1715
+          -
+          1715
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.XmlOutput.serializerF
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          status.output.serializerF
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          5089
+        </td>
+        <td>
+          1704
+          -
+          1786
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.serializers.XmlOutput.copy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          status.output.copy(x$3, x$1, x$2)(status.output.serializerF)
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          5096
+        </td>
+        <td>
+          1691
+          -
+          1882
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.StreamStatus.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          StreamStatus.apply({
+  &lt;artifact&gt; val x$1: List[scala.collection.immutable.Map[String,String]] = {
+    &lt;synthetic&gt; &lt;artifact&gt; val x$4: scala.collection.immutable.Map[String,String] = nc.mappings;
+    status.output.currentMappings.+:[scala.collection.immutable.Map[String,String], List[scala.collection.immutable.Map[String,String]]](x$4)(immutable.this.List.canBuildFrom[scala.collection.immutable.Map[String,String]])
+  };
+  &lt;artifact&gt; val x$2: List[scales.xml.QName] = npath;
+  &lt;artifact&gt; val x$3: scales.xml.serializers.SerializerData = status.output.copy$default$1;
+  status.output.copy(x$3, x$1, x$2)(status.output.serializerF)
+}, serializer.startElement(x.name, x.attributes, nc.declMap, nc.addDefault, npath), false)
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          5090
+        </td>
+        <td>
+          1819
+          -
+          1825
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Elem.name
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x.name
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          5091
+        </td>
+        <td>
+          1827
+          -
+          1839
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Elem.attributes
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x.attributes
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          5092
+        </td>
+        <td>
+          1841
+          -
+          1851
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.NamespaceContext.declMap
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          nc.declMap
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          5093
+        </td>
+        <td>
+          1853
+          -
+          1866
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.NamespaceContext.addDefault
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          nc.addDefault
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          5094
+        </td>
+        <td>
+          1795
+          -
+          1874
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.Serializer.startElement
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          serializer.startElement(x.name, x.attributes, nc.declMap, nc.addDefault, npath)
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          5095
+        </td>
+        <td>
+          1876
+          -
+          1881
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          5099
+        </td>
+        <td>
+          1919
+          -
+          1926
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.StreamStatus.isEmpty
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          status.isEmpty
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          5115
+        </td>
+        <td>
+          1915
+          -
+          2177
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (status.isEmpty)
+  StreamStatus.apply(status.output, scala.None, false)
+else
+  StreamStatus.apply({
+    &lt;artifact&gt; val x$4: List[scala.collection.immutable.Map[String,String]] = status.output.currentMappings.tail;
+    &lt;artifact&gt; val x$5: List[scales.xml.QName] = status.output.path.tail;
+    &lt;artifact&gt; val x$6: scales.xml.serializers.SerializerData = status.output.copy$default$1;
+    status.output.copy(x$6, x$4, x$5)(status.output.serializerF)
+  }, serializer.endElement(endElem.name, status.output.path), false)
+        </td>
+      </tr><tr>
+        <td>
+          60
+        </td>
+        <td>
+          5100
+        </td>
+        <td>
+          1946
+          -
+          1952
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.StreamStatus.output
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          status.output
+        </td>
+      </tr><tr>
+        <td>
+          60
+        </td>
+        <td>
+          5101
+        </td>
+        <td>
+          1954
+          -
+          1958
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          60
+        </td>
+        <td>
+          5102
+        </td>
+        <td>
+          1960
+          -
+          1965
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          60
+        </td>
+        <td>
+          5103
+        </td>
+        <td>
+          1933
+          -
+          1966
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.StreamStatus.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          StreamStatus.apply(status.output, scala.None, false)
+        </td>
+      </tr><tr>
+        <td>
+          60
+        </td>
+        <td>
+          5104
+        </td>
+        <td>
+          1933
+          -
+          1966
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.serializers.StreamStatus.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          StreamStatus.apply(status.output, scala.None, false)
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          5105
+        </td>
+        <td>
+          2049
+          -
+          2076
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.TraversableLike.tail
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          status.output.currentMappings.tail
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          5107
+        </td>
+        <td>
+          2030
+          -
+          2030
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.XmlOutput.serializerF
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          status.output.serializerF
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          5108
+        </td>
+        <td>
+          2019
+          -
+          2111
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.serializers.XmlOutput.copy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          status.output.copy(x$6, x$4, x$5)(status.output.serializerF)
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          5113
+        </td>
+        <td>
+          2006
+          -
+          2177
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.StreamStatus.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          StreamStatus.apply({
+  &lt;artifact&gt; val x$4: List[scala.collection.immutable.Map[String,String]] = status.output.currentMappings.tail;
+  &lt;artifact&gt; val x$5: List[scales.xml.QName] = status.output.path.tail;
+  &lt;artifact&gt; val x$6: scales.xml.serializers.SerializerData = status.output.copy$default$1;
+  status.output.copy(x$6, x$4, x$5)(status.output.serializerF)
+}, serializer.endElement(endElem.name, status.output.path), false)
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          5114
+        </td>
+        <td>
+          2006
+          -
+          2177
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.serializers.StreamStatus.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          StreamStatus.apply({
+  &lt;artifact&gt; val x$4: List[scala.collection.immutable.Map[String,String]] = status.output.currentMappings.tail;
+  &lt;artifact&gt; val x$5: List[scales.xml.QName] = status.output.path.tail;
+  &lt;artifact&gt; val x$6: scales.xml.serializers.SerializerData = status.output.copy$default$1;
+  status.output.copy(x$6, x$4, x$5)(status.output.serializerF)
+}, serializer.endElement(endElem.name, status.output.path), false)
+        </td>
+      </tr><tr>
+        <td>
+          64
+        </td>
+        <td>
+          5106
+        </td>
+        <td>
+          2094
+          -
+          2110
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.TraversableLike.tail
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          status.output.path.tail
+        </td>
+      </tr><tr>
+        <td>
+          65
+        </td>
+        <td>
+          5109
+        </td>
+        <td>
+          2143
+          -
+          2155
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.EndElem.name
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          endElem.name
+        </td>
+      </tr><tr>
+        <td>
+          65
+        </td>
+        <td>
+          5110
+        </td>
+        <td>
+          2157
+          -
+          2168
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.XmlOutput.path
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          status.output.path
+        </td>
+      </tr><tr>
+        <td>
+          65
+        </td>
+        <td>
+          5111
+        </td>
+        <td>
+          2121
+          -
+          2169
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.Serializer.endElement
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          serializer.endElement(endElem.name, status.output.path)
+        </td>
+      </tr><tr>
+        <td>
+          65
+        </td>
+        <td>
+          5112
+        </td>
+        <td>
+          2171
+          -
+          2176
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          81
+        </td>
+        <td>
+          5117
+        </td>
+        <td>
+          2453
+          -
+          2463
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.EmptyDoc.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.EmptyDoc.apply(scales.xml.EmptyDoc.apply$default$1, scales.xml.EmptyDoc.apply$default$2)
+        </td>
+      </tr><tr>
+        <td>
+          86
+        </td>
+        <td>
+          5118
+        </td>
+        <td>
+          2671
+          -
+          2679
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          StreamSerializer.this.toP.apply(itT)
+        </td>
+      </tr><tr>
+        <td>
+          88
+        </td>
+        <td>
+          5119
+        </td>
+        <td>
+          2742
+          -
+          2764
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.IterableLike.iterator
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          StreamSerializer.dummyIterable.iterator
+        </td>
+      </tr><tr>
+        <td>
+          88
+        </td>
+        <td>
+          5120
+        </td>
+        <td>
+          2736
+          -
+          2765
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.Iterator.++
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          it.++[scales.xml.PullType](StreamSerializer.dummyIterable.iterator)
+        </td>
+      </tr><tr>
+        <td>
+          88
+        </td>
+        <td>
+          5121
+        </td>
+        <td>
+          2774
+          -
+          2775
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          2
+        </td>
+      </tr><tr>
+        <td>
+          88
+        </td>
+        <td>
+          5122
+        </td>
+        <td>
+          2766
+          -
+          2766
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.Iterator.sliding$default$2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          qual$1.sliding$default$2[scales.xml.PullType]
+        </td>
+      </tr><tr>
+        <td>
+          88
+        </td>
+        <td>
+          5123
+        </td>
+        <td>
+          2736
+          -
+          2776
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.Iterator.sliding
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          qual$1.sliding[scala.util.Either[scales.xml.XmlEvent,scales.xml.EndElem]](x$1, x$2)
+        </td>
+      </tr><tr>
+        <td>
+          88
+        </td>
+        <td>
+          5124
+        </td>
+        <td>
+          2786
+          -
+          2803
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.StreamStatus.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          StreamStatus.apply(out, StreamStatus.apply$default$2, StreamStatus.apply$default$3)
+        </td>
+      </tr><tr>
+        <td>
+          88
+        </td>
+        <td>
+          5144
+        </td>
+        <td>
+          2736
+          -
+          3153
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.TraversableOnce.foldLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  &lt;artifact&gt; val qual$1: Iterator[scales.xml.PullType] = it.++[scales.xml.PullType](StreamSerializer.dummyIterable.iterator);
+  &lt;artifact&gt; val x$1: Int = 2;
+  &lt;artifact&gt; val x$2: Int = qual$1.sliding$default$2[scales.xml.PullType];
+  qual$1.sliding[scala.util.Either[scales.xml.XmlEvent,scales.xml.EndElem]](x$1, x$2)
+}.foldLeft[scales.xml.serializers.StreamStatus](StreamStatus.apply(out, StreamStatus.apply$default$2, StreamStatus.apply$default$3))(((status: scales.xml.serializers.StreamStatus, two: Seq[scala.util.Either[scales.xml.XmlEvent,scales.xml.EndElem]]) =&gt; if (status.thrown.isDefined)
+  status
+else
+  {
+    val asList: List[scala.util.Either[scales.xml.XmlEvent,scales.xml.EndElem]] = two.toList;
+    if (asList.size.==(1).&amp;&amp;(asList.head.eq(StreamSerializer.dummy)).unary_!)
+      {
+        &lt;synthetic&gt; &lt;artifact&gt; private[this] val x$5: (scala.util.Either[scales.xml.XmlEvent,scales.xml.EndElem], scala.util.Either[scales.xml.XmlEvent,scales.xml.EndElem]) = (asList: List[scala.util.Either[scales.xml.XmlEvent,scales.xml.EndElem]] @unchecked) match {
+          case scala.collection.immutable.List.unapplySeq[scala.util.Either[scales.xml.XmlEvent,scales.xml.EndElem]](&lt;unapply-selector&gt;) &lt;unapply&gt; ((ev @ _), (next @ _)) =&gt; scala.Tuple2.apply[scala.util.Either[scales.xml.XmlEvent,scales.xml.EndElem], scala.util.Either[scales.xml.XmlEvent,scales.xml.EndElem]](ev, next)
+        };
+        val ev: scala.util.Either[scales.xml.XmlEvent,scales.xml.EndElem] = x$5._1;
+        val next: scala.util.Either[scales.xml.XmlEvent,scales.xml.EndElem] = x$5._2;
+        StreamSerializer.pump(scala.Tuple2.apply[scala.util.Either[scales.xml.XmlEvent,scales.xml.EndElem], scala.util.Either[scales.xml.XmlEvent,scales.xml.EndElem]](ev, next), status, serializer)
+      }
+    else
+      StreamStatus.apply(status.output, scala.Some.apply[scales.xml.serializers.NoDataInStream](NoDataInStream.apply()), true)
+  }))
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          5125
+        </td>
+        <td>
+          2835
+          -
+          2858
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Option.isDefined
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          status.thrown.isDefined
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          5126
+        </td>
+        <td>
+          2860
+          -
+          2866
+        </td>
+        <td>
+          Ident
+        </td>
+        <td>
+          scales.xml.serializers.StreamSerializer.status
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          status
+        </td>
+      </tr><tr>
+        <td>
+          90
+        </td>
+        <td>
+          5143
+        </td>
+        <td>
+          2878
+          -
+          3147
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val asList: List[scala.util.Either[scales.xml.XmlEvent,scales.xml.EndElem]] = two.toList;
+  if (asList.size.==(1).&amp;&amp;(asList.head.eq(StreamSerializer.dummy)).unary_!)
+    {
+      &lt;synthetic&gt; &lt;artifact&gt; private[this] val x$5: (scala.util.Either[scales.xml.XmlEvent,scales.xml.EndElem], scala.util.Either[scales.xml.XmlEvent,scales.xml.EndElem]) = (asList: List[scala.util.Either[scales.xml.XmlEvent,scales.xml.EndElem]] @unchecked) match {
+        case scala.collection.immutable.List.unapplySeq[scala.util.Either[scales.xml.XmlEvent,scales.xml.EndElem]](&lt;unapply-selector&gt;) &lt;unapply&gt; ((ev @ _), (next @ _)) =&gt; scala.Tuple2.apply[scala.util.Either[scales.xml.XmlEvent,scales.xml.EndElem], scala.util.Either[scales.xml.XmlEvent,scales.xml.EndElem]](ev, next)
+      };
+      val ev: scala.util.Either[scales.xml.XmlEvent,scales.xml.EndElem] = x$5._1;
+      val next: scala.util.Either[scales.xml.XmlEvent,scales.xml.EndElem] = x$5._2;
+      StreamSerializer.pump(scala.Tuple2.apply[scala.util.Either[scales.xml.XmlEvent,scales.xml.EndElem], scala.util.Either[scales.xml.XmlEvent,scales.xml.EndElem]](ev, next), status, serializer)
+    }
+  else
+    StreamStatus.apply(status.output, scala.Some.apply[scales.xml.serializers.NoDataInStream](NoDataInStream.apply()), true)
+}
+        </td>
+      </tr><tr>
+        <td>
+          91
+        </td>
+        <td>
+          5127
+        </td>
+        <td>
+          2894
+          -
+          2904
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.TraversableOnce.toList
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          two.toList
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          5128
+        </td>
+        <td>
+          2928
+          -
+          2929
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          5129
+        </td>
+        <td>
+          2950
+          -
+          2955
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.StreamSerializer.dummy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          StreamSerializer.dummy
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          5130
+        </td>
+        <td>
+          2935
+          -
+          2955
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          asList.head.eq(StreamSerializer.dummy)
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          5131
+        </td>
+        <td>
+          2910
+          -
+          2957
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          asList.size.==(1).&amp;&amp;(asList.head.eq(StreamSerializer.dummy)).unary_!
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          5136
+        </td>
+        <td>
+          2959
+          -
+          3076
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  &lt;synthetic&gt; &lt;artifact&gt; private[this] val x$5: (scala.util.Either[scales.xml.XmlEvent,scales.xml.EndElem], scala.util.Either[scales.xml.XmlEvent,scales.xml.EndElem]) = (asList: List[scala.util.Either[scales.xml.XmlEvent,scales.xml.EndElem]] @unchecked) match {
+    case scala.collection.immutable.List.unapplySeq[scala.util.Either[scales.xml.XmlEvent,scales.xml.EndElem]](&lt;unapply-selector&gt;) &lt;unapply&gt; ((ev @ _), (next @ _)) =&gt; scala.Tuple2.apply[scala.util.Either[scales.xml.XmlEvent,scales.xml.EndElem], scala.util.Either[scales.xml.XmlEvent,scales.xml.EndElem]](ev, next)
+  };
+  val ev: scala.util.Either[scales.xml.XmlEvent,scales.xml.EndElem] = x$5._1;
+  val next: scala.util.Either[scales.xml.XmlEvent,scales.xml.EndElem] = x$5._2;
+  StreamSerializer.pump(scala.Tuple2.apply[scala.util.Either[scales.xml.XmlEvent,scales.xml.EndElem], scala.util.Either[scales.xml.XmlEvent,scales.xml.EndElem]](ev, next), status, serializer)
+}
+        </td>
+      </tr><tr>
+        <td>
+          93
+        </td>
+        <td>
+          5132
+        </td>
+        <td>
+          3015
+          -
+          3015
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$5._1
+        </td>
+      </tr><tr>
+        <td>
+          93
+        </td>
+        <td>
+          5133
+        </td>
+        <td>
+          3019
+          -
+          3019
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$5._2
+        </td>
+      </tr><tr>
+        <td>
+          94
+        </td>
+        <td>
+          5134
+        </td>
+        <td>
+          3042
+          -
+          3052
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[scala.util.Either[scales.xml.XmlEvent,scales.xml.EndElem], scala.util.Either[scales.xml.XmlEvent,scales.xml.EndElem]](ev, next)
+        </td>
+      </tr><tr>
+        <td>
+          94
+        </td>
+        <td>
+          5135
+        </td>
+        <td>
+          3037
+          -
+          3073
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.StreamSerializer.pump
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          StreamSerializer.pump(scala.Tuple2.apply[scala.util.Either[scales.xml.XmlEvent,scales.xml.EndElem], scala.util.Either[scales.xml.XmlEvent,scales.xml.EndElem]](ev, next), status, serializer)
+        </td>
+      </tr><tr>
+        <td>
+          95
+        </td>
+        <td>
+          5137
+        </td>
+        <td>
+          3095
+          -
+          3108
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.StreamStatus.output
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          status.output
+        </td>
+      </tr><tr>
+        <td>
+          95
+        </td>
+        <td>
+          5138
+        </td>
+        <td>
+          3115
+          -
+          3131
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.NoDataInStream.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          NoDataInStream.apply()
+        </td>
+      </tr><tr>
+        <td>
+          95
+        </td>
+        <td>
+          5139
+        </td>
+        <td>
+          3110
+          -
+          3132
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[scales.xml.serializers.NoDataInStream](NoDataInStream.apply())
+        </td>
+      </tr><tr>
+        <td>
+          95
+        </td>
+        <td>
+          5140
+        </td>
+        <td>
+          3134
+          -
+          3138
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          95
+        </td>
+        <td>
+          5141
+        </td>
+        <td>
+          3082
+          -
+          3139
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.StreamStatus.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          StreamStatus.apply(status.output, scala.Some.apply[scales.xml.serializers.NoDataInStream](NoDataInStream.apply()), true)
+        </td>
+      </tr><tr>
+        <td>
+          95
+        </td>
+        <td>
+          5142
+        </td>
+        <td>
+          3082
+          -
+          3139
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.serializers.StreamStatus.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          StreamStatus.apply(status.output, scala.Some.apply[scales.xml.serializers.NoDataInStream](NoDataInStream.apply()), true)
+        </td>
+      </tr><tr>
+        <td>
+          98
+        </td>
+        <td>
+          5145
+        </td>
+        <td>
+          3159
+          -
+          3167
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.StreamStatus.output
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          r.output
+        </td>
+      </tr><tr>
+        <td>
+          98
+        </td>
+        <td>
+          5146
+        </td>
+        <td>
+          3169
+          -
+          3177
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.StreamStatus.thrown
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          r.thrown
+        </td>
+      </tr><tr>
+        <td>
+          98
+        </td>
+        <td>
+          5147
+        </td>
+        <td>
+          3158
+          -
+          3178
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[scales.xml.serializers.XmlOutput, Option[Throwable]](r.output, r.thrown)
+        </td>
+      </tr><tr>
+        <td>
+          110
+        </td>
+        <td>
+          5150
+        </td>
+        <td>
+          3374
+          -
+          3377
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.SerializerImplicits.$anon.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          5148
+        </td>
+        <td>
+          3433
+          -
+          3440
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Doc.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Doc.apply(it, scales.xml.Doc.apply$default$2, scales.xml.Doc.apply$default$3)
+        </td>
+      </tr><tr>
+        <td>
+          146
+        </td>
+        <td>
+          5149
+        </td>
+        <td>
+          3652
+          -
+          4965
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.Trees.fold
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.fold[scales.xml.XmlItem, scales.xml.Elem, scales.xml.XCC, (scales.xml.serializers.XmlOutput, Option[Throwable])](scala.Tuple2.apply[scales.xml.serializers.XmlOutput, None.type](out, scala.None))(((iorsw: scales.utils.ItemOrSectionWalk[scales.xml.XmlItem,scales.xml.Elem], pair: (scales.xml.serializers.XmlOutput, Option[Throwable])) =&gt; {
+  &lt;synthetic&gt; &lt;artifact&gt; private[this] val x$6: (scales.xml.serializers.XmlOutput, Option[Throwable]) = (pair: (scales.xml.serializers.XmlOutput, Option[Throwable]) @unchecked) match {
+    case (_1: scales.xml.serializers.XmlOutput, _2: Option[Throwable])(scales.xml.serializers.XmlOutput, Option[Throwable])((output @ _), (y @ _)) =&gt; scala.Tuple2.apply[scales.xml.serializers.XmlOutput, Option[Throwable]](output, y)
+  };
+  val output: scales.xml.serializers.XmlOutput = x$6._1;
+  val y: Option[Throwable] = x$6._2;
+  if (y.isDefined)
+    pair
+  else
+    iorsw match {
+      case (value: scales.xml.XmlItem)scala.util.Left[scales.xml.XmlItem,scales.utils.collection.SectionWalk[scales.xml.Elem]]((item @ _)) =&gt; scala.Tuple2.apply[scales.xml.serializers.XmlOutput, Option[Throwable]](output, serializer.item(item, output.path))
+      case (value: scales.utils.collection.SectionWalk[scales.xml.Elem])scala.util.Right[scales.xml.XmlItem,scales.utils.collection.SectionWalk[scales.xml.Elem]]((walk @ _)) =&gt; {
+        val x: scales.xml.Elem = walk.section;
+        if (walk.hasChildren.unary_!)
+          {
+            val nc: scales.xml.serializers.NamespaceContext = scales.xml.`package`.doElement(x, output.currentMappings.head);
+            scala.Tuple2.apply[scales.xml.serializers.XmlOutput, Option[Throwable]](output, serializer.emptyElement(x.name, x.attributes, nc.declMap, nc.addDefault, {
+              &lt;synthetic&gt; &lt;artifact&gt; val x$7: scales.xml.QName = x.name;
+              output.path.::[scales.xml.QName](x$7)
+            }))
+          }
+        else
+          if (walk.isStart)
+            {
+              val npath: List[scales.xml.QName] = {
+                &lt;synthetic&gt; &lt;artifact&gt; val x$8: scales.xml.QName = x.name;
+                output.path.::[scales.xml.QName](x$8)
+              };
+              val nc: scales.xml.serializers.NamespaceContext = scales.xml.`package`.doElement(x, output.currentMappings.head);
+              scala.Tuple2.apply[scales.xml.serializers.XmlOutput, Option[Throwable]]({
+                &lt;artifact&gt; val x$1: List[scala.collection.immutable.Map[String,String]] = {
+                  &lt;synthetic&gt; &lt;artifact&gt; val x$9: scala.collection.immutable.Map[String,String] = nc.mappings;
+                  output.currentMappings.+:[scala.collection.immutable.Map[String,String], List[scala.collection.immutable.Map[String,String]]](x$9)(immutable.this.List.canBuildFrom[scala.collection.immutable.Map[String,String]])
+                };
+                &lt;artifact&gt; val x$2: List[scales.xml.QName] = npath;
+                &lt;artifact&gt; val x$3: scales.xml.serializers.SerializerData = output.copy$default$1;
+                output.copy(x$3, x$1, x$2)(out.serializerF)
+              }, serializer.startElement(x.name, x.attributes, nc.declMap, nc.addDefault, npath))
+            }
+          else
+            scala.Tuple2.apply[scales.xml.serializers.XmlOutput, Option[Throwable]]({
+              &lt;artifact&gt; val x$4: List[scala.collection.immutable.Map[String,String]] = output.currentMappings.tail;
+              &lt;artifact&gt; val x$5: List[scales.xml.QName] = output.path.tail;
+              &lt;artifact&gt; val x$6: scales.xml.serializers.SerializerData = output.copy$default$1;
+              output.copy(x$6, x$4, x$5)(out.serializerF)
+            }, serializer.endElement(x.name, output.path))
+      }
+    }
+}))(it)
+        </td>
+      </tr><tr>
+        <td>
+          152
+        </td>
+        <td>
+          5154
+        </td>
+        <td>
+          5083
+          -
+          5086
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.SerializerImplicits.$anon.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          153
+        </td>
+        <td>
+          5151
+        </td>
+        <td>
+          5152
+          -
+          5161
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.dsl.DslBuilder.toTree
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          it.toTree
+        </td>
+      </tr><tr>
+        <td>
+          153
+        </td>
+        <td>
+          5152
+        </td>
+        <td>
+          5148
+          -
+          5162
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Doc.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Doc.apply(it.toTree, scales.xml.Doc.apply$default$2, scales.xml.Doc.apply$default$3)
+        </td>
+      </tr><tr>
+        <td>
+          154
+        </td>
+        <td>
+          5153
+        </td>
+        <td>
+          5267
+          -
+          5312
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.SerializeableXml.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SerializerImplicits.this.treeSerializeable.apply(it.toTree)(out, serializer)
+        </td>
+      </tr><tr>
+        <td>
+          160
+        </td>
+        <td>
+          5156
+        </td>
+        <td>
+          5427
+          -
+          5430
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.SerializerImplicits.$anon.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          162
+        </td>
+        <td>
+          5155
+        </td>
+        <td>
+          5578
+          -
+          5625
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.SerializeableXml.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SerializerImplicits.this.treeSerializeable.apply(it.rootElem)(out, serializer)
+        </td>
+      </tr><tr>
+        <td>
+          168
+        </td>
+        <td>
+          5160
+        </td>
+        <td>
+          5732
+          -
+          5735
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.SerializerImplicits.$anon.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          169
+        </td>
+        <td>
+          5157
+        </td>
+        <td>
+          5789
+          -
+          5813
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.dsl.DslBuilder.elem2tree
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.dsl.DslBuilder.elem2tree(it)
+        </td>
+      </tr><tr>
+        <td>
+          169
+        </td>
+        <td>
+          5158
+        </td>
+        <td>
+          5785
+          -
+          5814
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Doc.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Doc.apply(scales.xml.dsl.DslBuilder.elem2tree(it), scales.xml.Doc.apply$default$2, scales.xml.Doc.apply$default$3)
+        </td>
+      </tr><tr>
+        <td>
+          170
+        </td>
+        <td>
+          5159
+        </td>
+        <td>
+          5913
+          -
+          5973
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.SerializeableXml.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SerializerImplicits.this.treeSerializeable.apply(scales.xml.dsl.DslBuilder.elem2tree(it))(out, serializer)
+        </td>
+      </tr><tr>
+        <td>
+          179
+        </td>
+        <td>
+          5161
+        </td>
+        <td>
+          6121
+          -
+          6129
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.identity
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.identity[Iterator[scales.xml.PullType]](x)
+        </td>
+      </tr><tr>
+        <td>
+          179
+        </td>
+        <td>
+          5162
+        </td>
+        <td>
+          6100
+          -
+          6130
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.StreamSerializer.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new scales.xml.serializers.StreamSerializer[Iterator[scales.xml.PullType]]({
+  ((x: Iterator[scales.xml.PullType]) =&gt; scala.Predef.identity[Iterator[scales.xml.PullType]](x))
+})
+        </td>
+      </tr><tr>
+        <td>
+          184
+        </td>
+        <td>
+          5163
+        </td>
+        <td>
+          6252
+          -
+          6255
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.SerializerImplicits.$anon.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          191
+        </td>
+        <td>
+          5164
+        </td>
+        <td>
+          6463
+          -
+          6466
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.SerializerImplicits.$anon.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          198
+        </td>
+        <td>
+          5166
+        </td>
+        <td>
+          6691
+          -
+          6694
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.SerializerImplicits.$anon.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          199
+        </td>
+        <td>
+          5165
+        </td>
+        <td>
+          6809
+          -
+          6814
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          it._2
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

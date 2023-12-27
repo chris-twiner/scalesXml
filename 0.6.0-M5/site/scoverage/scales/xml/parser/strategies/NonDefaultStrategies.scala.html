@@ -1,0 +1,1145 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/xml/parser/strategies/NonDefaultStrategies.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.xml.parser.strategies
+</span>2 <span style=''>
+</span>3 <span style=''>import scales.xml._
+</span>4 <span style=''>import scales.utils.collection.{SeqLikeThing, Tree}
+</span>5 <span style=''>import scales.utils.{ItemOrTree, valueOf}
+</span>6 <span style=''>import scales.xml.impl.{FromParser, NotFromParser}
+</span>7 <span style=''>import impl.ElemKey
+</span>8 <span style=''>
+</span>9 <span style=''>class ElemToken(implicit ver : XmlVersion, fromParser : FromParser) extends QNameToken {
+</span>10 <span style=''>  val ekey = </span><span style='background: #AEF1AE'>new ElemKey()</span><span style=''>
+</span>11 <span style=''>  
+</span>12 <span style=''>  val ef = (key : ElemKey) =&gt; </span><span style='background: #AEF1AE'>Elem(key.name, key.attributes, key.namespaces)</span><span style=''>
+</span>13 <span style=''>}
+</span>14 <span style=''>
+</span>15 <span style=''>trait ElemTokenF {
+</span>16 <span style=''>  def createToken(implicit ver : XmlVersion, fromParser : FromParser) = </span><span style='background: #AEF1AE'>new ElemToken()</span><span style=''>
+</span>17 <span style=''>}
+</span>18 <span style=''>
+</span>19 <span style=''>
+</span>20 <span style=''>trait ElemQNameOptimisationT[Token &lt;: ElemToken] extends QNameOptimisationT[Token] {
+</span>21 <span style=''>  import java.util.concurrent.ConcurrentHashMap
+</span>22 <span style=''>
+</span>23 <span style=''>  val ecache = </span><span style='background: #AEF1AE'>new ConcurrentHashMap[ ElemKey, Elem ]</span><span style=''>
+</span>24 <span style=''>
+</span>25 <span style=''>  val cacheAll = </span><span style='background: #AEF1AE'>false</span><span style=''>
+</span>26 <span style=''>
+</span>27 <span style=''>  def elemValue(key : ElemKey)( newT : ElemKey =&gt; Elem ) : Elem = {
+</span>28 <span style=''>    var value = </span><span style='background: #AEF1AE'>ecache.get(key)</span><span style=''>
+</span>29 <span style=''>    if (</span><span style='background: #AEF1AE'>value == null</span><span style=''>) </span><span style='background: #AEF1AE'>{
+</span>30 <span style=''></span><span style='background: #AEF1AE'>      value = newT(key)
+</span>31 <span style=''></span><span style='background: #AEF1AE'>      val res = ecache.putIfAbsent(key.copy, value)// copy because now it needs to be frozen
+</span>32 <span style=''></span><span style='background: #AEF1AE'>      value = if (res == null) value else </span><span style='background: #F0ADAD'>res</span><span style='background: #AEF1AE'>
+</span>33 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>34 <span style=''>    value
+</span>35 <span style=''>  }
+</span>36 <span style=''>
+</span>37 <span style=''>  override def elem( name : QName, attributes : Attributes, namespaces : Map[String, String], token : Token) : Elem = { 
+</span>38 <span style=''>    val et = token
+</span>39 <span style=''>    import et._
+</span>40 <span style=''>
+</span>41 <span style=''>    if (</span><span style='background: #AEF1AE'>cacheAll ||
+</span>42 <span style=''></span><span style='background: #AEF1AE'>	((attributes eq emptyAttributes) &amp;&amp;
+</span>43 <span style=''></span><span style='background: #AEF1AE'>	(namespaces eq emptyNamespaces))</span><span style=''>
+</span>44 <span style=''>	)
+</span>45 <span style=''>        </span><span style='background: #AEF1AE'>elemValue(ekey.set(name, attributes, namespaces, qkey.lastHash) )( ef )</span><span style=''>
+</span>46 <span style=''>    else </span><span style='background: #AEF1AE'>Elem(name, attributes, namespaces)(token.fromParser)</span><span style=''>
+</span>47 <span style=''>  }
+</span>48 <span style=''>  
+</span>49 <span style=''>}
+</span>50 <span style=''>
+</span>51 <span style=''>trait FullMemoryOptimisationT[Token &lt;: ElemToken] extends ElemQNameOptimisationT[Token] {
+</span>52 <span style=''>  override val cacheAll = </span><span style='background: #F0ADAD'>true</span><span style=''>
+</span>53 <span style=''>}
+</span>54 <span style=''>
+</span>55 <span style=''>
+</span>56 <span style=''>/**
+</span>57 <span style=''> * Simple hashmap on Elem -&gt; Elem, makes no optimisations across qnames (use QNameOptimisationT for that)
+</span>58 <span style=''> */ 
+</span>59 <span style=''>trait ElemOptimisationT[Token &lt;: OptimisationToken] extends MemoryOptimisationStrategy[Token] {
+</span>60 <span style=''>
+</span>61 <span style=''>  import java.util.concurrent.ConcurrentHashMap
+</span>62 <span style=''>
+</span>63 <span style=''>  val cache = </span><span style='background: #F0ADAD'>new ConcurrentHashMap[ Elem, Elem ]</span><span style=''>
+</span>64 <span style=''>
+</span>65 <span style=''>  override def elem( name : QName, attributes : Attributes, namespaces : Map[String, String], token : Token) : Elem = {
+</span>66 <span style=''>    import token._
+</span>67 <span style=''>    </span><span style='background: #F0ADAD'>valueOf(Elem(name, attributes, namespaces), cache) (Elem(name, attributes, namespaces))</span><span style=''>
+</span>68 <span style=''>  }  
+</span>69 <span style=''>}
+</span>70 <span style=''>
+</span>71 <span style=''>object ElemMemoryOptimisation extends PathOptimisationStrategy[ElemToken] with ElemOptimisationT[ElemToken] with ElemTokenF
+</span>72 <span style=''>
+</span>73 <span style=''>/**
+</span>74 <span style=''> * Optimises on QNames and Elems, reducing duplicates at the cost of CHM lookups.
+</span>75 <span style=''> */ 
+</span>76 <span style=''>object HighMemoryOptimisation extends PathOptimisationStrategy[ElemToken] with ElemOptimisationT[ElemToken] with QNameOptimisationT[ElemToken] with ElemTokenF
+</span>77 <span style=''>
+</span>78 <span style=''>/**
+</span>79 <span style=''> * As this adds extra processing time, but better fits XPath rules (i.e. all text children below are joined) its available to be mixed in, but isn't added by default.
+</span>80 <span style=''> *
+</span>81 <span style=''> * This also removes any extra parsing time from string joining.
+</span>82 <span style=''> */ 
+</span>83 <span style=''>trait TextNodeJoiner[Token &lt;: OptimisationToken] extends TreeOptimisation[Token] {
+</span>84 <span style=''>
+</span>85 <span style=''>  def newTree( elem : Elem, children : XmlChildren, token : Token )(implicit seqLikeThing: SeqLikeThing[XCC[_], ItemOrTree[XmlItem, Elem, XCC], XCC]) : XmlTree =
+</span>86 <span style=''>    </span><span style='background: #AEF1AE'>Tree(elem, joinTextNodes(children))</span><span style=''>
+</span>87 <span style=''>
+</span>88 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          10
+        </td>
+        <td>
+          4571
+        </td>
+        <td>
+          326
+          -
+          339
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.ElemKey.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new scales.xml.impl.ElemKey()
+        </td>
+      </tr><tr>
+        <td>
+          12
+        </td>
+        <td>
+          4572
+        </td>
+        <td>
+          378
+          -
+          386
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.ElemKey.name
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          key.name
+        </td>
+      </tr><tr>
+        <td>
+          12
+        </td>
+        <td>
+          4573
+        </td>
+        <td>
+          388
+          -
+          402
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.ElemKey.attributes
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          key.attributes
+        </td>
+      </tr><tr>
+        <td>
+          12
+        </td>
+        <td>
+          4574
+        </td>
+        <td>
+          404
+          -
+          418
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.ElemKey.namespaces
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          key.namespaces
+        </td>
+      </tr><tr>
+        <td>
+          12
+        </td>
+        <td>
+          4575
+        </td>
+        <td>
+          377
+          -
+          377
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.strategies.ElemToken.fromParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ElemToken.this.fromParser
+        </td>
+      </tr><tr>
+        <td>
+          12
+        </td>
+        <td>
+          4576
+        </td>
+        <td>
+          373
+          -
+          419
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.Elem.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Elem.apply(key.name, key.attributes, key.namespaces)(ElemToken.this.fromParser)
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          4577
+        </td>
+        <td>
+          514
+          -
+          529
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.parser.strategies.ElemToken.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new ElemToken()(ver, fromParser)
+        </td>
+      </tr><tr>
+        <td>
+          23
+        </td>
+        <td>
+          4578
+        </td>
+        <td>
+          683
+          -
+          721
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.concurrent.ConcurrentHashMap.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new java.util.concurrent.ConcurrentHashMap[scales.xml.impl.ElemKey,scales.xml.Elem]()
+        </td>
+      </tr><tr>
+        <td>
+          25
+        </td>
+        <td>
+          4579
+        </td>
+        <td>
+          740
+          -
+          745
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          4580
+        </td>
+        <td>
+          831
+          -
+          846
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.concurrent.ConcurrentHashMap.get
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ElemQNameOptimisationT.this.ecache.get(key)
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          4581
+        </td>
+        <td>
+          855
+          -
+          868
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          value.==(null)
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          4588
+        </td>
+        <td>
+          870
+          -
+          1040
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  value = newT.apply(key);
+  val res: scales.xml.Elem = ElemQNameOptimisationT.this.ecache.putIfAbsent(key.copy, value);
+  value = if (res.==(null))
+    value
+  else
+    res
+}
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          4589
+        </td>
+        <td>
+          851
+          -
+          851
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          4590
+        </td>
+        <td>
+          851
+          -
+          851
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          4582
+        </td>
+        <td>
+          886
+          -
+          895
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          newT.apply(key)
+        </td>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          4583
+        </td>
+        <td>
+          931
+          -
+          939
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.ElemKey.copy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          key.copy
+        </td>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          4584
+        </td>
+        <td>
+          912
+          -
+          947
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.concurrent.ConcurrentHashMap.putIfAbsent
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ElemQNameOptimisationT.this.ecache.putIfAbsent(key.copy, value)
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          4585
+        </td>
+        <td>
+          1007
+          -
+          1018
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          res.==(null)
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          4586
+        </td>
+        <td>
+          1020
+          -
+          1025
+        </td>
+        <td>
+          Ident
+        </td>
+        <td>
+          scales.xml.parser.strategies.ElemQNameOptimisationT.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          value
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          4587
+        </td>
+        <td>
+          1031
+          -
+          1034
+        </td>
+        <td>
+          Ident
+        </td>
+        <td>
+          scales.xml.parser.strategies.ElemQNameOptimisationT.res
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          res
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          4595
+        </td>
+        <td>
+          1221
+          -
+          1303
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.||
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ElemQNameOptimisationT.this.cacheAll.||(attributes.eq(scales.xml.`package`.emptyAttributes).&amp;&amp;(namespaces.eq(scales.xml.`package`.emptyNamespaces)))
+        </td>
+      </tr><tr>
+        <td>
+          42
+        </td>
+        <td>
+          4591
+        </td>
+        <td>
+          1250
+          -
+          1265
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.XmlTypes.emptyAttributes
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.`package`.emptyAttributes
+        </td>
+      </tr><tr>
+        <td>
+          42
+        </td>
+        <td>
+          4594
+        </td>
+        <td>
+          1235
+          -
+          1302
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          attributes.eq(scales.xml.`package`.emptyAttributes).&amp;&amp;(namespaces.eq(scales.xml.`package`.emptyNamespaces))
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          4592
+        </td>
+        <td>
+          1286
+          -
+          1301
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.XmlTypes.emptyNamespaces
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.`package`.emptyNamespaces
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          4593
+        </td>
+        <td>
+          1272
+          -
+          1301
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          namespaces.eq(scales.xml.`package`.emptyNamespaces)
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          4596
+        </td>
+        <td>
+          1364
+          -
+          1377
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.lastHash
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          et.qkey.lastHash
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          4597
+        </td>
+        <td>
+          1325
+          -
+          1378
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.ElemKey.set
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          et.ekey.set(name, attributes, namespaces, et.qkey.lastHash)
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          4598
+        </td>
+        <td>
+          1382
+          -
+          1384
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.strategies.ElemToken.ef
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          et.ef
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          4599
+        </td>
+        <td>
+          1315
+          -
+          1386
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.strategies.ElemQNameOptimisationT.elemValue
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ElemQNameOptimisationT.this.elemValue(et.ekey.set(name, attributes, namespaces, et.qkey.lastHash))(et.ef)
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          4600
+        </td>
+        <td>
+          1315
+          -
+          1386
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.parser.strategies.ElemQNameOptimisationT.elemValue
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ElemQNameOptimisationT.this.elemValue(et.ekey.set(name, attributes, namespaces, et.qkey.lastHash))(et.ef)
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          4601
+        </td>
+        <td>
+          1431
+          -
+          1447
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.strategies.QNameToken.fromParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          token.fromParser
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          4602
+        </td>
+        <td>
+          1396
+          -
+          1448
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Elem.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Elem.apply(name, attributes, namespaces)(token.fromParser)
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          4603
+        </td>
+        <td>
+          1396
+          -
+          1448
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.Elem.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Elem.apply(name, attributes, namespaces)(token.fromParser)
+        </td>
+      </tr><tr>
+        <td>
+          52
+        </td>
+        <td>
+          4604
+        </td>
+        <td>
+          1575
+          -
+          1579
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          4605
+        </td>
+        <td>
+          1859
+          -
+          1894
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.concurrent.ConcurrentHashMap.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new java.util.concurrent.ConcurrentHashMap[scales.xml.Elem,scales.xml.Elem]()
+        </td>
+      </tr><tr>
+        <td>
+          67
+        </td>
+        <td>
+          4606
+        </td>
+        <td>
+          2051
+          -
+          2051
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.strategies.OptimisationToken.fromParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          token.fromParser
+        </td>
+      </tr><tr>
+        <td>
+          67
+        </td>
+        <td>
+          4607
+        </td>
+        <td>
+          2047
+          -
+          2081
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.Elem.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.xml.Elem.apply(name, attributes, namespaces)(token.fromParser)
+        </td>
+      </tr><tr>
+        <td>
+          67
+        </td>
+        <td>
+          4608
+        </td>
+        <td>
+          2083
+          -
+          2088
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.strategies.ElemOptimisationT.cache
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ElemOptimisationT.this.cache
+        </td>
+      </tr><tr>
+        <td>
+          67
+        </td>
+        <td>
+          4609
+        </td>
+        <td>
+          2095
+          -
+          2095
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.strategies.OptimisationToken.fromParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          token.fromParser
+        </td>
+      </tr><tr>
+        <td>
+          67
+        </td>
+        <td>
+          4610
+        </td>
+        <td>
+          2091
+          -
+          2125
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.Elem.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.xml.Elem.apply(name, attributes, namespaces)(token.fromParser)
+        </td>
+      </tr><tr>
+        <td>
+          67
+        </td>
+        <td>
+          4611
+        </td>
+        <td>
+          2039
+          -
+          2126
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.ConcurrentMapUtils.valueOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.utils.`package`.valueOf[scales.xml.Elem, scales.xml.Elem](scales.xml.Elem.apply(name, attributes, namespaces)(token.fromParser), ElemOptimisationT.this.cache)(scales.xml.Elem.apply(name, attributes, namespaces)(token.fromParser))
+        </td>
+      </tr><tr>
+        <td>
+          86
+        </td>
+        <td>
+          4612
+        </td>
+        <td>
+          3006
+          -
+          3041
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.Tree.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.collection.Tree.apply[scales.xml.XmlItem, scales.xml.Elem, scales.xml.XCC](elem, scales.xml.`package`.joinTextNodes(children))(seqLikeThing)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

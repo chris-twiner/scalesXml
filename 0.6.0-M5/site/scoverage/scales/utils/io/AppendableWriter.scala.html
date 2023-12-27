@@ -1,0 +1,325 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/utils/io/AppendableWriter.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.utils.io
+</span>2 <span style=''>
+</span>3 <span style=''>/**
+</span>4 <span style=''> * To provide a writer to LSSerializer (and anything else that wants it ^_^)
+</span>5 <span style=''> * we need to wrap appendables.
+</span>6 <span style=''> */ 
+</span>7 <span style=''>case class AppendableWriter( out : Appendable ) extends java.io.Writer {
+</span>8 <span style=''>  def close() </span><span style='background: #F0ADAD'>{}</span><span style=''>
+</span>9 <span style=''>  def flush() </span><span style='background: #F0ADAD'>{}</span><span style=''>
+</span>10 <span style=''>  def write(cbuf : Array[Char], off : Int, len : Int) {
+</span>11 <span style=''>    var i = </span><span style='background: #F0ADAD'>0</span><span style=''>
+</span>12 <span style=''>    while(</span><span style='background: #F0ADAD'>i &lt; len</span><span style=''>){
+</span>13 <span style=''>      </span><span style='background: #F0ADAD'>out.append(cbuf(off + i))</span><span style=''>
+</span>14 <span style=''>    }
+</span>15 <span style=''>  } 
+</span>16 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          8
+        </td>
+        <td>
+          1220
+        </td>
+        <td>
+          230
+          -
+          232
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          9
+        </td>
+        <td>
+          1221
+        </td>
+        <td>
+          247
+          -
+          249
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          11
+        </td>
+        <td>
+          1222
+        </td>
+        <td>
+          318
+          -
+          319
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          12
+        </td>
+        <td>
+          1223
+        </td>
+        <td>
+          330
+          -
+          337
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&lt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          i.&lt;(len)
+        </td>
+      </tr><tr>
+        <td>
+          12
+        </td>
+        <td>
+          1228
+        </td>
+        <td>
+          346
+          -
+          371
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          {
+  AppendableWriter.this.out.append(cbuf.apply(off.+(i)));
+  while$1()
+}
+        </td>
+      </tr><tr>
+        <td>
+          12
+        </td>
+        <td>
+          1229
+        </td>
+        <td>
+          324
+          -
+          324
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          12
+        </td>
+        <td>
+          1230
+        </td>
+        <td>
+          324
+          -
+          324
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          13
+        </td>
+        <td>
+          1224
+        </td>
+        <td>
+          362
+          -
+          369
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          off.+(i)
+        </td>
+      </tr><tr>
+        <td>
+          13
+        </td>
+        <td>
+          1225
+        </td>
+        <td>
+          357
+          -
+          370
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Array.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          cbuf.apply(off.+(i))
+        </td>
+      </tr><tr>
+        <td>
+          13
+        </td>
+        <td>
+          1226
+        </td>
+        <td>
+          346
+          -
+          371
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Appendable.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          AppendableWriter.this.out.append(cbuf.apply(off.+(i)))
+        </td>
+      </tr><tr>
+        <td>
+          13
+        </td>
+        <td>
+          1227
+        </td>
+        <td>
+          356
+          -
+          356
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.io.AppendableWriter.while$1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          while$1()
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

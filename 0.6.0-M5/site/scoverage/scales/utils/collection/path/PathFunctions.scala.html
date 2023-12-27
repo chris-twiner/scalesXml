@@ -1,0 +1,4546 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/utils/collection/path/PathFunctions.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.utils.collection.path
+</span>2 <span style=''>
+</span>3 <span style=''>import scales.utils._
+</span>4 <span style=''>import collection._
+</span>5 <span style=''>
+</span>6 <span style=''>import scala.reflect.ClassManifest
+</span>7 <span style=''>
+</span>8 <span style=''>object PathFold {
+</span>9 <span style=''>
+</span>10 <span style=''>  /**
+</span>11 <span style=''>   * Folds over positions within a single path, for example all given children.  As such positions must be calculated.
+</span>12 <span style=''>   *
+</span>13 <span style=''>   * Takes the first root, returning Right(NoSingleRoot) if any of the subsequent roots don't match.
+</span>14 <span style=''>   *
+</span>15 <span style=''>   * folder retrieves the current path
+</span>16 <span style=''>   *
+</span>17 <span style=''>   * Each iteration folds the resulting tree back into the path. As this function must maintain the Path it does not expose the new path root until the result.
+</span>18 <span style=''>   *
+</span>19 <span style=''>   * The progress through the document is in reverse document order.  This ensures that transformations can always be safely composed, e.g. a delete of a path won't stop changes below it.  This, however, implies the developer must also handle any accumalation in &quot;reverse&quot;. 
+</span>20 <span style=''>   */
+</span>21 <span style=''>  def foldPositions[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_], ACC](locations: Iterable[Path[Item, Section, CC]], accumulator: ACC)(folder: (ACC, Path[Item, Section, CC]) =&gt; (ACC, FoldOperation[Item, Section, CC])) (implicit seqLikeThing: SeqLikeThing[CC[_], ItemOrTree[Item, Section, CC], CC], cm : ClassManifest[(Position[Item,Section,CC], Path[Item, Section, CC])])  : Either[(ACC, Path[Item, Section, CC]), FoldError] = {
+</span>22 <span style=''>    if (</span><span style='background: #AEF1AE'>locations.isEmpty</span><span style=''>) </span><span style='background: #AEF1AE'>return Right(NoPaths)</span><span style=''>
+</span>23 <span style=''>
+</span>24 <span style=''>    val sorted = </span><span style='background: #AEF1AE'>sortPositions(locations, false)</span><span style=''>
+</span>25 <span style=''>
+</span>26 <span style=''>    val head = </span><span style='background: #AEF1AE'>sorted.head</span><span style=''>
+</span>27 <span style=''>    var accum = accumulator
+</span>28 <span style=''>
+</span>29 <span style=''>    val rootPosition = </span><span style='background: #AEF1AE'>head._1</span><span style=''>
+</span>30 <span style=''>    val differentRoot = </span><span style='background: #AEF1AE'>sorted.exists(p =&gt; p._1.root ne rootPosition.root)</span><span style=''>
+</span>31 <span style=''>    if (differentRoot)
+</span>32 <span style=''>      </span><span style='background: #F0ADAD'>Right(NoSingleRoot)</span><span style=''>
+</span>33 <span style=''>    else </span><span style='background: #AEF1AE'>{
+</span>34 <span style=''></span><span style='background: #AEF1AE'>
+</span>35 <span style=''></span><span style='background: #AEF1AE'>      def withPositions( opositions : Seq[Position[Item,Section,CC]] ) : Either[(ACC, Path[Item, Section, CC]), FoldError] = {
+</span>36 <span style=''></span><span style='background: #AEF1AE'>          var positions = opositions
+</span>37 <span style=''></span><span style='background: #AEF1AE'>          var path = head._2
+</span>38 <span style=''></span><span style='background: #AEF1AE'>          while (!positions.isEmpty) {
+</span>39 <span style=''></span><span style='background: #AEF1AE'>
+</span>40 <span style=''></span><span style='background: #AEF1AE'>            val (accf, res) = folder(accum, path)
+</span>41 <span style=''></span><span style='background: #AEF1AE'>            accum = accf
+</span>42 <span style=''></span><span style='background: #AEF1AE'>            val matched = res.perform(path) //matchIt( res, path )
+</span>43 <span style=''></span><span style='background: #AEF1AE'>
+</span>44 <span style=''></span><span style='background: #AEF1AE'>            if (matched.isLeft) {
+</span>45 <span style=''></span><span style='background: #AEF1AE'>              path = matched.left.get
+</span>46 <span style=''></span><span style='background: #AEF1AE'>              positions = positions.drop(1)
+</span>47 <span style=''></span><span style='background: #AEF1AE'>              if (!positions.isEmpty) {
+</span>48 <span style=''></span><span style='background: #AEF1AE'>                path = moveTo(path, positions.head) // else nothing we keep path to call root
+</span>49 <span style=''></span><span style='background: #AEF1AE'>              }
+</span>50 <span style=''></span><span style='background: #AEF1AE'>            } else return Right(matched.right.get)
+</span>51 <span style=''></span><span style='background: #AEF1AE'>          }
+</span>52 <span style=''></span><span style='background: #AEF1AE'>          Left((accum, rootPath(path)))
+</span>53 <span style=''></span><span style='background: #AEF1AE'>      }
+</span>54 <span style=''></span><span style='background: #AEF1AE'>
+</span>55 <span style=''></span><span style='background: #AEF1AE'>      // fold over positions, with the path from head, let each foldop decide what the next position sequence looks like
+</span>56 <span style=''></span><span style='background: #AEF1AE'>      val positions = sorted.map(_._1).toSeq
+</span>57 <span style=''></span><span style='background: #AEF1AE'>	
+</span>58 <span style=''></span><span style='background: #AEF1AE'>      withPositions(positions)
+</span>59 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>60 <span style=''>  }
+</span>61 <span style=''>
+</span>62 <span style=''>}
+</span>63 <span style=''>
+</span>64 <span style=''>/**
+</span>65 <span style=''> * Utility functions for Paths, sorting, moving between Paths, getting to the root etc.
+</span>66 <span style=''> */ 
+</span>67 <span style=''>trait Paths {
+</span>68 <span style=''>  def noPath[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]]
+</span>69 <span style=''>    (implicit seqLikeThing: SeqLikeThing[CC[_], ItemOrTree[Item, Section, CC], CC])  = </span><span style='background: #AEF1AE'>new</span><span style=''> Path[Item, Section, CC](Top(), Node(-1, null.asInstanceOf[ItemOrTree[Item, Section, CC]])) {
+</span>70 <span style=''>  }
+</span>71 <span style=''>
+</span>72 <span style=''>  /**
+</span>73 <span style=''>   * Returns the root path for its input, uses zipUp to ensure changes are kept
+</span>74 <span style=''>   */
+</span>75 <span style=''>  def rootPath[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]](path: Path[Item, Section, CC]): Path[Item, Section, CC] = {
+</span>76 <span style=''>    var newPath = path
+</span>77 <span style=''>    while (</span><span style='background: #AEF1AE'>!newPath.top.isLeft</span><span style=''>)
+</span>78 <span style=''>      </span><span style='background: #AEF1AE'>newPath = newPath.zipUp</span><span style=''>
+</span>79 <span style=''>    newPath
+</span>80 <span style=''>  }
+</span>81 <span style=''>
+</span>82 <span style=''>  /**
+</span>83 <span style=''>   * Navigates the path until the new position is reached, throws if either its a new root or the position is not reachable
+</span>84 <span style=''>   */
+</span>85 <span style=''>  def moveTo[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]](path: Path[Item, Section, CC], newPos: Position[Item, Section, CC])
+</span>86 <span style=''>    (implicit seqLikeThing: SeqLikeThing[CC[_], ItemOrTree[Item, Section, CC], CC]) : Path[Item, Section, CC] = {
+</span>87 <span style=''>
+</span>88 <span style=''>    val root = </span><span style='background: #AEF1AE'>rootPath(path)</span><span style=''>
+</span>89 <span style=''>    // cheaty way, crap but quick enough
+</span>90 <span style=''>    // TODO come back to this and properly move,
+</span>91 <span style=''>    </span><span style='background: #AEF1AE'>newPos.position.tail.foldLeft(root) { (path, pos) =&gt;
+</span>92 <span style=''></span><span style='background: #AEF1AE'>      Path(path, Node(pos, seqLikeThing.apply(path.children)(pos)))
+</span>93 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>94 <span style=''>  }
+</span>95 <span style=''>
+</span>96 <span style=''>  type FoldR[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]] = Either[Path[Item, Section, CC], FoldError]
+</span>97 <span style=''>
+</span>98 <span style=''>  type PathFoldR[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]] = (Path[Item, Section, CC]) =&gt; FoldR[Item, Section, CC]
+</span>99 <span style=''>
+</span>100 <span style=''>  /**
+</span>101 <span style=''>   * As per the non accumalating version, folds over positions within a given tree but allows for an additional accumalation.
+</span>102 <span style=''>   * 
+</span>103 <span style=''>   * The progress through the document is in reverse document order.  This ensures that transformations can always be safely composed, e.g. a delete of a path won't stop changes below it.  This, however, implies the developer must also handle any accumulation in &quot;reverse&quot;. 
+</span>104 <span style=''>   */ 
+</span>105 <span style=''>  def foldPositions[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_], ACC](locations: Iterable[Path[Item, Section, CC]], accumulator: ACC)(folder: (ACC, Path[Item, Section, CC]) =&gt; (ACC, FoldOperation[Item, Section, CC])) (implicit iseqLikeThing: SeqLikeThing[CC[_], ItemOrTree[Item, Section, CC], CC], cm : ClassManifest[(Position[Item,Section,CC], Path[Item, Section, CC])])  :
+</span>106 <span style=''>  Either[(ACC, Path[Item, Section, CC]), FoldError] = </span><span style='background: #AEF1AE'>PathFold.foldPositions(locations, accumulator)(folder)(iseqLikeThing, cm)</span><span style=''>
+</span>107 <span style=''>
+</span>108 <span style=''>  /**
+</span>109 <span style=''>   * Folds over positions within a single path, for example all given children.  As such positions must be calculated.
+</span>110 <span style=''>   *
+</span>111 <span style=''>   * Takes the first root, returning Right(NoSingleRoot) if any of the subsequent roots don't match.
+</span>112 <span style=''>   *
+</span>113 <span style=''>   * folder retrieves the current path
+</span>114 <span style=''>   *
+</span>115 <span style=''>   * Each iteration folds the resulting tree back into the path. As this function must maintain the Path it does not expose the new path root until the result.
+</span>116 <span style=''>   */
+</span>117 <span style=''>  def foldPositions[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]](locations: Iterable[Path[Item, Section, CC]])(folder: (Path[Item, Section, CC]) =&gt; FoldOperation[Item, Section, CC])(implicit iseqLikeThing: SeqLikeThing[CC[_], ItemOrTree[Item, Section, CC], CC], cm : ClassManifest[(Position[Item,Section,CC], Path[Item, Section, CC])]) : FoldR[Item, Section, CC] =
+</span>118 <span style=''>    </span><span style='background: #AEF1AE'>foldPositions[Item, Section, CC, Unit](locations, ())((u, p) =&gt; ((), folder(p))).
+</span>119 <span style=''></span><span style='background: #AEF1AE'>      fold(x =&gt; Left(x._2), Right(_))</span><span style=''>
+</span>120 <span style=''>
+</span>121 <span style=''>  val NotSameRoot = </span><span style='background: #AEF1AE'>1000</span><span style=''>
+</span>122 <span style=''>
+</span>123 <span style=''>  /**
+</span>124 <span style=''>   * When paths are not in the same root, they are compared based on the identity hash of the given roots.  Of course this relies on that function
+</span>125 <span style=''>   * having a decent vm implementation.
+</span>126 <span style=''>   *
+</span>127 <span style=''>   * @param path1
+</span>128 <span style=''>   * @param path2
+</span>129 <span style=''>   * @return 1 if path1 is before path2, -1 if path2 is before path1, 0 if they are the same and NotSameRoot+-1 if they are not in the same root
+</span>130 <span style=''>   */
+</span>131 <span style=''>  def comparePathPositions[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]](path1: Position[Item, Section, CC], path2: Position[Item, Section, CC]): Int = {
+</span>132 <span style=''>
+</span>133 <span style=''>    if (</span><span style='background: #AEF1AE'>path1 eq path2</span><span style=''>) </span><span style='background: #F0ADAD'>0</span><span style=''>
+</span>134 <span style=''>    else {
+</span>135 <span style=''>      </span><span style='background: #AEF1AE'>if (path1.root ne path2.root) </span><span style='background: #F0ADAD'>{
+</span>136 <span style=''></span><span style='background: #F0ADAD'>        val p1R = System.identityHashCode(path1.root)
+</span>137 <span style=''></span><span style='background: #F0ADAD'>        val p2R = System.identityHashCode(path2.root)
+</span>138 <span style=''></span><span style='background: #F0ADAD'>        NotSameRoot + (if (p1R &lt; p2R) 1 else -1)
+</span>139 <span style=''></span><span style='background: #F0ADAD'>      }</span><span style='background: #AEF1AE'> else
+</span>140 <span style=''></span><span style='background: #AEF1AE'>        compareStack(path1.position, path2.position)</span><span style=''>
+</span>141 <span style=''>    }
+</span>142 <span style=''>  }
+</span>143 <span style=''>
+</span>144 <span style=''>  /**
+</span>145 <span style=''>   * Helper for comparePaths, will not evaluate position if the paths are equal
+</span>146 <span style=''>   */
+</span>147 <span style=''>  def comparePathsDirect[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]](path1: Path[Item, Section, CC], path2: Path[Item, Section, CC]): Boolean =
+</span>148 <span style=''>    if (</span><span style='background: #AEF1AE'>path1 eq path2</span><span style=''>)
+</span>149 <span style=''>      </span><span style='background: #AEF1AE'>true</span><span style=''>
+</span>150 <span style=''>    else
+</span>151 <span style=''>      </span><span style='background: #AEF1AE'>comparePathsP((path1.position, path1), (path2.position, path2))._1 == 0</span><span style=''>
+</span>152 <span style=''>
+</span>153 <span style=''>  /**
+</span>154 <span style=''>   * When paths are not in the same root, they are compared based on the identity hash of the given roots.  Of course this relies on that function
+</span>155 <span style=''>   * having a decent vm implementation. See http://www.w3.org/TR/2007/REC-xpath20-20070123/#dt-document-order, tree order must remain constant.  Its
+</span>156 <span style=''>   * also a pretty sensible approach for non xml trees.
+</span>157 <span style=''>   *
+</span>158 <span style=''>   * @param path1
+</span>159 <span style=''>   * @param path2
+</span>160 <span style=''>   * @return 1 if path1 is before path2, -1 if path2 is before path1, 0 if they are the same and NotSameRoot+-1 if they are not in the same root
+</span>161 <span style=''>   */
+</span>162 <span style=''>  def comparePaths[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]](path1: Path[Item, Section, CC], path2: Path[Item, Section, CC]): (Int, Position[Item, Section, CC], Position[Item, Section, CC]) =
+</span>163 <span style=''>    </span><span style='background: #F0ADAD'>comparePathsP((path1.position, path1), (path2.position, path2))</span><span style=''>
+</span>164 <span style=''>
+</span>165 <span style=''>  def comparePathsP[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]](path1: (Position[Item, Section, CC], Path[Item, Section, CC]), path2: (Position[Item, Section, CC], Path[Item, Section, CC])): (Int, Position[Item, Section, CC], Position[Item, Section, CC]) = {
+</span>166 <span style=''>    if (</span><span style='background: #AEF1AE'>path1._2 eq path2._2</span><span style=''>) </span><span style='background: #AEF1AE'>{
+</span>167 <span style=''></span><span style='background: #AEF1AE'>      val pos = path1._1
+</span>168 <span style=''></span><span style='background: #AEF1AE'>      (0, pos, pos)
+</span>169 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''> else </span><span style='background: #AEF1AE'>{
+</span>170 <span style=''></span><span style='background: #AEF1AE'>      val (pos1, pos2) = (path1._1, path2._1)
+</span>171 <span style=''></span><span style='background: #AEF1AE'>      (comparePathPositions(pos1, pos2), pos1, pos2)
+</span>172 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>173 <span style=''>  }
+</span>174 <span style=''>
+</span>175 <span style=''>  def comparePathsT[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_], T](path1: (Position[Item, Section, CC], (T, Path[Item, Section, CC])), path2: (Position[Item, Section, CC], (T, Path[Item, Section, CC]))): (Int, Position[Item, Section, CC], Position[Item, Section, CC]) = {
+</span>176 <span style=''>    if (</span><span style='background: #AEF1AE'>path1._2._2 eq path2._2._2</span><span style=''>) </span><span style='background: #AEF1AE'>{
+</span>177 <span style=''></span><span style='background: #AEF1AE'>      val pos = path1._1
+</span>178 <span style=''></span><span style='background: #AEF1AE'>      (0, pos, pos)
+</span>179 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''> else </span><span style='background: #AEF1AE'>{
+</span>180 <span style=''></span><span style='background: #AEF1AE'>      val (pos1, pos2) = (path1._1, path2._1)
+</span>181 <span style=''></span><span style='background: #AEF1AE'>      (comparePathPositions(pos1, pos2), pos1, pos2)
+</span>182 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>183 <span style=''>  }
+</span>184 <span style=''>
+</span>185 <span style=''>
+</span>186 <span style=''>  import scalaz.Equal
+</span>187 <span style=''>  import scalaz.Equal.equal
+</span>188 <span style=''>
+</span>189 <span style=''>  /**
+</span>190 <span style=''>   * Provides an instance of the Equal type class for positional Equality
+</span>191 <span style=''>   */ 
+</span>192 <span style=''>  def toPositionalEqual[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]] : Equal[Path[Item, Section, CC]] =
+</span>193 <span style=''>    </span><span style='background: #AEF1AE'>equal {
+</span>194 <span style=''></span><span style='background: #AEF1AE'>      comparePathsDirect(_,_)
+</span>195 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>196 <span style=''>
+</span>197 <span style=''>  def top[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]](tree: Tree[Item, Section, CC])
+</span>198 <span style=''>    (implicit seqLikeThing: SeqLikeThing[CC[_], ItemOrTree[Item, Section, CC], CC]) : Path[Item, Section, CC] =
+</span>199 <span style=''>    </span><span style='background: #AEF1AE'>Path(Top(), Node(0, tree))</span><span style=''>
+</span>200 <span style=''>
+</span>201 <span style=''>  /**
+</span>202 <span style=''>   * positions with tuples (T, Path)
+</span>203 <span style=''>   */ 
+</span>204 <span style=''>  def positionsT[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_], T](paths: Iterable[(T, Path[Item, Section, CC])]): Iterable[(Position[Item, Section, CC], (T,Path[Item, Section, CC]))] =
+</span>205 <span style=''>    </span><span style='background: #AEF1AE'>paths.map(x =&gt; (x._2.position, x))</span><span style=''>
+</span>206 <span style=''>
+</span>207 <span style=''>  /**
+</span>208 <span style=''>   * Obtain the positions for the paths
+</span>209 <span style=''>   */ 
+</span>210 <span style=''>  def positions[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]](paths: Iterable[Path[Item, Section, CC]]): Iterable[(Position[Item, Section, CC], Path[Item, Section, CC])] =
+</span>211 <span style=''>    </span><span style='background: #AEF1AE'>paths.map(x =&gt; (x.position, x))</span><span style=''>
+</span>212 <span style=''>
+</span>213 <span style=''>  /**
+</span>214 <span style=''>   * sortPositions with a  tuple T, Path
+</span>215 <span style=''>   */
+</span>216 <span style=''>  def sortPositionsT[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[X], T](paths: Iterable[(T,Path[Item, Section, CC])],
+</span>217 <span style=''>    isDescending: Boolean = true)(implicit cm : ClassManifest[(Position[Item,Section,CC], (T, Path[Item, Section, CC]))]): Iterable[(Position[Item, Section, CC], (T, Path[Item, Section, CC]))] =
+</span>218 <span style=''>    // Have to force them anyway
+</span>219 <span style=''>    </span><span style='background: #AEF1AE'>scala.util.Sorting.stableSort(positionsT(paths).toSeq, (p1: (Position[Item, Section, CC], (T,Path[Item, Section, CC])), p2: (Position[Item, Section, CC], (T,Path[Item, Section, CC]))) =&gt; {
+</span>220 <span style=''></span><span style='background: #AEF1AE'>      val (res, pos1, pos2) = comparePathsT(p1, p2)
+</span>221 <span style=''></span><span style='background: #AEF1AE'>      val order = (res == 1 || res == (NotSameRoot + 1))
+</span>222 <span style=''></span><span style='background: #AEF1AE'>      if (isDescending) order else !order
+</span>223 <span style=''></span><span style='background: #AEF1AE'>    })(cm)</span><span style=''>
+</span>224 <span style=''>
+</span>225 <span style=''>  /**
+</span>226 <span style=''>   * Sorts according to position of each path item, descending or descending based on a depth first then rightwise order.
+</span>227 <span style=''>   */
+</span>228 <span style=''>  def sortPositions[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]](paths: Iterable[Path[Item, Section, CC]],
+</span>229 <span style=''>
+</span>230 <span style=''>    isDescending: Boolean = true)(implicit cm : ClassManifest[(Position[Item,Section,CC], Path[Item, Section, CC])]): Iterable[(Position[Item, Section, CC], Path[Item, Section, CC])] =
+</span>231 <span style=''>
+</span>232 <span style=''>    // Have to force them anyway
+</span>233 <span style=''>    </span><span style='background: #AEF1AE'>scala.util.Sorting.stableSort(positions(paths).toSeq, (p1: (Position[Item, Section, CC], Path[Item, Section, CC]), p2: (Position[Item, Section, CC], Path[Item, Section, CC])) =&gt; {
+</span>234 <span style=''></span><span style='background: #AEF1AE'>      val (res, pos1, pos2) = comparePathsP(p1, p2) 
+</span>235 <span style=''></span><span style='background: #AEF1AE'>      val order = (res == 1 || res == (NotSameRoot + 1))
+</span>236 <span style=''></span><span style='background: #AEF1AE'>      if (isDescending) order else !order
+</span>237 <span style=''></span><span style='background: #AEF1AE'>    })(cm)</span><span style=''>
+</span>238 <span style=''>   
+</span>239 <span style=''>
+</span>240 <span style=''>  /**
+</span>241 <span style=''>   * Sorts according to position of each path item, descending or descending based on a depth first then rightwise order.
+</span>242 <span style=''>   */
+</span>243 <span style=''>  def sort[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]](paths: Iterable[Path[Item, Section, CC]],
+</span>244 <span style=''>    isDescending: Boolean = true)(implicit cm : ClassManifest[(Position[Item,Section,CC], Path[Item, Section, CC])]): Iterable[Path[Item, Section, CC]] = </span><span style='background: #AEF1AE'>sortPositions(paths, isDescending).map(x =&gt; x._2)</span><span style=''>
+</span>245 <span style=''>
+</span>246 <span style=''>  /**
+</span>247 <span style=''>   * sort with a tuple T, Path
+</span>248 <span style=''>   */ 
+</span>249 <span style=''>  def sortT[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_], T](paths: Iterable[(T,Path[Item, Section, CC])],
+</span>250 <span style=''>    isDescending: Boolean = true)(implicit cm : ClassManifest[(Position[Item,Section,CC], (T, Path[Item, Section, CC]))]): Iterable[(T,Path[Item, Section, CC])] = </span><span style='background: #AEF1AE'>sortPositionsT(paths, isDescending).map(x =&gt; x._2)</span><span style=''>
+</span>251 <span style=''>
+</span>252 <span style=''>  /**
+</span>253 <span style=''>   * Deepest last child
+</span>254 <span style=''>   */ 
+</span>255 <span style=''>  def deepestLast[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]](path : Path[Item, Section, CC]) : Path[Item, Section, CC] = {
+</span>256 <span style=''>    if (</span><span style='background: #F0ADAD'>path.hasChildren</span><span style=''>) </span><span style='background: #F0ADAD'>{
+</span>257 <span style=''></span><span style='background: #F0ADAD'>      val npath = path.lastChild.get
+</span>258 <span style=''></span><span style='background: #F0ADAD'>      if (npath.isItem)
+</span>259 <span style=''></span><span style='background: #F0ADAD'>	npath
+</span>260 <span style=''></span><span style='background: #F0ADAD'>      else
+</span>261 <span style=''></span><span style='background: #F0ADAD'>	deepestLast(npath) // keep going in 
+</span>262 <span style=''></span><span style='background: #F0ADAD'>    }</span><span style=''> else 
+</span>263 <span style=''>      </span><span style='background: #F0ADAD'>path</span><span style=''>
+</span>264 <span style=''>  }
+</span>265 <span style=''>
+</span>266 <span style=''>  /**
+</span>267 <span style=''>   * gets the next preceding:: sibling equivalent in document order, unlike XPath preceding:: it does not exclude parents 
+</span>268 <span style=''>   */
+</span>269 <span style=''>  def preceding[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]]( path : Path[Item, Section, CC] ) : Option[Path[Item, Section, CC]] =
+</span>270 <span style=''>    if (</span><span style='background: #F0ADAD'>path.hasPreviousSibling</span><span style=''>) </span><span style='background: #F0ADAD'>{
+</span>271 <span style=''></span><span style='background: #F0ADAD'>      val t = path.previousSibling
+</span>272 <span style=''></span><span style='background: #F0ADAD'>      Some(
+</span>273 <span style=''></span><span style='background: #F0ADAD'>	if (t.isItem)
+</span>274 <span style=''></span><span style='background: #F0ADAD'>          t
+</span>275 <span style=''></span><span style='background: #F0ADAD'>	else
+</span>276 <span style=''></span><span style='background: #F0ADAD'>	  deepestLast(t))
+</span>277 <span style=''></span><span style='background: #F0ADAD'>    }</span><span style=''> else
+</span>278 <span style=''>      </span><span style='background: #F0ADAD'>if (path.top.isLeft)
+</span>279 <span style=''></span><span style='background: #F0ADAD'>	None
+</span>280 <span style=''></span><span style='background: #F0ADAD'>      else
+</span>281 <span style=''></span><span style='background: #F0ADAD'>	preceding(path.top.getRight)</span><span style=''> // move up
+</span>282 <span style=''>
+</span>283 <span style=''>  /**
+</span>284 <span style=''>   * gets the next following:: sibling in document order 
+</span>285 <span style=''>   */ 
+</span>286 <span style=''>  def following[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]]( path : Path[Item, Section, CC] ) : Option[Path[Item, Section, CC]] =
+</span>287 <span style=''>    if (</span><span style='background: #F0ADAD'>path.hasNextSibling</span><span style=''>)
+</span>288 <span style=''>      </span><span style='background: #F0ADAD'>Some(path.nextSibling)</span><span style=''>
+</span>289 <span style=''>    else
+</span>290 <span style=''>      </span><span style='background: #F0ADAD'>if (path.top.isLeft)
+</span>291 <span style=''></span><span style='background: #F0ADAD'>	None
+</span>292 <span style=''></span><span style='background: #F0ADAD'>      else
+</span>293 <span style=''></span><span style='background: #F0ADAD'>	following(path.top.getRight)</span><span style=''> // move up
+</span>294 <span style=''>
+</span>295 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          766
+        </td>
+        <td>
+          1318
+          -
+          1335
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.IterableLike.isEmpty
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          locations.isEmpty
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          767
+        </td>
+        <td>
+          1344
+          -
+          1358
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Right.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Right.apply[Nothing, scales.utils.collection.path.NoPaths.type](NoPaths)
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          768
+        </td>
+        <td>
+          1337
+          -
+          1358
+        </td>
+        <td>
+          Return
+        </td>
+        <td>
+          scales.utils.collection.path.PathFold.foldPositions
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          return scala.`package`.Right.apply[Nothing, scales.utils.collection.path.NoPaths.type](NoPaths)
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          769
+        </td>
+        <td>
+          1314
+          -
+          1314
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          770
+        </td>
+        <td>
+          1314
+          -
+          1314
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          24
+        </td>
+        <td>
+          771
+        </td>
+        <td>
+          1377
+          -
+          1408
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.path.Paths.sortPositions
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.sortPositions[Item, Section, CC](locations, false)(cm)
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          772
+        </td>
+        <td>
+          1425
+          -
+          1436
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.IterableLike.head
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          sorted.head
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          773
+        </td>
+        <td>
+          1489
+          -
+          1496
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          head._1
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          774
+        </td>
+        <td>
+          1553
+          -
+          1570
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Position.root
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          rootPosition.root
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          775
+        </td>
+        <td>
+          1540
+          -
+          1570
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.ne
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          p._1.root.ne(rootPosition.root)
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          776
+        </td>
+        <td>
+          1521
+          -
+          1571
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.IterableLike.exists
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          sorted.exists(((p: (scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Path[Item,Section,CC])) =&gt; p._1.root.ne(rootPosition.root)))
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          777
+        </td>
+        <td>
+          1601
+          -
+          1620
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Right.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.`package`.Right.apply[Nothing, scales.utils.collection.path.NoSingleRoot.type](NoSingleRoot)
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          778
+        </td>
+        <td>
+          1601
+          -
+          1620
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.util.Right.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.`package`.Right.apply[Nothing, scales.utils.collection.path.NoSingleRoot.type](NoSingleRoot)
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          807
+        </td>
+        <td>
+          1630
+          -
+          2591
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  def withPositions(opositions: Seq[scales.utils.collection.path.Position[Item,Section,CC]]): Either[(ACC, scales.utils.collection.path.Path[Item,Section,CC]),scales.utils.collection.path.FoldError] = {
+    var positions: Seq[scales.utils.collection.path.Position[Item,Section,CC]] = opositions;
+    var path: scales.utils.collection.path.Path[Item,Section,CC] = head._2;
+    while$1(){
+      if (positions.isEmpty.unary_!)
+        {
+          {
+            &lt;synthetic&gt; &lt;artifact&gt; private[this] val x$1: (ACC, scales.utils.collection.path.FoldOperation[Item,Section,CC]) = (folder.apply(accum, path): (ACC, scales.utils.collection.path.FoldOperation[Item,Section,CC]) @unchecked) match {
+              case (_1: ACC, _2: scales.utils.collection.path.FoldOperation[Item,Section,CC])(ACC, scales.utils.collection.path.FoldOperation[Item,Section,CC])((accf @ _), (res @ _)) =&gt; scala.Tuple2.apply[ACC, scales.utils.collection.path.FoldOperation[Item,Section,CC]](accf, res)
+            };
+            val accf: ACC = x$1._1;
+            val res: scales.utils.collection.path.FoldOperation[Item,Section,CC] = x$1._2;
+            accum = accf;
+            val matched: scales.utils.FoldR[Item,Section,CC] = res.perform(path);
+            if (matched.isLeft)
+              {
+                path = matched.left.get;
+                positions = positions.drop(1);
+                if (positions.isEmpty.unary_!)
+                  path = scales.utils.`package`.moveTo[Item, Section, CC](path, positions.head)(seqLikeThing)
+                else
+                  ()
+              }
+            else
+              return scala.`package`.Right.apply[Nothing, scales.utils.collection.path.FoldError](matched.right.get)
+          };
+          while$1()
+        }
+      else
+        ()
+    };
+    scala.`package`.Left.apply[(ACC, scales.utils.collection.path.Path[Item,Section,CC]), Nothing](scala.Tuple2.apply[ACC, scales.utils.collection.path.Path[Item,Section,CC]](accum, scales.utils.`package`.rootPath[Item, Section, CC](path)))
+  };
+  val positions: Seq[scales.utils.collection.path.Position[Item,Section,CC]] = sorted.map[scales.utils.collection.path.Position[Item,Section,CC], Iterable[scales.utils.collection.path.Position[Item,Section,CC]]](((x$2: (scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Path[Item,Section,CC])) =&gt; x$2._1))(collection.this.Iterable.canBuildFrom[scales.utils.collection.path.Position[Item,Section,CC]]).toSeq;
+  withPositions(positions)
+}
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          779
+        </td>
+        <td>
+          1818
+          -
+          1825
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          head._2
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          780
+        </td>
+        <td>
+          1843
+          -
+          1861
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          positions.isEmpty.unary_!
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          796
+        </td>
+        <td>
+          1863
+          -
+          1863
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.PathFold.while$1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          while$1()
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          797
+        </td>
+        <td>
+          1863
+          -
+          2337
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  {
+    &lt;synthetic&gt; &lt;artifact&gt; private[this] val x$1: (ACC, scales.utils.collection.path.FoldOperation[Item,Section,CC]) = (folder.apply(accum, path): (ACC, scales.utils.collection.path.FoldOperation[Item,Section,CC]) @unchecked) match {
+      case (_1: ACC, _2: scales.utils.collection.path.FoldOperation[Item,Section,CC])(ACC, scales.utils.collection.path.FoldOperation[Item,Section,CC])((accf @ _), (res @ _)) =&gt; scala.Tuple2.apply[ACC, scales.utils.collection.path.FoldOperation[Item,Section,CC]](accf, res)
+    };
+    val accf: ACC = x$1._1;
+    val res: scales.utils.collection.path.FoldOperation[Item,Section,CC] = x$1._2;
+    accum = accf;
+    val matched: scales.utils.FoldR[Item,Section,CC] = res.perform(path);
+    if (matched.isLeft)
+      {
+        path = matched.left.get;
+        positions = positions.drop(1);
+        if (positions.isEmpty.unary_!)
+          path = scales.utils.`package`.moveTo[Item, Section, CC](path, positions.head)(seqLikeThing)
+        else
+          ()
+      }
+    else
+      return scala.`package`.Right.apply[Nothing, scales.utils.collection.path.FoldError](matched.right.get)
+  };
+  while$1()
+}
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          798
+        </td>
+        <td>
+          1836
+          -
+          1836
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          799
+        </td>
+        <td>
+          1836
+          -
+          1836
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          781
+        </td>
+        <td>
+          1883
+          -
+          1883
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$1._1
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          782
+        </td>
+        <td>
+          1889
+          -
+          1889
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$1._2
+        </td>
+      </tr><tr>
+        <td>
+          42
+        </td>
+        <td>
+          783
+        </td>
+        <td>
+          1967
+          -
+          1984
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.FoldOperation.perform
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          res.perform(path)
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          784
+        </td>
+        <td>
+          2025
+          -
+          2039
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.util.Either.isLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          matched.isLeft
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          792
+        </td>
+        <td>
+          2041
+          -
+          2288
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  path = matched.left.get;
+  positions = positions.drop(1);
+  if (positions.isEmpty.unary_!)
+    path = scales.utils.`package`.moveTo[Item, Section, CC](path, positions.head)(seqLikeThing)
+  else
+    ()
+}
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          785
+        </td>
+        <td>
+          2064
+          -
+          2080
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.util.Either.LeftProjection.get
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          matched.left.get
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          786
+        </td>
+        <td>
+          2107
+          -
+          2124
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.IterableLike.drop
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          positions.drop(1)
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          787
+        </td>
+        <td>
+          2143
+          -
+          2161
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          positions.isEmpty.unary_!
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          790
+        </td>
+        <td>
+          2139
+          -
+          2139
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          791
+        </td>
+        <td>
+          2139
+          -
+          2139
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          788
+        </td>
+        <td>
+          2188
+          -
+          2216
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.path.Paths.moveTo
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.moveTo[Item, Section, CC](path, positions.head)(seqLikeThing)
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          789
+        </td>
+        <td>
+          2181
+          -
+          2216
+        </td>
+        <td>
+          Assign
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path = scales.utils.`package`.moveTo[Item, Section, CC](path, positions.head)(seqLikeThing)
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          793
+        </td>
+        <td>
+          2307
+          -
+          2324
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.util.Either.RightProjection.get
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          matched.right.get
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          794
+        </td>
+        <td>
+          2301
+          -
+          2325
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Right.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Right.apply[Nothing, scales.utils.collection.path.FoldError](matched.right.get)
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          795
+        </td>
+        <td>
+          2294
+          -
+          2325
+        </td>
+        <td>
+          Return
+        </td>
+        <td>
+          scales.utils.collection.path.PathFold.withPositions
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          return scala.`package`.Right.apply[Nothing, scales.utils.collection.path.FoldError](matched.right.get)
+        </td>
+      </tr><tr>
+        <td>
+          52
+        </td>
+        <td>
+          800
+        </td>
+        <td>
+          2361
+          -
+          2375
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Paths.rootPath
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.rootPath[Item, Section, CC](path)
+        </td>
+      </tr><tr>
+        <td>
+          52
+        </td>
+        <td>
+          801
+        </td>
+        <td>
+          2353
+          -
+          2376
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[ACC, scales.utils.collection.path.Path[Item,Section,CC]](accum, scales.utils.`package`.rootPath[Item, Section, CC](path))
+        </td>
+      </tr><tr>
+        <td>
+          52
+        </td>
+        <td>
+          802
+        </td>
+        <td>
+          2348
+          -
+          2377
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Left.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Left.apply[(ACC, scales.utils.collection.path.Path[Item,Section,CC]), Nothing](scala.Tuple2.apply[ACC, scales.utils.collection.path.Path[Item,Section,CC]](accum, scales.utils.`package`.rootPath[Item, Section, CC](path)))
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          803
+        </td>
+        <td>
+          2541
+          -
+          2545
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$2._1
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          804
+        </td>
+        <td>
+          2540
+          -
+          2540
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.Iterable.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.Iterable.canBuildFrom[scales.utils.collection.path.Position[Item,Section,CC]]
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          805
+        </td>
+        <td>
+          2530
+          -
+          2552
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.TraversableOnce.toSeq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          sorted.map[scales.utils.collection.path.Position[Item,Section,CC], Iterable[scales.utils.collection.path.Position[Item,Section,CC]]](((x$2: (scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Path[Item,Section,CC])) =&gt; x$2._1))(collection.this.Iterable.canBuildFrom[scales.utils.collection.path.Position[Item,Section,CC]]).toSeq
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          806
+        </td>
+        <td>
+          2561
+          -
+          2585
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.PathFold.withPositions
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          withPositions(positions)
+        </td>
+      </tr><tr>
+        <td>
+          69
+        </td>
+        <td>
+          808
+        </td>
+        <td>
+          2876
+          -
+          2879
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Paths.$anon.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          77
+        </td>
+        <td>
+          809
+        </td>
+        <td>
+          3244
+          -
+          3263
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          newPath.top.isLeft.unary_!
+        </td>
+      </tr><tr>
+        <td>
+          77
+        </td>
+        <td>
+          812
+        </td>
+        <td>
+          3271
+          -
+          3294
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  newPath = newPath.zipUp();
+  while$2()
+}
+        </td>
+      </tr><tr>
+        <td>
+          77
+        </td>
+        <td>
+          813
+        </td>
+        <td>
+          3237
+          -
+          3237
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          77
+        </td>
+        <td>
+          814
+        </td>
+        <td>
+          3237
+          -
+          3237
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          78
+        </td>
+        <td>
+          810
+        </td>
+        <td>
+          3281
+          -
+          3294
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Path.zipUp
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          newPath.zipUp()
+        </td>
+      </tr><tr>
+        <td>
+          78
+        </td>
+        <td>
+          811
+        </td>
+        <td>
+          3279
+          -
+          3279
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Paths.while$2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          while$2()
+        </td>
+      </tr><tr>
+        <td>
+          88
+        </td>
+        <td>
+          815
+        </td>
+        <td>
+          3724
+          -
+          3738
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Paths.rootPath
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Paths.this.rootPath[Item, Section, CC](path)
+        </td>
+      </tr><tr>
+        <td>
+          91
+        </td>
+        <td>
+          817
+        </td>
+        <td>
+          3833
+          -
+          3959
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.LinearSeqOptimized.foldLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          newPos.position.tail.foldLeft[scales.utils.collection.path.Path[Item,Section,CC]](root)(((path: scales.utils.collection.path.Path[Item,Section,CC], pos: Int) =&gt; Path.apply[Item, Section, CC](path, Node.apply[Item, Section, CC](pos, seqLikeThing.apply(path.children)(pos)))(seqLikeThing)))
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          816
+        </td>
+        <td>
+          3892
+          -
+          3953
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.path.Path.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.apply[Item, Section, CC](path, Node.apply[Item, Section, CC](pos, seqLikeThing.apply(path.children)(pos)))(seqLikeThing)
+        </td>
+      </tr><tr>
+        <td>
+          106
+        </td>
+        <td>
+          818
+        </td>
+        <td>
+          5097
+          -
+          5170
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.PathFold.foldPositions
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          PathFold.foldPositions[Item, Section, CC, ACC](locations, accumulator)(folder)(iseqLikeThing, cm)
+        </td>
+      </tr><tr>
+        <td>
+          118
+        </td>
+        <td>
+          819
+        </td>
+        <td>
+          6057
+          -
+          6059
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          118
+        </td>
+        <td>
+          820
+        </td>
+        <td>
+          6072
+          -
+          6074
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          118
+        </td>
+        <td>
+          821
+        </td>
+        <td>
+          6076
+          -
+          6085
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          folder.apply(p)
+        </td>
+      </tr><tr>
+        <td>
+          118
+        </td>
+        <td>
+          822
+        </td>
+        <td>
+          6071
+          -
+          6086
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[Unit, scales.utils.collection.path.FoldOperation[Item,Section,CC]]((), folder.apply(p))
+        </td>
+      </tr><tr>
+        <td>
+          119
+        </td>
+        <td>
+          823
+        </td>
+        <td>
+          6110
+          -
+          6114
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x._2
+        </td>
+      </tr><tr>
+        <td>
+          119
+        </td>
+        <td>
+          824
+        </td>
+        <td>
+          6105
+          -
+          6115
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Left.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Left.apply[scales.utils.collection.path.Path[Item,Section,CC], Nothing](x._2)
+        </td>
+      </tr><tr>
+        <td>
+          119
+        </td>
+        <td>
+          825
+        </td>
+        <td>
+          6117
+          -
+          6125
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Right.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Right.apply[Nothing, scales.utils.collection.path.FoldError](x$3)
+        </td>
+      </tr><tr>
+        <td>
+          119
+        </td>
+        <td>
+          826
+        </td>
+        <td>
+          6007
+          -
+          6126
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Either.fold
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Paths.this.foldPositions[Item, Section, CC, Unit](locations, ())(((u: Unit, p: scales.utils.collection.path.Path[Item,Section,CC]) =&gt; scala.Tuple2.apply[Unit, scales.utils.collection.path.FoldOperation[Item,Section,CC]]((), folder.apply(p))))(iseqLikeThing, cm).fold[scala.util.Either[scales.utils.collection.path.Path[Item,Section,CC],scales.utils.collection.path.FoldError]](((x: (Unit, scales.utils.collection.path.Path[Item,Section,CC])) =&gt; scala.`package`.Left.apply[scales.utils.collection.path.Path[Item,Section,CC], Nothing](x._2)), ((x$3: scales.utils.collection.path.FoldError) =&gt; scala.`package`.Right.apply[Nothing, scales.utils.collection.path.FoldError](x$3)))
+        </td>
+      </tr><tr>
+        <td>
+          121
+        </td>
+        <td>
+          827
+        </td>
+        <td>
+          6148
+          -
+          6152
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          1000
+        </td>
+      </tr><tr>
+        <td>
+          133
+        </td>
+        <td>
+          828
+        </td>
+        <td>
+          6721
+          -
+          6735
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path1.eq(path2)
+        </td>
+      </tr><tr>
+        <td>
+          133
+        </td>
+        <td>
+          829
+        </td>
+        <td>
+          6737
+          -
+          6738
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          133
+        </td>
+        <td>
+          830
+        </td>
+        <td>
+          6737
+          -
+          6738
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          135
+        </td>
+        <td>
+          831
+        </td>
+        <td>
+          6774
+          -
+          6784
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Position.root
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path2.root
+        </td>
+      </tr><tr>
+        <td>
+          135
+        </td>
+        <td>
+          832
+        </td>
+        <td>
+          6760
+          -
+          6784
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.ne
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path1.root.ne(path2.root)
+        </td>
+      </tr><tr>
+        <td>
+          135
+        </td>
+        <td>
+          843
+        </td>
+        <td>
+          6786
+          -
+          6952
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          {
+  val p1R: Int = java.lang.System.identityHashCode(path1.root);
+  val p2R: Int = java.lang.System.identityHashCode(path2.root);
+  Paths.this.NotSameRoot.+(if (p1R.&lt;(p2R))
+    1
+  else
+    -1)
+}
+        </td>
+      </tr><tr>
+        <td>
+          135
+        </td>
+        <td>
+          848
+        </td>
+        <td>
+          6756
+          -
+          7010
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (path1.root.ne(path2.root))
+  {
+    val p1R: Int = java.lang.System.identityHashCode(path1.root);
+    val p2R: Int = java.lang.System.identityHashCode(path2.root);
+    Paths.this.NotSameRoot.+(if (p1R.&lt;(p2R))
+      1
+    else
+      -1)
+  }
+else
+  scales.utils.`package`.compareStack(path1.position, path2.position)
+        </td>
+      </tr><tr>
+        <td>
+          136
+        </td>
+        <td>
+          833
+        </td>
+        <td>
+          6830
+          -
+          6840
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Position.root
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          path1.root
+        </td>
+      </tr><tr>
+        <td>
+          136
+        </td>
+        <td>
+          834
+        </td>
+        <td>
+          6806
+          -
+          6841
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.System.identityHashCode
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          java.lang.System.identityHashCode(path1.root)
+        </td>
+      </tr><tr>
+        <td>
+          137
+        </td>
+        <td>
+          835
+        </td>
+        <td>
+          6884
+          -
+          6894
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Position.root
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          path2.root
+        </td>
+      </tr><tr>
+        <td>
+          137
+        </td>
+        <td>
+          836
+        </td>
+        <td>
+          6860
+          -
+          6895
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.System.identityHashCode
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          java.lang.System.identityHashCode(path2.root)
+        </td>
+      </tr><tr>
+        <td>
+          138
+        </td>
+        <td>
+          837
+        </td>
+        <td>
+          6923
+          -
+          6932
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&lt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          p1R.&lt;(p2R)
+        </td>
+      </tr><tr>
+        <td>
+          138
+        </td>
+        <td>
+          838
+        </td>
+        <td>
+          6934
+          -
+          6935
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          138
+        </td>
+        <td>
+          839
+        </td>
+        <td>
+          6934
+          -
+          6935
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          138
+        </td>
+        <td>
+          840
+        </td>
+        <td>
+          6941
+          -
+          6943
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          -1
+        </td>
+      </tr><tr>
+        <td>
+          138
+        </td>
+        <td>
+          841
+        </td>
+        <td>
+          6941
+          -
+          6943
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          -1
+        </td>
+      </tr><tr>
+        <td>
+          138
+        </td>
+        <td>
+          842
+        </td>
+        <td>
+          6904
+          -
+          6944
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Paths.this.NotSameRoot.+(if (p1R.&lt;(p2R))
+  1
+else
+  -1)
+        </td>
+      </tr><tr>
+        <td>
+          140
+        </td>
+        <td>
+          844
+        </td>
+        <td>
+          6979
+          -
+          6993
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Position.position
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path1.position
+        </td>
+      </tr><tr>
+        <td>
+          140
+        </td>
+        <td>
+          845
+        </td>
+        <td>
+          6995
+          -
+          7009
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Position.position
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path2.position
+        </td>
+      </tr><tr>
+        <td>
+          140
+        </td>
+        <td>
+          846
+        </td>
+        <td>
+          6966
+          -
+          7010
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.StackUtils.compareStack
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.compareStack(path1.position, path2.position)
+        </td>
+      </tr><tr>
+        <td>
+          140
+        </td>
+        <td>
+          847
+        </td>
+        <td>
+          6966
+          -
+          7010
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.collection.StackUtils.compareStack
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.compareStack(path1.position, path2.position)
+        </td>
+      </tr><tr>
+        <td>
+          148
+        </td>
+        <td>
+          849
+        </td>
+        <td>
+          7287
+          -
+          7301
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path1.eq(path2)
+        </td>
+      </tr><tr>
+        <td>
+          149
+        </td>
+        <td>
+          850
+        </td>
+        <td>
+          7309
+          -
+          7313
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          149
+        </td>
+        <td>
+          851
+        </td>
+        <td>
+          7309
+          -
+          7313
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          151
+        </td>
+        <td>
+          852
+        </td>
+        <td>
+          7329
+          -
+          7400
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Paths.this.comparePathsP[Item, Section, CC](scala.Tuple2.apply[scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Path[Item,Section,CC]](path1.position(), path1), scala.Tuple2.apply[scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Path[Item,Section,CC]](path2.position(), path2))._1.==(0)
+        </td>
+      </tr><tr>
+        <td>
+          151
+        </td>
+        <td>
+          853
+        </td>
+        <td>
+          7329
+          -
+          7400
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Paths.this.comparePathsP[Item, Section, CC](scala.Tuple2.apply[scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Path[Item,Section,CC]](path1.position(), path1), scala.Tuple2.apply[scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Path[Item,Section,CC]](path2.position(), path2))._1.==(0)
+        </td>
+      </tr><tr>
+        <td>
+          163
+        </td>
+        <td>
+          854
+        </td>
+        <td>
+          8186
+          -
+          8200
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Path.position
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          path1.position()
+        </td>
+      </tr><tr>
+        <td>
+          163
+        </td>
+        <td>
+          855
+        </td>
+        <td>
+          8185
+          -
+          8208
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Tuple2.apply[scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Path[Item,Section,CC]](path1.position(), path1)
+        </td>
+      </tr><tr>
+        <td>
+          163
+        </td>
+        <td>
+          856
+        </td>
+        <td>
+          8211
+          -
+          8225
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Path.position
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          path2.position()
+        </td>
+      </tr><tr>
+        <td>
+          163
+        </td>
+        <td>
+          857
+        </td>
+        <td>
+          8210
+          -
+          8233
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Tuple2.apply[scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Path[Item,Section,CC]](path2.position(), path2)
+        </td>
+      </tr><tr>
+        <td>
+          163
+        </td>
+        <td>
+          858
+        </td>
+        <td>
+          8171
+          -
+          8234
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Paths.comparePathsP
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Paths.this.comparePathsP[Item, Section, CC](scala.Tuple2.apply[scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Path[Item,Section,CC]](path1.position(), path1), scala.Tuple2.apply[scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Path[Item,Section,CC]](path2.position(), path2))
+        </td>
+      </tr><tr>
+        <td>
+          166
+        </td>
+        <td>
+          859
+        </td>
+        <td>
+          8536
+          -
+          8544
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path2._2
+        </td>
+      </tr><tr>
+        <td>
+          166
+        </td>
+        <td>
+          860
+        </td>
+        <td>
+          8524
+          -
+          8544
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path1._2.eq(path2._2)
+        </td>
+      </tr><tr>
+        <td>
+          166
+        </td>
+        <td>
+          863
+        </td>
+        <td>
+          8546
+          -
+          8598
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val pos: scales.utils.collection.path.Position[Item,Section,CC] = path1._1;
+  scala.Tuple3.apply[Int, scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Position[Item,Section,CC]](0, pos, pos)
+}
+        </td>
+      </tr><tr>
+        <td>
+          167
+        </td>
+        <td>
+          861
+        </td>
+        <td>
+          8564
+          -
+          8572
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path1._1
+        </td>
+      </tr><tr>
+        <td>
+          168
+        </td>
+        <td>
+          862
+        </td>
+        <td>
+          8579
+          -
+          8592
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple3.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple3.apply[Int, scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Position[Item,Section,CC]](0, pos, pos)
+        </td>
+      </tr><tr>
+        <td>
+          169
+        </td>
+        <td>
+          868
+        </td>
+        <td>
+          8604
+          -
+          8710
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  &lt;synthetic&gt; &lt;artifact&gt; private[this] val x$4: (scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Position[Item,Section,CC]) = (scala.Tuple2.apply[scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Position[Item,Section,CC]](path1._1, path2._1): (scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Position[Item,Section,CC]) @unchecked) match {
+    case (_1: scales.utils.collection.path.Position[Item,Section,CC], _2: scales.utils.collection.path.Position[Item,Section,CC])(scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Position[Item,Section,CC])((pos1 @ _), (pos2 @ _)) =&gt; scala.Tuple2.apply[scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Position[Item,Section,CC]](pos1, pos2)
+  };
+  val pos1: scales.utils.collection.path.Position[Item,Section,CC] = x$4._1;
+  val pos2: scales.utils.collection.path.Position[Item,Section,CC] = x$4._2;
+  scala.Tuple3.apply[Int, scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Position[Item,Section,CC]](Paths.this.comparePathPositions[Item, Section, CC](pos1, pos2), pos1, pos2)
+}
+        </td>
+      </tr><tr>
+        <td>
+          170
+        </td>
+        <td>
+          864
+        </td>
+        <td>
+          8617
+          -
+          8617
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$4._1
+        </td>
+      </tr><tr>
+        <td>
+          170
+        </td>
+        <td>
+          865
+        </td>
+        <td>
+          8623
+          -
+          8623
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$4._2
+        </td>
+      </tr><tr>
+        <td>
+          171
+        </td>
+        <td>
+          866
+        </td>
+        <td>
+          8659
+          -
+          8691
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Paths.comparePathPositions
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Paths.this.comparePathPositions[Item, Section, CC](pos1, pos2)
+        </td>
+      </tr><tr>
+        <td>
+          171
+        </td>
+        <td>
+          867
+        </td>
+        <td>
+          8658
+          -
+          8704
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple3.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple3.apply[Int, scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Position[Item,Section,CC]](Paths.this.comparePathPositions[Item, Section, CC](pos1, pos2), pos1, pos2)
+        </td>
+      </tr><tr>
+        <td>
+          176
+        </td>
+        <td>
+          869
+        </td>
+        <td>
+          9032
+          -
+          9043
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path2._2._2
+        </td>
+      </tr><tr>
+        <td>
+          176
+        </td>
+        <td>
+          870
+        </td>
+        <td>
+          9017
+          -
+          9043
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path1._2._2.eq(path2._2._2)
+        </td>
+      </tr><tr>
+        <td>
+          176
+        </td>
+        <td>
+          873
+        </td>
+        <td>
+          9045
+          -
+          9097
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val pos: scales.utils.collection.path.Position[Item,Section,CC] = path1._1;
+  scala.Tuple3.apply[Int, scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Position[Item,Section,CC]](0, pos, pos)
+}
+        </td>
+      </tr><tr>
+        <td>
+          177
+        </td>
+        <td>
+          871
+        </td>
+        <td>
+          9063
+          -
+          9071
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path1._1
+        </td>
+      </tr><tr>
+        <td>
+          178
+        </td>
+        <td>
+          872
+        </td>
+        <td>
+          9078
+          -
+          9091
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple3.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple3.apply[Int, scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Position[Item,Section,CC]](0, pos, pos)
+        </td>
+      </tr><tr>
+        <td>
+          179
+        </td>
+        <td>
+          878
+        </td>
+        <td>
+          9103
+          -
+          9209
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  &lt;synthetic&gt; &lt;artifact&gt; private[this] val x$5: (scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Position[Item,Section,CC]) = (scala.Tuple2.apply[scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Position[Item,Section,CC]](path1._1, path2._1): (scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Position[Item,Section,CC]) @unchecked) match {
+    case (_1: scales.utils.collection.path.Position[Item,Section,CC], _2: scales.utils.collection.path.Position[Item,Section,CC])(scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Position[Item,Section,CC])((pos1 @ _), (pos2 @ _)) =&gt; scala.Tuple2.apply[scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Position[Item,Section,CC]](pos1, pos2)
+  };
+  val pos1: scales.utils.collection.path.Position[Item,Section,CC] = x$5._1;
+  val pos2: scales.utils.collection.path.Position[Item,Section,CC] = x$5._2;
+  scala.Tuple3.apply[Int, scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Position[Item,Section,CC]](Paths.this.comparePathPositions[Item, Section, CC](pos1, pos2), pos1, pos2)
+}
+        </td>
+      </tr><tr>
+        <td>
+          180
+        </td>
+        <td>
+          874
+        </td>
+        <td>
+          9116
+          -
+          9116
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$5._1
+        </td>
+      </tr><tr>
+        <td>
+          180
+        </td>
+        <td>
+          875
+        </td>
+        <td>
+          9122
+          -
+          9122
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$5._2
+        </td>
+      </tr><tr>
+        <td>
+          181
+        </td>
+        <td>
+          876
+        </td>
+        <td>
+          9158
+          -
+          9190
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Paths.comparePathPositions
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Paths.this.comparePathPositions[Item, Section, CC](pos1, pos2)
+        </td>
+      </tr><tr>
+        <td>
+          181
+        </td>
+        <td>
+          877
+        </td>
+        <td>
+          9157
+          -
+          9203
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple3.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple3.apply[Int, scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Position[Item,Section,CC]](Paths.this.comparePathPositions[Item, Section, CC](pos1, pos2), pos1, pos2)
+        </td>
+      </tr><tr>
+        <td>
+          193
+        </td>
+        <td>
+          880
+        </td>
+        <td>
+          9482
+          -
+          9525
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.Equal.equal
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.Equal.equal[scales.utils.collection.path.Path[Item,Section,CC]](((x$6: scales.utils.collection.path.Path[Item,Section,CC], x$7: scales.utils.collection.path.Path[Item,Section,CC]) =&gt; Paths.this.comparePathsDirect[Item, Section, CC](x$6, x$7)))
+        </td>
+      </tr><tr>
+        <td>
+          194
+        </td>
+        <td>
+          879
+        </td>
+        <td>
+          9496
+          -
+          9519
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Paths.comparePathsDirect
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Paths.this.comparePathsDirect[Item, Section, CC](x$6, x$7)
+        </td>
+      </tr><tr>
+        <td>
+          199
+        </td>
+        <td>
+          881
+        </td>
+        <td>
+          9749
+          -
+          9775
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.path.Path.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.apply[Item, Section, CC](Top.apply[Item, Section, CC](), Node.apply[Item, Section, CC](0, tree))(seqLikeThing)
+        </td>
+      </tr><tr>
+        <td>
+          205
+        </td>
+        <td>
+          882
+        </td>
+        <td>
+          10051
+          -
+          10064
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Path.position
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x._2.position()
+        </td>
+      </tr><tr>
+        <td>
+          205
+        </td>
+        <td>
+          883
+        </td>
+        <td>
+          10050
+          -
+          10068
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[scales.utils.collection.path.Position[Item,Section,CC], (T, scales.utils.collection.path.Path[Item,Section,CC])](x._2.position(), x)
+        </td>
+      </tr><tr>
+        <td>
+          205
+        </td>
+        <td>
+          884
+        </td>
+        <td>
+          10044
+          -
+          10044
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.Iterable.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.Iterable.canBuildFrom[(scales.utils.collection.path.Position[Item,Section,CC], (T, scales.utils.collection.path.Path[Item,Section,CC]))]
+        </td>
+      </tr><tr>
+        <td>
+          205
+        </td>
+        <td>
+          885
+        </td>
+        <td>
+          10035
+          -
+          10069
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableLike.map
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          paths.map[(scales.utils.collection.path.Position[Item,Section,CC], (T, scales.utils.collection.path.Path[Item,Section,CC])), Iterable[(scales.utils.collection.path.Position[Item,Section,CC], (T, scales.utils.collection.path.Path[Item,Section,CC]))]](((x: (T, scales.utils.collection.path.Path[Item,Section,CC])) =&gt; scala.Tuple2.apply[scales.utils.collection.path.Position[Item,Section,CC], (T, scales.utils.collection.path.Path[Item,Section,CC])](x._2.position(), x)))(collection.this.Iterable.canBuildFrom[(scales.utils.collection.path.Position[Item,Section,CC], (T, scales.utils.collection.path.Path[Item,Section,CC]))])
+        </td>
+      </tr><tr>
+        <td>
+          211
+        </td>
+        <td>
+          886
+        </td>
+        <td>
+          10335
+          -
+          10345
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Path.position
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x.position()
+        </td>
+      </tr><tr>
+        <td>
+          211
+        </td>
+        <td>
+          887
+        </td>
+        <td>
+          10334
+          -
+          10349
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Path[Item,Section,CC]](x.position(), x)
+        </td>
+      </tr><tr>
+        <td>
+          211
+        </td>
+        <td>
+          888
+        </td>
+        <td>
+          10328
+          -
+          10328
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.Iterable.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.Iterable.canBuildFrom[(scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Path[Item,Section,CC])]
+        </td>
+      </tr><tr>
+        <td>
+          211
+        </td>
+        <td>
+          889
+        </td>
+        <td>
+          10319
+          -
+          10350
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableLike.map
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          paths.map[(scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Path[Item,Section,CC]), Iterable[(scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Path[Item,Section,CC])]](((x: scales.utils.collection.path.Path[Item,Section,CC]) =&gt; scala.Tuple2.apply[scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Path[Item,Section,CC]](x.position(), x)))(collection.this.Iterable.canBuildFrom[(scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Path[Item,Section,CC])])
+        </td>
+      </tr><tr>
+        <td>
+          223
+        </td>
+        <td>
+          890
+        </td>
+        <td>
+          10772
+          -
+          11122
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Sorting.stableSort
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.util.Sorting.stableSort[(scales.utils.collection.path.Position[Item,Section,CC], (T, scales.utils.collection.path.Path[Item,Section,CC]))](Paths.this.positionsT[Item, Section, CC, T](paths).toSeq, ((p1: (scales.utils.collection.path.Position[Item,Section,CC], (T, scales.utils.collection.path.Path[Item,Section,CC])), p2: (scales.utils.collection.path.Position[Item,Section,CC], (T, scales.utils.collection.path.Path[Item,Section,CC]))) =&gt; {
+  &lt;synthetic&gt; &lt;artifact&gt; private[this] val x$8: (Int, scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Position[Item,Section,CC]) = (Paths.this.comparePathsT[Item, Section, CC, T](p1, p2): (Int, scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Position[Item,Section,CC]) @unchecked) match {
+    case (_1: Int, _2: scales.utils.collection.path.Position[Item,Section,CC], _3: scales.utils.collection.path.Position[Item,Section,CC])(Int, scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Position[Item,Section,CC])((res @ _), (pos1 @ _), (pos2 @ _)) =&gt; scala.Tuple3.apply[Int, scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Position[Item,Section,CC]](res, pos1, pos2)
+  };
+  val res: Int = x$8._1;
+  val pos1: scales.utils.collection.path.Position[Item,Section,CC] = x$8._2;
+  val pos2: scales.utils.collection.path.Position[Item,Section,CC] = x$8._3;
+  val order: Boolean = res.==(1).||(res.==(Paths.this.NotSameRoot.+(1)));
+  if (isDescending)
+    order
+  else
+    order.unary_!
+}))(cm)
+        </td>
+      </tr><tr>
+        <td>
+          223
+        </td>
+        <td>
+          891
+        </td>
+        <td>
+          10772
+          -
+          11122
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.LowPriorityImplicits.wrapRefArray
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.wrapRefArray[(scales.utils.collection.path.Position[Item,Section,CC], (T, scales.utils.collection.path.Path[Item,Section,CC]))](scala.util.Sorting.stableSort[(scales.utils.collection.path.Position[Item,Section,CC], (T, scales.utils.collection.path.Path[Item,Section,CC]))](Paths.this.positionsT[Item, Section, CC, T](paths).toSeq, ((p1: (scales.utils.collection.path.Position[Item,Section,CC], (T, scales.utils.collection.path.Path[Item,Section,CC])), p2: (scales.utils.collection.path.Position[Item,Section,CC], (T, scales.utils.collection.path.Path[Item,Section,CC]))) =&gt; {
+  &lt;synthetic&gt; &lt;artifact&gt; private[this] val x$8: (Int, scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Position[Item,Section,CC]) = (Paths.this.comparePathsT[Item, Section, CC, T](p1, p2): (Int, scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Position[Item,Section,CC]) @unchecked) match {
+    case (_1: Int, _2: scales.utils.collection.path.Position[Item,Section,CC], _3: scales.utils.collection.path.Position[Item,Section,CC])(Int, scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Position[Item,Section,CC])((res @ _), (pos1 @ _), (pos2 @ _)) =&gt; scala.Tuple3.apply[Int, scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Position[Item,Section,CC]](res, pos1, pos2)
+  };
+  val res: Int = x$8._1;
+  val pos1: scales.utils.collection.path.Position[Item,Section,CC] = x$8._2;
+  val pos2: scales.utils.collection.path.Position[Item,Section,CC] = x$8._3;
+  val order: Boolean = res.==(1).||(res.==(Paths.this.NotSameRoot.+(1)));
+  if (isDescending)
+    order
+  else
+    order.unary_!
+}))(cm))
+        </td>
+      </tr><tr>
+        <td>
+          237
+        </td>
+        <td>
+          892
+        </td>
+        <td>
+          11609
+          -
+          11951
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Sorting.stableSort
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.util.Sorting.stableSort[(scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Path[Item,Section,CC])](Paths.this.positions[Item, Section, CC](paths).toSeq, ((p1: (scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Path[Item,Section,CC]), p2: (scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Path[Item,Section,CC])) =&gt; {
+  &lt;synthetic&gt; &lt;artifact&gt; private[this] val x$9: (Int, scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Position[Item,Section,CC]) = (Paths.this.comparePathsP[Item, Section, CC](p1, p2): (Int, scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Position[Item,Section,CC]) @unchecked) match {
+    case (_1: Int, _2: scales.utils.collection.path.Position[Item,Section,CC], _3: scales.utils.collection.path.Position[Item,Section,CC])(Int, scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Position[Item,Section,CC])((res @ _), (pos1 @ _), (pos2 @ _)) =&gt; scala.Tuple3.apply[Int, scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Position[Item,Section,CC]](res, pos1, pos2)
+  };
+  val res: Int = x$9._1;
+  val pos1: scales.utils.collection.path.Position[Item,Section,CC] = x$9._2;
+  val pos2: scales.utils.collection.path.Position[Item,Section,CC] = x$9._3;
+  val order: Boolean = res.==(1).||(res.==(Paths.this.NotSameRoot.+(1)));
+  if (isDescending)
+    order
+  else
+    order.unary_!
+}))(cm)
+        </td>
+      </tr><tr>
+        <td>
+          237
+        </td>
+        <td>
+          893
+        </td>
+        <td>
+          11609
+          -
+          11951
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.LowPriorityImplicits.wrapRefArray
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.wrapRefArray[(scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Path[Item,Section,CC])](scala.util.Sorting.stableSort[(scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Path[Item,Section,CC])](Paths.this.positions[Item, Section, CC](paths).toSeq, ((p1: (scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Path[Item,Section,CC]), p2: (scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Path[Item,Section,CC])) =&gt; {
+  &lt;synthetic&gt; &lt;artifact&gt; private[this] val x$9: (Int, scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Position[Item,Section,CC]) = (Paths.this.comparePathsP[Item, Section, CC](p1, p2): (Int, scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Position[Item,Section,CC]) @unchecked) match {
+    case (_1: Int, _2: scales.utils.collection.path.Position[Item,Section,CC], _3: scales.utils.collection.path.Position[Item,Section,CC])(Int, scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Position[Item,Section,CC])((res @ _), (pos1 @ _), (pos2 @ _)) =&gt; scala.Tuple3.apply[Int, scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Position[Item,Section,CC]](res, pos1, pos2)
+  };
+  val res: Int = x$9._1;
+  val pos1: scales.utils.collection.path.Position[Item,Section,CC] = x$9._2;
+  val pos2: scales.utils.collection.path.Position[Item,Section,CC] = x$9._3;
+  val order: Boolean = res.==(1).||(res.==(Paths.this.NotSameRoot.+(1)));
+  if (isDescending)
+    order
+  else
+    order.unary_!
+}))(cm))
+        </td>
+      </tr><tr>
+        <td>
+          244
+        </td>
+        <td>
+          894
+        </td>
+        <td>
+          12407
+          -
+          12411
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x._2
+        </td>
+      </tr><tr>
+        <td>
+          244
+        </td>
+        <td>
+          895
+        </td>
+        <td>
+          12401
+          -
+          12401
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.Iterable.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.Iterable.canBuildFrom[scales.utils.collection.path.Path[Item,Section,CC]]
+        </td>
+      </tr><tr>
+        <td>
+          244
+        </td>
+        <td>
+          896
+        </td>
+        <td>
+          12363
+          -
+          12412
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableLike.map
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Paths.this.sortPositions[Item, Section, CC](paths, isDescending)(cm).map[scales.utils.collection.path.Path[Item,Section,CC], Iterable[scales.utils.collection.path.Path[Item,Section,CC]]](((x: (scales.utils.collection.path.Position[Item,Section,CC], scales.utils.collection.path.Path[Item,Section,CC])) =&gt; x._2))(collection.this.Iterable.canBuildFrom[scales.utils.collection.path.Path[Item,Section,CC]])
+        </td>
+      </tr><tr>
+        <td>
+          250
+        </td>
+        <td>
+          897
+        </td>
+        <td>
+          12792
+          -
+          12796
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x._2
+        </td>
+      </tr><tr>
+        <td>
+          250
+        </td>
+        <td>
+          898
+        </td>
+        <td>
+          12786
+          -
+          12786
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.Iterable.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.Iterable.canBuildFrom[(T, scales.utils.collection.path.Path[Item,Section,CC])]
+        </td>
+      </tr><tr>
+        <td>
+          250
+        </td>
+        <td>
+          899
+        </td>
+        <td>
+          12747
+          -
+          12797
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableLike.map
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Paths.this.sortPositionsT[Item, Section, CC, T](paths, isDescending)(cm).map[(T, scales.utils.collection.path.Path[Item,Section,CC]), Iterable[(T, scales.utils.collection.path.Path[Item,Section,CC])]](((x: (scales.utils.collection.path.Position[Item,Section,CC], (T, scales.utils.collection.path.Path[Item,Section,CC]))) =&gt; x._2))(collection.this.Iterable.canBuildFrom[(T, scales.utils.collection.path.Path[Item,Section,CC])])
+        </td>
+      </tr><tr>
+        <td>
+          256
+        </td>
+        <td>
+          900
+        </td>
+        <td>
+          12989
+          -
+          13005
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Path.hasChildren
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          path.hasChildren
+        </td>
+      </tr><tr>
+        <td>
+          256
+        </td>
+        <td>
+          906
+        </td>
+        <td>
+          13007
+          -
+          13131
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          {
+  val npath: scales.utils.collection.path.Path[Item,Section,CC] = path.lastChild().get;
+  if (npath.isItem)
+    npath
+  else
+    Paths.this.deepestLast[Item, Section, CC](npath)
+}
+        </td>
+      </tr><tr>
+        <td>
+          257
+        </td>
+        <td>
+          901
+        </td>
+        <td>
+          13027
+          -
+          13045
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Option.get
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          path.lastChild().get
+        </td>
+      </tr><tr>
+        <td>
+          258
+        </td>
+        <td>
+          902
+        </td>
+        <td>
+          13056
+          -
+          13068
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Path.isItem
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          npath.isItem
+        </td>
+      </tr><tr>
+        <td>
+          259
+        </td>
+        <td>
+          903
+        </td>
+        <td>
+          13071
+          -
+          13076
+        </td>
+        <td>
+          Ident
+        </td>
+        <td>
+          scales.utils.collection.path.Paths.npath
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          npath
+        </td>
+      </tr><tr>
+        <td>
+          261
+        </td>
+        <td>
+          904
+        </td>
+        <td>
+          13089
+          -
+          13107
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Paths.deepestLast
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Paths.this.deepestLast[Item, Section, CC](npath)
+        </td>
+      </tr><tr>
+        <td>
+          261
+        </td>
+        <td>
+          905
+        </td>
+        <td>
+          13089
+          -
+          13107
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.collection.path.Paths.deepestLast
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Paths.this.deepestLast[Item, Section, CC](npath)
+        </td>
+      </tr><tr>
+        <td>
+          263
+        </td>
+        <td>
+          907
+        </td>
+        <td>
+          13144
+          -
+          13148
+        </td>
+        <td>
+          Ident
+        </td>
+        <td>
+          scales.utils.collection.path.Paths.path
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          path
+        </td>
+      </tr><tr>
+        <td>
+          270
+        </td>
+        <td>
+          908
+        </td>
+        <td>
+          13448
+          -
+          13471
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Path.hasPreviousSibling
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          path.hasPreviousSibling
+        </td>
+      </tr><tr>
+        <td>
+          270
+        </td>
+        <td>
+          915
+        </td>
+        <td>
+          13473
+          -
+          13579
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          {
+  val t: scales.utils.collection.path.Path[Item,Section,CC] = path.previousSibling;
+  scala.Some.apply[scales.utils.collection.path.Path[Item,Section,CC]](if (t.isItem)
+    t
+  else
+    Paths.this.deepestLast[Item, Section, CC](t))
+}
+        </td>
+      </tr><tr>
+        <td>
+          271
+        </td>
+        <td>
+          909
+        </td>
+        <td>
+          13489
+          -
+          13509
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Path.previousSibling
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          path.previousSibling
+        </td>
+      </tr><tr>
+        <td>
+          272
+        </td>
+        <td>
+          914
+        </td>
+        <td>
+          13516
+          -
+          13573
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Some.apply[scales.utils.collection.path.Path[Item,Section,CC]](if (t.isItem)
+  t
+else
+  Paths.this.deepestLast[Item, Section, CC](t))
+        </td>
+      </tr><tr>
+        <td>
+          273
+        </td>
+        <td>
+          910
+        </td>
+        <td>
+          13527
+          -
+          13535
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Path.isItem
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          t.isItem
+        </td>
+      </tr><tr>
+        <td>
+          274
+        </td>
+        <td>
+          911
+        </td>
+        <td>
+          13547
+          -
+          13548
+        </td>
+        <td>
+          Ident
+        </td>
+        <td>
+          scales.utils.collection.path.Paths.t
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          t
+        </td>
+      </tr><tr>
+        <td>
+          276
+        </td>
+        <td>
+          912
+        </td>
+        <td>
+          13558
+          -
+          13572
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Paths.deepestLast
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Paths.this.deepestLast[Item, Section, CC](t)
+        </td>
+      </tr><tr>
+        <td>
+          276
+        </td>
+        <td>
+          913
+        </td>
+        <td>
+          13558
+          -
+          13572
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.collection.path.Paths.deepestLast
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Paths.this.deepestLast[Item, Section, CC](t)
+        </td>
+      </tr><tr>
+        <td>
+          278
+        </td>
+        <td>
+          916
+        </td>
+        <td>
+          13595
+          -
+          13610
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.EitherLike.isLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          path.top.isLeft
+        </td>
+      </tr><tr>
+        <td>
+          278
+        </td>
+        <td>
+          922
+        </td>
+        <td>
+          13591
+          -
+          13658
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          if (path.top.isLeft)
+  scala.None
+else
+  Paths.this.preceding[Item, Section, CC](path.top.getRight)
+        </td>
+      </tr><tr>
+        <td>
+          279
+        </td>
+        <td>
+          917
+        </td>
+        <td>
+          13613
+          -
+          13617
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          279
+        </td>
+        <td>
+          918
+        </td>
+        <td>
+          13613
+          -
+          13617
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          281
+        </td>
+        <td>
+          919
+        </td>
+        <td>
+          13640
+          -
+          13657
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.EitherLike.getRight
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          path.top.getRight
+        </td>
+      </tr><tr>
+        <td>
+          281
+        </td>
+        <td>
+          920
+        </td>
+        <td>
+          13630
+          -
+          13658
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Paths.preceding
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Paths.this.preceding[Item, Section, CC](path.top.getRight)
+        </td>
+      </tr><tr>
+        <td>
+          281
+        </td>
+        <td>
+          921
+        </td>
+        <td>
+          13630
+          -
+          13658
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.collection.path.Paths.preceding
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Paths.this.preceding[Item, Section, CC](path.top.getRight)
+        </td>
+      </tr><tr>
+        <td>
+          287
+        </td>
+        <td>
+          923
+        </td>
+        <td>
+          13901
+          -
+          13920
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Path.hasNextSibling
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          path.hasNextSibling
+        </td>
+      </tr><tr>
+        <td>
+          288
+        </td>
+        <td>
+          924
+        </td>
+        <td>
+          13933
+          -
+          13949
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Path.nextSibling
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          path.nextSibling
+        </td>
+      </tr><tr>
+        <td>
+          288
+        </td>
+        <td>
+          925
+        </td>
+        <td>
+          13928
+          -
+          13950
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Some.apply[scales.utils.collection.path.Path[Item,Section,CC]](path.nextSibling)
+        </td>
+      </tr><tr>
+        <td>
+          288
+        </td>
+        <td>
+          926
+        </td>
+        <td>
+          13928
+          -
+          13950
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Some.apply[scales.utils.collection.path.Path[Item,Section,CC]](path.nextSibling)
+        </td>
+      </tr><tr>
+        <td>
+          290
+        </td>
+        <td>
+          927
+        </td>
+        <td>
+          13970
+          -
+          13985
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.EitherLike.isLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          path.top.isLeft
+        </td>
+      </tr><tr>
+        <td>
+          290
+        </td>
+        <td>
+          933
+        </td>
+        <td>
+          13966
+          -
+          14033
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          if (path.top.isLeft)
+  scala.None
+else
+  Paths.this.following[Item, Section, CC](path.top.getRight)
+        </td>
+      </tr><tr>
+        <td>
+          291
+        </td>
+        <td>
+          928
+        </td>
+        <td>
+          13988
+          -
+          13992
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          291
+        </td>
+        <td>
+          929
+        </td>
+        <td>
+          13988
+          -
+          13992
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          293
+        </td>
+        <td>
+          930
+        </td>
+        <td>
+          14015
+          -
+          14032
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.EitherLike.getRight
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          path.top.getRight
+        </td>
+      </tr><tr>
+        <td>
+          293
+        </td>
+        <td>
+          931
+        </td>
+        <td>
+          14005
+          -
+          14033
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Paths.following
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Paths.this.following[Item, Section, CC](path.top.getRight)
+        </td>
+      </tr><tr>
+        <td>
+          293
+        </td>
+        <td>
+          932
+        </td>
+        <td>
+          14005
+          -
+          14033
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.collection.path.Paths.following
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Paths.this.following[Item, Section, CC](path.top.getRight)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

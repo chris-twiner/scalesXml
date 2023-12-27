@@ -1,0 +1,4059 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/xml/impl/Keys.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.xml.impl
+</span>2 <span style=''>
+</span>3 <span style=''>import scales.xml.{QName, Attributes, emptyAttributes, emptyNamespaces}
+</span>4 <span style=''>
+</span>5 <span style=''>object DefaultHashes {
+</span>6 <span style=''>  
+</span>7 <span style=''>  val emptyAttributesHash = </span><span style='background: #AEF1AE'>emptyAttributes.hashCode</span><span style=''>
+</span>8 <span style=''>  val emptyNamespacesHash = </span><span style='background: #AEF1AE'>emptyNamespaces.hashCode</span><span style=''>
+</span>9 <span style=''>
+</span>10 <span style=''>}
+</span>11 <span style=''>
+</span>12 <span style=''>import DefaultHashes._
+</span>13 <span style=''>
+</span>14 <span style=''>/**
+</span>15 <span style=''> * Allows quick lookups without creating elements, only use via copy and then don't change it
+</span>16 <span style=''> */ 
+</span>17 <span style=''>class ElemKey {
+</span>18 <span style=''>  var name : QName = _
+</span>19 <span style=''>  var nameHash : Int = </span><span style='background: #AEF1AE'>0</span><span style=''>// incase it can be passed in
+</span>20 <span style=''>  var attributes : Attributes = _
+</span>21 <span style=''>  var namespaces : Map[String, String] = _
+</span>22 <span style=''>
+</span>23 <span style=''>  def set(name : QName, attributes : Attributes, namespaces : Map[String, String], nameHash : Int = 0) = {
+</span>24 <span style=''>    </span><span style='background: #AEF1AE'>this.name = name</span><span style=''>
+</span>25 <span style=''>    </span><span style='background: #AEF1AE'>this.attributes = attributes</span><span style=''>
+</span>26 <span style=''>    </span><span style='background: #AEF1AE'>this.namespaces = namespaces</span><span style=''>
+</span>27 <span style=''>
+</span>28 <span style=''>    if (</span><span style='background: #AEF1AE'>nameHash == 0</span><span style=''>)
+</span>29 <span style=''>      </span><span style='background: #F0ADAD'>this.nameHash = name.hashCode</span><span style=''>
+</span>30 <span style=''>    else
+</span>31 <span style=''>      </span><span style='background: #AEF1AE'>this.nameHash = nameHash</span><span style=''>
+</span>32 <span style=''>    
+</span>33 <span style=''>    </span><span style='background: #AEF1AE'>lastHash = 0</span><span style=''>
+</span>34 <span style=''>    // do it now
+</span>35 <span style=''>    </span><span style='background: #AEF1AE'>hashCode</span><span style=''>
+</span>36 <span style=''>    this
+</span>37 <span style=''>  }
+</span>38 <span style=''>
+</span>39 <span style=''>  def copy = {
+</span>40 <span style=''>    val r = </span><span style='background: #AEF1AE'>new ElemKey</span><span style=''>
+</span>41 <span style=''>    </span><span style='background: #AEF1AE'>r.name = name</span><span style=''>
+</span>42 <span style=''>    </span><span style='background: #AEF1AE'>r.attributes = attributes</span><span style=''>
+</span>43 <span style=''>    </span><span style='background: #AEF1AE'>r.namespaces = namespaces</span><span style=''>
+</span>44 <span style=''>    </span><span style='background: #AEF1AE'>r.lastHash = lastHash</span><span style=''>
+</span>45 <span style=''>    r
+</span>46 <span style=''>  }
+</span>47 <span style=''>
+</span>48 <span style=''>  /**
+</span>49 <span style=''>   * Why are we doing eq's as well? Defaults and caching, and having to recast every time when we already know what we are..
+</span>50 <span style=''>   */ 
+</span>51 <span style=''>  override def equals( other : Any ) = other match {
+</span>52 <span style=''>    case oq : ElemKey =&gt;
+</span>53 <span style=''>      </span><span style='background: #F0ADAD'>if ((lastHash == oq.lastHash) &amp;&amp;
+</span>54 <span style=''></span><span style='background: #F0ADAD'>	((name eq oq.name) || (name ==== oq.name)) &amp;&amp; 
+</span>55 <span style=''></span><span style='background: #F0ADAD'>	  ((attributes eq oq.attributes) || (attributes == oq.attributes)) &amp;&amp;
+</span>56 <span style=''></span><span style='background: #F0ADAD'>	  ((namespaces eq oq.namespaces) || (namespaces == oq.namespaces)) // only checks after running equals == instanceof checks ++
+</span>57 <span style=''></span><span style='background: #F0ADAD'>	)
+</span>58 <span style=''></span><span style='background: #F0ADAD'>	true
+</span>59 <span style=''></span><span style='background: #F0ADAD'>      else
+</span>60 <span style=''></span><span style='background: #F0ADAD'>	false</span><span style=''>
+</span>61 <span style=''>    case _ =&gt; </span><span style='background: #F0ADAD'>scales.utils.error(&quot;Cannot compare an ElemKey to anything else other than a ElemKey&quot;)</span><span style=''>
+</span>62 <span style=''>  }
+</span>63 <span style=''>
+</span>64 <span style=''>  /**
+</span>65 <span style=''>   * When non 0 it has been calculated
+</span>66 <span style=''>   */ 
+</span>67 <span style=''>  var lastHash : Int = </span><span style='background: #AEF1AE'>0</span><span style=''>
+</span>68 <span style=''>
+</span>69 <span style=''>  override def hashCode() : Int = {
+</span>70 <span style=''>    if (</span><span style='background: #AEF1AE'>lastHash != 0</span><span style=''>) </span><span style='background: #AEF1AE'>return lastHash</span><span style=''>
+</span>71 <span style=''>
+</span>72 <span style=''>    var hs = </span><span style='background: #AEF1AE'>1</span><span style=''>
+</span>73 <span style=''>    hs = </span><span style='background: #AEF1AE'>(hs * 31) + nameHash</span><span style=''>
+</span>74 <span style=''>    hs = </span><span style='background: #AEF1AE'>(hs * 31) + (
+</span>75 <span style=''></span><span style='background: #AEF1AE'>      if (emptyAttributes eq attributes)
+</span>76 <span style=''></span><span style='background: #AEF1AE'>	emptyAttributesHash // don't do it more than once
+</span>77 <span style=''></span><span style='background: #AEF1AE'>      else
+</span>78 <span style=''></span><span style='background: #AEF1AE'>	</span><span style='background: #F0ADAD'>attributes.hashCode</span><span style='background: #AEF1AE'>
+</span>79 <span style=''></span><span style='background: #AEF1AE'>      )</span><span style=''>
+</span>80 <span style=''>    hs = </span><span style='background: #AEF1AE'>(hs * 31) + (
+</span>81 <span style=''></span><span style='background: #AEF1AE'>      if (namespaces eq emptyNamespaces)
+</span>82 <span style=''></span><span style='background: #AEF1AE'>	emptyNamespacesHash // don't do it more than once
+</span>83 <span style=''></span><span style='background: #AEF1AE'>      else
+</span>84 <span style=''></span><span style='background: #AEF1AE'>	</span><span style='background: #F0ADAD'>namespaces.hashCode</span><span style='background: #AEF1AE'>
+</span>85 <span style=''></span><span style='background: #AEF1AE'>      )</span><span style=''>
+</span>86 <span style=''>
+</span>87 <span style=''>    </span><span style='background: #AEF1AE'>lastHash = hs</span><span style=''>
+</span>88 <span style=''>    hs    
+</span>89 <span style=''>  }
+</span>90 <span style=''>}
+</span>91 <span style=''>
+</span>92 <span style=''>
+</span>93 <span style=''>/**
+</span>94 <span style=''> * Provides a key that also checks ===, used in caching where you
+</span>95 <span style=''> * want to remove all collision possibilities.
+</span>96 <span style=''> *
+</span>97 <span style=''> * Note to reduce allocation costs its very mutable, use QName directly when
+</span>98 <span style=''> * possible.  Note here the allocation costs refer more to the gc hit of the
+</span>99 <span style=''> * extra allocations that are then directly thrown away.
+</span>100 <span style=''> *
+</span>101 <span style=''> * No QNames were hurt during the use of this class.
+</span>102 <span style=''> */
+</span>103 <span style=''>final class FullEqualQNameKey() {
+</span>104 <span style=''>  
+</span>105 <span style=''>  // Some also adds creation cost
+</span>106 <span style=''>  var prefix : String = _
+</span>107 <span style=''>  var local : String = _
+</span>108 <span style=''>  var namespace : String = _  
+</span>109 <span style=''>
+</span>110 <span style=''>  /**
+</span>111 <span style=''>   * Makes a copy suitable for caching.
+</span>112 <span style=''>   */ 
+</span>113 <span style=''>  @inline def copy = {
+</span>114 <span style=''>    val n = </span><span style='background: #AEF1AE'>new FullEqualQNameKey()</span><span style=''>
+</span>115 <span style=''>    </span><span style='background: #AEF1AE'>n.prefix = prefix</span><span style=''>
+</span>116 <span style=''>    </span><span style='background: #AEF1AE'>n.local = local</span><span style=''>
+</span>117 <span style=''>    </span><span style='background: #AEF1AE'>n.namespace = namespace</span><span style=''>
+</span>118 <span style=''>    </span><span style='background: #AEF1AE'>n.lastHash = lastHash</span><span style=''>
+</span>119 <span style=''>    n
+</span>120 <span style=''>  }
+</span>121 <span style=''>
+</span>122 <span style=''>  @inline def set( qname : QName ) = {
+</span>123 <span style=''>    </span><span style='background: #F0ADAD'>prefix = qname.prefix.getOrElse(null:String)</span><span style=''>
+</span>124 <span style=''>    </span><span style='background: #F0ADAD'>local = qname.local</span><span style=''>
+</span>125 <span style=''>    </span><span style='background: #F0ADAD'>namespace = qname.namespace.uri</span><span style=''>
+</span>126 <span style=''>    </span><span style='background: #F0ADAD'>lastHash = 0</span><span style=''>
+</span>127 <span style=''>    </span><span style='background: #F0ADAD'>hashCode</span><span style=''>
+</span>128 <span style=''>    this
+</span>129 <span style=''>  }
+</span>130 <span style=''>
+</span>131 <span style=''>  @inline def setNoNamespaceQName( nlocal : String ) = {
+</span>132 <span style=''>    </span><span style='background: #AEF1AE'>prefix = null:String</span><span style=''>
+</span>133 <span style=''>    </span><span style='background: #AEF1AE'>local = nlocal</span><span style=''>
+</span>134 <span style=''>    </span><span style='background: #AEF1AE'>namespace = &quot;&quot;</span><span style=''>//Default.noNamespace
+</span>135 <span style=''>    </span><span style='background: #AEF1AE'>lastHash = 0</span><span style=''>
+</span>136 <span style=''>    </span><span style='background: #AEF1AE'>hashCode</span><span style=''>
+</span>137 <span style=''>    this
+</span>138 <span style=''>  }
+</span>139 <span style=''>
+</span>140 <span style=''>  @inline def setUnprefixedQName( nlocal : String, nnamespace : String ) = {
+</span>141 <span style=''>    </span><span style='background: #AEF1AE'>prefix = null:String</span><span style=''>
+</span>142 <span style=''>    </span><span style='background: #AEF1AE'>local = nlocal</span><span style=''>
+</span>143 <span style=''>    </span><span style='background: #AEF1AE'>namespace = nnamespace</span><span style=''>
+</span>144 <span style=''>    </span><span style='background: #AEF1AE'>lastHash = 0</span><span style=''>
+</span>145 <span style=''>    </span><span style='background: #AEF1AE'>hashCode</span><span style=''>
+</span>146 <span style=''>    this
+</span>147 <span style=''>  }
+</span>148 <span style=''>
+</span>149 <span style=''>  @inline def setPrefixedQName( nlocal : String, nnamespace : String, nprefix : String ) = {
+</span>150 <span style=''>    </span><span style='background: #AEF1AE'>prefix = nprefix</span><span style=''>
+</span>151 <span style=''>    </span><span style='background: #AEF1AE'>local = nlocal</span><span style=''>
+</span>152 <span style=''>    </span><span style='background: #AEF1AE'>namespace = nnamespace</span><span style=''>
+</span>153 <span style=''>    </span><span style='background: #AEF1AE'>lastHash = 0</span><span style=''>
+</span>154 <span style=''>    </span><span style='background: #AEF1AE'>hashCode</span><span style=''>
+</span>155 <span style=''>    this
+</span>156 <span style=''>  }
+</span>157 <span style=''>
+</span>158 <span style=''>  def =:=( other : FullEqualQNameKey ) =
+</span>159 <span style=''>    if (</span><span style='background: #AEF1AE'>this eq other</span><span style=''>) </span><span style='background: #F0ADAD'>true</span><span style=''>
+</span>160 <span style=''>    else
+</span>161 <span style=''>    (</span><span style='background: #AEF1AE'>other.local == local &amp;&amp; namespace == other.namespace</span><span style=''>)
+</span>162 <span style=''>
+</span>163 <span style=''>  override def equals( other : Any ) = other match {
+</span>164 <span style=''>    case oq : FullEqualQNameKey =&gt;
+</span>165 <span style=''>      </span><span style='background: #AEF1AE'>if (this eq oq) </span><span style='background: #F0ADAD'>true</span><span style='background: #AEF1AE'>
+</span>166 <span style=''></span><span style='background: #AEF1AE'>      else
+</span>167 <span style=''></span><span style='background: #AEF1AE'>      if ((oq.lastHash == lastHash) &amp;&amp; (this =:= oq)) 
+</span>168 <span style=''></span><span style='background: #AEF1AE'>	if ((oq.prefix ne null) &amp;&amp; (prefix ne null))
+</span>169 <span style=''></span><span style='background: #AEF1AE'>	  prefix == oq.prefix
+</span>170 <span style=''></span><span style='background: #AEF1AE'>	else
+</span>171 <span style=''></span><span style='background: #AEF1AE'>	  ((oq.prefix eq null) &amp;&amp; (prefix eq null))
+</span>172 <span style=''></span><span style='background: #AEF1AE'>      else 
+</span>173 <span style=''></span><span style='background: #AEF1AE'>	</span><span style='background: #F0ADAD'>false</span><span style=''>
+</span>174 <span style=''>    case _ =&gt; </span><span style='background: #F0ADAD'>scales.utils.error(&quot;Cannot compare a FullEqualQNameKey to anything else other than a FullEqualQNameKey&quot;)</span><span style=''>
+</span>175 <span style=''>  }
+</span>176 <span style=''>
+</span>177 <span style=''>  /**
+</span>178 <span style=''>   * If its non 0 then its the last caclulated hash since a setXX
+</span>179 <span style=''>   */ 
+</span>180 <span style=''>  var lastHash : Int = </span><span style='background: #AEF1AE'>0</span><span style=''>
+</span>181 <span style=''>
+</span>182 <span style=''>  override def hashCode() : Int = {
+</span>183 <span style=''>    if (</span><span style='background: #AEF1AE'>lastHash != 0</span><span style=''>) </span><span style='background: #AEF1AE'>return lastHash</span><span style=''>
+</span>184 <span style=''>
+</span>185 <span style=''>    var hs = </span><span style='background: #AEF1AE'>1</span><span style=''>
+</span>186 <span style=''>    hs = </span><span style='background: #AEF1AE'>(hs * 31) + (
+</span>187 <span style=''></span><span style='background: #AEF1AE'>      if (prefix eq null) 1
+</span>188 <span style=''></span><span style='background: #AEF1AE'>      else prefix.hashCode
+</span>189 <span style=''></span><span style='background: #AEF1AE'>      )</span><span style=''>
+</span>190 <span style=''>    hs = </span><span style='background: #AEF1AE'>(hs * 31) + local.hashCode</span><span style=''>
+</span>191 <span style=''>    hs = </span><span style='background: #AEF1AE'>(hs * 31) + namespace.hashCode</span><span style=''>
+</span>192 <span style=''>    </span><span style='background: #AEF1AE'>lastHash = hs</span><span style=''>
+</span>193 <span style=''>    hs
+</span>194 <span style=''>  }
+</span>195 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          7
+        </td>
+        <td>
+          3145
+        </td>
+        <td>
+          152
+          -
+          176
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.hashCode
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.`package`.emptyAttributes.hashCode()
+        </td>
+      </tr><tr>
+        <td>
+          8
+        </td>
+        <td>
+          3146
+        </td>
+        <td>
+          205
+          -
+          229
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.GenMapLike.hashCode
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.`package`.emptyNamespaces.hashCode()
+        </td>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          3147
+        </td>
+        <td>
+          423
+          -
+          424
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          24
+        </td>
+        <td>
+          3148
+        </td>
+        <td>
+          643
+          -
+          659
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.ElemKey.name_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          this.name_=(name)
+        </td>
+      </tr><tr>
+        <td>
+          25
+        </td>
+        <td>
+          3149
+        </td>
+        <td>
+          664
+          -
+          692
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.ElemKey.attributes_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          this.attributes_=(attributes)
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          3150
+        </td>
+        <td>
+          697
+          -
+          725
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.ElemKey.namespaces_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          this.namespaces_=(namespaces)
+        </td>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          3151
+        </td>
+        <td>
+          735
+          -
+          748
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          nameHash.==(0)
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          3152
+        </td>
+        <td>
+          772
+          -
+          785
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.QName.hashCode
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          name.hashCode()
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          3153
+        </td>
+        <td>
+          756
+          -
+          785
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.ElemKey.nameHash_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          this.nameHash_=(name.hashCode())
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          3154
+        </td>
+        <td>
+          756
+          -
+          785
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.impl.ElemKey.nameHash_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          this.nameHash_=(name.hashCode())
+        </td>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          3155
+        </td>
+        <td>
+          801
+          -
+          825
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.ElemKey.nameHash_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          this.nameHash_=(nameHash)
+        </td>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          3156
+        </td>
+        <td>
+          801
+          -
+          825
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.impl.ElemKey.nameHash_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          this.nameHash_=(nameHash)
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          3157
+        </td>
+        <td>
+          835
+          -
+          847
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.ElemKey.lastHash_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ElemKey.this.lastHash_=(0)
+        </td>
+      </tr><tr>
+        <td>
+          35
+        </td>
+        <td>
+          3158
+        </td>
+        <td>
+          869
+          -
+          877
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.ElemKey.hashCode
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ElemKey.this.hashCode()
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          3159
+        </td>
+        <td>
+          919
+          -
+          930
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.ElemKey.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new ElemKey()
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          3160
+        </td>
+        <td>
+          944
+          -
+          948
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.ElemKey.name
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ElemKey.this.name
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          3161
+        </td>
+        <td>
+          935
+          -
+          948
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.ElemKey.name_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          r.name_=(ElemKey.this.name)
+        </td>
+      </tr><tr>
+        <td>
+          42
+        </td>
+        <td>
+          3162
+        </td>
+        <td>
+          968
+          -
+          978
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.ElemKey.attributes
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ElemKey.this.attributes
+        </td>
+      </tr><tr>
+        <td>
+          42
+        </td>
+        <td>
+          3163
+        </td>
+        <td>
+          953
+          -
+          978
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.ElemKey.attributes_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          r.attributes_=(ElemKey.this.attributes)
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          3164
+        </td>
+        <td>
+          998
+          -
+          1008
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.ElemKey.namespaces
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ElemKey.this.namespaces
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          3165
+        </td>
+        <td>
+          983
+          -
+          1008
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.ElemKey.namespaces_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          r.namespaces_=(ElemKey.this.namespaces)
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          3166
+        </td>
+        <td>
+          1026
+          -
+          1034
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.ElemKey.lastHash
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ElemKey.this.lastHash
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          3167
+        </td>
+        <td>
+          1013
+          -
+          1034
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.ElemKey.lastHash_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          r.lastHash_=(ElemKey.this.lastHash)
+        </td>
+      </tr><tr>
+        <td>
+          53
+        </td>
+        <td>
+          3168
+        </td>
+        <td>
+          1285
+          -
+          1296
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.ElemKey.lastHash
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          oq.lastHash
+        </td>
+      </tr><tr>
+        <td>
+          53
+        </td>
+        <td>
+          3186
+        </td>
+        <td>
+          1268
+          -
+          1574
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          if (ElemKey.this.lastHash.==(oq.lastHash).&amp;&amp;(ElemKey.this.name.eq(oq.name).||(ElemKey.this.name.====(oq.name))).&amp;&amp;(ElemKey.this.attributes.eq(oq.attributes).||(ElemKey.this.attributes.==(oq.attributes))).&amp;&amp;(ElemKey.this.namespaces.eq(oq.namespaces).||(ElemKey.this.namespaces.==(oq.namespaces))))
+  true
+else
+  false
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          3169
+        </td>
+        <td>
+          1312
+          -
+          1319
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.ElemKey.name
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          oq.name
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          3170
+        </td>
+        <td>
+          1335
+          -
+          1342
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.ElemKey.name
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          oq.name
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          3171
+        </td>
+        <td>
+          1325
+          -
+          1342
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.QName.====
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ElemKey.this.name.====(oq.name)
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          3172
+        </td>
+        <td>
+          1303
+          -
+          1343
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.||
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ElemKey.this.name.eq(oq.name).||(ElemKey.this.name.====(oq.name))
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          3173
+        </td>
+        <td>
+          1368
+          -
+          1381
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.ElemKey.attributes
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          oq.attributes
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          3174
+        </td>
+        <td>
+          1401
+          -
+          1414
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.ElemKey.attributes
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          oq.attributes
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          3175
+        </td>
+        <td>
+          1387
+          -
+          1414
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ElemKey.this.attributes.==(oq.attributes)
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          3176
+        </td>
+        <td>
+          1353
+          -
+          1415
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.||
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ElemKey.this.attributes.eq(oq.attributes).||(ElemKey.this.attributes.==(oq.attributes))
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          3181
+        </td>
+        <td>
+          1272
+          -
+          1487
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ElemKey.this.lastHash.==(oq.lastHash).&amp;&amp;(ElemKey.this.name.eq(oq.name).||(ElemKey.this.name.====(oq.name))).&amp;&amp;(ElemKey.this.attributes.eq(oq.attributes).||(ElemKey.this.attributes.==(oq.attributes))).&amp;&amp;(ElemKey.this.namespaces.eq(oq.namespaces).||(ElemKey.this.namespaces.==(oq.namespaces)))
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          3177
+        </td>
+        <td>
+          1439
+          -
+          1452
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.ElemKey.namespaces
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          oq.namespaces
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          3178
+        </td>
+        <td>
+          1472
+          -
+          1485
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.ElemKey.namespaces
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          oq.namespaces
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          3179
+        </td>
+        <td>
+          1458
+          -
+          1485
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ElemKey.this.namespaces.==(oq.namespaces)
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          3180
+        </td>
+        <td>
+          1424
+          -
+          1486
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.||
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ElemKey.this.namespaces.eq(oq.namespaces).||(ElemKey.this.namespaces.==(oq.namespaces))
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          3182
+        </td>
+        <td>
+          1552
+          -
+          1556
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          3183
+        </td>
+        <td>
+          1552
+          -
+          1556
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          60
+        </td>
+        <td>
+          3184
+        </td>
+        <td>
+          1569
+          -
+          1574
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          60
+        </td>
+        <td>
+          3185
+        </td>
+        <td>
+          1569
+          -
+          1574
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          61
+        </td>
+        <td>
+          3187
+        </td>
+        <td>
+          1589
+          -
+          1674
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.iteratee.Iteratees.error
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.utils.`package`.error(&quot;Cannot compare an ElemKey to anything else other than a ElemKey&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          61
+        </td>
+        <td>
+          3188
+        </td>
+        <td>
+          1589
+          -
+          1674
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.iteratee.Iteratees.error
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.utils.`package`.error(&quot;Cannot compare an ElemKey to anything else other than a ElemKey&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          67
+        </td>
+        <td>
+          3189
+        </td>
+        <td>
+          1755
+          -
+          1756
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          3190
+        </td>
+        <td>
+          1802
+          -
+          1815
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.!=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ElemKey.this.lastHash.!=(0)
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          3191
+        </td>
+        <td>
+          1824
+          -
+          1832
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.ElemKey.lastHash
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ElemKey.this.lastHash
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          3192
+        </td>
+        <td>
+          1817
+          -
+          1832
+        </td>
+        <td>
+          Return
+        </td>
+        <td>
+          scales.xml.impl.ElemKey.hashCode
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          return ElemKey.this.lastHash
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          3193
+        </td>
+        <td>
+          1798
+          -
+          1798
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          3194
+        </td>
+        <td>
+          1798
+          -
+          1798
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          72
+        </td>
+        <td>
+          3195
+        </td>
+        <td>
+          1847
+          -
+          1848
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          3196
+        </td>
+        <td>
+          1864
+          -
+          1866
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          31
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          3197
+        </td>
+        <td>
+          1870
+          -
+          1878
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.ElemKey.nameHash
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ElemKey.this.nameHash
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          3198
+        </td>
+        <td>
+          1858
+          -
+          1878
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          hs.*(31).+(ElemKey.this.nameHash)
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          3199
+        </td>
+        <td>
+          1894
+          -
+          1896
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          31
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          3206
+        </td>
+        <td>
+          1888
+          -
+          2033
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          hs.*(31).+(if (scales.xml.`package`.emptyAttributes.eq(ElemKey.this.attributes))
+  DefaultHashes.emptyAttributesHash
+else
+  ElemKey.this.attributes.hashCode())
+        </td>
+      </tr><tr>
+        <td>
+          75
+        </td>
+        <td>
+          3200
+        </td>
+        <td>
+          1931
+          -
+          1941
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.ElemKey.attributes
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ElemKey.this.attributes
+        </td>
+      </tr><tr>
+        <td>
+          75
+        </td>
+        <td>
+          3201
+        </td>
+        <td>
+          1912
+          -
+          1941
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.`package`.emptyAttributes.eq(ElemKey.this.attributes)
+        </td>
+      </tr><tr>
+        <td>
+          76
+        </td>
+        <td>
+          3202
+        </td>
+        <td>
+          1944
+          -
+          1963
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.DefaultHashes.emptyAttributesHash
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          DefaultHashes.emptyAttributesHash
+        </td>
+      </tr><tr>
+        <td>
+          76
+        </td>
+        <td>
+          3203
+        </td>
+        <td>
+          1944
+          -
+          1963
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.impl.DefaultHashes.emptyAttributesHash
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          DefaultHashes.emptyAttributesHash
+        </td>
+      </tr><tr>
+        <td>
+          78
+        </td>
+        <td>
+          3204
+        </td>
+        <td>
+          2006
+          -
+          2025
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.hashCode
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ElemKey.this.attributes.hashCode()
+        </td>
+      </tr><tr>
+        <td>
+          78
+        </td>
+        <td>
+          3205
+        </td>
+        <td>
+          2006
+          -
+          2025
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          java.lang.Object.hashCode
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ElemKey.this.attributes.hashCode()
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          3207
+        </td>
+        <td>
+          2049
+          -
+          2051
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          31
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          3214
+        </td>
+        <td>
+          2043
+          -
+          2188
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          hs.*(31).+(if (ElemKey.this.namespaces.eq(scales.xml.`package`.emptyNamespaces))
+  DefaultHashes.emptyNamespacesHash
+else
+  ElemKey.this.namespaces.hashCode())
+        </td>
+      </tr><tr>
+        <td>
+          81
+        </td>
+        <td>
+          3208
+        </td>
+        <td>
+          2081
+          -
+          2096
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.XmlTypes.emptyNamespaces
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.`package`.emptyNamespaces
+        </td>
+      </tr><tr>
+        <td>
+          81
+        </td>
+        <td>
+          3209
+        </td>
+        <td>
+          2067
+          -
+          2096
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ElemKey.this.namespaces.eq(scales.xml.`package`.emptyNamespaces)
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          3210
+        </td>
+        <td>
+          2099
+          -
+          2118
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.DefaultHashes.emptyNamespacesHash
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          DefaultHashes.emptyNamespacesHash
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          3211
+        </td>
+        <td>
+          2099
+          -
+          2118
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.impl.DefaultHashes.emptyNamespacesHash
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          DefaultHashes.emptyNamespacesHash
+        </td>
+      </tr><tr>
+        <td>
+          84
+        </td>
+        <td>
+          3212
+        </td>
+        <td>
+          2161
+          -
+          2180
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.GenMapLike.hashCode
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ElemKey.this.namespaces.hashCode()
+        </td>
+      </tr><tr>
+        <td>
+          84
+        </td>
+        <td>
+          3213
+        </td>
+        <td>
+          2161
+          -
+          2180
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.collection.GenMapLike.hashCode
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ElemKey.this.namespaces.hashCode()
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          3215
+        </td>
+        <td>
+          2194
+          -
+          2207
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.ElemKey.lastHash_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ElemKey.this.lastHash_=(hs)
+        </td>
+      </tr><tr>
+        <td>
+          114
+        </td>
+        <td>
+          3216
+        </td>
+        <td>
+          2860
+          -
+          2883
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new FullEqualQNameKey()
+        </td>
+      </tr><tr>
+        <td>
+          115
+        </td>
+        <td>
+          3217
+        </td>
+        <td>
+          2899
+          -
+          2905
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.prefix
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FullEqualQNameKey.this.prefix
+        </td>
+      </tr><tr>
+        <td>
+          115
+        </td>
+        <td>
+          3218
+        </td>
+        <td>
+          2888
+          -
+          2905
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.prefix_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          n.prefix_=(FullEqualQNameKey.this.prefix)
+        </td>
+      </tr><tr>
+        <td>
+          116
+        </td>
+        <td>
+          3219
+        </td>
+        <td>
+          2920
+          -
+          2925
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.local
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FullEqualQNameKey.this.local
+        </td>
+      </tr><tr>
+        <td>
+          116
+        </td>
+        <td>
+          3220
+        </td>
+        <td>
+          2910
+          -
+          2925
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.local_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          n.local_=(FullEqualQNameKey.this.local)
+        </td>
+      </tr><tr>
+        <td>
+          117
+        </td>
+        <td>
+          3221
+        </td>
+        <td>
+          2944
+          -
+          2953
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.namespace
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FullEqualQNameKey.this.namespace
+        </td>
+      </tr><tr>
+        <td>
+          117
+        </td>
+        <td>
+          3222
+        </td>
+        <td>
+          2930
+          -
+          2953
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.namespace_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          n.namespace_=(FullEqualQNameKey.this.namespace)
+        </td>
+      </tr><tr>
+        <td>
+          118
+        </td>
+        <td>
+          3223
+        </td>
+        <td>
+          2971
+          -
+          2979
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.lastHash
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FullEqualQNameKey.this.lastHash
+        </td>
+      </tr><tr>
+        <td>
+          118
+        </td>
+        <td>
+          3224
+        </td>
+        <td>
+          2958
+          -
+          2979
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.lastHash_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          n.lastHash_=(FullEqualQNameKey.this.lastHash)
+        </td>
+      </tr><tr>
+        <td>
+          123
+        </td>
+        <td>
+          3225
+        </td>
+        <td>
+          3066
+          -
+          3070
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          123
+        </td>
+        <td>
+          3226
+        </td>
+        <td>
+          3043
+          -
+          3078
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.getOrElse
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          qname.prefix.getOrElse[String]((null: String))
+        </td>
+      </tr><tr>
+        <td>
+          123
+        </td>
+        <td>
+          3227
+        </td>
+        <td>
+          3034
+          -
+          3078
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.prefix_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          FullEqualQNameKey.this.prefix_=(qname.prefix.getOrElse[String]((null: String)))
+        </td>
+      </tr><tr>
+        <td>
+          124
+        </td>
+        <td>
+          3228
+        </td>
+        <td>
+          3091
+          -
+          3102
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.QName.local
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          qname.local
+        </td>
+      </tr><tr>
+        <td>
+          124
+        </td>
+        <td>
+          3229
+        </td>
+        <td>
+          3083
+          -
+          3102
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.local_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          FullEqualQNameKey.this.local_=(qname.local)
+        </td>
+      </tr><tr>
+        <td>
+          125
+        </td>
+        <td>
+          3230
+        </td>
+        <td>
+          3119
+          -
+          3138
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.UnderlyingNamespace.uri
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          qname.namespace.uri
+        </td>
+      </tr><tr>
+        <td>
+          125
+        </td>
+        <td>
+          3231
+        </td>
+        <td>
+          3107
+          -
+          3138
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.namespace_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          FullEqualQNameKey.this.namespace_=(qname.namespace.uri)
+        </td>
+      </tr><tr>
+        <td>
+          126
+        </td>
+        <td>
+          3232
+        </td>
+        <td>
+          3143
+          -
+          3155
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.lastHash_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          FullEqualQNameKey.this.lastHash_=(0)
+        </td>
+      </tr><tr>
+        <td>
+          127
+        </td>
+        <td>
+          3233
+        </td>
+        <td>
+          3160
+          -
+          3168
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.hashCode
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          FullEqualQNameKey.this.hashCode()
+        </td>
+      </tr><tr>
+        <td>
+          132
+        </td>
+        <td>
+          3234
+        </td>
+        <td>
+          3253
+          -
+          3257
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          132
+        </td>
+        <td>
+          3235
+        </td>
+        <td>
+          3244
+          -
+          3264
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.prefix_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FullEqualQNameKey.this.prefix_=((null: String))
+        </td>
+      </tr><tr>
+        <td>
+          133
+        </td>
+        <td>
+          3236
+        </td>
+        <td>
+          3269
+          -
+          3283
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.local_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FullEqualQNameKey.this.local_=(nlocal)
+        </td>
+      </tr><tr>
+        <td>
+          134
+        </td>
+        <td>
+          3237
+        </td>
+        <td>
+          3288
+          -
+          3302
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.namespace_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FullEqualQNameKey.this.namespace_=(&quot;&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          135
+        </td>
+        <td>
+          3238
+        </td>
+        <td>
+          3328
+          -
+          3340
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.lastHash_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FullEqualQNameKey.this.lastHash_=(0)
+        </td>
+      </tr><tr>
+        <td>
+          136
+        </td>
+        <td>
+          3239
+        </td>
+        <td>
+          3345
+          -
+          3353
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.hashCode
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FullEqualQNameKey.this.hashCode()
+        </td>
+      </tr><tr>
+        <td>
+          141
+        </td>
+        <td>
+          3240
+        </td>
+        <td>
+          3458
+          -
+          3462
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          141
+        </td>
+        <td>
+          3241
+        </td>
+        <td>
+          3449
+          -
+          3469
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.prefix_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FullEqualQNameKey.this.prefix_=((null: String))
+        </td>
+      </tr><tr>
+        <td>
+          142
+        </td>
+        <td>
+          3242
+        </td>
+        <td>
+          3474
+          -
+          3488
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.local_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FullEqualQNameKey.this.local_=(nlocal)
+        </td>
+      </tr><tr>
+        <td>
+          143
+        </td>
+        <td>
+          3243
+        </td>
+        <td>
+          3493
+          -
+          3515
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.namespace_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FullEqualQNameKey.this.namespace_=(nnamespace)
+        </td>
+      </tr><tr>
+        <td>
+          144
+        </td>
+        <td>
+          3244
+        </td>
+        <td>
+          3520
+          -
+          3532
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.lastHash_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FullEqualQNameKey.this.lastHash_=(0)
+        </td>
+      </tr><tr>
+        <td>
+          145
+        </td>
+        <td>
+          3245
+        </td>
+        <td>
+          3537
+          -
+          3545
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.hashCode
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FullEqualQNameKey.this.hashCode()
+        </td>
+      </tr><tr>
+        <td>
+          150
+        </td>
+        <td>
+          3246
+        </td>
+        <td>
+          3657
+          -
+          3673
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.prefix_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FullEqualQNameKey.this.prefix_=(nprefix)
+        </td>
+      </tr><tr>
+        <td>
+          151
+        </td>
+        <td>
+          3247
+        </td>
+        <td>
+          3678
+          -
+          3692
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.local_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FullEqualQNameKey.this.local_=(nlocal)
+        </td>
+      </tr><tr>
+        <td>
+          152
+        </td>
+        <td>
+          3248
+        </td>
+        <td>
+          3697
+          -
+          3719
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.namespace_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FullEqualQNameKey.this.namespace_=(nnamespace)
+        </td>
+      </tr><tr>
+        <td>
+          153
+        </td>
+        <td>
+          3249
+        </td>
+        <td>
+          3724
+          -
+          3736
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.lastHash_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FullEqualQNameKey.this.lastHash_=(0)
+        </td>
+      </tr><tr>
+        <td>
+          154
+        </td>
+        <td>
+          3250
+        </td>
+        <td>
+          3741
+          -
+          3749
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.hashCode
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FullEqualQNameKey.this.hashCode()
+        </td>
+      </tr><tr>
+        <td>
+          159
+        </td>
+        <td>
+          3251
+        </td>
+        <td>
+          3813
+          -
+          3826
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          this.eq(other)
+        </td>
+      </tr><tr>
+        <td>
+          159
+        </td>
+        <td>
+          3252
+        </td>
+        <td>
+          3828
+          -
+          3832
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          159
+        </td>
+        <td>
+          3253
+        </td>
+        <td>
+          3828
+          -
+          3832
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          161
+        </td>
+        <td>
+          3254
+        </td>
+        <td>
+          3862
+          -
+          3867
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.local
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FullEqualQNameKey.this.local
+        </td>
+      </tr><tr>
+        <td>
+          161
+        </td>
+        <td>
+          3255
+        </td>
+        <td>
+          3884
+          -
+          3899
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.namespace
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          other.namespace
+        </td>
+      </tr><tr>
+        <td>
+          161
+        </td>
+        <td>
+          3256
+        </td>
+        <td>
+          3871
+          -
+          3899
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FullEqualQNameKey.this.namespace.==(other.namespace)
+        </td>
+      </tr><tr>
+        <td>
+          161
+        </td>
+        <td>
+          3257
+        </td>
+        <td>
+          3847
+          -
+          3899
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          other.local.==(FullEqualQNameKey.this.local).&amp;&amp;(FullEqualQNameKey.this.namespace.==(other.namespace))
+        </td>
+      </tr><tr>
+        <td>
+          161
+        </td>
+        <td>
+          3258
+        </td>
+        <td>
+          3847
+          -
+          3899
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          other.local.==(FullEqualQNameKey.this.local).&amp;&amp;(FullEqualQNameKey.this.namespace.==(other.namespace))
+        </td>
+      </tr><tr>
+        <td>
+          165
+        </td>
+        <td>
+          3259
+        </td>
+        <td>
+          4000
+          -
+          4010
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          this.eq(oq)
+        </td>
+      </tr><tr>
+        <td>
+          165
+        </td>
+        <td>
+          3260
+        </td>
+        <td>
+          4012
+          -
+          4016
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          165
+        </td>
+        <td>
+          3261
+        </td>
+        <td>
+          4012
+          -
+          4016
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          165
+        </td>
+        <td>
+          3279
+        </td>
+        <td>
+          3996
+          -
+          4221
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (this.eq(oq))
+  true
+else
+  if (oq.lastHash.==(FullEqualQNameKey.this.lastHash).&amp;&amp;(this.=:=(oq)))
+    if (oq.prefix.ne(null).&amp;&amp;(FullEqualQNameKey.this.prefix.ne(null)))
+      FullEqualQNameKey.this.prefix.==(oq.prefix)
+    else
+      oq.prefix.eq(null).&amp;&amp;(FullEqualQNameKey.this.prefix.eq(null))
+  else
+    false
+        </td>
+      </tr><tr>
+        <td>
+          167
+        </td>
+        <td>
+          3262
+        </td>
+        <td>
+          4054
+          -
+          4062
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.lastHash
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FullEqualQNameKey.this.lastHash
+        </td>
+      </tr><tr>
+        <td>
+          167
+        </td>
+        <td>
+          3263
+        </td>
+        <td>
+          4068
+          -
+          4079
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.=:=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          this.=:=(oq)
+        </td>
+      </tr><tr>
+        <td>
+          167
+        </td>
+        <td>
+          3264
+        </td>
+        <td>
+          4038
+          -
+          4080
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          oq.lastHash.==(FullEqualQNameKey.this.lastHash).&amp;&amp;(this.=:=(oq))
+        </td>
+      </tr><tr>
+        <td>
+          167
+        </td>
+        <td>
+          3278
+        </td>
+        <td>
+          4034
+          -
+          4221
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (oq.lastHash.==(FullEqualQNameKey.this.lastHash).&amp;&amp;(this.=:=(oq)))
+  if (oq.prefix.ne(null).&amp;&amp;(FullEqualQNameKey.this.prefix.ne(null)))
+    FullEqualQNameKey.this.prefix.==(oq.prefix)
+  else
+    oq.prefix.eq(null).&amp;&amp;(FullEqualQNameKey.this.prefix.eq(null))
+else
+  false
+        </td>
+      </tr><tr>
+        <td>
+          168
+        </td>
+        <td>
+          3265
+        </td>
+        <td>
+          4102
+          -
+          4106
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          168
+        </td>
+        <td>
+          3266
+        </td>
+        <td>
+          4112
+          -
+          4126
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.ne
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FullEqualQNameKey.this.prefix.ne(null)
+        </td>
+      </tr><tr>
+        <td>
+          168
+        </td>
+        <td>
+          3267
+        </td>
+        <td>
+          4088
+          -
+          4127
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          oq.prefix.ne(null).&amp;&amp;(FullEqualQNameKey.this.prefix.ne(null))
+        </td>
+      </tr><tr>
+        <td>
+          168
+        </td>
+        <td>
+          3275
+        </td>
+        <td>
+          4084
+          -
+          4202
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (oq.prefix.ne(null).&amp;&amp;(FullEqualQNameKey.this.prefix.ne(null)))
+  FullEqualQNameKey.this.prefix.==(oq.prefix)
+else
+  oq.prefix.eq(null).&amp;&amp;(FullEqualQNameKey.this.prefix.eq(null))
+        </td>
+      </tr><tr>
+        <td>
+          169
+        </td>
+        <td>
+          3268
+        </td>
+        <td>
+          4142
+          -
+          4151
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.prefix
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          oq.prefix
+        </td>
+      </tr><tr>
+        <td>
+          169
+        </td>
+        <td>
+          3269
+        </td>
+        <td>
+          4132
+          -
+          4151
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FullEqualQNameKey.this.prefix.==(oq.prefix)
+        </td>
+      </tr><tr>
+        <td>
+          169
+        </td>
+        <td>
+          3270
+        </td>
+        <td>
+          4132
+          -
+          4151
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FullEqualQNameKey.this.prefix.==(oq.prefix)
+        </td>
+      </tr><tr>
+        <td>
+          171
+        </td>
+        <td>
+          3271
+        </td>
+        <td>
+          4176
+          -
+          4180
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          171
+        </td>
+        <td>
+          3272
+        </td>
+        <td>
+          4186
+          -
+          4200
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FullEqualQNameKey.this.prefix.eq(null)
+        </td>
+      </tr><tr>
+        <td>
+          171
+        </td>
+        <td>
+          3273
+        </td>
+        <td>
+          4162
+          -
+          4201
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          oq.prefix.eq(null).&amp;&amp;(FullEqualQNameKey.this.prefix.eq(null))
+        </td>
+      </tr><tr>
+        <td>
+          171
+        </td>
+        <td>
+          3274
+        </td>
+        <td>
+          4162
+          -
+          4201
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          oq.prefix.eq(null).&amp;&amp;(FullEqualQNameKey.this.prefix.eq(null))
+        </td>
+      </tr><tr>
+        <td>
+          173
+        </td>
+        <td>
+          3276
+        </td>
+        <td>
+          4216
+          -
+          4221
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          173
+        </td>
+        <td>
+          3277
+        </td>
+        <td>
+          4216
+          -
+          4221
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          174
+        </td>
+        <td>
+          3280
+        </td>
+        <td>
+          4236
+          -
+          4340
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.iteratee.Iteratees.error
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.utils.`package`.error(&quot;Cannot compare a FullEqualQNameKey to anything else other than a FullEqualQNameKey&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          174
+        </td>
+        <td>
+          3281
+        </td>
+        <td>
+          4236
+          -
+          4340
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.iteratee.Iteratees.error
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.utils.`package`.error(&quot;Cannot compare a FullEqualQNameKey to anything else other than a FullEqualQNameKey&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          180
+        </td>
+        <td>
+          3282
+        </td>
+        <td>
+          4448
+          -
+          4449
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          183
+        </td>
+        <td>
+          3283
+        </td>
+        <td>
+          4495
+          -
+          4508
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.!=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FullEqualQNameKey.this.lastHash.!=(0)
+        </td>
+      </tr><tr>
+        <td>
+          183
+        </td>
+        <td>
+          3284
+        </td>
+        <td>
+          4517
+          -
+          4525
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.lastHash
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FullEqualQNameKey.this.lastHash
+        </td>
+      </tr><tr>
+        <td>
+          183
+        </td>
+        <td>
+          3285
+        </td>
+        <td>
+          4510
+          -
+          4525
+        </td>
+        <td>
+          Return
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.hashCode
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          return FullEqualQNameKey.this.lastHash
+        </td>
+      </tr><tr>
+        <td>
+          183
+        </td>
+        <td>
+          3286
+        </td>
+        <td>
+          4491
+          -
+          4491
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          183
+        </td>
+        <td>
+          3287
+        </td>
+        <td>
+          4491
+          -
+          4491
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          185
+        </td>
+        <td>
+          3288
+        </td>
+        <td>
+          4540
+          -
+          4541
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          186
+        </td>
+        <td>
+          3289
+        </td>
+        <td>
+          4557
+          -
+          4559
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          31
+        </td>
+      </tr><tr>
+        <td>
+          186
+        </td>
+        <td>
+          3295
+        </td>
+        <td>
+          4551
+          -
+          4627
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          hs.*(31).+(if (FullEqualQNameKey.this.prefix.eq(null))
+  1
+else
+  FullEqualQNameKey.this.prefix.hashCode())
+        </td>
+      </tr><tr>
+        <td>
+          187
+        </td>
+        <td>
+          3290
+        </td>
+        <td>
+          4575
+          -
+          4589
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FullEqualQNameKey.this.prefix.eq(null)
+        </td>
+      </tr><tr>
+        <td>
+          187
+        </td>
+        <td>
+          3291
+        </td>
+        <td>
+          4591
+          -
+          4592
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          187
+        </td>
+        <td>
+          3292
+        </td>
+        <td>
+          4591
+          -
+          4592
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          188
+        </td>
+        <td>
+          3293
+        </td>
+        <td>
+          4604
+          -
+          4619
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.hashCode
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FullEqualQNameKey.this.prefix.hashCode()
+        </td>
+      </tr><tr>
+        <td>
+          188
+        </td>
+        <td>
+          3294
+        </td>
+        <td>
+          4604
+          -
+          4619
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          java.lang.String.hashCode
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FullEqualQNameKey.this.prefix.hashCode()
+        </td>
+      </tr><tr>
+        <td>
+          190
+        </td>
+        <td>
+          3296
+        </td>
+        <td>
+          4643
+          -
+          4645
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          31
+        </td>
+      </tr><tr>
+        <td>
+          190
+        </td>
+        <td>
+          3297
+        </td>
+        <td>
+          4649
+          -
+          4663
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.hashCode
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FullEqualQNameKey.this.local.hashCode()
+        </td>
+      </tr><tr>
+        <td>
+          190
+        </td>
+        <td>
+          3298
+        </td>
+        <td>
+          4637
+          -
+          4663
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          hs.*(31).+(FullEqualQNameKey.this.local.hashCode())
+        </td>
+      </tr><tr>
+        <td>
+          191
+        </td>
+        <td>
+          3299
+        </td>
+        <td>
+          4679
+          -
+          4681
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          31
+        </td>
+      </tr><tr>
+        <td>
+          191
+        </td>
+        <td>
+          3300
+        </td>
+        <td>
+          4685
+          -
+          4703
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.hashCode
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FullEqualQNameKey.this.namespace.hashCode()
+        </td>
+      </tr><tr>
+        <td>
+          191
+        </td>
+        <td>
+          3301
+        </td>
+        <td>
+          4673
+          -
+          4703
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          hs.*(31).+(FullEqualQNameKey.this.namespace.hashCode())
+        </td>
+      </tr><tr>
+        <td>
+          192
+        </td>
+        <td>
+          3302
+        </td>
+        <td>
+          4708
+          -
+          4721
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.FullEqualQNameKey.lastHash_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FullEqualQNameKey.this.lastHash_=(hs)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

@@ -1,0 +1,816 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/xml/trax/Utils.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.xml.trax
+</span>2 <span style=''>
+</span>3 <span style=''>import scales.xml._
+</span>4 <span style=''>
+</span>5 <span style=''>import javax.xml.stream._
+</span>6 <span style=''>import scales.utils._
+</span>7 <span style=''>import ScalesXml._
+</span>8 <span style=''>
+</span>9 <span style=''>import javax.xml.namespace.{QName =&gt; JQName, NamespaceContext}
+</span>10 <span style=''>
+</span>11 <span style=''>import javax.xml.transform.Source
+</span>12 <span style=''>import javax.xml.transform.stax._
+</span>13 <span style=''>import javax.xml.transform.sax._
+</span>14 <span style=''>import javax.xml.transform.stream._
+</span>15 <span style=''>
+</span>16 <span style=''>object EmptyStreamLocation extends Location {
+</span>17 <span style=''>  val getCharacterOffset : Int = </span><span style='background: #AEF1AE'>-1</span><span style=''>
+</span>18 <span style=''>  val getColumnNumber : Int = </span><span style='background: #AEF1AE'>-1</span><span style=''>
+</span>19 <span style=''>  val getLineNumber : Int = </span><span style='background: #AEF1AE'>-1</span><span style=''>
+</span>20 <span style=''>  val getPublicId : String = </span><span style='background: #AEF1AE'>null</span><span style=''> : String 
+</span>21 <span style=''>  val getSystemId : String = </span><span style='background: #AEF1AE'>null</span><span style=''> : String 
+</span>22 <span style=''>}
+</span>23 <span style=''>
+</span>24 <span style=''>trait TNC extends NamespaceContext {
+</span>25 <span style=''>  val parent : TNC
+</span>26 <span style=''>
+</span>27 <span style=''>  val ns : Array[(String, String)]
+</span>28 <span style=''>}
+</span>29 <span style=''>
+</span>30 <span style=''>object EmptyNamespaceContext extends TNC {
+</span>31 <span style=''> import scala.collection.JavaConverters._
+</span>32 <span style=''>
+</span>33 <span style=''> val parent = this
+</span>34 <span style=''>   
+</span>35 <span style=''> val ns = </span><span style='background: #AEF1AE'>Array[(String,String)]()</span><span style=''> 
+</span>36 <span style=''>
+</span>37 <span style=''> def getNamespaceURI( prefix : String) : String = </span><span style='background: #F0ADAD'>&quot;&quot;</span><span style=''>
+</span>38 <span style=''> def getPrefix( namespaceURI : String) : String = </span><span style='background: #F0ADAD'>&quot;&quot;</span><span style=''>
+</span>39 <span style=''> def getPrefixes(namespaceURI : String) : java.util.Iterator[String] = </span><span style='background: #F0ADAD'>List().iterator.asJava</span><span style=''>
+</span>40 <span style=''> 
+</span>41 <span style=''>}
+</span>42 <span style=''>
+</span>43 <span style=''>/**
+</span>44 <span style=''> * Provides a namespace context, needs pushing / popping etc
+</span>45 <span style=''> */ 
+</span>46 <span style=''>object NamespaceContextFunctions {
+</span>47 <span style=''>  
+</span>48 <span style=''>  def newContext( prev : TNC, elem : Elem ) =  </span><span style='background: #AEF1AE'>new</span><span style=''> TNC {
+</span>49 <span style=''>    import scala.collection.JavaConverters._
+</span>50 <span style=''>
+</span>51 <span style=''>    val parent = prev
+</span>52 <span style=''>
+</span>53 <span style=''>    val ns = </span><span style='background: #AEF1AE'>preToNS.toArray</span><span style=''>
+</span>54 <span style=''>
+</span>55 <span style=''>    lazy val preToNS = elem.attributes.flatMap( a =&gt; a.name.prefix.map( p =&gt; Option((p, a.name.namespace.uri)) ).getOrElse(None) ).toMap ++ elem.namespaces
+</span>56 <span style=''>
+</span>57 <span style=''>    val nsToPre = </span><span style='background: #AEF1AE'>preToNS.foldLeft(Map[String, List[String]]()){ 
+</span>58 <span style=''></span><span style='background: #AEF1AE'>      (x, y) =&gt;
+</span>59 <span style=''></span><span style='background: #AEF1AE'>      x.updated(y._2, x.get(y._2).map(</span><span style='background: #F0ADAD'>y._1 :: _</span><span style='background: #AEF1AE'> ).
+</span>60 <span style=''></span><span style='background: #AEF1AE'>	       getOrElse( List(y._1) ))
+</span>61 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>62 <span style=''>    
+</span>63 <span style=''>    def getNamespaceURI( prefix : String) : String = </span><span style='background: #AEF1AE'>preToNS.get(prefix).getOrElse(</span><span style='background: #F0ADAD'>prev.getNamespaceURI(prefix)</span><span style='background: #AEF1AE'>)</span><span style=''>
+</span>64 <span style=''>    def getPrefix( namespaceURI : String) : String = </span><span style='background: #F0ADAD'>nsToPre.get(namespaceURI).map(_.head).getOrElse(prev.getPrefix(namespaceURI))</span><span style=''>
+</span>65 <span style=''>    def getPrefixes(namespaceURI : String) : java.util.Iterator[String] = 
+</span>66 <span style=''>      </span><span style='background: #F0ADAD'>nsToPre.get(namespaceURI).getOrElse(List()).iterator.asJava</span><span style=''>
+</span>67 <span style=''>  }
+</span>68 <span style=''>
+</span>69 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          17
+        </td>
+        <td>
+          5730
+        </td>
+        <td>
+          395
+          -
+          397
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          -1
+        </td>
+      </tr><tr>
+        <td>
+          18
+        </td>
+        <td>
+          5731
+        </td>
+        <td>
+          428
+          -
+          430
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          -1
+        </td>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          5732
+        </td>
+        <td>
+          459
+          -
+          461
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          -1
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          5733
+        </td>
+        <td>
+          491
+          -
+          495
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          21
+        </td>
+        <td>
+          5734
+        </td>
+        <td>
+          535
+          -
+          539
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          35
+        </td>
+        <td>
+          5735
+        </td>
+        <td>
+          767
+          -
+          791
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.Array.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Array.apply[(String, String)]()((ClassTag.apply[(String, String)](classOf[scala.Tuple2]): scala.reflect.ClassTag[(String, String)]))
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          5736
+        </td>
+        <td>
+          844
+          -
+          846
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;&quot;
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          5737
+        </td>
+        <td>
+          897
+          -
+          899
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;&quot;
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          5738
+        </td>
+        <td>
+          971
+          -
+          986
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.LinearSeqLike.iterator
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.collection.immutable.Nil.iterator
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          5739
+        </td>
+        <td>
+          971
+          -
+          993
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.convert.Decorators.AsJava.asJava
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.collection.JavaConverters.asJavaIteratorConverter[String](scala.collection.immutable.Nil.iterator).asJava
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          5758
+        </td>
+        <td>
+          1154
+          -
+          1157
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.trax.NamespaceContextFunctions.$anon.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          53
+        </td>
+        <td>
+          5740
+        </td>
+        <td>
+          1246
+          -
+          1261
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableOnce.toArray
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.preToNS.toArray[(String, String)]((ClassTag.apply[(String, String)](classOf[scala.Tuple2]): scala.reflect.ClassTag[(String, String)]))
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          5741
+        </td>
+        <td>
+          1455
+          -
+          1482
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.generic.GenMapFactory.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.Map.apply[String, List[String]]()
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          5749
+        </td>
+        <td>
+          1438
+          -
+          1591
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.TraversableOnce.foldLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.preToNS.foldLeft[scala.collection.immutable.Map[String,List[String]]](scala.Predef.Map.apply[String, List[String]]())(((x: scala.collection.immutable.Map[String,List[String]], y: (String, String)) =&gt; x.updated[List[String]](y._2, x.get(y._2).map[List[String]](((x$1: List[String]) =&gt; {
+  &lt;synthetic&gt; &lt;artifact&gt; val x$2: String = y._1;
+  x$1.::[String](x$2)
+})).getOrElse[List[String]](scala.collection.immutable.List.apply[String](y._1)))))
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          5742
+        </td>
+        <td>
+          1518
+          -
+          1522
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          y._2
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          5743
+        </td>
+        <td>
+          1530
+          -
+          1534
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          y._2
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          5744
+        </td>
+        <td>
+          1540
+          -
+          1549
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.List.::
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          x$1.::[String](x$2)
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          5748
+        </td>
+        <td>
+          1508
+          -
+          1585
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.MapLike.updated
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x.updated[List[String]](y._2, x.get(y._2).map[List[String]](((x$1: List[String]) =&gt; {
+  &lt;synthetic&gt; &lt;artifact&gt; val x$2: String = y._1;
+  x$1.::[String](x$2)
+})).getOrElse[List[String]](scala.collection.immutable.List.apply[String](y._1)))
+        </td>
+      </tr><tr>
+        <td>
+          60
+        </td>
+        <td>
+          5745
+        </td>
+        <td>
+          1577
+          -
+          1581
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          y._1
+        </td>
+      </tr><tr>
+        <td>
+          60
+        </td>
+        <td>
+          5746
+        </td>
+        <td>
+          1572
+          -
+          1582
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.List.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.collection.immutable.List.apply[String](y._1)
+        </td>
+      </tr><tr>
+        <td>
+          60
+        </td>
+        <td>
+          5747
+        </td>
+        <td>
+          1524
+          -
+          1584
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.getOrElse
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x.get(y._2).map[List[String]](((x$1: List[String]) =&gt; {
+  &lt;synthetic&gt; &lt;artifact&gt; val x$2: String = y._1;
+  x$1.::[String](x$2)
+})).getOrElse[List[String]](scala.collection.immutable.List.apply[String](y._1))
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          5750
+        </td>
+        <td>
+          1680
+          -
+          1708
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.namespace.NamespaceContext.getNamespaceURI
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          prev.getNamespaceURI(prefix)
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          5751
+        </td>
+        <td>
+          1650
+          -
+          1709
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.getOrElse
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.preToNS.get(prefix).getOrElse[String](prev.getNamespaceURI(prefix))
+        </td>
+      </tr><tr>
+        <td>
+          64
+        </td>
+        <td>
+          5752
+        </td>
+        <td>
+          1793
+          -
+          1799
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.IterableLike.head
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          x$3.head
+        </td>
+      </tr><tr>
+        <td>
+          64
+        </td>
+        <td>
+          5753
+        </td>
+        <td>
+          1811
+          -
+          1839
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.namespace.NamespaceContext.getPrefix
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          prev.getPrefix(namespaceURI)
+        </td>
+      </tr><tr>
+        <td>
+          64
+        </td>
+        <td>
+          5754
+        </td>
+        <td>
+          1763
+          -
+          1840
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.getOrElse
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          $anon.this.nsToPre.get(namespaceURI).map[String](((x$3: List[String]) =&gt; x$3.head)).getOrElse[String](prev.getPrefix(namespaceURI))
+        </td>
+      </tr><tr>
+        <td>
+          66
+        </td>
+        <td>
+          5755
+        </td>
+        <td>
+          1958
+          -
+          1964
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.immutable.Nil
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.collection.immutable.Nil
+        </td>
+      </tr><tr>
+        <td>
+          66
+        </td>
+        <td>
+          5756
+        </td>
+        <td>
+          1922
+          -
+          1974
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.LinearSeqLike.iterator
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          $anon.this.nsToPre.get(namespaceURI).getOrElse[List[String]](scala.collection.immutable.Nil).iterator
+        </td>
+      </tr><tr>
+        <td>
+          66
+        </td>
+        <td>
+          5757
+        </td>
+        <td>
+          1922
+          -
+          1981
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.convert.Decorators.AsJava.asJava
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.collection.JavaConverters.asJavaIteratorConverter[String]($anon.this.nsToPre.get(namespaceURI).getOrElse[List[String]](scala.collection.immutable.Nil).iterator).asJava
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

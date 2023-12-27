@@ -1,0 +1,915 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/xml/parser/sax/XmlParser.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.xml.parser.sax
+</span>2 <span style=''>
+</span>3 <span style=''>import org.xml.sax.{InputSource, XMLReader}
+</span>4 <span style=''>import javax.xml.parsers.SAXParser
+</span>5 <span style=''>import scales.utils._
+</span>6 <span style=''>import scales.utils.resources._
+</span>7 <span style=''>import java.io._
+</span>8 <span style=''>import scales.xml._
+</span>9 <span style=''>import parser.strategies._
+</span>10 <span style=''>import scales.xml.impl._
+</span>11 <span style=''>
+</span>12 <span style=''>trait XmlParserImplicits {
+</span>13 <span style=''>  implicit def streamToSource( source : InputStream ) = </span><span style='background: #F0ADAD'>new org.xml.sax.InputSource(source)</span><span style=''>
+</span>14 <span style=''>  implicit def readerToSource( source : Reader ) = </span><span style='background: #AEF1AE'>new org.xml.sax.InputSource(source)</span><span style=''>
+</span>15 <span style=''>  /**
+</span>16 <span style=''>   * will call openStream.
+</span>17 <span style=''>   */ 
+</span>18 <span style=''>  implicit def urlToSource( url : java.net.URL ) = </span><span style='background: #AEF1AE'>new org.xml.sax.InputSource(url.openStream)</span><span style=''>
+</span>19 <span style=''>}
+</span>20 <span style=''>
+</span>21 <span style=''>/**
+</span>22 <span style=''> * Whilst Saxon, Xerces and nu.validator support certain combinations, this is an abstraction over those needed by the readXml function
+</span>23 <span style=''> */ 
+</span>24 <span style=''>trait SaxSupport {
+</span>25 <span style=''>  def setLexicalHandler[T &lt;: OptimisationToken]( reader : XMLReader, handler : Handler[T] ) : Unit
+</span>26 <span style=''>  def getXmlVersion( reader : XMLReader ) : AnyRef
+</span>27 <span style=''>}
+</span>28 <span style=''>
+</span>29 <span style=''>/**
+</span>30 <span style=''> * Assumes lexical-handler and document-xml-version are supported
+</span>31 <span style=''> */ 
+</span>32 <span style=''>trait DefaultSaxSupport extends SaxSupport {
+</span>33 <span style=''>
+</span>34 <span style=''>  def setLexicalHandler[T &lt;: OptimisationToken]( reader : XMLReader, handler : Handler[T] ) : Unit =
+</span>35 <span style=''>    </span><span style='background: #AEF1AE'>reader.setProperty(&quot;http://xml.org/sax/properties/lexical-handler&quot;, handler)</span><span style=''>
+</span>36 <span style=''>
+</span>37 <span style=''>  def getXmlVersion( reader : XMLReader ) : AnyRef =
+</span>38 <span style=''>    </span><span style='background: #AEF1AE'>reader.getProperty(&quot;http://xml.org/sax/properties/document-xml-version&quot;)</span><span style=''>
+</span>39 <span style=''>  
+</span>40 <span style=''>}
+</span>41 <span style=''>
+</span>42 <span style=''>trait XmlParser {
+</span>43 <span style=''>
+</span>44 <span style=''>  /**
+</span>45 <span style=''>   * Use a custom parserPool to control the sax factory features 
+</span>46 <span style=''>   */ 
+</span>47 <span style=''>  def loadXml[Token &lt;: OptimisationToken](source: InputSource, strategy : PathOptimisationStrategy[Token] = defaultPathOptimisation, parsers : Loaner[SAXParser] with SaxSupport= DefaultSAXParserFactoryPool.parsers)(implicit xmlVer : XmlVersion): Doc =
+</span>48 <span style=''>    </span><span style='background: #AEF1AE'>parsers.loan {
+</span>49 <span style=''></span><span style='background: #AEF1AE'>      parser =&gt;
+</span>50 <span style=''></span><span style='background: #AEF1AE'>	readXml(source, strategy, parser.getXMLReader(), parsers)
+</span>51 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>52 <span style=''>
+</span>53 <span style=''>  def readXml[Token &lt;: OptimisationToken](source: InputSource, strategy : PathOptimisationStrategy[Token], reader : XMLReader, saxSupport : SaxSupport )(implicit xmlVer : XmlVersion): Doc = {
+</span>54 <span style=''>    var handler = </span><span style='background: #AEF1AE'>new Handler[Token](strategy)</span><span style=''>
+</span>55 <span style=''>    </span><span style='background: #AEF1AE'>saxSupport.setLexicalHandler[Token](reader, handler)</span><span style=''>
+</span>56 <span style=''>    
+</span>57 <span style=''>    </span><span style='background: #AEF1AE'>reader.setContentHandler(handler)</span><span style=''>
+</span>58 <span style=''>    </span><span style='background: #AEF1AE'>reader.parse(source)</span><span style=''>
+</span>59 <span style=''>
+</span>60 <span style=''>    val docVersion = {
+</span>61 <span style=''>      val f = </span><span style='background: #AEF1AE'>saxSupport.getXmlVersion(reader)</span><span style=''>
+</span>62 <span style=''>
+</span>63 <span style=''>      if (</span><span style='background: #AEF1AE'>f eq null</span><span style=''>) </span><span style='background: #AEF1AE'>Xml10</span><span style=''>
+</span>64 <span style=''>      else </span><span style='background: #AEF1AE'>{
+</span>65 <span style=''></span><span style='background: #AEF1AE'>	val v = f.toString
+</span>66 <span style=''></span><span style='background: #AEF1AE'>	if (v == &quot;1.1&quot;) 
+</span>67 <span style=''></span><span style='background: #AEF1AE'>	  Xml11
+</span>68 <span style=''></span><span style='background: #AEF1AE'>	else
+</span>69 <span style=''></span><span style='background: #AEF1AE'>	  Xml10	  
+</span>70 <span style=''></span><span style='background: #AEF1AE'>      }</span><span style=''>
+</span>71 <span style=''>    }
+</span>72 <span style=''>
+</span>73 <span style=''>    </span><span style='background: #AEF1AE'>Doc(handler.getBuf.tree, handler.getProlog.copy( 
+</span>74 <span style=''></span><span style='background: #AEF1AE'>      decl = handler.getProlog.decl.copy(version = docVersion)),
+</span>75 <span style=''></span><span style='background: #AEF1AE'>	handler.getEnd)</span><span style=''>
+</span>76 <span style=''>  }   
+</span>77 <span style=''>  
+</span>78 <span style=''>  /**
+</span>79 <span style=''>   * Use a custom parserPool to control the sax factory features 
+</span>80 <span style=''>   */ 
+</span>81 <span style=''>  def loadXmlReader[Token &lt;: OptimisationToken](source: InputSource, strategy : PathOptimisationStrategy[Token] = defaultPathOptimisation, parsers : Loaner[XMLReader] with SaxSupport = DefaultXMLReaderFactoryPool)(implicit xmlVer : XmlVersion): Doc =
+</span>82 <span style=''>    </span><span style='background: #AEF1AE'>parsers.loan {
+</span>83 <span style=''></span><span style='background: #AEF1AE'>      parser =&gt;
+</span>84 <span style=''></span><span style='background: #AEF1AE'>	readXml(source, strategy, parser, parsers)
+</span>85 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>86 <span style=''>
+</span>87 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          13
+        </td>
+        <td>
+          4540
+        </td>
+        <td>
+          337
+          -
+          372
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.xml.sax.InputSource.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new org.xml.sax.InputSource(source)
+        </td>
+      </tr><tr>
+        <td>
+          14
+        </td>
+        <td>
+          4541
+        </td>
+        <td>
+          424
+          -
+          459
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.xml.sax.InputSource.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new org.xml.sax.InputSource(source)
+        </td>
+      </tr><tr>
+        <td>
+          18
+        </td>
+        <td>
+          4542
+        </td>
+        <td>
+          579
+          -
+          593
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.net.URL.openStream
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          url.openStream()
+        </td>
+      </tr><tr>
+        <td>
+          18
+        </td>
+        <td>
+          4543
+        </td>
+        <td>
+          551
+          -
+          594
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.xml.sax.InputSource.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new org.xml.sax.InputSource(url.openStream())
+        </td>
+      </tr><tr>
+        <td>
+          35
+        </td>
+        <td>
+          4544
+        </td>
+        <td>
+          1141
+          -
+          1217
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.xml.sax.XMLReader.setProperty
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          reader.setProperty(&quot;http://xml.org/sax/properties/lexical-handler&quot;, handler)
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          4545
+        </td>
+        <td>
+          1276
+          -
+          1348
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.xml.sax.XMLReader.getProperty
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          reader.getProperty(&quot;http://xml.org/sax/properties/document-xml-version&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          4547
+        </td>
+        <td>
+          1709
+          -
+          1804
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.resources.Loaner.loan
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          parsers.loan[scales.xml.Doc](((parser: javax.xml.parsers.SAXParser) =&gt; XmlParser.this.readXml[Token](source, strategy, parser.getXMLReader(), parsers)(xmlVer)))
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          4546
+        </td>
+        <td>
+          1741
+          -
+          1798
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.parser.sax.XmlParser.readXml
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlParser.this.readXml[Token](source, strategy, parser.getXMLReader(), parsers)(xmlVer)
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          4548
+        </td>
+        <td>
+          2016
+          -
+          2044
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.parser.sax.Handler.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new scales.xml.parser.sax.Handler[Token](strategy)(xmlVer)
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          4549
+        </td>
+        <td>
+          2049
+          -
+          2101
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.sax.SaxSupport.setLexicalHandler
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          saxSupport.setLexicalHandler[Token](reader, handler)
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          4550
+        </td>
+        <td>
+          2111
+          -
+          2144
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.xml.sax.XMLReader.setContentHandler
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          reader.setContentHandler(handler)
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          4551
+        </td>
+        <td>
+          2149
+          -
+          2169
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.xml.sax.XMLReader.parse
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          reader.parse(source)
+        </td>
+      </tr><tr>
+        <td>
+          61
+        </td>
+        <td>
+          4552
+        </td>
+        <td>
+          2208
+          -
+          2240
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.sax.SaxSupport.getXmlVersion
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          saxSupport.getXmlVersion(reader)
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          4553
+        </td>
+        <td>
+          2252
+          -
+          2261
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          f.eq(null)
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          4554
+        </td>
+        <td>
+          2263
+          -
+          2268
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Xml10
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Xml10
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          4555
+        </td>
+        <td>
+          2263
+          -
+          2268
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.Xml10
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Xml10
+        </td>
+      </tr><tr>
+        <td>
+          64
+        </td>
+        <td>
+          4562
+        </td>
+        <td>
+          2280
+          -
+          2354
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val v: String = f.toString();
+  if (v.==(&quot;1.1&quot;))
+    scales.xml.Xml11
+  else
+    scales.xml.Xml10
+}
+        </td>
+      </tr><tr>
+        <td>
+          65
+        </td>
+        <td>
+          4556
+        </td>
+        <td>
+          2291
+          -
+          2301
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.toString
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          f.toString()
+        </td>
+      </tr><tr>
+        <td>
+          66
+        </td>
+        <td>
+          4557
+        </td>
+        <td>
+          2307
+          -
+          2317
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          v.==(&quot;1.1&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          67
+        </td>
+        <td>
+          4558
+        </td>
+        <td>
+          2323
+          -
+          2328
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Xml11
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Xml11
+        </td>
+      </tr><tr>
+        <td>
+          67
+        </td>
+        <td>
+          4559
+        </td>
+        <td>
+          2323
+          -
+          2328
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.Xml11
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Xml11
+        </td>
+      </tr><tr>
+        <td>
+          69
+        </td>
+        <td>
+          4560
+        </td>
+        <td>
+          2338
+          -
+          2343
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Xml10
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Xml10
+        </td>
+      </tr><tr>
+        <td>
+          69
+        </td>
+        <td>
+          4561
+        </td>
+        <td>
+          2338
+          -
+          2343
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.Xml10
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Xml10
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          4563
+        </td>
+        <td>
+          2370
+          -
+          2389
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.TreeProxies.tree
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          handler.getBuf.tree
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          4564
+        </td>
+        <td>
+          2391
+          -
+          2408
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.sax.Handler.getProlog
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          handler.getProlog
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          4567
+        </td>
+        <td>
+          2391
+          -
+          2479
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Prolog.copy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          qual$1.copy(x$4, x$5, x$6)
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          4569
+        </td>
+        <td>
+          2366
+          -
+          2497
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Doc.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Doc.apply(handler.getBuf.tree, {
+  &lt;artifact&gt; val qual$1: scales.xml.Prolog = handler.getProlog;
+  &lt;artifact&gt; val x$4: scales.xml.Declaration = {
+    &lt;artifact&gt; val qual$2: scales.xml.Declaration = handler.getProlog.decl;
+    &lt;artifact&gt; val x$1: Product with Serializable with scales.xml.XmlVersion = docVersion;
+    &lt;artifact&gt; val x$2: java.nio.charset.Charset = qual$2.copy$default$2;
+    &lt;artifact&gt; val x$3: Boolean = qual$2.copy$default$3;
+    qual$2.copy(x$1, x$2, x$3)
+  };
+  &lt;artifact&gt; val x$5: scales.xml.Miscs = qual$1.copy$default$2;
+  &lt;artifact&gt; val x$6: Option[scales.xml.DTD] = qual$1.copy$default$3;
+  qual$1.copy(x$4, x$5, x$6)
+}, handler.getEnd)
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          4565
+        </td>
+        <td>
+          2429
+          -
+          2451
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Prolog.decl
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          handler.getProlog.decl
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          4566
+        </td>
+        <td>
+          2429
+          -
+          2478
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Declaration.copy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          qual$2.copy(x$1, x$2, x$3)
+        </td>
+      </tr><tr>
+        <td>
+          75
+        </td>
+        <td>
+          4568
+        </td>
+        <td>
+          2482
+          -
+          2496
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.sax.Handler.getEnd
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          handler.getEnd
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          4571
+        </td>
+        <td>
+          2842
+          -
+          2922
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.resources.Loaner.loan
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          parsers.loan[scales.xml.Doc](((parser: org.xml.sax.XMLReader) =&gt; XmlParser.this.readXml[Token](source, strategy, parser, parsers)(xmlVer)))
+        </td>
+      </tr><tr>
+        <td>
+          84
+        </td>
+        <td>
+          4570
+        </td>
+        <td>
+          2874
+          -
+          2916
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.parser.sax.XmlParser.readXml
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlParser.this.readXml[Token](source, strategy, parser, parsers)(xmlVer)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

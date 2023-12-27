@@ -1,0 +1,936 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/xml/dsl/Matchers.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.xml.dsl
+</span>2 <span style=''>
+</span>3 <span style=''>import scales.utils.{AsBoolean, booleanMatcher, booleanAndTMatcher}
+</span>4 <span style=''>
+</span>5 <span style=''>import scales.xml.{
+</span>6 <span style=''>  NoNamespaceQName, PrefixedQName, AttributeQName, 
+</span>7 <span style=''>  Attribute, XmlTree, Doc, XmlVersion, XmlCBF, 
+</span>8 <span style=''>  XmlPath, Elem, XCC, XmlItem, QName, 
+</span>9 <span style=''>  ScalesXml, Text, Namespace, &lt;}
+</span>10 <span style=''>
+</span>11 <span style=''>/**
+</span>12 <span style=''> * Matches a given QName against either an Attribute or Elem with the namespace and localname only (QName.=:=)
+</span>13 <span style=''> */ 
+</span>14 <span style=''>class QNameMatcher(qname : QName) {
+</span>15 <span style=''>  import ScalesXml._
+</span>16 <span style=''>  /**
+</span>17 <span style=''>   * Returns Some(elem) when the QName matches namespace and localname, None otherwise
+</span>18 <span style=''>   */
+</span>19 <span style=''>  def unapply( elem : Elem ) : Option[Elem] = if (</span><span style='background: #AEF1AE'>elem.name =:= qname</span><span style=''>) </span><span style='background: #AEF1AE'>Some(elem)</span><span style=''> else </span><span style='background: #AEF1AE'>None</span><span style=''>
+</span>20 <span style=''>  /**
+</span>21 <span style=''>   * Returns Some(attrib) when the QName matches namespace and localname, None otherwise
+</span>22 <span style=''>   */
+</span>23 <span style=''>  def unapply( attrib : Attribute ) : Option[Attribute] = if (</span><span style='background: #AEF1AE'>toQName(attrib.name) =:= qname</span><span style=''>) </span><span style='background: #AEF1AE'>Some(attrib)</span><span style=''> else </span><span style='background: #AEF1AE'>None</span><span style=''>
+</span>24 <span style=''>}
+</span>25 <span style=''>
+</span>26 <span style=''>/**
+</span>27 <span style=''> * Leveraged via implicit fromQNameToQNamePimper, adds m/matcher to create a QNameMatcher
+</span>28 <span style=''> */
+</span>29 <span style=''>class QNameMPimper( qname : QName ) {
+</span>30 <span style=''>  def m = </span><span style='background: #AEF1AE'>new QNameMatcher(qname)</span><span style=''>
+</span>31 <span style=''>  def matcher = </span><span style='background: #AEF1AE'>m</span><span style=''>
+</span>32 <span style=''>}
+</span>33 <span style=''>
+</span>34 <span style=''>/**
+</span>35 <span style=''> * Matches a given Namespace against either an Attribute or Elem with the namespace only
+</span>36 <span style=''> */ 
+</span>37 <span style=''>class NamespaceMatcher(ns : Namespace) {
+</span>38 <span style=''>  import ScalesXml._
+</span>39 <span style=''>  /**
+</span>40 <span style=''>   *Returns Some(elem) when the QName's namespace matches, None otherwise
+</span>41 <span style=''>   */ 
+</span>42 <span style=''>  def unapply( elem : Elem ) : Option[Elem] = 
+</span>43 <span style=''>    if (</span><span style='background: #AEF1AE'>elem.name.namespace == ns</span><span style=''>) </span><span style='background: #AEF1AE'>Some(elem)</span><span style=''> else </span><span style='background: #AEF1AE'>None</span><span style=''>
+</span>44 <span style=''>  /**
+</span>45 <span style=''>   * Returns Some(attrib) when the QName's namespace matches, None otherwise
+</span>46 <span style=''>   */
+</span>47 <span style=''>  def unapply( attrib : Attribute ) : Option[Attribute] = 
+</span>48 <span style=''>    if (</span><span style='background: #AEF1AE'>toQName(attrib.name).namespace == ns</span><span style=''>) </span><span style='background: #AEF1AE'>Some(attrib)</span><span style=''> else </span><span style='background: #AEF1AE'>None</span><span style=''>
+</span>49 <span style=''>}
+</span>50 <span style=''>
+</span>51 <span style=''>
+</span>52 <span style=''>/**
+</span>53 <span style=''> * Leveraged via implicit fromNSToNSMPimper, adds m/matcher to create a NamespaceMatcher
+</span>54 <span style=''> */
+</span>55 <span style=''>class NSMPimper( ns : Namespace ) {
+</span>56 <span style=''>  def m = </span><span style='background: #AEF1AE'>new NamespaceMatcher(ns)</span><span style=''>
+</span>57 <span style=''>  def matcher = </span><span style='background: #F0ADAD'>m</span><span style=''>
+</span>58 <span style=''>}
+</span>59 <span style=''>
+</span>60 <span style=''>/**
+</span>61 <span style=''> * PathMatching functions over booleans
+</span>62 <span style=''> */ 
+</span>63 <span style=''>trait XPathMatcher {
+</span>64 <span style=''>
+</span>65 <span style=''>  /**
+</span>66 <span style=''>   * Creates a booleanMatcher against a Tree based on the @pathEval function.
+</span>67 <span style=''>   *
+</span>68 <span style=''>   * For XPath evaluations on the tree this typically gives the paths back when the xpath evaluates to a non-empty result.  TODO ADD CODE
+</span>69 <span style=''>   */ 
+</span>70 <span style=''>  def pathMatcher[T : AsBoolean]( pathEval : (XmlTree) =&gt; T ) = </span><span style='background: #AEF1AE'>booleanMatcher[XmlTree, T](pathEval)</span><span style=''>
+</span>71 <span style=''>
+</span>72 <span style=''>  
+</span>73 <span style=''>  /**
+</span>74 <span style=''>   * Similar to pathMatcher but also gives the tree back into the pattern match.
+</span>75 <span style=''>   */
+</span>76 <span style=''>  def pathAndTreeMatcher[T : AsBoolean]( pathEval : (XmlTree) =&gt; T ) = </span><span style='background: #AEF1AE'>booleanAndTMatcher[XmlTree, T](pathEval)</span><span style=''>
+</span>77 <span style=''>
+</span>78 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          2528
+        </td>
+        <td>
+          626
+          -
+          631
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.dsl.QNameMatcher.qname
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          QNameMatcher.this.qname
+        </td>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          2529
+        </td>
+        <td>
+          612
+          -
+          631
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.QName.=:=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          elem.name.=:=(QNameMatcher.this.qname)
+        </td>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          2530
+        </td>
+        <td>
+          633
+          -
+          643
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[scales.xml.Elem](elem)
+        </td>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          2531
+        </td>
+        <td>
+          633
+          -
+          643
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[scales.xml.Elem](elem)
+        </td>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          2532
+        </td>
+        <td>
+          649
+          -
+          653
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          2533
+        </td>
+        <td>
+          649
+          -
+          653
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          23
+        </td>
+        <td>
+          2534
+        </td>
+        <td>
+          825
+          -
+          836
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Attribute.name
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          attrib.name
+        </td>
+      </tr><tr>
+        <td>
+          23
+        </td>
+        <td>
+          2535
+        </td>
+        <td>
+          842
+          -
+          847
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.dsl.QNameMatcher.qname
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          QNameMatcher.this.qname
+        </td>
+      </tr><tr>
+        <td>
+          23
+        </td>
+        <td>
+          2536
+        </td>
+        <td>
+          817
+          -
+          847
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.QName.=:=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.ScalesXml.toQName(attrib.name).=:=(QNameMatcher.this.qname)
+        </td>
+      </tr><tr>
+        <td>
+          23
+        </td>
+        <td>
+          2537
+        </td>
+        <td>
+          849
+          -
+          861
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[scales.xml.Attribute](attrib)
+        </td>
+      </tr><tr>
+        <td>
+          23
+        </td>
+        <td>
+          2538
+        </td>
+        <td>
+          849
+          -
+          861
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[scales.xml.Attribute](attrib)
+        </td>
+      </tr><tr>
+        <td>
+          23
+        </td>
+        <td>
+          2539
+        </td>
+        <td>
+          867
+          -
+          871
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          23
+        </td>
+        <td>
+          2540
+        </td>
+        <td>
+          867
+          -
+          871
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          2541
+        </td>
+        <td>
+          1038
+          -
+          1043
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.dsl.QNameMPimper.qname
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          QNameMPimper.this.qname
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          2542
+        </td>
+        <td>
+          1021
+          -
+          1044
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.dsl.QNameMatcher.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new QNameMatcher(QNameMPimper.this.qname)
+        </td>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          2543
+        </td>
+        <td>
+          1061
+          -
+          1062
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.dsl.QNameMPimper.m
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          QNameMPimper.this.m
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          2544
+        </td>
+        <td>
+          1391
+          -
+          1393
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.dsl.NamespaceMatcher.ns
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          NamespaceMatcher.this.ns
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          2545
+        </td>
+        <td>
+          1368
+          -
+          1393
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          elem.name.namespace.==(NamespaceMatcher.this.ns)
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          2546
+        </td>
+        <td>
+          1395
+          -
+          1405
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[scales.xml.Elem](elem)
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          2547
+        </td>
+        <td>
+          1395
+          -
+          1405
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[scales.xml.Elem](elem)
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          2548
+        </td>
+        <td>
+          1411
+          -
+          1415
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          2549
+        </td>
+        <td>
+          1411
+          -
+          1415
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          2550
+        </td>
+        <td>
+          1580
+          -
+          1591
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Attribute.name
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          attrib.name
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          2551
+        </td>
+        <td>
+          1606
+          -
+          1608
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.dsl.NamespaceMatcher.ns
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          NamespaceMatcher.this.ns
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          2552
+        </td>
+        <td>
+          1572
+          -
+          1608
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.ScalesXml.toQName(attrib.name).namespace.==(NamespaceMatcher.this.ns)
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          2553
+        </td>
+        <td>
+          1610
+          -
+          1622
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[scales.xml.Attribute](attrib)
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          2554
+        </td>
+        <td>
+          1610
+          -
+          1622
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[scales.xml.Attribute](attrib)
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          2555
+        </td>
+        <td>
+          1628
+          -
+          1632
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          2556
+        </td>
+        <td>
+          1628
+          -
+          1632
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          2557
+        </td>
+        <td>
+          1801
+          -
+          1803
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.dsl.NSMPimper.ns
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          NSMPimper.this.ns
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          2558
+        </td>
+        <td>
+          1780
+          -
+          1804
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.dsl.NamespaceMatcher.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new NamespaceMatcher(NSMPimper.this.ns)
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          2559
+        </td>
+        <td>
+          1821
+          -
+          1822
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.dsl.NSMPimper.m
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          NSMPimper.this.m
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          2560
+        </td>
+        <td>
+          2195
+          -
+          2231
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.AsBooleanTrait.booleanMatcher
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.booleanMatcher[scales.xml.XmlTree, T](pathEval)(evidence$1)
+        </td>
+      </tr><tr>
+        <td>
+          76
+        </td>
+        <td>
+          2561
+        </td>
+        <td>
+          2400
+          -
+          2440
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.AsBooleanTrait.booleanAndTMatcher
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.booleanAndTMatcher[scales.xml.XmlTree, T](pathEval)(evidence$2)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

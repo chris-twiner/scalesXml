@@ -1,0 +1,598 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/utils/collection/ConcurrentMapUtils.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.utils.collection
+</span>2 <span style=''>
+</span>3 <span style=''>import java.util.concurrent.ConcurrentHashMap
+</span>4 <span style=''>import java.util.concurrent.ConcurrentLinkedQueue
+</span>5 <span style=''>
+</span>6 <span style=''>/**
+</span>7 <span style=''> * Only created once and via calcOnce
+</span>8 <span style=''> */ 
+</span>9 <span style=''>sealed trait Once[T] {
+</span>10 <span style=''>  val value : T
+</span>11 <span style=''>}
+</span>12 <span style=''>
+</span>13 <span style=''>/**
+</span>14 <span style=''> * Simple helper functions to get and remove ConcurrentLinkedQueues from a ConcurrentHashMap
+</span>15 <span style=''> */
+</span>16 <span style=''>trait ConcurrentMapUtils {
+</span>17 <span style=''>
+</span>18 <span style=''>  def getList[K, T](key: K, mapToList: ConcurrentHashMap[K, ConcurrentLinkedQueue[T]]): ConcurrentLinkedQueue[T] = 
+</span>19 <span style=''>    </span><span style='background: #F0ADAD'>valueOf(key, mapToList)(
+</span>20 <span style=''></span><span style='background: #F0ADAD'>      new ConcurrentLinkedQueue[T]())</span><span style=''>
+</span>21 <span style=''>
+</span>22 <span style=''>  def removeList[K, T](key: K, mapToList: ConcurrentHashMap[K, ConcurrentLinkedQueue[T]]): ConcurrentLinkedQueue[T] = 
+</span>23 <span style=''>    </span><span style='background: #F0ADAD'>removeOr(key,mapToList)(new ConcurrentLinkedQueue[T]())</span><span style=''>
+</span>24 <span style=''>
+</span>25 <span style=''>  /**
+</span>26 <span style=''>   * Removes the value, returning either it or a new item (stops end code worrying about nulls etc..
+</span>27 <span style=''>   */ 
+</span>28 <span style=''>  def removeOr[K, T](key: K, map: ConcurrentHashMap[K, T])(newT : =&gt; T): T = {
+</span>29 <span style=''>    var res = </span><span style='background: #F0ADAD'>map.remove(key)</span><span style=''>
+</span>30 <span style=''>    if (</span><span style='background: #F0ADAD'>res == null</span><span style=''>) {
+</span>31 <span style=''>      </span><span style='background: #F0ADAD'>res = newT</span><span style=''>
+</span>32 <span style=''>    }
+</span>33 <span style=''>
+</span>34 <span style=''>    res
+</span>35 <span style=''>  }
+</span>36 <span style=''>
+</span>37 <span style=''>  /**
+</span>38 <span style=''>   * Calculates the value once and only once (using a lazy val), returning the result, use this approach for expensive calculations.
+</span>39 <span style=''>   */
+</span>40 <span style=''>  def calcOnce[K,T](key : K, map : ConcurrentHashMap[K, Once[T]])( calc : =&gt; T ) : T = 
+</span>41 <span style=''>    </span><span style='background: #AEF1AE'>valueOf(key, map)(new Once[T]{
+</span>42 <span style=''></span><span style='background: #AEF1AE'>	lazy val value = calc
+</span>43 <span style=''></span><span style='background: #AEF1AE'>      }).
+</span>44 <span style=''></span><span style='background: #AEF1AE'>    // doesn't matter which thread did this
+</span>45 <span style=''></span><span style='background: #AEF1AE'>    value</span><span style=''>
+</span>46 <span style=''>  
+</span>47 <span style=''>  /**
+</span>48 <span style=''>   * retrieves the value of a concurrent hashmap against a given key, creating if necessary.  Note it makes no gaurantee of once only semantics for the value generation
+</span>49 <span style=''>   */
+</span>50 <span style=''>  def valueOf[K,T](key : K, map : ConcurrentHashMap[K, T])( newT : =&gt; T ) : T = {
+</span>51 <span style=''>    var value = </span><span style='background: #AEF1AE'>map.get(key)</span><span style=''>
+</span>52 <span style=''>    if (</span><span style='background: #AEF1AE'>value == null</span><span style=''>) </span><span style='background: #AEF1AE'>{
+</span>53 <span style=''></span><span style='background: #AEF1AE'>      value = newT
+</span>54 <span style=''></span><span style='background: #AEF1AE'>      val res = map.putIfAbsent(key, value)
+</span>55 <span style=''></span><span style='background: #AEF1AE'>      value = if (res == null) value else </span><span style='background: #F0ADAD'>res</span><span style='background: #AEF1AE'>
+</span>56 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>57 <span style=''>
+</span>58 <span style=''>    value
+</span>59 <span style=''>  }
+</span>60 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          439
+        </td>
+        <td>
+          468
+          -
+          530
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.ConcurrentMapUtils.valueOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ConcurrentMapUtils.this.valueOf[K, java.util.concurrent.ConcurrentLinkedQueue[T]](key, mapToList)(new java.util.concurrent.ConcurrentLinkedQueue[T]())
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          438
+        </td>
+        <td>
+          499
+          -
+          529
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.concurrent.ConcurrentLinkedQueue.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new java.util.concurrent.ConcurrentLinkedQueue[T]()
+        </td>
+      </tr><tr>
+        <td>
+          23
+        </td>
+        <td>
+          440
+        </td>
+        <td>
+          679
+          -
+          709
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.concurrent.ConcurrentLinkedQueue.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new java.util.concurrent.ConcurrentLinkedQueue[T]()
+        </td>
+      </tr><tr>
+        <td>
+          23
+        </td>
+        <td>
+          441
+        </td>
+        <td>
+          655
+          -
+          710
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.ConcurrentMapUtils.removeOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ConcurrentMapUtils.this.removeOr[K, java.util.concurrent.ConcurrentLinkedQueue[T]](key, mapToList)(new java.util.concurrent.ConcurrentLinkedQueue[T]())
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          442
+        </td>
+        <td>
+          919
+          -
+          934
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.concurrent.ConcurrentHashMap.remove
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          map.remove(key)
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          443
+        </td>
+        <td>
+          943
+          -
+          954
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Any.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          res.==(null)
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          445
+        </td>
+        <td>
+          939
+          -
+          939
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          446
+        </td>
+        <td>
+          939
+          -
+          939
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          444
+        </td>
+        <td>
+          964
+          -
+          974
+        </td>
+        <td>
+          Assign
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          res = newT
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          447
+        </td>
+        <td>
+          1250
+          -
+          1253
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.ConcurrentMapUtils.$anon.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          448
+        </td>
+        <td>
+          1232
+          -
+          1349
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.Once.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ConcurrentMapUtils.this.valueOf[K, scales.utils.collection.Once[T]](key, map)({
+  final class $anon extends AnyRef with scales.utils.collection.Once[T] {
+    def &lt;init&gt;(): &lt;$anon: scales.utils.collection.Once[T]&gt; = {
+      $anon.super.&lt;init&gt;();
+      ()
+    };
+    &lt;stable&gt; &lt;accessor&gt; lazy val value: T = calc
+  };
+  new $anon()
+}).value
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          449
+        </td>
+        <td>
+          1632
+          -
+          1644
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.concurrent.ConcurrentHashMap.get
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          map.get(key)
+        </td>
+      </tr><tr>
+        <td>
+          52
+        </td>
+        <td>
+          450
+        </td>
+        <td>
+          1653
+          -
+          1666
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Any.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          value.==(null)
+        </td>
+      </tr><tr>
+        <td>
+          52
+        </td>
+        <td>
+          455
+        </td>
+        <td>
+          1668
+          -
+          1784
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  value = newT;
+  val res: T = map.putIfAbsent(key, value);
+  value = if (res.==(null))
+    value
+  else
+    res
+}
+        </td>
+      </tr><tr>
+        <td>
+          52
+        </td>
+        <td>
+          456
+        </td>
+        <td>
+          1649
+          -
+          1649
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          52
+        </td>
+        <td>
+          457
+        </td>
+        <td>
+          1649
+          -
+          1649
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          451
+        </td>
+        <td>
+          1705
+          -
+          1732
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.concurrent.ConcurrentHashMap.putIfAbsent
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          map.putIfAbsent(key, value)
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          452
+        </td>
+        <td>
+          1751
+          -
+          1762
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Any.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          res.==(null)
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          453
+        </td>
+        <td>
+          1764
+          -
+          1769
+        </td>
+        <td>
+          Ident
+        </td>
+        <td>
+          scales.utils.collection.ConcurrentMapUtils.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          value
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          454
+        </td>
+        <td>
+          1775
+          -
+          1778
+        </td>
+        <td>
+          Ident
+        </td>
+        <td>
+          scales.utils.collection.ConcurrentMapUtils.res
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          res
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

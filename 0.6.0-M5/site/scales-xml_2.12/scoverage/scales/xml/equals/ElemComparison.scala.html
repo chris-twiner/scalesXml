@@ -1,0 +1,1205 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/xml/equals/ElemComparison.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.xml.equals
+</span>2 <span style=''>
+</span>3 <span style=''>import scales.xml.{QName, Elem, Attribs, Attributes, Attribute, XmlItem, Text, PI, CData, Comment, PullType, EndElem, Misc, Miscs, DocLike, impl}
+</span>4 <span style=''>
+</span>5 <span style=''>import impl.EqualsHelpers
+</span>6 <span style=''>
+</span>7 <span style=''>import XmlEquals._
+</span>8 <span style=''>
+</span>9 <span style=''>import scalaz.Equal._
+</span>10 <span style=''>import scalaz._
+</span>11 <span style=''>import Scalaz._
+</span>12 <span style=''>
+</span>13 <span style=''>import SomeDifference.noCalculation
+</span>14 <span style=''>
+</span>15 <span style=''>object ElemEqualHelpers {
+</span>16 <span style=''>  type NamespacesEqual = Equal[Map[String, String]]
+</span>17 <span style=''>  val allwaysTrueNamespacesEqual = </span><span style='background: #AEF1AE'>equal {
+</span>18 <span style=''></span><span style='background: #AEF1AE'>    ( a : Map[String, String], b : Map[String, String] ) =&gt; true
+</span>19 <span style=''></span><span style='background: #AEF1AE'>  }</span><span style=''>
+</span>20 <span style=''>}
+</span>21 <span style=''>
+</span>22 <span style=''>/**
+</span>23 <span style=''> * Namespaces by default are not compared.  They aren't marked as implicit as you really have to be explicitly wanting to compare them.
+</span>24 <span style=''> *
+</span>25 <span style=''> * An Attributes comparison and a QName Equal instance are required.  This also allows, for example, specification of equality using prefixes for the Elem, but not on the Attributes.
+</span>26 <span style=''> */ 
+</span>27 <span style=''>class ElemComparison(namespaces : Equal[Map[String, String]] = ElemEqualHelpers.allwaysTrueNamespacesEqual)( implicit ac : XmlComparison[Attributes], eqn : Equal[QName]) extends XmlComparison[Elem] {
+</span>28 <span style=''>  def compare( calculate : Boolean, context : ComparisonContext, left : Elem, right : Elem) : Option[(XmlDifference[_], ComparisonContext)] = {
+</span>29 <span style=''>    if (</span><span style='background: #AEF1AE'>left eq right</span><span style=''>)
+</span>30 <span style=''>      </span><span style='background: #AEF1AE'>None</span><span style=''>
+</span>31 <span style=''>    else
+</span>32 <span style=''>    </span><span style='background: #AEF1AE'>if (!(left.name === right.name))
+</span>33 <span style=''></span><span style='background: #AEF1AE'>      if (calculate)
+</span>34 <span style=''></span><span style='background: #AEF1AE'>	Some((ElemNameDifference(left,right), context))
+</span>35 <span style=''></span><span style='background: #AEF1AE'>      else
+</span>36 <span style=''></span><span style='background: #AEF1AE'>	noCalculation
+</span>37 <span style=''></span><span style='background: #AEF1AE'>      else 
+</span>38 <span style=''></span><span style='background: #AEF1AE'>	ac.compare(calculate, context, left.attributes, right.attributes).
+</span>39 <span style=''></span><span style='background: #AEF1AE'>    cata( x =&gt; 
+</span>40 <span style=''></span><span style='background: #AEF1AE'>      if (calculate) {
+</span>41 <span style=''></span><span style='background: #AEF1AE'>	val (attrs : AttributesDifference, p) = x
+</span>42 <span style=''></span><span style='background: #AEF1AE'>	Some( (ElemAttributeDifference( left, right, attrs), context) )
+</span>43 <span style=''></span><span style='background: #AEF1AE'>      } else noCalculation
+</span>44 <span style=''></span><span style='background: #AEF1AE'>    ,
+</span>45 <span style=''></span><span style='background: #AEF1AE'>      if (!namespaces.equal(left.namespaces, right.namespaces))
+</span>46 <span style=''></span><span style='background: #AEF1AE'>	</span><span style='background: #F0ADAD'>if (calculate)
+</span>47 <span style=''></span><span style='background: #F0ADAD'>	  Some( (ElemNamespacesDifference(left, right), context) )
+</span>48 <span style=''></span><span style='background: #F0ADAD'>	else
+</span>49 <span style=''></span><span style='background: #F0ADAD'>	  noCalculation</span><span style='background: #AEF1AE'>
+</span>50 <span style=''></span><span style='background: #AEF1AE'>	else None
+</span>51 <span style=''></span><span style='background: #AEF1AE'>    )</span><span style=''>
+</span>52 <span style=''>  }
+</span>53 <span style=''>}
+</span>54 <span style=''>
+</span>55 <span style=''>
+</span>56 <span style=''>trait DefaultElemEquals {
+</span>57 <span style=''>
+</span>58 <span style=''>  implicit def defaultElemComparison(implicit ae : XmlComparison[Attributes], qe : Equal[QName]) : XmlComparison[Elem] = </span><span style='background: #AEF1AE'>new ElemComparison()( ae, qe )</span><span style=''>
+</span>59 <span style=''>
+</span>60 <span style=''>}
+</span>61 <span style=''>
+</span>62 <span style=''>object ElemEquals extends DefaultElemEquals
+</span>63 <span style=''>  with DefaultAttributesEquals
+</span>64 <span style=''>  with DefaultAttributeEquals with DefaultQNameEquals {}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          17
+        </td>
+        <td>
+          2709
+        </td>
+        <td>
+          426
+          -
+          502
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.Equal.equal
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.Equal.equal[Map[String,String]](((a: Map[String,String], b: Map[String,String]) =&gt; true))
+        </td>
+      </tr><tr>
+        <td>
+          18
+        </td>
+        <td>
+          2708
+        </td>
+        <td>
+          494
+          -
+          498
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          2710
+        </td>
+        <td>
+          1189
+          -
+          1202
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          left.eq(right)
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          2711
+        </td>
+        <td>
+          1210
+          -
+          1214
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          2712
+        </td>
+        <td>
+          1210
+          -
+          1214
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          2713
+        </td>
+        <td>
+          1234
+          -
+          1243
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Elem.name
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          left.name
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          2714
+        </td>
+        <td>
+          1239
+          -
+          1239
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.ElemComparison.eqn
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ElemComparison.this.eqn
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          2715
+        </td>
+        <td>
+          1248
+          -
+          1258
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Elem.name
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          right.name
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          2716
+        </td>
+        <td>
+          1232
+          -
+          1259
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.Scalaz.ToEqualOps[scales.xml.QName](left.name)(ElemComparison.this.eqn).===(right.name).unary_!
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          2749
+        </td>
+        <td>
+          1228
+          -
+          1796
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (scalaz.Scalaz.ToEqualOps[scales.xml.QName](left.name)(ElemComparison.this.eqn).===(right.name).unary_!)
+  if (calculate)
+    scala.Some.apply[(scales.xml.equals.ElemNameDifference, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.ElemNameDifference, scales.xml.equals.ComparisonContext](ElemNameDifference.apply(left, right), context))
+  else
+    SomeDifference.noCalculation
+else
+  scalaz.Scalaz.ToOptionOpsFromOption[(scales.xml.equals.XmlDifference[_], scales.xml.equals.ComparisonContext)](ElemComparison.this.ac.compare(calculate, context, left.attributes, right.attributes)).cata[Option[(scales.xml.equals.XmlDifference[_], scales.xml.equals.ComparisonContext)]](((x: (scales.xml.equals.XmlDifference[_], scales.xml.equals.ComparisonContext)) =&gt; if (calculate)
+    {
+      &lt;synthetic&gt; &lt;artifact&gt; private[this] val x$1: (scales.xml.equals.AttributesDifference, scales.xml.equals.ComparisonContext) = (x: (scales.xml.equals.XmlDifference[_], scales.xml.equals.ComparisonContext) @unchecked) match {
+        case (_1: scales.xml.equals.XmlDifference[_], _2: scales.xml.equals.ComparisonContext)(scales.xml.equals.XmlDifference[_], scales.xml.equals.ComparisonContext)((attrs @ (_: scales.xml.equals.AttributesDifference)), (p @ _)) =&gt; scala.Tuple2.apply[scales.xml.equals.AttributesDifference, scales.xml.equals.ComparisonContext](attrs, p)
+      };
+      val attrs: scales.xml.equals.AttributesDifference = x$1._1;
+      val p: scales.xml.equals.ComparisonContext = x$1._2;
+      scala.Some.apply[(scales.xml.equals.ElemAttributeDifference, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.ElemAttributeDifference, scales.xml.equals.ComparisonContext](ElemAttributeDifference.apply(left, right, attrs), context))
+    }
+  else
+    SomeDifference.noCalculation), if (ElemComparison.this.namespaces.equal(left.namespaces, right.namespaces).unary_!)
+    if (calculate)
+      scala.Some.apply[(scales.xml.equals.ElemNamespacesDifference, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.ElemNamespacesDifference, scales.xml.equals.ComparisonContext](ElemNamespacesDifference.apply(left, right), context))
+    else
+      SomeDifference.noCalculation
+  else
+    scala.None)
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          2723
+        </td>
+        <td>
+          1267
+          -
+          1356
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (calculate)
+  scala.Some.apply[(scales.xml.equals.ElemNameDifference, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.ElemNameDifference, scales.xml.equals.ComparisonContext](ElemNameDifference.apply(left, right), context))
+else
+  SomeDifference.noCalculation
+        </td>
+      </tr><tr>
+        <td>
+          34
+        </td>
+        <td>
+          2717
+        </td>
+        <td>
+          1289
+          -
+          1319
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.ElemNameDifference.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ElemNameDifference.apply(left, right)
+        </td>
+      </tr><tr>
+        <td>
+          34
+        </td>
+        <td>
+          2718
+        </td>
+        <td>
+          1288
+          -
+          1329
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[scales.xml.equals.ElemNameDifference, scales.xml.equals.ComparisonContext](ElemNameDifference.apply(left, right), context)
+        </td>
+      </tr><tr>
+        <td>
+          34
+        </td>
+        <td>
+          2719
+        </td>
+        <td>
+          1283
+          -
+          1330
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[(scales.xml.equals.ElemNameDifference, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.ElemNameDifference, scales.xml.equals.ComparisonContext](ElemNameDifference.apply(left, right), context))
+        </td>
+      </tr><tr>
+        <td>
+          34
+        </td>
+        <td>
+          2720
+        </td>
+        <td>
+          1283
+          -
+          1330
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[(scales.xml.equals.ElemNameDifference, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.ElemNameDifference, scales.xml.equals.ComparisonContext](ElemNameDifference.apply(left, right), context))
+        </td>
+      </tr><tr>
+        <td>
+          36
+        </td>
+        <td>
+          2721
+        </td>
+        <td>
+          1343
+          -
+          1356
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.SomeDifference.noCalculation
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SomeDifference.noCalculation
+        </td>
+      </tr><tr>
+        <td>
+          36
+        </td>
+        <td>
+          2722
+        </td>
+        <td>
+          1343
+          -
+          1356
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.equals.SomeDifference.noCalculation
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SomeDifference.noCalculation
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          2724
+        </td>
+        <td>
+          1401
+          -
+          1416
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Elem.attributes
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          left.attributes
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          2725
+        </td>
+        <td>
+          1418
+          -
+          1434
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Elem.attributes
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          right.attributes
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          2726
+        </td>
+        <td>
+          1370
+          -
+          1435
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.XmlComparison.compare
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ElemComparison.this.ac.compare(calculate, context, left.attributes, right.attributes)
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          2747
+        </td>
+        <td>
+          1370
+          -
+          1796
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.syntax.std.OptionOps.cata
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.Scalaz.ToOptionOpsFromOption[(scales.xml.equals.XmlDifference[_], scales.xml.equals.ComparisonContext)](ElemComparison.this.ac.compare(calculate, context, left.attributes, right.attributes)).cata[Option[(scales.xml.equals.XmlDifference[_], scales.xml.equals.ComparisonContext)]](((x: (scales.xml.equals.XmlDifference[_], scales.xml.equals.ComparisonContext)) =&gt; if (calculate)
+  {
+    &lt;synthetic&gt; &lt;artifact&gt; private[this] val x$1: (scales.xml.equals.AttributesDifference, scales.xml.equals.ComparisonContext) = (x: (scales.xml.equals.XmlDifference[_], scales.xml.equals.ComparisonContext) @unchecked) match {
+      case (_1: scales.xml.equals.XmlDifference[_], _2: scales.xml.equals.ComparisonContext)(scales.xml.equals.XmlDifference[_], scales.xml.equals.ComparisonContext)((attrs @ (_: scales.xml.equals.AttributesDifference)), (p @ _)) =&gt; scala.Tuple2.apply[scales.xml.equals.AttributesDifference, scales.xml.equals.ComparisonContext](attrs, p)
+    };
+    val attrs: scales.xml.equals.AttributesDifference = x$1._1;
+    val p: scales.xml.equals.ComparisonContext = x$1._2;
+    scala.Some.apply[(scales.xml.equals.ElemAttributeDifference, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.ElemAttributeDifference, scales.xml.equals.ComparisonContext](ElemAttributeDifference.apply(left, right, attrs), context))
+  }
+else
+  SomeDifference.noCalculation), if (ElemComparison.this.namespaces.equal(left.namespaces, right.namespaces).unary_!)
+  if (calculate)
+    scala.Some.apply[(scales.xml.equals.ElemNamespacesDifference, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.ElemNamespacesDifference, scales.xml.equals.ComparisonContext](ElemNamespacesDifference.apply(left, right), context))
+  else
+    SomeDifference.noCalculation
+else
+  scala.None)
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          2748
+        </td>
+        <td>
+          1370
+          -
+          1796
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scalaz.syntax.std.OptionOps.cata
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.Scalaz.ToOptionOpsFromOption[(scales.xml.equals.XmlDifference[_], scales.xml.equals.ComparisonContext)](ElemComparison.this.ac.compare(calculate, context, left.attributes, right.attributes)).cata[Option[(scales.xml.equals.XmlDifference[_], scales.xml.equals.ComparisonContext)]](((x: (scales.xml.equals.XmlDifference[_], scales.xml.equals.ComparisonContext)) =&gt; if (calculate)
+  {
+    &lt;synthetic&gt; &lt;artifact&gt; private[this] val x$1: (scales.xml.equals.AttributesDifference, scales.xml.equals.ComparisonContext) = (x: (scales.xml.equals.XmlDifference[_], scales.xml.equals.ComparisonContext) @unchecked) match {
+      case (_1: scales.xml.equals.XmlDifference[_], _2: scales.xml.equals.ComparisonContext)(scales.xml.equals.XmlDifference[_], scales.xml.equals.ComparisonContext)((attrs @ (_: scales.xml.equals.AttributesDifference)), (p @ _)) =&gt; scala.Tuple2.apply[scales.xml.equals.AttributesDifference, scales.xml.equals.ComparisonContext](attrs, p)
+    };
+    val attrs: scales.xml.equals.AttributesDifference = x$1._1;
+    val p: scales.xml.equals.ComparisonContext = x$1._2;
+    scala.Some.apply[(scales.xml.equals.ElemAttributeDifference, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.ElemAttributeDifference, scales.xml.equals.ComparisonContext](ElemAttributeDifference.apply(left, right, attrs), context))
+  }
+else
+  SomeDifference.noCalculation), if (ElemComparison.this.namespaces.equal(left.namespaces, right.namespaces).unary_!)
+  if (calculate)
+    scala.Some.apply[(scales.xml.equals.ElemNamespacesDifference, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.ElemNamespacesDifference, scales.xml.equals.ComparisonContext](ElemNamespacesDifference.apply(left, right), context))
+  else
+    SomeDifference.noCalculation
+else
+  scala.None)
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          2732
+        </td>
+        <td>
+          1474
+          -
+          1591
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  &lt;synthetic&gt; &lt;artifact&gt; private[this] val x$1: (scales.xml.equals.AttributesDifference, scales.xml.equals.ComparisonContext) = (x: (scales.xml.equals.XmlDifference[_], scales.xml.equals.ComparisonContext) @unchecked) match {
+    case (_1: scales.xml.equals.XmlDifference[_], _2: scales.xml.equals.ComparisonContext)(scales.xml.equals.XmlDifference[_], scales.xml.equals.ComparisonContext)((attrs @ (_: scales.xml.equals.AttributesDifference)), (p @ _)) =&gt; scala.Tuple2.apply[scales.xml.equals.AttributesDifference, scales.xml.equals.ComparisonContext](attrs, p)
+  };
+  val attrs: scales.xml.equals.AttributesDifference = x$1._1;
+  val p: scales.xml.equals.ComparisonContext = x$1._2;
+  scala.Some.apply[(scales.xml.equals.ElemAttributeDifference, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.ElemAttributeDifference, scales.xml.equals.ComparisonContext](ElemAttributeDifference.apply(left, right, attrs), context))
+}
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          2727
+        </td>
+        <td>
+          1482
+          -
+          1482
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$1._1
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          2728
+        </td>
+        <td>
+          1512
+          -
+          1512
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$1._2
+        </td>
+      </tr><tr>
+        <td>
+          42
+        </td>
+        <td>
+          2729
+        </td>
+        <td>
+          1527
+          -
+          1571
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.ElemAttributeDifference.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ElemAttributeDifference.apply(left, right, attrs)
+        </td>
+      </tr><tr>
+        <td>
+          42
+        </td>
+        <td>
+          2730
+        </td>
+        <td>
+          1526
+          -
+          1581
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[scales.xml.equals.ElemAttributeDifference, scales.xml.equals.ComparisonContext](ElemAttributeDifference.apply(left, right, attrs), context)
+        </td>
+      </tr><tr>
+        <td>
+          42
+        </td>
+        <td>
+          2731
+        </td>
+        <td>
+          1520
+          -
+          1583
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[(scales.xml.equals.ElemAttributeDifference, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.ElemAttributeDifference, scales.xml.equals.ComparisonContext](ElemAttributeDifference.apply(left, right, attrs), context))
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          2733
+        </td>
+        <td>
+          1597
+          -
+          1610
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.SomeDifference.noCalculation
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SomeDifference.noCalculation
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          2734
+        </td>
+        <td>
+          1597
+          -
+          1610
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.equals.SomeDifference.noCalculation
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SomeDifference.noCalculation
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          2735
+        </td>
+        <td>
+          1645
+          -
+          1660
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Elem.namespaces
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          left.namespaces
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          2736
+        </td>
+        <td>
+          1662
+          -
+          1678
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Elem.namespaces
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          right.namespaces
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          2737
+        </td>
+        <td>
+          1627
+          -
+          1679
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ElemComparison.this.namespaces.equal(left.namespaces, right.namespaces).unary_!
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          2744
+        </td>
+        <td>
+          1682
+          -
+          1779
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          if (calculate)
+  scala.Some.apply[(scales.xml.equals.ElemNamespacesDifference, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.ElemNamespacesDifference, scales.xml.equals.ComparisonContext](ElemNamespacesDifference.apply(left, right), context))
+else
+  SomeDifference.noCalculation
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          2738
+        </td>
+        <td>
+          1707
+          -
+          1744
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.ElemNamespacesDifference.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ElemNamespacesDifference.apply(left, right)
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          2739
+        </td>
+        <td>
+          1706
+          -
+          1754
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Tuple2.apply[scales.xml.equals.ElemNamespacesDifference, scales.xml.equals.ComparisonContext](ElemNamespacesDifference.apply(left, right), context)
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          2740
+        </td>
+        <td>
+          1700
+          -
+          1756
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Some.apply[(scales.xml.equals.ElemNamespacesDifference, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.ElemNamespacesDifference, scales.xml.equals.ComparisonContext](ElemNamespacesDifference.apply(left, right), context))
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          2741
+        </td>
+        <td>
+          1700
+          -
+          1756
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Some.apply[(scales.xml.equals.ElemNamespacesDifference, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.ElemNamespacesDifference, scales.xml.equals.ComparisonContext](ElemNamespacesDifference.apply(left, right), context))
+        </td>
+      </tr><tr>
+        <td>
+          49
+        </td>
+        <td>
+          2742
+        </td>
+        <td>
+          1766
+          -
+          1779
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.SomeDifference.noCalculation
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          SomeDifference.noCalculation
+        </td>
+      </tr><tr>
+        <td>
+          49
+        </td>
+        <td>
+          2743
+        </td>
+        <td>
+          1766
+          -
+          1779
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.equals.SomeDifference.noCalculation
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          SomeDifference.noCalculation
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          2745
+        </td>
+        <td>
+          1786
+          -
+          1790
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          2746
+        </td>
+        <td>
+          1786
+          -
+          1790
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          2750
+        </td>
+        <td>
+          1953
+          -
+          1983
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.ElemComparison.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new ElemComparison(equals.this.ElemComparison.&lt;init&gt;$default$1)(ae, qe)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>
