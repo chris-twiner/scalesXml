@@ -6,7 +6,7 @@
     <artifactId>scales-xml-root_${scalaCompatVersion}</artifactId>
 
     <packaging>pom</packaging>
-    <version>0.6.0-M4</version>
+    <version>0.6.0-M5</version>
     <name>root</name>
     <description>An alternate Scala Xml processing library</description>
     <url>https://scalesxml.github.io/scales-xml_2.10</url>
