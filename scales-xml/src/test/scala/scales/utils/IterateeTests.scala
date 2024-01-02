@@ -1,9 +1,13 @@
 package scales.utils
 import ScalesUtils._
+import scalaz.Free.Trampoline
+import scalaz.Id.Id
 import scalaz.iteratee.EnumeratorT
 import scalaz.iteratee.Input.{Element, Empty, Eof}
-import scalaz.iteratee.Iteratee.{iteratee => siteratee}
+import scalaz.iteratee.Iteratee.{iterateeT => siteratee}
 import scalaz.iteratee.StepT.{Cont, Done}
+import scalaz.Free._
+import scalaz.Monad
 
 class IterateeTest extends junit.framework.TestCase {
   
@@ -16,45 +20,58 @@ class IterateeTest extends junit.framework.TestCase {
   import scales.utils.{sum => usum}
   import scalaz.effect.IO._
 
-  def testSimpleEnumerateeMap = {
+  def F[F[_]](implicit F: Monad[F]) = F
+
+  def testSimpleEnumerateeMap(): Unit = {
     
     val i = List("1","2","3","4").iterator
 
-    val res = (enumerateeMap(usum[Int])( (s : String) => s.toInt ) &= iteratorEnumerator(i) ).run
-    assertEquals(10, res)
+    (enumerateeMap(usum[Int, Trampoline])( (s : String) => s.toInt ) &= iteratorEnumerator(i) ).run map
+         { res =>
+      assertEquals(10, res)
+    }
   }
   
-  def testEnumToManyExhaustState = {
+  def testEnumToManyExhaustState(): Unit = {
     
     val l = List(1,2,3,4)
 
-    def f(i: Int): ResumableIter[Int, EphemeralStream[Int]] = {
-      def step(i: Int)(s: Input[Int]): ResumableIter[Int, EphemeralStream[Int]] =
-        siteratee(
+    def f(i: Int): ResumableIter[Int, Trampoline, EphemeralStream[Int]] = {
+      def step(i: Int)(s: Input[Int]): ResumableIter[Int, Trampoline, EphemeralStream[Int]] =
+        siteratee( F.point(
           s( el = e => {
               //println("i "+i+" e "+e)
-              Done((iTo(i, e), siteratee( Cont(step(i + 1))) ), Input.Empty[Int])
+              Done((iTo(i, e), siteratee( F.point( Cont(step(i + 1))) ) ), Input.Empty[Int])
             },
             empty = Cont(step(i)),
             eof = Done((emptyEphemeralStream, siteratee( Cont(error("Shouldn't call cont on eof")))), Eof[Int])
-          )
+          ))
         )
 
-      siteratee( Cont(step(i)) )
+      siteratee( F.point( Cont(step(i)) ))
     }
 
-    val enum = (i: Int) => enumToMany(usum[Int])(f(i))
+    val enum = (i: Int) => enumToMany(usum[Int, Trampoline])(f(i))
 
-    // 1, 2, 3, 4 only, the to is ignored
-    val (res, cont) = (enum(1) &= (iteratorEnumerator(l.iterator))).run
-    assertEquals(10, res)
-    assertTrue("should have been done", isDone(cont))
+    for {
+      // 1, 2, 3, 4 only, the to is ignored
+      (res, cont) <- (enum(1) &= iteratorEnumerator(l.iterator)).run
+      is <- isDone(cont)
+    } yield {
+      assertEquals(10, res)
 
-    // -1->1 0, 0->2 3, 1->3 6, 2->4 9 
-    val (res2, cont2) = (enum(-1) &= (iteratorEnumerator(l.iterator))).run
-    assertEquals(18, res2)
-    assertTrue("2 should have been done", isDone(cont2))
+      assertTrue("should have been done", is)
+    }
 
+    for {
+      // -1->1 0, 0->2 3, 1->3 6, 2->4 9
+      (res2, cont2) <- (enum(-1) &= (iteratorEnumerator(l.iterator))).run
+      is <- isDone(cont2)
+    } yield {
+      assertEquals(18, res2)
+
+      assertTrue("2 should have been done", is)
+    }
   }
 
   def testEnumToManyExhaust = {
