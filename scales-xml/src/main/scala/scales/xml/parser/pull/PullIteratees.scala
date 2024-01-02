@@ -5,8 +5,9 @@ import scales.xml.{Elem, EndElem, PullType, QName, ScalesXml, XmlBuilder, XmlIte
 import scales.xml.parser.strategies.{MemoryOptimisationStrategy, OptimisationToken}
 import collection.FlatMapIterator
 import scalaz.Id.Id
+import scalaz.Monad
 import scalaz.iteratee.Input.{Empty, Eof}
-import scalaz.iteratee.Iteratee.iteratee
+import scalaz.iteratee.Iteratee.{iteratee, iterateeT}
 import scalaz.iteratee.StepT
 import scalaz.iteratee.StepT.{Cont, Done}
 
@@ -29,7 +30,7 @@ trait PullIteratees {
    * would return an iteratee that returned every <ofInterest> content </ofInterest>
    * as a path (each parent node containing only one child node).
    */
-  def onQNames(qnames: List[QName]): ResumableIter[PullType, QNamesMatch] = {
+  def onQNames[F[_]: Monad](qnames: List[QName]): ResumableIter[PullType, F, QNamesMatch] = {
 
     /*
      * The pairs allow the depth of each element to be followed.  In particular this stops both descent and ascent problems in the
@@ -39,8 +40,8 @@ trait PullIteratees {
 
     lazy val starter = Cont(step(Nil, (qnames.head, 0), qnames.tail.map((_, 0)), noXmlPath, false))
 
-    def step(before: List[(QName, Int)], focus: (QName, Int), toGo: List[(QName, Int)], path: XmlPath, collecting: Boolean)(s: Input[PullType]): ResumableIter[PullType, QNamesMatch] = {
-      iteratee(
+    def step(before: List[(QName, Int)], focus: (QName, Int), toGo: List[(QName, Int)], path: XmlPath, collecting: Boolean)(s: Input[PullType]): ResumableIter[PullType, F, QNamesMatch] = {
+      iterateeT( Monad[F].point(
         s(el = {
             case Left(elem@Elem(q, a, n)) => {
               val nfocus = if (q == focus._1) (focus._1, focus._2 + 1)
@@ -72,9 +73,9 @@ trait PullIteratees {
 
                 if (toGo.isEmpty && ncfocus._2 == 0) // we are popping to the selected level
                   Done(((qnames, Some(path)),
-                    iteratee(Cont(step(before, ncfocus, toGo,
+                    iterateeT( Monad[F].point( Cont(step(before, ncfocus, toGo,
                       // remove all children on the next iteration
-                      path.removeAndUp.getOrElse(noXmlPath), false)))), Empty[PullType])
+                      path.removeAndUp.getOrElse(noXmlPath), false))))), Empty[PullType])
                 else {
                   if (before.isEmpty)
                     starter // only when the root is asked for, could just refuse that of course?
@@ -102,15 +103,15 @@ trait PullIteratees {
 
           },
           empty = Cont(step(before, focus, toGo, path, false)),
-          eof = Done(((qnames, None), iteratee( starter )), Eof[PullType])
+          eof = Done(((qnames, None), iterateeT( Monad[F].point(starter) )), Eof[PullType])
         )
-      )
+      ))
     }
 
 
     if (qnames.isEmpty) error("Qnames is empty")
 
-    iteratee( starter )
+    iterateeT( Monad[F].point(starter ))
   }
 
   type PeekMatch = Option[XmlPath]

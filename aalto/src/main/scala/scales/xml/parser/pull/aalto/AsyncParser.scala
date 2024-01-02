@@ -9,11 +9,11 @@ import AsyncXMLStreamReader.EVENT_INCOMPLETE
 
 import javax.xml.stream.XMLStreamConstants.END_DOCUMENT
 import scales.xml.parser.pull.PullUtils
-import scalaz.EphemeralStream
+import scalaz.{EphemeralStream, Monad}
 import scalaz.iteratee.{Enumerator, Input, Iteratee}
 import EphemeralStream.emptyEphemeralStream
 import scalaz.iteratee.Input.{Element, Eof}
-import scalaz.iteratee.Iteratee.iteratee
+import scalaz.iteratee.Iteratee.{iteratee, iterateeT}
 import scalaz.iteratee.StepT.{Cont, Done}
 import scales.xml.parser.strategies.{MemoryOptimisationStrategy, OptimisationToken}
 
@@ -245,7 +245,7 @@ abstract class AsyncParser(implicit xmlVersion : XmlVersion) extends CloseOnNeed
    *
    * Calls AsyncParser parse
    */  
-  def iteratee: ResumableIter[DataChunk, EphemeralStream[PullType]] =
+  def iteratee[F[_]: Monad]: ResumableIter[DataChunk, F, EphemeralStream[PullType]] =
     AsyncParser.parse(this)
   
 }
@@ -255,32 +255,32 @@ object AsyncParser {
   /**
    * Provides a ResumableIter that converts DataChunks via a parser into a stream of PullTypes.  Returns Done when there are results from the pushed chunks.
    */
-  def parse(parser: AsyncParser): ResumableIter[DataChunk, EphemeralStream[PullType]] = {
+  def parse[F[_]: Monad](parser: AsyncParser): ResumableIter[DataChunk, F, EphemeralStream[PullType]] = {
 
-    def EOF: ResumableStep[DataChunk, EphemeralStream[PullType]] = {
+    def EOF: ResumableStep[DataChunk, F, EphemeralStream[PullType]] = {
       parser.closeResource
 
       //println("closing against EOF from parse")
       Done((emptyEphemeralStream,
-        iteratee(Cont(
+        iterateeT(Monad[F].point(Cont[DataChunk, F, EphemeralStream[PullType]](
           error("Called the continuation on a closed parser")
-        ))), Eof[DataChunk])
+        )))), Eof[DataChunk])
     }
 
 //    def emptyness : ResumableStep[DataChunk, EphemeralStream[PullType]] =
   //    Done((emptyEphemeralStream, iteratee( Cont(step))), Input.Empty[DataChunk])
 
-    def step(s: Input[DataChunk]): ResumableIter[DataChunk, EphemeralStream[PullType]] =
-      iteratee(
+    def step(s: Input[DataChunk]): ResumableIter[DataChunk, F, EphemeralStream[PullType]] =
+      iterateeT(Monad[F].point(
         s(el = e => {
             //println("Did get a large chunk "+e)
             val r = parser.nextInput(e)
             r( el = es => {
             //println("got el with es " + es.isEmpty + " feeder " + parser.feeder.needMoreInput)
                 Done((es,
-                  iteratee(Cont(
+                  iterateeT(Monad[F].point(Cont(
                     step
-                    ))), Input.Empty[DataChunk])
+                    )))), Input.Empty[DataChunk])
                 },
                 empty =
                   //println("empty from input")
@@ -298,9 +298,9 @@ object AsyncParser {
           },
           eof = EOF
         )
-      )
+      ))
 
-    iteratee( Cont(step) )
+    iterateeT( Monad[F].point( Cont(step) ))
   }
 
 

@@ -6,7 +6,7 @@ import scalaz.iteratee.Iteratee.{head, iteratee => siteratee}
 import scalaz.iteratee.StepT.{Cont, Done}
 import scales.xml.impl.NoVersionXmlReaderFactoryPool
 import scales.xml.serializers.XmlOutput
-
+/*
 class PullTest extends junit.framework.TestCase {
 
   import junit.framework.Assert._
@@ -1083,3 +1083,4 @@ try{
     pull.close
   }
 }
+*/

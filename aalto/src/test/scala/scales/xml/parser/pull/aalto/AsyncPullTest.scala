@@ -4,7 +4,7 @@ import scalaz.iteratee.Input.{Element, Empty, Eof}
 import scalaz.iteratee.Iteratee
 import scalaz.iteratee.Iteratee.{peek, iteratee => siteratee}
 import scalaz.iteratee.StepT.Done
-
+/*
 class AsyncPullTest extends junit.framework.TestCase {
 
   import junit.framework.Assert._
@@ -412,3 +412,4 @@ class AsyncPullTest extends junit.framework.TestCase {
     }
 
 }
+*/

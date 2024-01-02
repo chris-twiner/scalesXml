@@ -107,12 +107,18 @@ trait Iteratees {
   /**
    * Extract the continuation from a Done
    */
-  def extractCont[E, F[_], A]( iter : ResumableIter[E, F, A] )(implicit F: Monad[F]): F[ResumableIter[E, F, A]] =
+  def extractCont[E, F[_], A]( iter : ResumableIter[E, F, A] )(implicit F: Monad[F]): ResumableIter[E, F, A] =
+    iterateeT(
+      F.bind(iter.value)(s => s.fold(
+        cont = k => error("Was not done")
+        , done = (x, i) => x.asInstanceOf[(A,ResumableIter[E, F, A])]._2.value
+      )))
+  /*
     iter.foldT[ResumableIter[E, F, A]](
       done = (x, i) =>
         F.point(x._2.asInstanceOf[ResumableIter[E, F, A]]),
       cont = f => error("Was not done"))
-
+*/
   /**
    * Extract the Some(value) from a Done or None if it was not Done.
    */
@@ -130,13 +136,20 @@ trait Iteratees {
       done = (a, i) => F.point(true),
       cont = f => F.point(false) )
 
+  def isDone[E, F[_], A]( step : StepT[E, F, A] )(implicit F: Monad[F]): Boolean =
+    step(
+      done = (a, i) => true,
+      cont = f => false
+    )
+
   /**
    * Helper for done and empty
    */
   def isEmpty[E,F[_],A]( iter : IterateeT[E,F,A] )(implicit F: Monad[F]): F[Boolean] =
     iter.foldT[Boolean](
       done = (a, i) => F.point(Empty.unapply[E](i)),
-      cont = f => F.point(error("Iteratee is not Done")) )
+      cont = f => F.point(false)//F.point(error("Iteratee is not Done"))
+    )
 
   /**
    * Helper for done and eof
@@ -144,7 +157,8 @@ trait Iteratees {
   def isEOF[E, F[_], A]( iter : IterateeT[E,F,A] )(implicit F: Monad[F]): F[Boolean] =
     iter.foldT[Boolean](
       done = (a, i) => F.point( Eof.unapply[E](i)),
-      cont = f => F.point(error("Iteratee is not Done")) )
+      cont = f => F.point(false)//F.point(error("Iteratee is not Done"))
+  )
 
   /**
    * Converts a normal IterV[E,A] to a ResumableIter.
@@ -243,9 +257,10 @@ trait Iteratees {
   }
 
   /**
-   * Converts the iteratee/enumerator/source triple into a Iterator
-   */
+   * Converts the iteratee/enumerator/source triple into a Iterator, not possible if it's not Id
+
   def withIter[E, F[_],A]( e : EnumeratorT[E, F])(initResumable : ResumableIter[E, F,A]) = new ResumableIterIterator[E, F,A](e)(initResumable)
+   */
 
   /**
    * onDone, iterates over the list of iteratees applying
@@ -405,6 +420,7 @@ trait Iteratees {
         s( el = e => {
             val r = f(e)
             r( el = e1 => {
+                //println(s"got ${e} turned into done ${e1.headOption}")
                 Done(e1, Empty[E])
               },
               empty = Cont(step),
@@ -479,26 +495,32 @@ trait Iteratees {
      */
     def loop( i: ResumableIter[A,F,R], s: () => EphemeralStream[A] ):
       (ResumableIter[A,F,R], () => EphemeralStream[A]) = {
-      var c: ResumableIter[A,F,R] = i
-      var cs: EphemeralStream[A] = s() // need it now
-	    //println("loopy "+ isDone(c)+ " " +cs.isEmpty)
-      while(!isDone(c) && !cs.isEmpty) {
-        // println("doing a loop "+c)
-        val (nc, ncs): (ResumableIter[A,F,R], EphemeralStream[A]) = c.foldT(
-          done = (a, y) => (c, s()),// send it back, shouldn't be possible to get here anyway due to while test
-          cont =
-            k => {
-              // println("got cont")
-              val cs_called = cs
-              val head = cs_called.headOption.get // if used in El it captures the byname not the value
-              (k(Element(head)), cs_called.tailOption.get)
-            }
-            )
-        c = nc
-        cs = ncs
-      }
 
-      (c, () => cs)
+      var cs: EphemeralStream[A] = s() // need it now
+
+      def step(theStep: F[ResumableStep[A, F, R]]): F[ResumableStep[A, F, R]] =
+        F.bind(theStep){
+            cstep =>
+              if (!isDone(cstep) && !cs.isEmpty) {
+                // println("doing a loop "+c)
+                val nc = cstep(
+                  done = (a, y) => error("Should not get here"), // send it back, shouldn't be possible to get here anyway due to while test
+                  cont =
+                    k => {
+                      // println("got cont")
+                      val cs_called = cs
+                      val head = cs_called.headOption.get // if used in El it captures the byname not the value
+                      cs = cs_called.tailOption.get
+                      k(Element(head))
+                    }
+                )
+                step(nc.value)
+              } else {
+                theStep
+              }
+          }
+
+      (iterateeT(step(i.value)), () => cs)
     }
 
     /**
@@ -514,32 +536,41 @@ trait Iteratees {
        */
       val afterNewCall = toMany(x)
       //println("and then " + afterNewCall)
+      import scalaz._
+      import Scalaz._
+      iterateeT(
+        afterNewCall.foldT(
+          done = (nextContPair, rest) => {
+            //println("was done weren't it")
+            val (e1, nextCont) = nextContPair
+            val nextContR = nextCont.asInstanceOf[ResumableIter[E,F,scalaz.EphemeralStream[A]]]
+            val r = F.bind(isEOF(afterNewCall)){ eof =>
+              (
+                if (eof) {
+                  //println("after is eof")
+                  next(k(Eof[A]), empty, nextContR)
+                } else {
+                  if (e1.isEmpty) {
+                    //println("empty on nextcontr")
+                    next(k(Empty[A]), empty, nextContR)
+                  }
+                  else {
+                    val h = e1.headOption.get
+                    // println("some data after all "+h)
+                    val tail = e1.tailOption.get
+                    next(k(Element(h)), () => tail, nextContR)
+                  }
+                }
+              ).value
+            }
 
-      afterNewCall.foldT(
-        done = (nextContPair, rest) => {
-          //println("was done wern't it")
-          val (e1, nextCont) = nextContPair
-          val nextContR = nextCont.asInstanceOf[ResumableIter[E,F,scalaz.EphemeralStream[A]]]
-          if (isEOF(afterNewCall)) {
-            //println("after is eof")
-            next(k(Eof[A]), empty, nextContR)
-          } else {
-            if (e1.isEmpty) {
-              //println("empty on nextcontr")
-              next(k(Empty[A]), empty, nextContR)
-            }
-            else {
-              val h = e1.headOption.get
-              // println("some data after all "+h)
-              val tail = e1.tailOption.get
-              next(k(Element(h)), () => tail, nextContR)
-            }
+            r
+          },
+          cont = k1 => {
+            //println("conted after here")
+            next(k(Empty[A]), empty, afterNewCall).value
           }
-        },
-        cont = k1 => {
-          //println("conted after here")
-          next(k(Empty[A]), empty, afterNewCall)
-        }
+        )
       )
     }
 
@@ -554,20 +585,23 @@ trait Iteratees {
         //if (isDone(ni))
         next(ni, ns, toMany) // bad - should let a done exit early
       } else
-        iterateeT( Cont((x: Input[E]) =>
-          x( el = e => {
-            //println("got a cont x el e "+e)
-            toMany.foldT (
-              done = (a, y) => {
-                val (e1, nextContR) = a
-                val nextCont = nextContR.asInstanceOf[ResumableIter[E,F,scalaz.EphemeralStream[A]]]
-                error("Unexpected State for enumToMany - Cont but toMany is done")
-              },
-              cont = toManyCont => {
-                pumpNext(x, toManyCont, k)
-              }
-            )
-          },
+        iterateeT( F.point( Cont((x: Input[E]) =>
+          x(
+            el = e => {
+              //println("got a cont x el e "+e)
+              iterateeT(
+                toMany.foldT (
+                  done = (a, y) => {
+                    val (e1, nextContR) = a
+                    val nextCont = nextContR.asInstanceOf[ResumableIter[E,F,scalaz.EphemeralStream[A]]]
+                    error("Unexpected State for enumToMany - Cont but toMany is done")
+                  },
+                  cont = toManyCont => {
+                    pumpNext(x, toManyCont, k).value
+                  }
+                )
+              )
+            },
             empty = {
               next(k(Empty[A]), empty, toMany)
             },
@@ -575,7 +609,7 @@ trait Iteratees {
               next(k(Eof[A]), empty, toMany)
             }
           )
-        ) )
+        )))
     }
 
     /**

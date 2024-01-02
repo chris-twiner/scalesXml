@@ -301,36 +301,36 @@ class ParsingPerformanceRecon extends SimpleScalaBenchmark {
 */
   /**
    * How long for pull based, low memory onqnames action
-   */ 
-  def timePullCollect(reps: Int) = repeat(reps) {
-    import Recon._
+   */
+  /*  def timePullCollect(reps: Int) = repeat(reps) {
+      import Recon._
 
-    val xml = pullXml(new java.io.StringReader(s)).it
-    foldOnDone( iteratorEnumerator(xml) )( Recon() ,
-		      onDone( List(onQNames(Part), 
-				   onQNames(Bom), 
-				   onQNames(Rec)) )) {
-      (recon, qNamesMatch) => 
-      if (qNamesMatch.size == 0)
-        recon
-      else {
-        // we expect only one to match in this pattern
-        val matched = qNamesMatch.head
-        val qnames = matched._1  // to get an onDone it must be defined
-        val x = matched._2.get
-        // only one child
-        val pair = versionf(x)
+      val xml = pullXml(new java.io.StringReader(s)).it
+      foldOnDone( iteratorEnumerator(xml) )( Recon() ,
+            onDone( List(onQNames(Part),
+             onQNames(Bom),
+             onQNames(Rec)) )) {
+        (recon, qNamesMatch) =>
+        if (qNamesMatch.size == 0)
+          recon
+        else {
+          // we expect only one to match in this pattern
+          val matched = qNamesMatch.head
+          val qnames = matched._1  // to get an onDone it must be defined
+          val x = matched._2.get
+          // only one child
+          val pair = versionf(x)
 
-        //recon
-        qnames match {
-          case Part => recon.copy( parts = recon.parts + pair )
-          case Bom => recon.copy( boms = recon.boms + pair )
-          case Rec => recon.copy( recs = recon.recs + pair )
-        }/**/
-	}			   
-    
+          //recon
+          qnames match {
+            case Part => recon.copy( parts = recon.parts + pair )
+            case Bom => recon.copy( boms = recon.boms + pair )
+            case Rec => recon.copy( recs = recon.recs + pair )
+          }/**/
     }
-  }
+
+      }
+    }*/
 /*
   def processFullParseCollect = {
     import Recon._
@@ -584,7 +584,7 @@ object RunHighPerf extends ReconTest {
   var res : AnyRef = _
 
   def doTest {
-    res = p.timePullCollect(5)
+    //res = p.timePullCollect(5)
 //    doc = p.timeScalesXml(5)//5
 //    doc = p.timeScalesXml(100)
     //doc = p.timeScalesXmlTreeOp(5)
