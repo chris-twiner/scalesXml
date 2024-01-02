@@ -1,49 +1,71 @@
 package scales.utils.iteratee
 
+import scalaz.Free.Trampoline
 import scalaz.Id.Id
-import scalaz.{EphemeralStream, Id, Monad}
+import scalaz.{Applicative, Bind, EphemeralStream, Free, Id, Monad, Trampoline}
 import scalaz.iteratee.Input.{Element, Empty, Eof}
-import scalaz.iteratee.Iteratee.{cont, done, iteratee}
+import scalaz.iteratee.Iteratee.{cont, done, iteratee, iterateeT}
 import scalaz.iteratee.StepT.{Cont, Done}
 import scalaz.iteratee.{Enumerator, EnumeratorT, Input, Iteratee, IterateeT, StepT}
 import scales.utils.ScalesUtils
 import scales.utils.io
 
+import javax.xml.ws.WebFault
+
 /**
  * Evals once, the developer must check its Done, equivalent to a .run but
  * doesn't lose the continuation - no "Diverging Iteratee"
  */
-trait Eval[WHAT,RETURN] {
+trait Eval[WHAT, F[_],RETURN] {
 
-  val orig : Iteratee[WHAT, RETURN]
+  val orig : IterateeT[WHAT, F, RETURN]
 
-  def eval : Iteratee[WHAT, RETURN] = {
+  def eval(implicit f: Monad[F]) : F[IterateeT[WHAT, F, RETURN]] =
     orig.foldT(
-      done = (x, y) => iteratee(Done(x,y)),
-	    cont = k => k(Eof[WHAT])
+      done = (x, y) => f.point(iterateeT[WHAT, F, RETURN](f.point(Done(x,y)))),
+	    cont = k => f.point(k(Eof[WHAT]))
     )
-  }
+
 }
 
 trait IterateeImplicits {
-  implicit def toEval[WHAT, RETURN]( i : Iteratee[WHAT, RETURN] ) = new Eval[WHAT, RETURN] {
+  implicit def toEval[WHAT, F[_], RETURN]( i : IterateeT[WHAT, F, RETURN] ) = new Eval[WHAT, F, RETURN] {
     lazy val orig = i
   }
 
   /**
    * Taken from huynhjl's answer on StackOverflow, just abstracting the type to allow for better implicit inference
-   */
-  def iteratorEnumerator[E](iter: Iterator[E]) = new Enumerator[E] {
-    override def apply[A]: StepT[E, Id.Id, A] => IterateeT[E, Id.Id, A] =
-      {
-        case step if iter.isEmpty => iteratee(step)
-        case step @ Done(acc, input) => iteratee(step)
-        case Cont(k) =>
-          val x : E = iter.next
-          k(Element(x)) >>== apply
-      }
-  }
+   *
+   * def iteratorEnumerator[E](iter: Iterator[E]) = new EnumeratorT[E, Trampoline] {
+   * override def apply[A]: StepT[E, Trampoline, A] => IterateeT[E, Trampoline, A] =
+   * {
+   * case step if iter.isEmpty => iterateeT[E, Trampoline, A](Free.point(step))
+   * case step @ Done(acc, input) => iterateeT[E, Trampoline, A](Free.point(step))
+   * case step @ Cont(k) =>
+   * val x : E = iter.next
+   *
+   * k(Element(x)) >>== {
+   * s => s.mapContOr(_ => sys.error("diverging iteratee"), apply(s))
+   * }
+   * }
+   * } */
 
+  //  def enumIterator[E, F[_]](x: => Iterator[E])(implicit F: MonadIO[F]) : EnumeratorT[E, F] =
+  def iteratorEnumerator[E, F[_]](iter: => Iterator[E])(implicit f: Monad[F]): EnumeratorT[E, F] =
+    new EnumeratorT[E, F] {
+      def apply[A] = {
+        def go(xs: Iterator[E])(s: StepT[E, F, A]): IterateeT[E, F, A] =
+          if (xs.isEmpty) s.pointI
+          else {
+            s mapCont { k =>
+              val next = xs.next()
+              k(Element(next)) >>== go(xs)
+            }
+          }
+
+        go(iter)
+      }
+    }
 }
 
 /**
@@ -55,42 +77,30 @@ trait Iteratees {
 
   /** drop while iteratee */
   @deprecated("Now provided by Scalaz",since = "0.6.0")
-  def dropWhile[E](f: (E) => Boolean) : Iteratee[E, Option[E]] = {
-    def step(s: Input[E]): Iteratee[E, Option[E]] =
-      iteratee( s(el = e => {
-        if (f(e))
-          Cont(step)
-        else
-          Done(Some(e), Empty[E])
-        },
-        empty = Cont(step),
-        eof = Done(None, Eof[E])) )
-
-    iteratee( Cont(step) )
-  }
+  def dropWhile[E, F[_] : Applicative](f: (E) => Boolean) : IterateeT[E, F, Unit] = Iteratee.dropWhile(f)
 
   /** "find" iteratee, finds Some(first) or None */
-  def find[E](f: (E) => Boolean) : Iteratee[E, Option[E]] =
-    dropWhile(!f(_))
+  @deprecated("Now provided by Scalaz dropUntil",since = "0.6.0")
+  def find[E, F[_]: Applicative](f: (E) => Boolean) : IterateeT[E,F, Unit] = Iteratee.dropUntil(f)
 
   /** filter iteratee, greedily taking all content until eof */
-  def filter[E](f: (E) => Boolean) : Iteratee[E, Iterable[E]] = {
-    def step(l : List[E])(s: Input[E]): Iteratee[E, Iterable[E]] =
-      iteratee( s(el = e => {
+  def filter[E, F[_]](f: (E) => Boolean)(implicit F: Monad[F]): IterateeT[E, F, Iterable[E]] = {
+    def step(l : List[E])(s: Input[E]): IterateeT[E, F, Iterable[E]] =
+      iterateeT( F.point( s(el = e => {
         if (f(e))
           Cont(step(l :+ e))
         else
           Cont(step(l))
         },
         empty = Cont(step(l)),
-        eof = Done(l, Eof[E])) )
+        eof = Done(l, Eof[E])) ) )
 
-    iteratee( Cont(step(List())) )
+    iterateeT( F.point( Cont(step(List())) ) )
   }
 
-  type ResumableIterList[E,A] = Iteratee[E, (Iterable[A],Iteratee[E,_])]
-  type ResumableIter[E,A] = Iteratee[E, (A, Iteratee[E,_])]
-  type ResumableStep[E,A] = StepT[E, Id, (A, Iteratee[E,_])]
+  type ResumableIterList[E, F[_], A] = IterateeT[E, F, (Iterable[A],IterateeT[E,F,_])]
+  type ResumableIter[E, F[_], A] = IterateeT[E, F, (A, IterateeT[E, F,_])]
+  type ResumableStep[E, F[_], A] = StepT[E, F, (A, IterateeT[E, F, _])]
 
   /*
   def RCont[E,A](k: Input[E] => ResumableIter[E,A]): ResumableStep[E,A] = Cont[E, Id, (A, Iteratee[E,_])](k)
@@ -102,44 +112,44 @@ trait Iteratees {
   /**
    * Extract the continuation from a Done
    */
-  def extractCont[E,A]( iter : ResumableIter[E, A] ): ResumableIter[E,A] =
-    iter.foldT[ResumableIter[E,A]](
+  def extractCont[E, F[_], A]( iter : ResumableIter[E, F, A] )(implicit F: Monad[F]): F[ResumableIter[E, F, A]] =
+    iter.foldT[ResumableIter[E, F, A]](
       done = (x, i) =>
-	      x._2.asInstanceOf[ResumableIter[E,A]],
-      cont = f => error("Was not done") )
+        F.point(x._2.asInstanceOf[ResumableIter[E, F, A]]),
+      cont = f => error("Was not done"))
 
   /**
    * Extract the Some(value) from a Done or None if it was not Done.
    */
-  def extract[E,A]( iter : ResumableIter[E, A] ) : Option[A] =
+  def extract[E, F[_], A]( iter : ResumableIter[E, F, A] )(implicit F: Monad[F]) : F[Option[A]] =
     iter.foldT[Option[A]](
       done = (x, i) =>
-	      Some(x._1),
-      cont = f => None )
+	      F.point(Some(x._1)),
+      cont = f => F.point(None) )
 
   /**
    * Helper to identify dones
    */
-  def isDone[E,A]( iter : Iteratee[E, A] ): Boolean =
+  def isDone[E, F[_], A]( iter : IterateeT[E, F, A] )(implicit F: Monad[F]): F[Boolean] =
     iter.foldT[Boolean](
-      done = (a, i) => true,
-      cont = f => false )
+      done = (a, i) => F.point(true),
+      cont = f => F.point(false) )
 
   /**
    * Helper for done and empty
    */
-  def isEmpty[E,A]( iter : Iteratee[E,A] ): Boolean =
+  def isEmpty[E,F[_],A]( iter : IterateeT[E,F,A] )(implicit F: Monad[F]): F[Boolean] =
     iter.foldT[Boolean](
-      done = (a, i) => Empty.unapply[E](i),
-      cont = f => error("Iteratee is not Done") )
+      done = (a, i) => F.point(Empty.unapply[E](i)),
+      cont = f => F.point(error("Iteratee is not Done")) )
 
   /**
    * Helper for done and eof
    */
-  def isEOF[E,A]( iter : Iteratee[E,A] ): Boolean =
+  def isEOF[E, F[_], A]( iter : IterateeT[E,F,A] )(implicit F: Monad[F]): F[Boolean] =
     iter.foldT[Boolean](
-      done = (a, i) => Eof.unapply[E](i),
-      cont = f => error("Iteratee is not Done") )
+      done = (a, i) => F.point( Eof.unapply[E](i)),
+      cont = f => F.point(error("Iteratee is not Done")) )
 
   /**
    * Converts a normal IterV[E,A] to a ResumableIter.
@@ -149,36 +159,40 @@ trait Iteratees {
    * with the original iter.  This is close to restarting the iter on
    * a new "stream", otherwise all attempts to keep the Cont will be made.
    */
-  implicit def toResumableIter[E,A]( oiter : Iteratee[E,A]) : ResumableIter[E,A] = {
-    def step(iter : Iteratee[E,A])( s : Input[E]) : ResumableIter[E, A] = {
-      val next = iter.foldT[ResumableStep[E,A]](// need to evaluate s in the case of done....
-        done = (x, y) => Done((x, iteratee(Cont(step(oiter)))),y),
+  implicit def toResumableIter[E,F[_],A]( oiter : IterateeT[E,F,A])(implicit F: Monad[F]) : ResumableIter[E,F,A] = {
+    def step(iter : IterateeT[E,F,A])( s : Input[E]) : ResumableIter[E, F, A] = {
+      val next = iter.foldT[ResumableStep[E,F,A]](// need to evaluate s in the case of done....
+        done = (x, y) => F.point( Done((x, iterateeT(F.point(Cont(step(oiter))))),y) ),
         cont = k =>
           {
             k(s).foldT(
-              done = (x, y) => Done((x, iteratee(Cont(step(oiter)))),y),
-              cont = i => Cont(step( iteratee( Cont(i) ) ))
+              done = (x, y) => F.point( Done((x, iterateeT(F.point(Cont(step(oiter))))),y) ),
+              cont = i => F.point( Cont(step( iterateeT( F.point( Cont(i) )) )) )
             )
           }
       )
-      iteratee( next )
+      iterateeT( next )
     }
 
-    iteratee( Cont(step(oiter)) )
+    iterateeT( F.point( Cont(step(oiter)) ) )
   }
 
   /**
    * Stepwise fold, each element is evaluated but each one is returned as a result+resumable iter.
    */
-  def foldI[E,A]( f : (E,A) => A )( init : A ) : ResumableIter[E,A] = {
-    def step( current : A )( s : Input[E] ) : ResumableIter[E,A] =
-      iteratee( s(el = {e =>
-        val next = f(e,current)
-        Done((next, iteratee(Cont(step(next)))), Empty[E])},
-              empty = Cont(step(current)),
-              eof = Done((current, iteratee(Cont(step(init)))),Eof[E])) )
+  def foldI[E,F[_],A]( f : (E,A) => A )( init : A )(implicit F: Monad[F]) : ResumableIter[E,F,A] = {
+    def step( current : A )( s : Input[E] ) : ResumableIter[E,F,A] =
+      iterateeT(
+        s(
+          el = {e =>
+            val next = f(e,current)
+            F.point( Done((next, iterateeT( F.point(Cont(step(next))))), Empty[E]))} ,
+          empty = F.point(Cont(step(current))),
+          eof = F.point( Done((current, iterateeT( F.point( Cont(step(init))))),Eof[E]) )
+          )
+        )
 
-    iteratee( Cont(step(init)) )
+    iterateeT( F.point( Cont(step(init)) ) )
   }
 
   /**
@@ -189,7 +203,7 @@ trait Iteratees {
    *
    * combine with onDone to get through chunks of data.
    */
-  def foldOnDone[E, A, ACC]( e: Enumerator[E] )( initAcc : ACC, initResumable : ResumableIter[E,A] )( f : (ACC, A) => ACC ) : ACC = {
+  def foldOnDone[E, A, F[_], ACC]( e: EnumeratorT[E, F] )( initAcc : ACC, initResumable : ResumableIter[E, F,A] )( f : (ACC, A) => ACC )(implicit F: Monad[F]) : F[ACC] = {
     import ScalesUtils._
 
     var currentI = (initResumable &= e).eval
