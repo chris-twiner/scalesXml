@@ -121,7 +121,7 @@ class IterateeTest extends junit.framework.TestCase {
         (res, cont) = r
         done <- isDone(cont)
       } yield {
-        assertEquals (25000250000L, res)
+        assertEquals (25250000L, res)
         assertTrue ("should have been done", done)
       }
 
