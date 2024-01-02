@@ -9,6 +9,8 @@ import scalaz.iteratee.StepT.{Cont, Done}
 import scalaz.Free._
 import scalaz.Monad
 
+import scalaz.Scalaz._
+
 class IterateeTest extends junit.framework.TestCase {
   
   import junit.framework.Assert._
@@ -84,32 +86,38 @@ class IterateeTest extends junit.framework.TestCase {
     assertEquals(20, res)
     assertTrue("should have been done", isDone(cont))
   }
-
+*/
   def testEnumToManyEOFFromMap = {
     
     val i = List(1,2,3,4).iterator
 
-    val (res, cont) = (enumToMany(usum[Int])( mapTo( (i: Int) => Eof[EphemeralStream[Int]] ) ) &= iteratorEnumerator(i)).run
-    assertEquals(0, res)
-    assertTrue("should have been done", isDone(cont))
+    val p =
+      for {
+        r <- (enumToMany(usum[Int, Trampoline])( mapTo[Int, Trampoline, Int]( (i: Int) => Eof[EphemeralStream[Int]] ) ) &= iteratorEnumerator(i)).run
+        (res, cont) = r
+        done <- isDone(cont)
+      } yield {
+        assertEquals(0, res)
+        assertTrue("should have been done", done)
+      }
+
+    p run
 
     val rest = i.take(4).toSeq
     //println(rest)
     assertEquals("Should still have had items in the list", 9, rest.sum)
   }
-*/
+
   /**
    * Make sure it doesn't soe in the loop
    */ 
   def testEnumToManySOE(): Unit = {
-    val i = //1L to 5000L iterator//
-      List[Long](1,2,3,4,5).iterator
-
-    import scalaz.Scalaz._
+    val i = 1L to 5000L iterator//
+      //List[Long](1,2,3,4,5).iterator
 
     val p =
       for {
-        r <- (enumToMany(usum[Long, Trampoline])(mapTo[Long, Trampoline, Long]((_: Long) => Element(lTo(1L, 100000L)))) &= iteratorEnumerator(i)).run
+        r <- (enumToMany(usum[Long, Trampoline])(mapTo[Long, Trampoline, Long]((_: Long) => Element(lTo(1L, 100L)))) &= iteratorEnumerator(i)).run
         (res, cont) = r
         done <- isDone(cont)
       } yield {
