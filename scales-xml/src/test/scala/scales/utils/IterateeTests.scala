@@ -83,7 +83,7 @@ class IterateeTest extends junit.framework.TestCase {
    * Make sure it doesn't soe in the loop
    */ 
   def testEnumToManySOE = {
-    val i = List[Long](1,2,3,4,5).iterator
+    val i = 1L to 5000L iterator//List[Long](1,2,3,4,5).iterator
     
     val (res, cont) = (enumToMany(usum[Long])( mapTo( (_:Long) => Element(lTo(1L, 100000L)) ) ) &= iteratorEnumerator(i)).run
     assertEquals(25000250000L, res)
