@@ -1,8 +1,8 @@
 package scales.utils.iteratee
 
-import scalaz.{Applicative, EphemeralStream, Monad}
+import scalaz.{Applicative, Bind, EphemeralStream, Monad}
 import scalaz.iteratee.Input.{Element, Empty, Eof}
-import scalaz.iteratee.Iteratee.{cont, done, enumEofT, iteratee, iterateeT}
+import scalaz.iteratee.Iteratee.{cont, done, emptyInput, enumEofT, iteratee, iterateeT, fold}
 import scalaz.iteratee.StepT.{Cont, Done}
 import scalaz.iteratee.{EnumeratorT, Input, Iteratee, IterateeT, StepT}
 import scales.utils.ScalesUtils
@@ -70,13 +70,24 @@ trait Iteratees {
 
   def error(string: String) = sys.error(string)
 
-  /** drop while iteratee */
-  @deprecated("Now provided by Scalaz",since = "0.6.0")
-  def dropWhile[E, F[_] : Applicative](f: (E) => Boolean) : IterateeT[E, F, Unit] = Iteratee.dropWhile(f)
+  /** drop while iteratee, returning the possibly remaining data */
+  def dropWhile[E, F[_]](f: (E) => Boolean)(implicit F: Applicative[F]) : IterateeT[E, F, Option[E]] = {
+    def step(s: Input[E]): IterateeT[E, F, Option[E]] =
+      iterateeT( F.point( s(el = e => {
+        if (f(e))
+          Cont(step)
+        else
+          Done(Some(e), Empty[E])
+        },
+        empty = Cont(step),
+        eof = Done(None, Eof[E])) ))
+
+    iterateeT( F.point( Cont(step) ) )
+  }
 
   /** "find" iteratee, finds Some(first) or None */
-  @deprecated("Now provided by Scalaz dropUntil",since = "0.6.0")
-  def find[E, F[_]: Applicative](f: (E) => Boolean) : IterateeT[E,F, Unit] = Iteratee.dropUntil(f)
+  def find[E, F[_]](f: (E) => Boolean)(implicit F: Applicative[F]) : IterateeT[E, F, Option[E]] =
+    dropWhile(!f(_))
 
   /** filter iteratee, greedily taking all content until eof */
   def filter[E, F[_]](f: (E) => Boolean)(implicit F: Monad[F]): IterateeT[E, F, Iterable[E]] = {
@@ -97,12 +108,36 @@ trait Iteratees {
   type ResumableIter[E, F[_], A] = IterateeT[E, F, (A, IterateeT[E, F,_])]
   type ResumableStep[E, F[_], A] = StepT[E, F, (A, IterateeT[E, F, _])]
 
-  /*
-  def RCont[E,A](k: Input[E] => ResumableIter[E,A]): ResumableStep[E,A] = Cont[E, Id, (A, Iteratee[E,_])](k)
-  def RDone[E,A](d: => (A, Iteratee[E,_]), r: => Input[E]): ResumableStep[E,A] = Done[E, Id, (A, Iteratee[E,_])](d, r)
+  /**
+   * marks a continuation resumableiter as actually being EOF - i.e. don't attempt to evaluate it
+   * @param F
+   * @tparam E
+   * @tparam F
+   * @tparam A
+   * @return
+   */
+  def resumableEOF[E, F[_], A](input: A = null)(implicit F: Applicative[F]): ResumableIter[E, F, A] =
+    iterateeT(F.point( Done[E, F, (A, ResumableIter[E,F,A])]((input, null.asInstanceOf[ResumableIter[E,F,A]]), Eof[E]) )).asInstanceOf[ResumableIter[E, F, A]]
 
-  def resumable[E,A](step: ResumableStep[E, A]): ResumableIter[E,A] =
-    iteratee(step) */
+  def resumableEOFDone[E, F[_], A](input: A)(implicit F: Applicative[F]): ResumableStep[E, F, A] =
+    Done[E, F, (A, ResumableIter[E, F, A])]((input, resumableEOF(input)), Eof[E]).asInstanceOf[ResumableStep[E,F,A]]
+
+  /**
+   * is this iteratee actually "empty"
+   * @param F
+   * @tparam E
+   * @tparam F
+   * @tparam A
+   * @return
+   */
+  def isResumableEOF[E, F[_], A](iter: ResumableIter[E,F,A])(implicit F: Monad[F]): F[Boolean] =
+    F.map(iter.value)(isResumableEOF)
+
+  def isResumableEOF[E, F[_], A](s: ResumableStep[E,F,A]): Boolean =
+    s(
+      cont= k => false
+      , done= (a, i) => a._2 == null && i.isEof
+    )
 
   /**
    * Extract the continuation from a Done
@@ -111,14 +146,9 @@ trait Iteratees {
     iterateeT(
       F.bind(iter.value)(s => s.fold(
         cont = k => error("Was not done")
-        , done = (x, i) => x.asInstanceOf[(A,ResumableIter[E, F, A])]._2.value
+        , done = (x, i) => x._2.asInstanceOf[ResumableIter[E, F, A]].value
       )))
-  /*
-    iter.foldT[ResumableIter[E, F, A]](
-      done = (x, i) =>
-        F.point(x._2.asInstanceOf[ResumableIter[E, F, A]]),
-      cont = f => error("Was not done"))
-*/
+
   /**
    * Extract the Some(value) from a Done or None if it was not Done.
    */
@@ -132,11 +162,9 @@ trait Iteratees {
    * Helper to identify dones
    */
   def isDone[E, F[_], A]( iter : IterateeT[E, F, A] )(implicit F: Monad[F]): F[Boolean] =
-    iter.foldT[Boolean](
-      done = (a, i) => F.point(true),
-      cont = f => F.point(false) )
+    F.map(iter.value)(isDoneS)
 
-  def isDone[E, F[_], A]( step : StepT[E, F, A] )(implicit F: Monad[F]): Boolean =
+  def isDoneS[E, F[_], A]( step : StepT[E, F, A] )(implicit F: Monad[F]): Boolean =
     step(
       done = (a, i) => true,
       cont = f => false
@@ -146,19 +174,31 @@ trait Iteratees {
    * Helper for done and empty
    */
   def isEmpty[E,F[_],A]( iter : IterateeT[E,F,A] )(implicit F: Monad[F]): F[Boolean] =
-    iter.foldT[Boolean](
-      done = (a, i) => F.point(Empty.unapply[E](i)),
-      cont = f => F.point(false)//F.point(error("Iteratee is not Done"))
-    )
+    F.map(iter.value)(isEmptyS)
 
   /**
    * Helper for done and eof
    */
   def isEOF[E, F[_], A]( iter : IterateeT[E,F,A] )(implicit F: Monad[F]): F[Boolean] =
-    iter.foldT[Boolean](
-      done = (a, i) => F.point( Eof.unapply[E](i)),
-      cont = f => F.point(false)//F.point(error("Iteratee is not Done"))
-  )
+    F.map(iter.value)(isEOFS)
+
+  /**
+   * Helper for done and empty
+   */
+  def isEmptyS[E,F[_],A]( step : StepT[E,F,A] )(implicit F: Monad[F]): Boolean =
+    step(
+      done = (a, i) => i.isEmpty,
+      cont = f => false
+    )
+
+  /**
+   * Helper for done and eof
+   */
+  def isEOFS[E, F[_], A]( step : StepT[E,F,A] )(implicit F: Monad[F]): Boolean =
+    step(
+      done = (a, i) => i.isEof,
+      cont = f => false
+    )
 
   /**
    * Converts a normal IterV[E,A] to a ResumableIter.
@@ -189,20 +229,33 @@ trait Iteratees {
   /**
    * Stepwise fold, each element is evaluated but each one is returned as a result+resumable iter.
    */
-  def foldI[E,F[_],A]( f : (E,A) => A )( init : A )(implicit F: Applicative[F]) : ResumableIter[E,F,A] = {
-    def step( current : A )( s : Input[E] ) : ResumableIter[E,F,A] =
-      iterateeT(
-        F.point( s(
-          el = {e =>
-            val next = f(e,current)
-            Done((next, iterateeT( F.point(Cont(step(next))))), Empty[E])} ,
-          empty = Cont(step(current)),
-          eof = Done((current, iterateeT( F.point( Cont(step(init))))),Eof[E])
-          ) )
+  def foldI[E,F[_],A]( f : (E,A) => A )( init : A )(implicit F: Monad[F]) : ResumableIter[E,F,A] =
+    foldIM[E,F,A]{ (e,a) => F.point(f(e,a)) }(init)
+
+  /**
+   * Stepwise fold but the result of f is bound to F
+   */
+  def foldIM[E,F[_],A]( f : (E,A) => F[A] )( init : A )(implicit F: Monad[F]) : ResumableIter[E,F,A] = {
+    def step( current : A )( s : Input[E] ) : IterateeT[E,F,(A, IterateeT[E,F,_])] =
+      iterateeT[E,F,(A, IterateeT[E,F,_])](
+        s(
+          el = e => {
+            val next = f(e, current)
+            val r = F.map(next) {
+              i =>
+                Cont[E,F,(A, IterateeT[E,F,_])](step(i))
+                //Done[E,F,(A, IterateeT[E,F,_])]((i, iterateeT( F.point( Cont(step(i)) ))), Empty[E])
+            }
+            r
+          },
+          empty = F.point( Cont(step(current)) ),
+          eof = F.point( Done((current, iterateeT( F.point( Cont(step(init))))),Eof[E]) )
         )
+      )
 
     iterateeT( F.point( Cont(step(init)) ) )
   }
+
 
   /**
    * Folds over the Iteratee with Cont or Done and Empty, returning with Done and EOF.
@@ -302,10 +355,10 @@ trait Iteratees {
               done = (e1, y) =>
                 F.point(
                   // are we EOF, in which case remove
-                  if (isEOF(iteratee(Done(e1,y))))
+                  if (y.isEof)
                     Nil
                   else {
-                    if (isEmpty(iteratee(Done(e1,y))))
+                    if (y.isEmpty)
                       // feed back the continuation
                       // this is where we hope that the users don't
                       // break on purpose :-()
@@ -378,7 +431,8 @@ trait Iteratees {
    * Enumeratee that converts input 1:1
    * String => Int, enumerator Iterator[String] but IterV[Int, Int]
    */
-  def enumerateeMap[E, A, F[_], R]( dest : IterateeT[A,F,R])( f : E => A )(implicit F: Monad[F]) : IterateeT[E, F, R] = {
+  @deprecated(since="0.6.0-M5", message="Use Scalaz 7 IterateeT.contramap")
+  def enumerateeMap[E, A, F[_], R](target: IterateeT[A,F,R])(f : E => A )(implicit F: Monad[F]) : IterateeT[E, F, R] = {
 
     def next( i : IterateeT[A,F,R] ) : IterateeT[E, F, R] =
       iterateeT( i.foldT[StepT[E, F, R]](
@@ -390,7 +444,7 @@ trait Iteratees {
         )  )
       ) )
 
-    next(dest)
+    next(target)
   }
 
   /**
@@ -487,7 +541,7 @@ trait Iteratees {
    *
    * If the dest returns EOF, the toMany is in turn called with EOF for any needed resource control processing.
    */ 
-  def enumToMany[E, A, F[_], R]( dest: ResumableIter[A,F,R])( toMany: ResumableIter[E, F, EphemeralStream[A]])(implicit F: Monad[F]): ResumableIter[E, F, R] = {
+  def enumToMany[E, A, F[_], R]( dest: ResumableIter[A,F,R])( toMany: ResumableIter[E, F, EphemeralStream[A]])(implicit F: Monad[F], AF: Applicative[F]): ResumableIter[E, F, R] = {
     val empty = () => EphemeralStream.emptyEphemeralStream[A]
 
     /**
@@ -501,7 +555,7 @@ trait Iteratees {
       def step(theStep: F[ResumableStep[A, F, R]]): F[ResumableStep[A, F, R]] =
         F.bind(theStep){
             cstep =>
-              if (!isDone(cstep) && !cs.isEmpty) {
+              if (!isDoneS(cstep) && !cs.isEmpty) {
                 // println("doing a loop "+c)
                 val nc = cstep(
                   done = (a, y) => error("Should not get here"), // send it back, shouldn't be possible to get here anyway due to while test
@@ -628,17 +682,16 @@ trait Iteratees {
       val returnThis : ResumableIter[E, F,R] =
         iterateeT(
           for{
-            done <- isDone(nextCont)
             eof <- isEOF(nextCont)
             doneMany <- isDone(toMany)
             eofMany <- isEOF(toMany)
           } yield {
-            if ((done && eof) ||
+            if (eof ||
                 (doneMany && eofMany)     || // either eof then its not restartable
                 (Eof.unapply(y) && !internalEOF )  // or the source is out of elements
               ) {
 
-              Done((res, iterateeT(F.point(Done[E,F,R](res, Eof[E])))), Eof[E])
+              resumableEOFDone[E,F,R](res)
 
             } else {
               // there is a value to pass back out
@@ -651,7 +704,6 @@ trait Iteratees {
                 if (s().isEmpty) {
                   // need to process this res but force another to be
                   // calculated before it is returned to the enumerator
-                  //iterateeT(F.point(n))
                   n
                 } else {
                   // still data to process
@@ -661,7 +713,7 @@ trait Iteratees {
             }
           }
         )
-
+/*
       if (Eof.unapply(y) && !internalEOF) {
         // signal the end here to toMany, don't care about result
         toMany.foldT(done= (a1, y1) => F.point(false),
@@ -669,7 +721,7 @@ trait Iteratees {
                 k(Eof[E]); F.point(false)
               })
       }
-
+*/
       returnThis
     }
 
@@ -694,5 +746,49 @@ trait Iteratees {
 
     next(dest, empty, toMany)
   }
+
+
+  /**
+   * Based on Scalaz 7 flatMap but exposes the monad through the f parameter
+   * @param itr
+   * @param f
+   * @param F
+   * @tparam E
+   * @tparam F
+   * @tparam A
+   * @tparam B
+   * @return
+   */
+  def flatMap[E,F[_],A,B](itr: IterateeT[E,F,A])(f: A => IterateeT[E, F, B])(implicit F: Monad[F]): IterateeT[E, F, B] = {
+    def through(x: IterateeT[E, F, A]): IterateeT[E, F, B] =
+      iterateeT(
+        F.bind(x.value)((s: StepT[E, F, A]) => s.fold[F[StepT[E, F, B]]](
+          cont = k => F.point(StepT.scont(u => through(k(u))))
+          , done = (a, i) =>
+            if (i.isEmpty)
+              f(a).value
+            else
+              F.bind(f(a).value)(_.fold(
+                cont = kk => kk(i).value
+                , done = (aa, _) => F.point(StepT.sdone[E, F, B](aa, i))
+              ))
+        )))
+
+    through(itr)
+  }
+
+  /**
+   * Based on the Scalaz 7 map but exposes the monad through the f parameter
+   * @param itr
+   * @param f
+   * @param F
+   * @tparam E
+   * @tparam F
+   * @tparam A
+   * @tparam B
+   * @return
+   */
+  def mapStep[E,F[_],A,B](itr: IterateeT[E,F,A])(f: A => F[StepT[E,F,B]])(implicit F: Monad[F]): IterateeT[E, F, B] =
+    flatMap(itr)(a => iterateeT(f(a)))
 
 }
