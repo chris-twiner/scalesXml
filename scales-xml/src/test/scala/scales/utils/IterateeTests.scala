@@ -193,7 +193,7 @@ class IterateeTest extends junit.framework.TestCase {
   def testEveryItem(): Unit = {
     val source = List[Long](1,4,7,10,13).iterator
 
-    type TheF[X] = Id[X]
+    type TheF[X] = Trampoline[X]
     def F(implicit F: Monad[TheF]) = F
 
     // force a restart every entry
@@ -216,154 +216,41 @@ class IterateeTest extends junit.framework.TestCase {
 
       siteratee( F.point( Cont(step) ) )
     }
-/*
-    type Triple = (Long, Int, Int)
-    type Quad = (Triple, ResumableIter[Long, TheF, Long])
-
-    def loop(iter: ResumableIter[Triple, TheF, Triple]):ResumableIter[Quad, TheF, Quad] = {
-      def step(istep: ResumableStep[Quad,TheF, Quad]): ResumableIter[Quad, TheF, Quad] =
-        siteratee(
-          istep(
-            done = (nextContPair, rest) => {
-              val (((res, count, i), itr), nextCont) = nextContPair
-              val nextContR = nextCont.asInstanceOf[ResumableIter[Quad, TheF, Quad]]
-              val rrest = if (rest.isEof) eofInput[Quad] else emptyInput[Quad]
-              if (i == 15)
-                F.point(Done((((res, count, i), itr), nextContR), Eof[Quad]))
-              else {
-                F.bind(isResumableEOF(nextContR)) {
-                  isEOF =>
-
-    //                assertEquals(i, res)
-                  val cres = itr.eval
-                  F.bind(cres.value) {
-                    s =>
-                      if (isDone(s) && !isEOF) {
-                        F.bind(extract(cres)) {
-                          ol =>
-                            val newres = ol.get
-                            val newiter = extractCont(cres)
-                            val ntriple = newres.copy(_3 = newres._3 + 1)
-                            Done(((ntriple, newiter), loop(newiter)), rrest)
-                        }
-                      } else {
-                        val newcount = count + 1
-                        // run on the source - as we need more data
-                        val newstep =
-                          for {
-                            r <- (cres &= iteratorEnumerator(source.map(r => (r, newcount, i)))).run
-                            (newres, ncont) = r
-                          } yield {
-                            if (count == 6) {
-                              assertEquals("should have pushed the eof", 15, i)
-                            }
-                            Done((newres.copy(_3 = newres._3 + 1), ncont.asInstanceOf[ResumableIter[Quad, TheF, Quad]]), rrest).asInstanceOf[ResumableStep[Quad, TheF, Quad]]
-                          }
-
-                        newstep
-                      }
-                  }
-
-                }
-              }
-            },
-            cont = k => F.point(Cont(in => k(in) >>== step))
-          )
-        )
-
-      // add the iter in
-      siteratee[Quad, TheF, (Quad, ResumableIter[Quad, TheF, Quad])](F.bind(iter.value)( s => s(
-        done = (i, y) => {
-          val (a, cont: ResumableIter[Triple, TheF, Triple]) = i
-          F.point( Done(((a, cont), loop(iter)), y(
-            el = e => Element((e, iter)),
-            empty = emptyInput[Quad],
-            eof = eofInput[Quad]
-          )) )
-        },
-        cont = k => loop( siteratee( F.point( scont(k) ))).value.asInstanceOf[TheF[StepT[Quad, TheF, (Quad, ResumableIter[Quad, TheF, Quad])]]]
-      ))) >>== {s => step(s.asInstanceOf[ResumableStep[Quad, TheF, Quad]]) }
-    }
-    */
 
     val oitr = enumToMany(echo)(mapTo[Long, TheF, Long] {
           (x: Long) =>
-            //println("evaled to "+x);
             Element(lTo(x, x + 2L))
         }) &= iteratorEnumerator(source)
-/*
-    def resumableMap[E, F[_], A, AA](source: ResumableIter[E,F,A])(output: A => AA)(implicit F: Monad[F]): ResumableIter[E, F, AA] =
-      (
-        mapStep[E,F,A,(AA, ResumableIter[E, F, AA])](source.asInstanceOf[IterateeT[E,F,A]]) { case ((a: A, cont: ResumableIter[E,F,A])) =>
-          F.bind(cont.value) {
-            contstep => // don't actually care about the value, just need F
-              F.map(isResumableEOF(cont)) {
-                isEOF =>
-                if (isEOF)
-                  // don't further evaluate
-                  Done[E, F, (AA, ResumableIter[E, F, AA])]((output(a), resumableEOF), eofInput)
-                else
-                  Done[E, F, (AA, ResumableIter[E, F, AA])]((output(a), resumableMap[E, F, A, AA](cont)(output)), emptyInput)
-              }
-          }
-        }
-      ).asInstanceOf[ResumableIter[E, F, AA]]
-
-    def resumableContramap[E, A, F[_], R](target: ResumableIter[A,F,R])(f : E => A )(implicit F: Monad[F]) : ResumableIter[E, F, R] = {
-
-      def next( i : ResumableIter[A,F,R] ) : ResumableIter[E, F, R] = {
-        scalaz.iteratee.Iteratee.iterateeT( i.foldT[ResumableStep[E, F, R]](
-          done = (i, y) => {
-            val (a, cont) = i
-
-            F.point( Done[E, F, (R, ResumableIter[E,F, R])](
-              (a,
-                if (!y.isEof)
-                  resumableContramap(cont.asInstanceOf[ResumableIter[A,F,R]])(f)
-                else
-                  resumableEOF
-              ),
-              if (y.isEof) eofInput else emptyInput).asInstanceOf[ResumableStep[E,F,R]] )
-          },
-          cont = k => F.point( Cont((x: Input[E]) =>
-            x(
-              el = e => next(k(Element(f(e)))),
-              empty = next(k(Empty[A])),
-              eof = next(k(Eof[A])))
-          ))
-        ) )
-      }
-
-      next(target)
-    }
-
-    val lifted =
-      resumableMap(resumableContramap[Triple, Long, TheF, Long](oitr)(r => r._1))(r => (r, 1, 1))
-*/
 
     val p =
       for {
-        //or <- lifted.run
         or <- oitr.run
         (origres, origcont: ResumableIter[Long, TheF, Long]) = or
 
         _ = assertEquals(1, origres)
-        //list = Seq(((origres, 1, 1),oitr)
 
         r <- (foldIM[Int, TheF, (Long, Int, ResumableIter[Long, TheF, Long])]{ (i, quad) =>
+          //println("loop !!!! "+i)
           val (ores, ocount, itr) = quad
           var res = ores
           var iter = itr
           var count = ocount
 
-          //assertEquals(i, res)
+          assertEquals(i, res)
           val cres : ResumableIter[Long, TheF, Long] = iter.eval
 
           F.map(cres.value) { cresStep =>
 
             if (isDoneS(cresStep)/* && !isResumableEOF(cresStep)*/) {
-              res = extract(cres).get
-              iter = extractCont(cres)
+              val fo = extract(cres)
+              iter =
+                siteratee(
+                  F.bind(fo) {
+                    o =>
+                      res = o.get
+                      extractCont(cres).value
+                  }
+                )
             } else {
               //	println(">>><<<<>>>>><<<<")
               count += 1
@@ -382,10 +269,11 @@ class IterateeTest extends junit.framework.TestCase {
           }
         }((origres, 1, origcont)) &= iteratorEnumerator[Int, TheF]((1 to 15).iterator)).run
 
-        ((res, count, itr: ResumableIter[Long, TheF, Long]), last) = r
+        ((res, count, itrr), last) = r
+        itr = itrr.asInstanceOf[ scalaz.iteratee.IterateeT[Long,TheF,(Long, scales.utils.ResumableIter[Long,TheF,Long])] ]
 
-        done = isDone(itr)
-        eof = isEOF(itr)
+        done <- isDone(itr)
+        eof <- isEOF(itr)
       } yield {
       assertEquals(0, res)
       assertTrue("should have been done", done)

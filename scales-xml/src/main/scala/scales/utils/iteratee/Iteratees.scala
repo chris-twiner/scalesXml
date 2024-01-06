@@ -2,7 +2,7 @@ package scales.utils.iteratee
 
 import scalaz.{Applicative, Bind, EphemeralStream, Monad}
 import scalaz.iteratee.Input.{Element, Empty, Eof}
-import scalaz.iteratee.Iteratee.{cont, done, emptyInput, enumEofT, iteratee, iterateeT, fold}
+import scalaz.iteratee.Iteratee.{cont, done, drop, emptyInput, enumEofT, fold, iteratee, iterateeT}
 import scalaz.iteratee.StepT.{Cont, Done}
 import scalaz.iteratee.{EnumeratorT, Input, Iteratee, IterateeT, StepT}
 import scales.utils.ScalesUtils
@@ -131,7 +131,7 @@ trait Iteratees {
    * @return
    */
   def isResumableEOF[E, F[_], A](iter: ResumableIter[E,F,A])(implicit F: Monad[F]): F[Boolean] =
-    F.map(iter.value)(isResumableEOF)
+    F.map(iter.value)(isResumableEOF[E,F,A])
 
   def isResumableEOF[E, F[_], A](s: ResumableStep[E,F,A]): Boolean =
     s(
@@ -162,7 +162,7 @@ trait Iteratees {
    * Helper to identify dones
    */
   def isDone[E, F[_], A]( iter : IterateeT[E, F, A] )(implicit F: Monad[F]): F[Boolean] =
-    F.map(iter.value)(isDoneS)
+    F.map(iter.value)(isDoneS[E,F,A])
 
   def isDoneS[E, F[_], A]( step : StepT[E, F, A] )(implicit F: Monad[F]): Boolean =
     step(
@@ -174,13 +174,13 @@ trait Iteratees {
    * Helper for done and empty
    */
   def isEmpty[E,F[_],A]( iter : IterateeT[E,F,A] )(implicit F: Monad[F]): F[Boolean] =
-    F.map(iter.value)(isEmptyS)
+    F.map(iter.value)(isEmptyS[E,F,A])
 
   /**
    * Helper for done and eof
    */
   def isEOF[E, F[_], A]( iter : IterateeT[E,F,A] )(implicit F: Monad[F]): F[Boolean] =
-    F.map(iter.value)(isEOFS)
+    F.map(iter.value)(isEOFS[E,F,A])
 
   /**
    * Helper for done and empty
@@ -471,10 +471,11 @@ trait Iteratees {
   def mapTo[E, F[_], A]( f: E => Input[EphemeralStream[A]] )(implicit F: Applicative[F]): IterateeT[E, F, EphemeralStream[A]] = {
     def step(s: Input[E]): IterateeT[E, F, EphemeralStream[A]] =
       iterateeT( F.point(
-        s( el = e => {
+        s(
+          el = e => {
             val r = f(e)
-            r( el = e1 => {
-                //println(s"got ${e} turned into done ${e1.headOption}")
+            r(
+              el = e1 => {
                 Done(e1, Empty[E])
               },
               empty = Cont(step),
@@ -610,7 +611,7 @@ trait Iteratees {
                   }
                   else {
                     val h = e1.headOption.get
-                    // println("some data after all "+h)
+                    //println("some data after all "+h)
                     val tail = e1.tailOption.get
                     next(k(Element(h)), () => tail, nextContR)
                   }
@@ -696,33 +697,32 @@ trait Iteratees {
             } else {
               // there is a value to pass back out
               Done((res, {
-                val ocont = () => next(nextCont, s, toMany, true)
-                val n = cont((i: Input[E]) => {
-                  ocont()
-                })
+                def ocont = next(nextCont, s, toMany, true)
 
                 if (s().isEmpty) {
                   // need to process this res but force another to be
                   // calculated before it is returned to the enumerator
-                  n
+                  cont[E,F,(R,IterateeT[E,F,_])]( _ => cont[E,F,(R,IterateeT[E,F,_])]( _ => ocont))
                 } else {
                   // still data to process
-                  ocont()
+                  ocont
                 }
               }), Empty[E])
             }
           }
         )
-/*
+
       if (Eof.unapply(y) && !internalEOF) {
-        // signal the end here to toMany, don't care about result
-        toMany.foldT(done= (a1, y1) => F.point(false),
-              cont = k => {
-                k(Eof[E]); F.point(false)
-              })
-      }
-*/
-      returnThis
+        // signal the end here to toMany, don't care about result, tested by testSimpleLoad and testRandomAmounts in AsyncPullTest
+        iterateeT( F.map(returnThis.value){ v =>
+          toMany.foldT(done= (a1, y1) => F.point(false),
+                cont = k => {
+                  k(Eof[E]); F.point(false)
+                })
+          v
+        })
+      } else
+        returnThis
     }
 
     def next( i: ResumableIter[A,F,R], s: () => EphemeralStream[A], toMany: ResumableIter[E, F,EphemeralStream[A]], internalEOF: Boolean = false ): ResumableIter[E, F,R] = {
@@ -791,4 +791,53 @@ trait Iteratees {
   def mapStep[E,F[_],A,B](itr: IterateeT[E,F,A])(f: A => F[StepT[E,F,B]])(implicit F: Monad[F]): IterateeT[E, F, B] =
     flatMap(itr)(a => iterateeT(f(a)))
 
+  /*
+  /*
+        def resumableMap[E, F[_], A, AA](source: ResumableIter[E,F,A])(output: A => AA)(implicit F: Monad[F]): ResumableIter[E, F, AA] =
+          (
+            mapStep[E,F,A,(AA, ResumableIter[E, F, AA])](source.asInstanceOf[IterateeT[E,F,A]]) { case ((a: A, cont: ResumableIter[E,F,A])) =>
+              F.bind(cont.value) {
+                contstep => // don't actually care about the value, just need F
+                  F.map(isResumableEOF(cont)) {
+                    isEOF =>
+                    if (isEOF)
+                      // don't further evaluate
+                      Done[E, F, (AA, ResumableIter[E, F, AA])]((output(a), resumableEOF), eofInput)
+                    else
+                      Done[E, F, (AA, ResumableIter[E, F, AA])]((output(a), resumableMap[E, F, A, AA](cont)(output)), emptyInput)
+                  }
+              }
+            }
+          ).asInstanceOf[ResumableIter[E, F, AA]]
+
+        def resumableContramap[E, A, F[_], R](target: ResumableIter[A,F,R])(f : E => A )(implicit F: Monad[F]) : ResumableIter[E, F, R] = {
+
+          def next( i : ResumableIter[A,F,R] ) : ResumableIter[E, F, R] = {
+            scalaz.iteratee.Iteratee.iterateeT( i.foldT[ResumableStep[E, F, R]](
+              done = (i, y) => {
+                val (a, cont) = i
+
+                F.point( Done[E, F, (R, ResumableIter[E,F, R])](
+                  (a,
+                    if (!y.isEof)
+                      resumableContramap(cont.asInstanceOf[ResumableIter[A,F,R]])(f)
+                    else
+                      resumableEOF
+                  ),
+                  if (y.isEof) eofInput else emptyInput).asInstanceOf[ResumableStep[E,F,R]] )
+              },
+              cont = k => F.point( Cont((x: Input[E]) =>
+                x(
+                  el = e => next(k(Element(f(e)))),
+                  empty = next(k(Empty[A])),
+                  eof = next(k(Eof[A])))
+              ))
+            ) )
+          }
+
+          next(target)
+        }
+    */
+
+   */
 }
