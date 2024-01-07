@@ -2,10 +2,11 @@ package scales.utils.iteratee
 
 import scalaz.{Applicative, EphemeralStream, Monad}
 import scalaz.iteratee.Input.{Element, Empty, Eof}
-import scalaz.iteratee.Iteratee.{cont, done, empty, iterateeT}
+import scalaz.iteratee.Iteratee.{cont, done, empty, foldM, iterateeT}
 import scalaz.iteratee.StepT.{Cont, Done}
 import scalaz.iteratee.{EnumeratorT, Input, IterateeT, StepT}
 import scales.utils.ScalesUtils
+import scales.utils.ScalesUtils.{iteratorEnumerator, toEval}
 
 /**
  * Evals once, the developer must check its Done, equivalent to a .run but
@@ -344,56 +345,63 @@ trait Iteratees {
   def onDone[E, F[_],A](originalList : List[ResumableIter[E, F,A]])(implicit F: Monad[F]) : ResumableIterList[E, F,A] = {
 
     def step(l : List[ResumableIter[E, F,A]])(s: Input[E]): ResumableIterList[E, F,A] = {
-      iterateeT( F.point(
+      iterateeT(
         s(el = e => {
-          var res : List[A] = Nil
-          var newl : List[ ResumableIter[E, F,A] ] = Nil
+          var res: List[A] = Nil
+          var newl: List[ResumableIter[E, F, A]] = Nil
 
-          @inline def add( k : (Input[E]) => IterateeT[E, F, (A, IterateeT[E, F, _])]): F[Unit] = {
+          @inline def add(res: List[A], newl: List[ResumableIter[E, F, A]], k: (Input[E]) => IterateeT[E, F, (A, IterateeT[E, F, _])]): F[(List[A], List[ResumableIter[E, F, A]])] = {
             val d = k(Element(e))
-            newl = d :: newl
-            d foldT[Unit] (
-              done = (x, _) => { res = x._1 :: res; F.point() },
-              cont = _ => F.point(())
-            )
+            val nextl = d :: newl
+            F.map(d.value) { step =>
+              step(
+                done = (x, _) => (x._1 :: res, nextl),
+                cont = _ => (res, nextl)
+              )
+            }
           }
 
-          val i = l.iterator
-          while(i.hasNext) {
-            i.next.foldT[Unit](
-              // safety first
-              done = (e1, y) =>
-                F.point(
-                  // are we EOF, in which case remove
-                  if (y.isEof)
-                    Nil
-                  else {
-                    if (y.isEmpty)
-                      // feed back the continuation
-                      // this is where we hope that the users don't
-                      // break on purpose :-()
-                      e1._2.foldT(
-                        cont = k => add(k.asInstanceOf[(Input[E]) => IterateeT[E,F,(A, IterateeT[E, F, _])]]) ,
-                        done = (x,y) => error("Continuation can only be a Cont")
-                      )
-                    else
-                      error("Can only handle EOF or Empty for Done")
+          val r =
+            (foldM[ResumableIter[E, F, A], F, (List[A], List[ResumableIter[E, F, A]])]((Nil, Nil)) { (acc, i) =>
+              val (res, newl) = acc
+              val cont = i.eval
+              F.bind(cont.value){ step => step(
+                // safety first
+                done = (e1, y) =>
+                    // are we EOF, in which case remove
+                    if (y.isEof)
+                      F.point((Nil, Nil))
+                    else {
+                      if (y.isEmpty)
+                        // feed back the continuation
+                        // this is where we hope that the users don't
+                        // break on purpose :-()
+                        e1._2.foldT(
+                          cont = k => add(res, newl, k.asInstanceOf[(Input[E]) => IterateeT[E, F, (A, IterateeT[E, F, _])]]),
+                          done = (x, y) => error("Continuation can only be a Cont")
+                        )
+                      else
+                        error("Can only handle EOF or Empty for Done")
 
-                  }
-                ),
-              cont = i => add(i)
-            )
+                    }
+                ,
+                cont = i => add(res, newl, i)
+              )}
+            } &= iteratorEnumerator(l.iterator)).run
+
+          F.map(r) { r =>
+            val (res, newl) = r
+
+            if (res.isEmpty)
+              Cont(step(newl))
+            else
+              Done((res, iterateeT(F.point(Cont(step(newl))))), Empty[E])
           }
-
-          if (res.isEmpty)
-            Cont(step(newl))
-          else
-            Done((res, iterateeT( F.point( Cont(step(newl)) ))), Empty[E])
         },
-        empty = Cont(step(l)),
-        eof = Done((Nil, iterateeT( F.point( Cont(step(l))))), Eof[E])
+        empty = F.point( Cont(step(l)) ),
+        eof = F.point( Done((Nil, iterateeT( F.point( Cont(step(l))))), Eof[E]) )
         )
-      ))
+      )
     }
 
     iterateeT( F.point(  Cont(step(originalList)) ) )
