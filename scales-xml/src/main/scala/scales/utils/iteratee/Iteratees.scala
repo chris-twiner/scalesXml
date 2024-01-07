@@ -570,9 +570,8 @@ trait Iteratees {
                     }
                 )
                 step(nc.value)
-              } else {
+              } else
                 theStep
-              }
           }
 
       (iterateeT(step(i.value)), () => cs)
@@ -601,14 +600,13 @@ trait Iteratees {
             val nextContR = nextCont.asInstanceOf[ResumableIter[E,F,scalaz.EphemeralStream[A]]]
             val r = F.bind(isEOF(afterNewCall)){ eof =>
               (
-                if (eof) {
+                if (eof)
                   //println("after is eof")
                   next(k(Eof[A]), empty, nextContR)
-                } else {
-                  if (e1.isEmpty) {
+                else {
+                  if (e1.isEmpty)
                     //println("empty on nextcontr")
                     next(k(Empty[A]), empty, nextContR)
-                  }
                   else {
                     val h = e1.headOption.get
                     //println("some data after all "+h)
@@ -657,12 +655,8 @@ trait Iteratees {
                 )
               )
             },
-            empty = {
-              next(k(Empty[A]), empty, toMany)
-            },
-            eof = {
-              next(k(Eof[A]), empty, toMany)
-            }
+            empty = next(k(Empty[A]), empty, toMany),
+            eof = next(k(Eof[A]), empty, toMany)
           )
         )))
     }
@@ -690,11 +684,11 @@ trait Iteratees {
             if (eof ||
                 (doneMany && eofMany)     || // either eof then its not restartable
                 (Eof.unapply(y) && !internalEOF )  // or the source is out of elements
-              ) {
+              )
 
               resumableEOFDone[E,F,R](res)
 
-            } else {
+            else
               // there is a value to pass back out
               Done((res, {
                 def ocont = next(nextCont, s, toMany, true)
@@ -708,7 +702,6 @@ trait Iteratees {
                   ocont
                 }
               }), Empty[E])
-            }
           }
         )
 
@@ -725,24 +718,13 @@ trait Iteratees {
         returnThis
     }
 
-    def next( i: ResumableIter[A,F,R], s: () => EphemeralStream[A], toMany: ResumableIter[E, F,EphemeralStream[A]], internalEOF: Boolean = false ): ResumableIter[E, F,R] = {
+    def next( i: ResumableIter[A,F,R], s: () => EphemeralStream[A], toMany: ResumableIter[E, F,EphemeralStream[A]], internalEOF: Boolean = false ): ResumableIter[E, F,R] =
       iterateeT(
           F.bind(i.value)(step => step.fold(
             cont = k => contk(k, i, s, toMany).value
             , done = (a, y) =>
               doneWith(a.asInstanceOf[(R, ResumableIter[A, F, R])], y, i, s, toMany, internalEOF).value
           )))
-      /*
-      i.foldT(
-        done = (a, y) => doneWith(
-          // oh for recursive types
-          a.asInstanceOf[(R, ResumableIter[A, F, R])], y, i, s, toMany, internalEOF),
-        cont =
-          k => {
-            contk(k, i, s, toMany)
-          }
-      )*/
-    }
 
     next(dest, empty, toMany)
   }

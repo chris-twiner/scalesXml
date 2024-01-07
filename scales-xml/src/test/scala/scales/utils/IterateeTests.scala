@@ -231,41 +231,33 @@ class IterateeTest extends junit.framework.TestCase {
 
         r <- (foldIM[Int, TheF, (Long, Int, ResumableIter[Long, TheF, Long])]{ (i, quad) =>
           //println("loop !!!! "+i)
-          val (ores, ocount, itr) = quad
-          var res = ores
-          var iter = itr
-          var count = ocount
+          val (res, count, itr) = quad
 
           assertEquals(i, res)
-          val cres : ResumableIter[Long, TheF, Long] = iter.eval
+          val cres : ResumableIter[Long, TheF, Long] = itr.eval
 
-          F.map(cres.value) { cresStep =>
+          F.bind(cres.value) { cresStep =>
 
             if (isDoneS(cresStep)/* && !isResumableEOF(cresStep)*/) {
               val fo = extract(cres)
-              iter =
-                siteratee(
-                  F.bind(fo) {
-                    o =>
-                      res = o.get
-                      extractCont(cres).value
-                  }
-                )
+              F.map(fo) {
+                o =>
+                  (o.get, count, extractCont(cres))
+              }
             } else {
               //	println(">>><<<<>>>>><<<<")
-              count += 1
+              val ncount = count + 1
               // run on the source - as we need more data
-              val r: Any = (cres &= iteratorEnumerator(source)).run
-              val (nres: Long, ncont: ResumableIter[Long, TheF, Long]) = r
-              res = nres
-              iter = ncont
-
-              if (count == 6) {
-                assertEquals("should have pushed the eof", 15, i)
+              for {
+                r <- (cres &= iteratorEnumerator(source)).run
+                (nres: Long, ncont: ResumableIter[Long, TheF, Long]) = r
+              } yield {
+                if (count == 6) {
+                  assertEquals("should have pushed the eof", 15, i)
+                }
+                (nres, ncount, ncont)
               }
             }
-
-            (res, count, iter)
           }
         }((origres, 1, origcont)) &= iteratorEnumerator[Int, TheF]((1 to 15).iterator)).run
 
@@ -282,7 +274,7 @@ class IterateeTest extends junit.framework.TestCase {
       assertEquals("should have reset 6 times - once for start and once for EOF ", 6, count)
     }
 
-    p// run
+    p run
   }
 
 }
