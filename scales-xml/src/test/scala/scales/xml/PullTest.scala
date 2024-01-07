@@ -677,7 +677,7 @@ on both the qname matching (3 of them) and then the above combos
     // we won't get past iterator...
     val ourMax = maxIterations / 10 // full takes too long but does work in constant space
 
-    type TheF[X] = Trampoline[X]
+    type TheF[X] = Id[X]
 
     var at = -1
 
@@ -704,18 +704,13 @@ on both the qname matching (3 of them) and then the above combos
             cont = _ => fail("was not done " + i + " was " + res)
           )
         }
-
+/* Id works
       val starter = (ionDone &= iteratorEnumerator(iter)).eval
-      val p =
-        for {
-          _ <-  isDone(1, starter)
+      isDone(1, starter)
 
-          res = (extractCont(starter) &= iteratorEnumerator(iter)).eval
-          _ <- isDone(1 + 1, res)
-          // check it does not blow up the stack and/or mem
-          _ = { at = 2 }
-
-          r <- (foldM[Int, TheF, ResumableIterList[PullType, TheF, QNamesMatch]](res) { (itr, i) =>
+      val res = (extractCont(starter) &= iteratorEnumerator(iter)).eval
+      isDone(1 + 1, res)
+      val r = (foldM[Int, TheF, ResumableIterList[PullType, TheF, QNamesMatch]](res) { (itr, i) =>
 
             val n1 = (extractCont(itr) &= iteratorEnumerator(iter)).eval
             Monad[TheF].bind(
@@ -735,20 +730,61 @@ on both the qname matching (3 of them) and then the above combos
             }
           } &= iteratorEnumerator((2 to (ourMax - 1)).iterator)) run
 
-          lastres = (extractCont(r) &= iteratorEnumerator(iter)).eval
-          step <- lastres.value
-        } yield {
-          step(
-            done = (x,y) => (x,y) match {
-              case ((Nil,cont), y) =>
-                assertTrue("should have been EOL", y.isEof)
-            },
-            cont = _ => fail("was not done with empty")
-          )
-        }
+      val lastres = (extractCont(r) &= iteratorEnumerator(iter)).eval
+      val step = lastres.value
+      step(
+        done = (x,y) => (x,y) match {
+          case ((Nil,cont), y) =>
+            assertTrue("should have been EOL", y.isEof)
+        },
+        cont = _ => fail("was not done with empty")
+      ) */
 
-      p run
+      /* trampoline does not
+            val starter = (ionDone &= iteratorEnumerator(iter)).eval
+            val p =
+              for {
+                _ <-  isDone(1, starter)
 
+                res = (extractCont(starter) &= iteratorEnumerator(iter)).eval
+                _ <- isDone(1 + 1, res)
+                // check it does not blow up the stack and/or mem
+                _ = { at = 2 }
+
+                r <- (foldM[Int, TheF, ResumableIterList[PullType, TheF, QNamesMatch]](res) { (itr, i) =>
+
+                  val n1 = (extractCont(itr) &= iteratorEnumerator(iter)).eval
+                  Monad[TheF].bind(
+                    Monad[TheF].map(n1.value){
+                      _ =>
+                        isDone(i, n1)
+                        n1
+                    }
+                  ){ n1 =>
+                    val n2 = (extractCont(n1) &= iteratorEnumerator(iter)).eval
+                    Monad[TheF].map(n1.value){
+                      _ =>
+                        isDone(i + 1, n2)
+                        at += 1
+                        n2
+                    }
+                  }
+                } &= iteratorEnumerator((2 to (ourMax - 1)).iterator)) run
+
+                lastres = (extractCont(r) &= iteratorEnumerator(iter)).eval
+                step <- lastres.value
+              } yield {
+                step(
+                  done = (x,y) => (x,y) match {
+                    case ((Nil,cont), y) =>
+                      assertTrue("should have been EOL", y.isEof)
+                  },
+                  cont = _ => fail("was not done with empty")
+                )
+              }
+
+            p run
+      */
     } catch {
       case e : StackOverflowError => println("got to " + at)
     }
