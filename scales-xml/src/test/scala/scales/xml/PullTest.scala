@@ -677,6 +677,8 @@ on both the qname matching (3 of them) and then the above combos
     // we won't get past iterator...
     val ourMax = maxIterations / 10 // full takes too long but does work in constant space
 
+    type TheF[X] = Trampoline[X]
+
     var at = -1
 
     try {
@@ -685,7 +687,7 @@ on both the qname matching (3 of them) and then the above combos
       at = 0
       val QNames = List("root" l, "child" l, "interesting" l)
 
-      val ionDone = onDone[PullType, Trampoline, QNamesMatch](List(onQNames(QNames)))
+      val ionDone = onDone[PullType, TheF, QNamesMatch](List(onQNames(QNames)))
 
       def isDone[F[_]](i: Int, res: ResumableIterList[PullType, F, QNamesMatch])(implicit F: Monad[F]) =
         F.map(res.value) { step =>
@@ -713,18 +715,18 @@ on both the qname matching (3 of them) and then the above combos
           // check it does not blow up the stack and/or mem
           _ = { at = 2 }
 
-          r <- (foldM[Int, Trampoline, ResumableIterList[PullType, Trampoline, QNamesMatch]](res) { (itr, i) =>
+          r <- (foldM[Int, TheF, ResumableIterList[PullType, TheF, QNamesMatch]](res) { (itr, i) =>
 
             val n1 = (extractCont(itr) &= iteratorEnumerator(iter)).eval
-            Monad[Trampoline].bind(
-              Monad[Trampoline].map(n1.value){
+            Monad[TheF].bind(
+              Monad[TheF].map(n1.value){
                 _ =>
                   isDone(i, n1)
                   n1
               }
             ){ n1 =>
               val n2 = (extractCont(n1) &= iteratorEnumerator(iter)).eval
-              Monad[Trampoline].map(n1.value){
+              Monad[TheF].map(n1.value){
                 _ =>
                   isDone(i + 1, n2)
                   at += 1

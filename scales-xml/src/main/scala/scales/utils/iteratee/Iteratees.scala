@@ -347,9 +347,6 @@ trait Iteratees {
     def step(l : List[ResumableIter[E, F,A]])(s: Input[E]): ResumableIterList[E, F,A] = {
       iterateeT(
         s(el = e => {
-          var res: List[A] = Nil
-          var newl: List[ResumableIter[E, F, A]] = Nil
-
           @inline def add(res: List[A], newl: List[ResumableIter[E, F, A]], k: (Input[E]) => IterateeT[E, F, (A, IterateeT[E, F, _])]): F[(List[A], List[ResumableIter[E, F, A]])] = {
             val d = k(Element(e))
             val nextl = d :: newl
@@ -364,13 +361,12 @@ trait Iteratees {
           val r =
             (foldM[ResumableIter[E, F, A], F, (List[A], List[ResumableIter[E, F, A]])]((Nil, Nil)) { (acc, i) =>
               val (res, newl) = acc
-              val cont = i.eval
-              F.bind(cont.value){ step => step(
+              F.bind(i.value){ step => step(
                 // safety first
                 done = (e1, y) =>
                     // are we EOF, in which case remove
                     if (y.isEof)
-                      F.point((Nil, Nil))
+                      F.point(acc)
                     else {
                       if (y.isEmpty)
                         // feed back the continuation
