@@ -3,7 +3,7 @@ import ScalesUtils._
 import scalaz.Free.Trampoline
 import scalaz.iteratee.{EnumeratorT, IterateeT, StepT}
 import scalaz.iteratee.Input.{Element, Empty, Eof, emptyInput, eofInput}
-import scalaz.iteratee.Iteratee.{enumIterator, iterateeT => siteratee}
+import scalaz.iteratee.Iteratee.{enumIterator, foldM, iterateeT => siteratee}
 import scalaz.iteratee.StepT.{Cont, Done, scont}
 import scalaz.Free._
 import scalaz.{Bind, Monad}
@@ -175,7 +175,7 @@ class IterateeTest extends junit.framework.TestCase {
       for {
         r <- (enumToMany(sum) (mapTo[Long, Trampoline, Long]((_: Long) => Element(lTo(1L, 100000L)))) &= iteratorEnumerator (i)).run
         (res, cont: ResumableIter[Long, Trampoline, Long]) = r
-        r2 <- (cont).run
+        r2 <- cont.run
         (res2, cont2: ResumableIter[Long, Trampoline, Long]) = r2
         done <- isDone(cont)
         done2 <- isDone(cont2)
@@ -229,7 +229,7 @@ class IterateeTest extends junit.framework.TestCase {
 
         _ = assertEquals(1, origres)
 
-        r <- (foldIM[Int, TheF, (Long, Int, ResumableIter[Long, TheF, Long])]{ (i, quad) =>
+        r <- (foldM[Int, TheF, (Long, Int, ResumableIter[Long, TheF, Long])]((origres, 1, origcont)){ (quad, i) =>
           //println("loop !!!! "+i)
           val (res, count, itr) = quad
 
@@ -238,7 +238,7 @@ class IterateeTest extends junit.framework.TestCase {
 
           F.bind(cres.value) { cresStep =>
 
-            if (isDoneS(cresStep)/* && !isResumableEOF(cresStep)*/) {
+            if (isDoneS(cresStep)) {
               val fo = extract(cres)
               F.map(fo) {
                 o =>
@@ -259,9 +259,9 @@ class IterateeTest extends junit.framework.TestCase {
               }
             }
           }
-        }((origres, 1, origcont)) &= iteratorEnumerator[Int, TheF]((1 to 15).iterator)).run
+        } &= iteratorEnumerator[Int, TheF]((1 to 15).iterator)).run
 
-        ((res, count, itrr), last) = r
+        (res, count, itrr) = r
         itr = itrr.asInstanceOf[ scalaz.iteratee.IterateeT[Long,TheF,(Long, scales.utils.ResumableIter[Long,TheF,Long])] ]
 
         done <- isDone(itr)

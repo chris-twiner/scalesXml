@@ -1,10 +1,10 @@
 package scales.utils.iteratee
 
-import scalaz.{Applicative, Bind, EphemeralStream, Monad}
+import scalaz.{Applicative, EphemeralStream, Monad}
 import scalaz.iteratee.Input.{Element, Empty, Eof}
-import scalaz.iteratee.Iteratee.{cont, done, drop, emptyInput, enumEofT, fold, iteratee, iterateeT}
+import scalaz.iteratee.Iteratee.{cont, done, empty, iterateeT}
 import scalaz.iteratee.StepT.{Cont, Done}
-import scalaz.iteratee.{EnumeratorT, Input, Iteratee, IterateeT, StepT}
+import scalaz.iteratee.{EnumeratorT, Input, IterateeT, StepT}
 import scales.utils.ScalesUtils
 
 /**
@@ -17,7 +17,7 @@ trait Eval[WHAT, F[_],RETURN] {
 
   def eval(implicit F: Monad[F]) : IterateeT[WHAT, F, RETURN] =
     iterateeT(
-      F.bind((orig &= enumEofT[WHAT, F]).value)((s: StepT[WHAT, F, RETURN]) => s.fold(
+      F.bind((orig &= empty[WHAT, F]).value)((s: StepT[WHAT, F, RETURN]) => s.fold(
         cont = k => k(Eof[WHAT]).value
         , done = (a, i) => F.point(Done(a,i))
     )))
@@ -71,23 +71,34 @@ trait Iteratees {
   def error(string: String) = sys.error(string)
 
   /** drop while iteratee, returning the possibly remaining data */
-  def dropWhile[E, F[_]](f: (E) => Boolean)(implicit F: Applicative[F]) : IterateeT[E, F, Option[E]] = {
+  def dropWhile[E, F[_]](f: (E) => Boolean)(implicit F: Monad[F]) : IterateeT[E, F, Option[E]] =
+    dropWhileM[E,F]{ e => F.point(f(e)) }
+
+  /**
+   * Same as dropWhile but captures the Monad in F
+   */
+  def dropWhileM[E, F[_]](f: (E) => F[Boolean])(implicit F: Monad[F]) : IterateeT[E, F, Option[E]] = {
     def step(s: Input[E]): IterateeT[E, F, Option[E]] =
-      iterateeT( F.point( s(el = e => {
-        if (f(e))
-          Cont(step)
-        else
-          Done(Some(e), Empty[E])
+      s(
+        el = e => {
+          iterateeT(F.map(f(e)) {
+            shouldCont =>
+              if (shouldCont)
+                Cont(step)
+              else
+                Done(Some(e), Empty[E])
+          })
         },
-        empty = Cont(step),
-        eof = Done(None, Eof[E])) ))
+        empty = Cont(step).pointI,
+        eof = Done[E,F,Option[E]](None, Eof[E]).pointI
+      )
 
     iterateeT( F.point( Cont(step) ) )
   }
 
   /** "find" iteratee, finds Some(first) or None */
-  def find[E, F[_]](f: (E) => Boolean)(implicit F: Applicative[F]) : IterateeT[E, F, Option[E]] =
-    dropWhile(!f(_))
+  def find[E, F[_]](f: (E) => Boolean)(implicit F: Monad[F]) : IterateeT[E, F, Option[E]] =
+    dropWhile[E,F](!f(_))
 
   /** filter iteratee, greedily taking all content until eof */
   def filter[E, F[_]](f: (E) => Boolean)(implicit F: Monad[F]): IterateeT[E, F, Iterable[E]] = {
@@ -240,13 +251,13 @@ trait Iteratees {
       iterateeT[E,F,(A, IterateeT[E,F,_])](
         s(
           el = e => {
-            val next = f(e, current)
-            val r = F.map(next) {
-              i =>
-                Cont[E,F,(A, IterateeT[E,F,_])](step(i))
-                //Done[E,F,(A, IterateeT[E,F,_])]((i, iterateeT( F.point( Cont(step(i)) ))), Empty[E])
+            F.bind(F.point(e)) { e =>
+              val next = f(e, current)
+              F.map(next) {
+                i =>
+                  Done[E, F, (A, IterateeT[E, F, _])]((i, iterateeT(F.point(Cont(step(i))))), Empty[E])
+              }
             }
-            r
           },
           empty = F.point( Cont(step(current)) ),
           eof = F.point( Done((current, iterateeT( F.point( Cont(step(init))))),Eof[E]) )
@@ -255,7 +266,6 @@ trait Iteratees {
 
     iterateeT( F.point( Cont(step(init)) ) )
   }
-
 
   /**
    * Folds over the Iteratee with Cont or Done and Empty, returning with Done and EOF.
@@ -413,7 +423,7 @@ trait Iteratees {
 
   /**
    * Calls the function param with the fed data and returns its
-   * result
+   * result - consider Scalaz 7 map directly rather than composing
    */
   def evalWith[FROM, F[_],TO]( f : (FROM) => TO )(implicit F: Applicative[F]) : IterateeT[FROM, F, TO] = {
     def step(s: Input[FROM]): IterateeT[FROM, F, TO] =
@@ -490,7 +500,7 @@ trait Iteratees {
     iterateeT( F.point( Cont(step)  ))
   }
 
-    /**
+  /**
    * Enumeratee that folds over the Iteratee with Cont or Done and Empty, returning with Done and EOF.
    *
    * Converts ResumableIters on Done via a fold, returning Done only when receiving EOF from the initIter.
@@ -696,7 +706,8 @@ trait Iteratees {
                 if (s().isEmpty) {
                   // need to process this res but force another to be
                   // calculated before it is returned to the enumerator
-                  cont[E,F,(R,IterateeT[E,F,_])]( _ => cont[E,F,(R,IterateeT[E,F,_])]( _ => ocont))
+                  //cont[E,F,(R,IterateeT[E,F,_])]( _ => cont[E,F,(R,IterateeT[E,F,_])]( _ => ocont))
+                  cont[E,F,(R,IterateeT[E,F,_])]( _ => ocont)
                 } else {
                   // still data to process
                   ocont
