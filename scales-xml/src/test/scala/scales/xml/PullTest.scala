@@ -4,7 +4,7 @@ import scalaz.Free.Trampoline
 import scalaz.Id.Id
 import scalaz.Monad
 import scalaz.iteratee.Input.Eof
-import scalaz.iteratee.Iteratee.{foldM, head, iteratee => siteratee}
+import scalaz.iteratee.Iteratee.{foldM, head, iterateeT => siteratee}
 import scalaz.iteratee.StepT.{Cont, Done}
 import scales.xml.impl.NoVersionXmlReaderFactoryPool
 import scales.xml.serializers.XmlOutput
@@ -393,67 +393,86 @@ on both the qname matching (3 of them) and then the above combos
       }
 
     p run
-}
-/*
+  }
+
   /**
    * Test two resumables next to each other, there should always be one done, the count
    * and another that is done only each three.
    */
-  def testResumableOnDone = {
+  def testResumableOnDone():Unit = {
     val liter = (1 to maxIterations).iterator
 
-    val counter = runningCount[Int]
+    val counter = runningCount[Int, Trampoline]
 
-    def step( list : List[Long])( s : Input[Int] ) : ResumableIter[Int,Long] =
-      siteratee(
+    val F = implicitly[ Monad[Trampoline] ]
+
+    def step( list : List[Long])( s : Input[Int] ) : ResumableIter[Int, Trampoline, Long] =
+      siteratee(F.point(
         s(el = {e =>
           val next = e.longValue :: list
           if (next.size == 3)
-            Done((e, siteratee(Cont(step(List())))), Input.Empty[Int])
+            Done((e, siteratee(F.point( Cont(step(List()))))), Input.Empty[Int])
           else
             Cont(step(next))
           },
           empty = Cont(step(list)),
-          eof = Done((list.last, siteratee(Cont(step(List())))), Eof[Int])
+          eof = Done((list.last, siteratee(F.point( Cont(step(List()) )))), Eof[Int])
         )
-      )
+      ))
 
-    val inThrees = siteratee( Cont(step(List())) )
+    val inThrees = siteratee( F.point( Cont(step(List())) ) )
 
-    val ionDone = onDone(List(counter, inThrees))
+    val ionDone = onDone[Int, Trampoline, Long](List(counter, inThrees))
 
-    def isDone( i : Int, res : ResumableIterList[Int,Long]) =
-      res foldT( done = (x,y) => (x,y) match {
-        case ((x :: Nil,cont), y) if i % 3 != 0 =>
-          assertEquals(i, x)
-          assertTrue("should have been Empty "+i, isEmpty(res))
-        case ((x :: x2 :: Nil,cont), y)  if i % 3 == 0 =>
-          assertEquals(i, x)
-          assertEquals(i, x2)
-          assertTrue("should have been Empty "+i, isEmpty(res))
-        case (x,y) => fail("Was done but not expected "+ x +" -> " + y )
+    def isDone( i : Int, res : ResumableIterList[Int,Trampoline,Long]) =
+      F.map(res.value){ step =>
+        step(
+          done = (x,y) => (x,y) match {
+            case ((x :: Nil,cont), y) if i % 3 != 0 =>
+              assertEquals(i, x)
+              assertTrue("should have been Empty "+i, y.isEmpty)
+            case ((x :: x2 :: Nil,cont), y)  if i % 3 == 0 =>
+              assertEquals(i, x)
+              assertEquals(i, x2)
+              assertTrue("should have been Empty "+i, y.isEmpty)
+            case (x,y) => fail("Was done but not expected "+ x +" -> " + y )
 
-      }, cont = _ => fail("was not done "+i))
+          },
+          cont = _ => fail("was not done "+i))
+      }
 
-    var res = (ionDone &= iteratorEnumerator(liter)).eval
-    isDone(1, res)
+    val starter = (ionDone &= iteratorEnumerator(liter)).eval
 
-    // check it does not blow up the stack and/or mem
+    val p =
+      for {
+        _ <- isDone(1, starter)
 
-    (2 to maxIterations).iterator.foreach { i =>
-      res = (extractCont(res) &= iteratorEnumerator(liter)).eval
-      isDone(i, res)
-    }
+        // check it does not blow up the stack and/or mem
+        r <- (foldM[Int, Trampoline, ResumableIterList[Int,Trampoline,Long]](starter){ (itr, i) =>
+          val nitr = (extractCont(itr) &= iteratorEnumerator(liter)).eval
+          Monad[Trampoline].map(nitr.value){
+            _ =>
+              isDone(i, nitr)
+              nitr
+          }
+        } &= iteratorEnumerator((2 to maxIterations iterator))) run
 
-    res = (extractCont(res) &= iteratorEnumerator(liter)).eval
-    res foldT(done = (x,y) => (x,y) match {
-      case ((Nil,cont), y)  =>
-	      assertTrue("should have been EOL", isEOF(res))
+        res = (extractCont(r) &= iteratorEnumerator(liter)).eval
 
-    }, cont = _ => fail("was not done with empty"))
+        step <- res.value
+      } yield {
+        step(
+          done = (x,y) =>
+            (x,y) match {
+            case ((Nil,cont), y)  =>
+              assertTrue("should have been EOL", y.isEof)
+
+          },
+          cont = _ => fail("was not done with empty")
+        )
+      }
 
   }
-
 
 
 
@@ -652,7 +671,7 @@ on both the qname matching (3 of them) and then the above combos
       ) ++ next
     else WeakStream.empty[PullType]
 
-  def testOnQNamesLastElement = {
+  def testOnQNamesLastElement():Unit = {
     // ourMax of 9000000 and WeakStream processess in 512s without issue
     // It truly seems something is different here, with the others
     // we won't get past iterator...
@@ -660,54 +679,79 @@ on both the qname matching (3 of them) and then the above combos
 
     var at = -1
 
-try{
+    try {
 
-    val iter = EphemeralStream.toIterable(eevents(ourMax)).iterator
-    at=0
-    val QNames = List("root"l, "child"l, "interesting"l)
+      val iter = EphemeralStream.toIterable(eevents(ourMax)).iterator
+      at = 0
+      val QNames = List("root" l, "child" l, "interesting" l)
 
-    val ionDone = onDone(List(onQNames(QNames)))
+      val ionDone = onDone[PullType, Trampoline, QNamesMatch](List(onQNames(QNames)))
 
-    def isDone( i : Int, res : ResumableIterList[PullType,QNamesMatch]) =
-      res foldT( done = (x,y) => (x, y) match {
-          case (((QNames, Some(x)) :: Nil,cont), y)  =>
-            assertEquals( "interesting content "+ i, text(x))
-            assertEquals(1, x.zipUp.children.size)
-            assertTrue("should have been Empty "+i, isEmpty(res))
-          case ((list, cont), y) =>
-            fail("was done with "+ i+" "+list+" and input "+ y +" iter hasNext == "+iter.hasNext)
+      def isDone[F[_]](i: Int, res: ResumableIterList[PullType, F, QNamesMatch])(implicit F: Monad[F]) =
+        F.map(res.value) { step =>
+          step(
+            done = (x, y) => (x, y) match {
+              case (((QNames, Some(x)) :: Nil, cont), y) =>
+                assertEquals("interesting content " + i, text(x))
+                assertEquals(1, x.zipUp.children.size)
+                assertTrue("should have been Empty " + i, y.isEmpty)
+              case ((list, cont), y) =>
+                fail("was done with " + i + " " + list + " and input " + y + " iter hasNext == " + iter.hasNext)
 
-        },
-        cont = _ => fail("was not done "+i+" was " + res )
-      )
+            },
+            cont = _ => fail("was not done " + i + " was " + res)
+          )
+        }
 
-    var res = (ionDone &= iteratorEnumerator(iter)).eval
-    isDone(1, res)
-    res = (extractCont(res) &= iteratorEnumerator(iter)).eval
-    isDone(1+1, res)
-    // check it does not blow up the stack and/or mem
-    at=2
-    (2 to (ourMax - 1)).iterator.foreach { i =>
-      res = (extractCont(res) &= iteratorEnumerator(iter)).eval
-      isDone(i, res)
-      res = (extractCont(res) &= iteratorEnumerator(iter)).eval
-      isDone(i + 1, res)
-      at += 1
+      val starter = (ionDone &= iteratorEnumerator(iter)).eval
+      val p =
+        for {
+          _ <-  isDone(1, starter)
+
+          res = (extractCont(starter) &= iteratorEnumerator(iter)).eval
+          _ <- isDone(1 + 1, res)
+          // check it does not blow up the stack and/or mem
+          _ = { at = 2 }
+
+          r <- (foldM[Int, Trampoline, ResumableIterList[PullType, Trampoline, QNamesMatch]](res) { (itr, i) =>
+
+            val n1 = (extractCont(itr) &= iteratorEnumerator(iter)).eval
+            Monad[Trampoline].bind(
+              Monad[Trampoline].map(n1.value){
+                _ =>
+                  isDone(i, n1)
+                  n1
+              }
+            ){ n1 =>
+              val n2 = (extractCont(n1) &= iteratorEnumerator(iter)).eval
+              Monad[Trampoline].map(n1.value){
+                _ =>
+                  isDone(i + 1, n2)
+                  at += 1
+                  n2
+              }
+            }
+          } &= iteratorEnumerator((2 to (ourMax - 1)).iterator)) run
+
+          lastres = (extractCont(r) &= iteratorEnumerator(iter)).eval
+          step <- lastres.value
+        } yield {
+          step(
+            done = (x,y) => (x,y) match {
+              case ((Nil,cont), y) =>
+                assertTrue("should have been EOL", y.isEof)
+            },
+            cont = _ => fail("was not done with empty")
+          )
+        }
+
+      p run
+
+    } catch {
+      case e : StackOverflowError => println("got to " + at)
     }
-
-    res = (extractCont(res) &= iteratorEnumerator(iter)).eval
-    res foldT(
-      done = (x,y) => (x,y) match {
-        case ((Nil,cont), y) =>
-	        assertTrue("should have been EOL", isEOF(res))
-      },
-      cont = _ => fail("was not done with empty")
-    )
-} catch {
-  case e : StackOverflowError => println("got to " + at)
-}
   }
-
+/*
   def testOnQNamesManyElementsBelow = {
 
     val ourMax = maxIterations / 10 // full takes too long but does work in constant space
