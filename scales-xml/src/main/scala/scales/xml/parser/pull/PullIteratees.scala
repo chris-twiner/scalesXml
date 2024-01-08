@@ -24,6 +24,8 @@ trait PullIteratees {
 
   type QNamesMatch = (List[QName], Option[XmlPath])
 
+  def onQNames[F[_]: Monad](qnames: List[QName]): ResumableIter[PullType, F, QNamesMatch] = onQNamesI(qnames)(ScalesXml.qnameEqual, implicitly[Monad[F]])
+
   /**
    * Collects all data belonging to an element that matches
    * the list. <top><middle><ofInterest> content </ofInterest><ofInterest....
@@ -31,7 +33,7 @@ trait PullIteratees {
    * would return an iteratee that returned every <ofInterest> content </ofInterest>
    * as a path (each parent node containing only one child node).
    */
-  def onQNames[F[_]: Monad](qnames: List[QName])(implicit qe: Equal[QName]): ResumableIter[PullType, F, QNamesMatch] = {
+  def onQNamesI[F[_]](qnames: List[QName])(implicit qe: Equal[QName], F: Monad[F]): ResumableIter[PullType, F, QNamesMatch] = {
 
     /*
      * The pairs allow the depth of each element to be followed.  In particular this stops both descent and ascent problems in the
@@ -53,7 +55,7 @@ trait PullIteratees {
 
               Cont(
                 // is it our head?
-                if ((!toGo.isEmpty) && q == focus._1)
+                if ((!toGo.isEmpty) && q === focus._1)
                   // move down
                   step(before :+ focus, toGo.head, toGo.tail, npath, false)
                 else

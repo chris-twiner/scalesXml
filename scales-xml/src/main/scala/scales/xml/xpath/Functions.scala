@@ -370,7 +370,7 @@ object XmlTreeText extends TextValue[XmlTree] {
       if (walker.isLeft) {
         walker.left.get match {
           case Text(text) => sb.append(text)
-	  case CData(text) => sb.append(text)
+	        case CData(text) => sb.append(text)
           case _ => ()
         }
       }

@@ -2,7 +2,7 @@ package scales.utils.iteratee
 
 import scalaz.{Applicative, EphemeralStream, Monad}
 import scalaz.iteratee.Input.{Element, Empty, Eof}
-import scalaz.iteratee.Iteratee.{cont, done, empty, foldM, iterateeT}
+import scalaz.iteratee.Iteratee.{cont, done, elInput, empty, enumEofT, foldM, iterateeT}
 import scalaz.iteratee.StepT.{Cont, Done}
 import scalaz.iteratee.{EnumeratorT, Input, IterateeT, StepT}
 import scales.utils.ScalesUtils
@@ -18,10 +18,10 @@ trait Eval[WHAT, F[_],RETURN] {
 
   def eval(implicit F: Monad[F]) : IterateeT[WHAT, F, RETURN] =
     iterateeT(
-      F.bind((orig &= empty[WHAT, F]).value)((s: StepT[WHAT, F, RETURN]) => s.fold(
+      F.bind((orig &= enumEofT[WHAT,F]).value)((s: StepT[WHAT, F, RETURN]) => s.fold(
         cont = k => k(Eof[WHAT]).value
-        , done = (a, i) => F.point(Done(a,i))
-    )))
+        , done = (a, i) => F.point(Done(a, i))
+      )))
 }
 
 trait IterateeImplicits {
@@ -44,20 +44,18 @@ trait IterateeImplicits {
    * s => s.mapContOr(_ => sys.error("diverging iteratee"), apply(s))
    * }
    * }
-   * } */
-
-  //  def enumIterator[E, F[_]](x: => Iterator[E])(implicit F: MonadIO[F]) : EnumeratorT[E, F] =
-  def iteratorEnumerator[E, F[_]](iter: => Iterator[E])(implicit f: Monad[F]): EnumeratorT[E, F] =
+   * }
+   */
+  def iteratorEnumerator[E, F[_]](iter: Iterator[E])(implicit f: Monad[F]): EnumeratorT[E, F] =
     new EnumeratorT[E, F] {
       def apply[A] = {
         def go(xs: Iterator[E])(s: StepT[E, F, A]): IterateeT[E, F, A] =
           if (xs.isEmpty) s.pointI
-          else {
+          else
             s mapCont { k =>
               val next = xs.next()
-              k(Element(next)) >>== go(xs)
+              k(elInput(next)) >>== go(xs)
             }
-          }
 
         go(iter)
       }
@@ -249,20 +247,13 @@ trait Iteratees {
    */
   def foldIM[E,F[_],A]( f : (E,A) => F[A] )( init : A )(implicit F: Monad[F]) : ResumableIter[E,F,A] = {
     def step( current : A )( s : Input[E] ) : IterateeT[E,F,(A, IterateeT[E,F,_])] =
-      iterateeT[E,F,(A, IterateeT[E,F,_])](
-        s(
-          el = e => {
-            F.bind(F.point(e)) { e =>
-              val next = f(e, current)
-              F.map(next) {
-                i =>
-                  Done[E, F, (A, IterateeT[E, F, _])]((i, iterateeT(F.point(Cont(step(i))))), Empty[E])
-              }
-            }
+      s(
+        el = e =>
+          IterateeT.IterateeTMonadTrans[E].liftM(f(e, current)) flatMap{ i =>
+            done[E, F, (A, IterateeT[E, F, _])]((i, iterateeT(F.point(Cont(step(i))))), Empty[E])
           },
-          empty = F.point( Cont(step(current)) ),
-          eof = F.point( Done((current, iterateeT( F.point( Cont(step(init))))),Eof[E]) )
-        )
+        empty = cont(step(current)),
+        eof = done((current, iterateeT( F.point( Cont(step(init))))),Eof[E])
       )
 
     iterateeT( F.point( Cont(step(init)) ) )
@@ -349,8 +340,8 @@ trait Iteratees {
         s(el = e => {
           @inline def add(res: List[A], newl: List[ResumableIter[E, F, A]], k: (Input[E]) => IterateeT[E, F, (A, IterateeT[E, F, _])]): F[(List[A], List[ResumableIter[E, F, A]])] = {
             val d = k(Element(e))
-            val nextl = d :: newl
             F.map(d.value) { step =>
+              val nextl = d :: newl
               step(
                 done = (x, _) => (x._1 :: res, nextl),
                 cont = _ => (res, nextl)

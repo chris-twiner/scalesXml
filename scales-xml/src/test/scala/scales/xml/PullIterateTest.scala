@@ -71,7 +71,7 @@ class PullIterateTest extends junit.framework.TestCase {
     }
     
   }
-/*
+
   def testOnQNamesRepeatedQNames = {
     
     val ourMax = maxIterations / 10 // full takes too long but does work in constant space
@@ -89,7 +89,7 @@ class PullIterateTest extends junit.framework.TestCase {
       assertEquals(1, x.zipUp.children.size)
     }
     
-  }*/
+  }
 
   def testOnQNameEqualImplicit : Unit = {
     

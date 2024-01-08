@@ -1,20 +1,33 @@
 package scales.utils
 import ScalesUtils._
+import scalaz.EphemeralStream.emptyEphemeralStream
 import scalaz.Free.Trampoline
 import scalaz.iteratee.{EnumeratorT, IterateeT, StepT}
 import scalaz.iteratee.Input.{Element, Empty, Eof, emptyInput, eofInput}
 import scalaz.iteratee.Iteratee.{enumIterator, foldM, iterateeT => siteratee}
 import scalaz.iteratee.StepT.{Cont, Done, scont}
 import scalaz.Free._
-import scalaz.{Bind, Monad}
+import scalaz.{Bind, EphemeralStream, Monad}
 import scalaz.Scalaz._
 
 import scala.annotation.tailrec
+
+object StreamHelpers {
+
+  def lTo(lower: Long, upper: Long): EphemeralStream[Long] =
+    if (lower > upper) emptyEphemeralStream else EphemeralStream.cons(lower, lTo(lower + 1, upper))
+
+  def iTo(lower: Int, upper: Int): EphemeralStream[Int] =
+    if (lower > upper) emptyEphemeralStream else EphemeralStream.cons(lower, iTo(lower + 1, upper))
+
+
+}
 
 class IterateeTest extends junit.framework.TestCase {
   
   import junit.framework.Assert._
 
+  import StreamHelpers._
   import scalaz.iteratee.{Iteratee, Enumerator, Input}
   import scalaz.EphemeralStream
   import EphemeralStream.emptyEphemeralStream
@@ -141,13 +154,6 @@ class IterateeTest extends junit.framework.TestCase {
 
     p.run
   }
-
-  def lTo(lower: Long, upper: Long): EphemeralStream[Long] =
-    if (lower > upper) emptyEphemeralStream else EphemeralStream.cons(lower, lTo(lower + 1, upper))
-
-  def iTo(lower: Int, upper: Int): EphemeralStream[Int] =
-    if (lower > upper) emptyEphemeralStream else EphemeralStream.cons(lower, iTo(lower + 1, upper))
-
 
   def testEventsNotLostOneToMany = {
     val i = List[Long](1,2,3,4,5).iterator
