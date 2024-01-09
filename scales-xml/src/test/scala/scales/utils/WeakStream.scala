@@ -13,7 +13,11 @@ object WeakStream {
     if (lower > upper) empty else WeakStream.cons(lower, iTo(lower + 1, upper))
 
   def iterTo[A](iterator: Iterator[A]): WeakStream[A] =
-    if (iterator.isEmpty) empty else WeakStream.cons(iterator.next(), iterTo(iterator))
+    if (iterator.isEmpty) empty else {
+      val next = iterator.next()
+      val after = iterTo(iterator)
+      WeakStream.cons(next, after)
+    }
 
   def empty[A] = new WeakStream[A]{
     val empty = true

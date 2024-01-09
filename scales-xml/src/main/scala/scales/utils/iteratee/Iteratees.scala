@@ -51,11 +51,12 @@ trait IterateeImplicits {
       def apply[A] = {
         def go(xs: Iterator[E])(s: StepT[E, F, A]): IterateeT[E, F, A] =
           if (xs.isEmpty) s.pointI
-          else
+          else {
             s mapCont { k =>
               val next = xs.next()
               k(elInput(next)) >>== go(xs)
             }
+          }
 
         go(iter)
       }

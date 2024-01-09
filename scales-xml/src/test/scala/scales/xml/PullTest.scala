@@ -9,7 +9,7 @@ import scalaz.iteratee.{EnumeratorT, IterateeT, StepT}
 import scalaz.iteratee.Input.{Eof, elInput}
 import scalaz.iteratee.Iteratee.{done, elInput, enumEofT, enumIndexedSeq, enumIterator, foldM, head, iterateeT => siteratee}
 import scalaz.iteratee.StepT.{Cont, Done}
-import scales.utils.IterateeTests.maxIterations
+import scales.utils.IterateeTests.{enumEphemeralStreamF, enumWeakStreamF, maxIterations}
 import scales.utils.StreamHelpers.iTo
 import scales.xml.impl.NoVersionXmlReaderFactoryPool
 import scales.xml.serializers.XmlOutput
@@ -449,13 +449,18 @@ on both the qname matching (3 of them) and then the above combos
     // we won't get past iterator...
     val ourMax = maxIterations / 10 // full takes too long but does work in constant space
 
-    type TheF[X] = Id[X]
+    type TheF[X] = Trampoline[X]
 
     var at = -1
 
     try {
 
-      val iter = EphemeralStream.toIterable(eevents(ourMax)).iterator
+      var iter = eevents(ourMax)
+      //var iter = WeakStream.iterTo(EphemeralStream.toIterable(eevents(ourMax)).iterator)
+      val func = (e: EphemeralStream[PullType]) => {iter = e}
+
+      def enum(e: EphemeralStream[PullType]) = enumEphemeralStreamF[PullType, TheF](func)(e)
+
       at = 0
       val QNames = List("root" l, "child" l, "interesting" l)
 
@@ -470,13 +475,13 @@ on both the qname matching (3 of them) and then the above combos
                 assertEquals(1, x.zipUp.children.size)
                 assertTrue("should have been Empty " + i, y.isEmpty)
               case ((list, cont), y) =>
-                fail("was done with " + i + " " + list + " and input " + y + " iter hasNext == " + iter.hasNext)
+                fail("was done with " + i + " " + list + " and input " + y + " iter isEmpty == " + iter.isEmpty)
 
             },
             cont = _ => fail("was not done " + i + " was " + res)
           )
         }
-/* Id works, shows the functionality is correct */
+/* Id works, shows the functionality is correct
       val starter = (ionDone &= iteratorEnumerator(iter)).eval
       isDone(1, starter)
 
@@ -511,21 +516,21 @@ on both the qname matching (3 of them) and then the above combos
         },
         cont = _ => fail("was not done with empty")
       )
-
-      /* trampoline does not
-      val starter = (ionDone &= iteratorEnumerator(iter)).eval
+*/
+      /* trampoline does not */
+      val starter = (ionDone &= enum(iter)).eval
       val p =
         for {
           _ <-  isDone(1, starter)
 
-          res = (extractCont(starter) &= iteratorEnumerator(iter)).eval
+          res = (extractCont(starter) &= enum(iter)).eval
           _ <- isDone(1 + 1, res)
           // check it does not blow up the stack and/or mem
           _ = { at = 2 }
 
           r <- (foldM[Int, TheF, ResumableIterList[PullType, TheF, QNamesMatch]](res) { (itr, i) =>
 
-            val n1 = (extractCont(itr) &= iteratorEnumerator(iter)).eval
+            val n1 = (extractCont(itr) &= enum(iter)).eval
             Monad[TheF].bind(
               Monad[TheF].map(n1.value){
                 _ =>
@@ -533,7 +538,7 @@ on both the qname matching (3 of them) and then the above combos
                   n1
               }
             ){ n1 =>
-              val n2 = (extractCont(n1) &= iteratorEnumerator(iter)).eval
+              val n2 = (extractCont(n1) &= enum(iter)).eval
               Monad[TheF].map(n1.value){
                 _ =>
                   isDone(i + 1, n2)
@@ -543,37 +548,39 @@ on both the qname matching (3 of them) and then the above combos
             }
           } &= iteratorEnumerator((2 to (ourMax - 1)).iterator)) run
 
-          lastres = (extractCont(r) &= iteratorEnumerator(iter)).eval
+          lastres = (extractCont(r) &= enum(iter)).eval
           step <- lastres.value
         } yield {
           step(
             done = (x,y) => (x,y) match {
-              case ((Nil,cont), y) =>
-                assertTrue("should have been EOL", y.isEof)
+              case ((list,cont), y) =>
+                val l = list
+                assertTrue("should have been EOF", y.isEof)
             },
             cont = _ => fail("was not done with empty")
           )
         }
 
       p run
-        */
     } catch {
       case e : StackOverflowError => println("got to " + at)
     }
   }
 
-/*
   def testOnQNamesManyElementsBelow = {
 
     val ourMax = maxIterations / 10 // full takes too long but does work in constant space
 
-    val iter = events(ourMax).iterator
+    var iter = events(ourMax)
+    val func = (e: WeakStream[PullType]) => {iter = e}
+
+    def enum(e: WeakStream[PullType]) = enumWeakStreamF[PullType, Trampoline](func)(e)
 
     val QNames = List("root"l, "child"l)
-    val ionDone = onDone(List(onQNames(QNames)))
+    val ionDone = onDone(List(onQNames[Trampoline](QNames)))
 
     def isDone( i : Int, res : ResumableIterList[PullType, Trampoline, QNamesMatch]) =
-      res foldT( done = (x,y) => (x,y) match {
+      Monad[Trampoline].map(res.value){_( done = (x,y) => (x,y) match {
         case (((QNames, Some(x)) :: Nil,cont), y)  =>
           // we want to see both sub text nodes
           assertEquals( "interesting content "+ i +"interesting content "+ (i + 1)
@@ -584,68 +591,97 @@ on both the qname matching (3 of them) and then the above combos
             printTree(rootPath(x).tree)
             fail("more than one " + count +" at "+ println(elem(x)))
           }
-          assertTrue("should have been Empty "+i, res.isEmpty)
+          assertTrue("should have been Empty "+i, y.isEmpty)
         case ((list, cont), y) =>
-          fail("was done with "+ i+" "+list+" and input "+ y +" iter hasNext == "+iter.hasNext)
+          fail("was done with "+ i+" "+list+" and input "+ y +" iter empty == "+iter.empty)
 
-      }, cont = _ => fail("was not done "+i+" was " + res ))
+      }, cont = _ => fail("was not done "+i+" was " + res ))}
 
-    var res = (ionDone &= iteratorEnumerator(iter)).eval
-    isDone(1, res)
-    // check it does not blow up the stack and/or mem
+    val starter = (ionDone &= enum(iter)).eval
 
-    (2 to (ourMax - 1)).iterator.foreach { i =>
-      res = (extractCont(res) &= iteratorEnumerator(iter)).eval
-      isDone(i, res)
-    }
+    val p =
+      for {
+        _ <- isDone(1, starter)
+        // check it does not blow up the stack and/or mem
 
-    res = (extractCont(res) &= iteratorEnumerator(iter)).eval
-    res foldT (done = (x,y) => (x,y) match {
-      case ((Nil,cont), y)  =>
-      	assertTrue("should have been EOL", isEOF(res))
+        r <- (foldM[Int, Trampoline, ResumableIterList[PullType, Trampoline, QNamesMatch]](starter){ (itr, i) =>
+            val res = (extractCont(itr) &= enum (iter)).eval
+            Monad[Trampoline].bind(res.value) {
+              _ =>
+                val rc = isDone(i, res)
+                Monad[Trampoline].map(rc) { _ =>
+                  res
+                }
+            }
+          } &= iteratorEnumerator((2 to (ourMax - 1)).iterator)).run
 
-    }, cont = _ => fail("was not done with empty"))
+        last = (extractCont(r) &= enum(iter)).eval
+        step <- last.value
+      } yield {
+        step(done = (x,y) => (x,y) match {
+          case ((Nil,cont), y)  =>
+            assertTrue("should have been EOF", y.isEof)
 
+        }, cont = _ => fail("was not done with empty"))
+      }
+
+    p run
   }
 
-  def testOnQNamesRepeatedQNames = {
+  def testOnQNamesRepeatedQNames(): Unit = {
 
     val ourMax = maxIterations / 10 // full takes too long but does work in constant space
 
-    val iter = events(ourMax).iterator
 
-    val ionDone = onDone(List(onQNames(repeatingQNames)))
+    var iter = events(ourMax)
+    val func = (e: WeakStream[PullType]) => {iter = e}
 
-    def isDone( i : Int, res : ResumableIterList[PullType,QNamesMatch]) =
-      res foldT( done = (x,y) => (x,y) match {
+    def enum(e: WeakStream[PullType]) = enumWeakStreamF[PullType, Trampoline](func)(e)
+//    val iter = events(ourMax).iterator
+
+    val ionDone = onDone(List(onQNames[Trampoline](repeatingQNames)))
+
+    def isDone( i : Int, res : ResumableIterList[PullType,Trampoline,QNamesMatch]) =
+      Monad[Trampoline].map(res.value){_( done = (x,y) => (x,y) match {
         case (((repeatingQNames, Some(x)) :: Nil,cont), y)  =>
           // we want to see both sub text nodes
           assertEquals( "content "+ (i + 1)
                  , text(x))
           assertEquals(1, x.zipUp.children.size)
-          assertTrue("should have been Empty "+i, isEmpty(res))
+          assertTrue("should have been Empty "+i, y.isEmpty)
         case ((list, cont), y) =>
-          fail("was done with "+ i+" "+list+" and input "+ y +" iter hasNext == "+iter.hasNext)
-      },  cont =  _ => fail("was not done "+i+" was " + res ))
+          fail("was done with "+ i+" "+list+" and input "+ y +" iter isEmpty == "+iter.isEmpty)
+      },  cont =  _ => fail("was not done "+i+" was " + res ))}
 
+    val starter = (ionDone &= enum(iter)).eval
+    val p =
+      for {
+        _ <- isDone(1, starter)
+        // check it does not blow up the stack and/or mem
 
-      var res = (ionDone &= iteratorEnumerator(iter)).eval
-    isDone(1, res)
-    // check it does not blow up the stack and/or mem
+        r <- (foldM[Int, Trampoline, ResumableIterList[PullType, Trampoline, QNamesMatch]](starter) { (itr, i) =>
+          val res = (extractCont(itr) &= enum (iter)).eval
+          Monad[Trampoline].bind(res.value) {
+            _ =>
+              val rc = isDone(i, res)
+              Monad[Trampoline].map(rc) { _ =>
+                res
+              }
+          }
+        } &= iteratorEnumerator((2 to (ourMax - 1)).iterator) ).run
 
-    (2 to (ourMax - 1)).iterator.foreach { i =>
-      res = (extractCont(res) &= iteratorEnumerator(iter)).eval
-      isDone(i, res)
-    }
+        last = (extractCont(r) &= enum(iter)).eval
+        step <- last.value
+      } yield {
+        step(done = (x, y) => (x, y) match {
+          case ((Nil, cont), y) =>
+            assertTrue("should have been EOf", y.isEof)
+        }, cont = _ => fail("was not done with empty"))
+      }
 
-    res = (extractCont(res) &= iteratorEnumerator(iter)).eval
-    res foldT( done = (x,y) => (x,y) match {
-      case ((Nil,cont), y)  =>
-	      assertTrue("should have been EOL", isEOF(res))
-    }, cont = _ => fail("was not done with empty"))
-
+    p run
   }
-
+/*
   def testAlternating = {
 
     val ourMax = maxIterations / 10 // full takes too long but does work in constant space
