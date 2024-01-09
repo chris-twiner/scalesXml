@@ -18,7 +18,7 @@ trait Eval[WHAT, F[_],RETURN] {
 
   def eval(implicit F: Monad[F]) : IterateeT[WHAT, F, RETURN] =
     iterateeT(
-      F.bind((orig &= enumEofT[WHAT,F]).value)((s: StepT[WHAT, F, RETURN]) => s.fold(
+      F.bind((orig &= empty[WHAT,F]).value)((s: StepT[WHAT, F, RETURN]) => s.fold(
         cont = k => k(Eof[WHAT]).value
         , done = (a, i) => F.point(Done(a, i))
       )))
