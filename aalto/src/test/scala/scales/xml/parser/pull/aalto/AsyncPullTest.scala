@@ -2,10 +2,15 @@ package scales.xml.parser.pull.aalto
 
 import scalaz.Free.Trampoline
 import scalaz.iteratee.Input.{Element, Empty, Eof}
-import scalaz.iteratee.{Iteratee, IterateeT}
-import scalaz.iteratee.Iteratee.{peek, iteratee => siteratee}
+import scalaz.iteratee.{Iteratee, IterateeT, StepT}
+import scalaz.iteratee.Iteratee.{iterateeT, peek}
 import scalaz.iteratee.StepT.Done
-/*
+import scalaz._
+import Scalaz._
+import junit.framework.Assert.assertTrue
+import scales.utils.isEOF
+import scales.utils.trampolineIteratees._
+
 class AsyncPullTest extends junit.framework.TestCase {
 
   import junit.framework.Assert._
@@ -16,7 +21,7 @@ class AsyncPullTest extends junit.framework.TestCase {
   import ScalesUtils._
   import scales.xml._
   import ScalesXml._
- 
+
   import scales.xml.impl.NoVersionXmlReaderFactoryPool
 
   import io._
@@ -25,12 +30,10 @@ class AsyncPullTest extends junit.framework.TestCase {
   val Default = Namespace("urn:default")
   val DefaultRoot = Default("Default")
 
-  import scalaz._
-  import Scalaz._
   import EphemeralStream.emptyEphemeralStream
 
   import scales.utils.{resource => sresource}
-
+  import scalaz.iteratee.Iteratee.{cont, done, elInput, empty, foldM, iterateeT, repeat}
   import DangerousIterateeImplicits._ // toRunEval
   import TestIteratees._
 
@@ -42,7 +45,7 @@ class AsyncPullTest extends junit.framework.TestCase {
   import serializers._
 
 
-  type SerialIterT = Iteratee[PullType, (XmlOutput, Option[Throwable])]
+  type SerialIterT = IterateeT[PullType, TheF, (XmlOutput, Option[Throwable])]
 
   import java.nio.charset.Charset
   import scales.utils.{io, resources}
@@ -53,61 +56,71 @@ class AsyncPullTest extends junit.framework.TestCase {
    */ 
   trait EvalW[WHAT,RETURN] {
     
-    val orig : Iteratee[WHAT, RETURN]
+    val orig : IterateeT[WHAT, TheF, RETURN]
 
-    def evalw : Iteratee[WHAT, RETURN] = {
-      orig.foldT(done = (x, y) => siteratee(Done(x,y)),
-        cont = k => {
-          orig
-        })
-    }
+    def evalw(implicit F: Monad[TheF]) : IterateeT[WHAT, TheF, RETURN] =
+      iterateeT(
+        F.bind((orig &= empty[WHAT, TheF]).value)((s: StepT[WHAT, TheF, RETURN]) => s.fold(
+          cont = k => {
+            orig.value
+          }
+          , done = (a, i) => F.point(Done(a, i))
+        )))
   }
 
-  implicit def toEvalw[WHAT, RETURN]( i : Iteratee[WHAT, RETURN] ) = new EvalW[WHAT, RETURN] {
+  implicit def toEvalw[WHAT, RETURN]( i : IterateeT[WHAT, TheF, RETURN] ) = new EvalW[WHAT, RETURN] {
     lazy val orig = i
   }
 
   /**
    * ensure that the enumerator doesn't break basic assumptions when it can get
    * all the data
+   */
   def testFlatMapMultipleDones = {
     val url = sresource(this, "/data/BaseXmlTest.xml")
 
     val channel = Channels.newChannel(url.openStream())
 
     val parser = AsyncParser() // let the whole thing be swallowed in one
-    
-    val iter = 
+
+    val iter: IterateeT[PullType, TheF, Option[PullType]] =
       for {
-        _ <- peek[PullType, Id]
-        _ <- peek[PullType, Id]
-        _ <- peek[PullType, Id]
-        _ <- peek[PullType, Id]
-        _ <- peek[PullType, Id]
-        i <- evalWith((p : PullType) => {
-          p} )
-        j <- dropWhile((p : PullType) => {
-           p.fold( x => !x.isInstanceOf[Elem] , y => false)
-          } )
+        _ <- peek[PullType, TheF]
+        _ <- peek[PullType, TheF]
+        _ <- peek[PullType, TheF]
+        _ <- peek[PullType, TheF]
+        _ <- peek[PullType, TheF]
+        i <- evalWith((p: PullType) => {
+          p
+        })(implicitly[Applicative[TheF]])
+        j <- dropWhile((p: PullType) => {
+          p.fold(x => !x.isInstanceOf[Elem], y => false)
+        })(implicitly[Monad[TheF]])
       } yield j
     
     val enumeratee = enumToMany(iter)(AsyncParser.parse(parser))
     val wrapped = new ReadableByteChannelWrapper(channel, true, tinyBuffers)
-    
-    val (e,cont) = (enumeratee &= dataChunkerEnumerator(wrapped)).run
-    assertTrue("Should be defined", e.isDefined)
-    assertEquals("{urn:default}DontRedeclare", e.get.left.get.asInstanceOf[Elem].name.qualifiedName)
-    parser.closeResource
-    wrapped.closeResource
+
+    val p =
+      for {
+        r <- (enumeratee &= dataChunkerEnumerator(wrapped)).run
+        (e,cont) = r
+      } yield {
+        assertTrue("Should be defined", e.isDefined)
+        assertEquals("{urn:default}DontRedeclare", e.get.left.get.asInstanceOf[Elem].name.qualifiedName)
+        parser.closeResource
+        wrapped.closeResource
+      }
+
+    p run
   }
-   */
 
   def testSimpleLoadAndFold(): Unit =
-    doSimpleLoadAndFold[Trampoline]{
+    doSimpleLoadAndFold[TheF]{
       (p, iter, wrapped) => 
       val enumeratee = enumToMany(iter)(AsyncParser.parse(p))
       for {
-        r <- (enumeratee &= dataChunkerEnumerator[DataChunk, Trampoline](wrapped)).run
+        r <- (enumeratee &= dataChunkerEnumerator[DataChunk, TheF](wrapped)).run
         (e,cont) = r
       } yield e
     } run
@@ -176,17 +189,17 @@ class AsyncPullTest extends junit.framework.TestCase {
       b = randomChannel.nextChunk
       val s = parser.nextInput(b)
       s(
-	el = e => {
-	  headed += 1
-	  var st = e
-	  while(!st.isEmpty) {
-	    val h = st.headOption.get
-	    res = res :+ h
-	    st = st.tailOption.get
-	  }
-	},
-	empty = {nexted += 1;()},
-	eof = {nexted += 1;()}
+        el = e => {
+          headed += 1
+          var st = e
+          while(!st.isEmpty) {
+            val h = st.headOption.get
+            res = res :+ h
+            st = st.tailOption.get
+          }
+        },
+        empty = {nexted += 1;()},
+        eof = {nexted += 1;()}
       )
     }
     
@@ -209,65 +222,75 @@ class AsyncPullTest extends junit.framework.TestCase {
 
     val parser = AsyncParser()
 
-    val empty = () => emptyEphemeralStream
+    import scales.utils.trampolineIteratees._
+    val r =
+      ( foldIM[DataChunk, (ResumableIter[DataChunk, EphemeralStream[PullType]], DataChunk, Vector[PullType])](
+        (_, triple ) => {
+          val (c, b, res) = triple
 
-    var nexted = 0
-    var headed = 0
+          def input(b: DataChunk) =
+            if (b.isEOF)
+              Eof[DataChunk]
+            else
+              if (b.isEmpty)
+                Empty[DataChunk]
+              else
+                Element(b)
 
-    var res = Vector.empty[PullType]
+          def nextC(step: ResumableStep[DataChunk, EphemeralStream[PullType]], b: DataChunk) =
+            step(
+              done = (a, y) => { // if eof
+                val (e, cont) = a
 
-    var c = AsyncParser.parse[Trampoline](parser)
-    
-    var b : DataChunk = EmptyData
-    while(b != EOFData) {
-      def input =
-        if (b.isEOF)
-          Eof[DataChunk]
-        else
-          if (b.isEmpty)
-            Empty[DataChunk]
-          else
-            Element(b)
-      
-      def nextC = 
-        c.foldT (
-          done = (a, y) => { // if eof
-            val (e, cont) = a
-            headed += 1
+                var nres = res
+                var st = e
+                while(!st.isEmpty) {
+                  val h = st.headOption.get
+                  nres = nres :+ h
+                  st = st.tailOption.get
+                }
 
-            var st = e
-            while(!st.isEmpty) {
-              val h = st.headOption.get
-              res = res :+ h
-              st = st.tailOption.get
-            }
-            // is
-            cont.asInstanceOf[ResumableIter[DataChunk, EphemeralStream[PullType]]]
-          },
-          cont = k => {
-            nexted += 1
-            // need to push the next chunk
-            k(input)
+                (nres, cont.asInstanceOf[ResumableIter[DataChunk, EphemeralStream[PullType]]])
+              },
+              cont = k => {
+                // need to push the next chunk
+                val chunk = input(b)
+                (res, k(chunk))
+              }
+            )
+
+          c.value.map {
+            step =>
+              val nextb =
+                // if its done we have to pump
+                if (!randomChannel.isClosed && !isDoneS(step)) {
+                  randomChannel.nextChunk // odd ordering issues?  even Id doesn't "fix" it
+                } else {
+                  b
+                }
+              val (nres, nextc) = nextC(step, nextb)
+              (nextc, nextb, nres)
           }
-        )
+      })((AsyncParser.parse[TheF](parser),EmptyData, Vector.empty[PullType]), stopOn = _._2 == EOFData)
+        &= repeat[DataChunk, TheF](EmptyData)) run
 
-      // if its done we have to pump
-      if (!randomChannel.isClosed && !isDone(c)) {
-        b = randomChannel.nextChunk
+    val p =
+      for {
+        bits <- r
+        ((c, data, res), cont) = bits
+        cStep <- c.value
+      } yield {
+        val s = asString(res.iterator : Iterator[PullType])
+        assertEquals(s, str)
+
+        assertTrue("Cont should have been eof", isEOFS(cStep))
+        assertTrue("Parser should have been closed", parser.isClosed)
       }
 
-      c = nextC
-    }
-    
-    val s = asString(res.iterator : Iterator[PullType])
-    assertEquals(s, str)
-
-    assertTrue("Cont should have been eof", isEOF(c))
-    assertTrue("Parser should have been closed", parser.isClosed)
+    p run
   }
+/*
 
-
- 
   /**
    * Hideously spams with various sizes of data, and more than a few 0 lengths.
    *
@@ -282,24 +305,24 @@ class AsyncPullTest extends junit.framework.TestCase {
     val stream = url.openStream()
 
     val randomChannel = new RandomChannelStreamWrapper(stream, smallBufSize)
-    
+
     val parser = AsyncParser()
 
     val strout = new java.io.StringWriter()
-    val (closer, iter) = pushXmlIter( strout , doc )
+    val (closer, iter) = pushXmlIter[TheF]( strout , doc )
 
     val enumeratee = enumToMany(iter)(AsyncParser.parse(parser))
     val wrapped = new ReadableByteChannelWrapper(randomChannel, true, tinyBuffers)
-    
+
     /*
      * the random channel does every 10, every 6 forces it back but allows
      * a fair chunk of Empty -> Conts followed by data
-     */ 
-    val readableByteChannelEnumerator = new AsyncDataChunkerEnumerator(wrapped, 6 )
+     */
+    val readableByteChannelEnumerator = new AsyncDataChunkerEnumerator[DataChunk, TheF](wrapped, 6 )
 
     val cstable = (enumeratee &= readableByteChannelEnumerator).evalw
     var c = cstable
-    
+
     type cType = cstable.type
 
     var count = 0
@@ -314,21 +337,21 @@ class AsyncPullTest extends junit.framework.TestCase {
 
     c.foldT[Unit](
       done = (a,i) => {
-	val ((out, thrown), cont) = a
-	assertFalse( "shouldn't have thrown", thrown.isDefined)
+        val ((out, thrown), cont) = a
+        assertFalse( "shouldn't have thrown", thrown.isDefined)
 
-	assertTrue("should have been auto closed", closer.isClosed)
-	assertEquals(str, strout.toString)
+        assertTrue("should have been auto closed", closer.isClosed)
+        assertEquals(str, strout.toString)
       },
       cont = f => fail("Should have been done")
     )
-    
+
     assertTrue("Parser should have been closed ", parser.isClosed)
     assertTrue("Wrapper should have been closed ", wrapped.isClosed)
 
     // the output stream is closed, the input stream and parser is closed
     assertTrue("should have been EOF", isEOF(c))
-  }
+  }*/
 
   def testSimpleLoadSerializingMisc = {
     val url = sresource(this, "/data/MiscTests.xml")
@@ -341,7 +364,7 @@ class AsyncPullTest extends junit.framework.TestCase {
     val parser = AsyncParser()
 
     val strout = new java.io.StringWriter()
-    val (closer, iter) = pushXmlIter( strout , doc )
+    val (closer, iter) = pushXmlIter[Id]( strout , doc )
 
     val enumeratee = enumToMany(iter)(AsyncParser.parse(parser))
     val ((out, thrown), cont) = (enumeratee &= dataChunkerEnumerator(channel)).runEval
@@ -359,11 +382,11 @@ class AsyncPullTest extends junit.framework.TestCase {
     val channel = Channels.newChannel(url.openStream())
 
     val iter = evalAll(Left(Text("")), (p : PullType) => {
-//      println(p); 
+//      println(p);
       p} )
 
     val parser = AsyncParser()
-    
+
     val enumeratee = enumToMany(iter)(AsyncParser.parse(parser))
     val (e, cont) = (enumeratee &= dataChunkerEnumerator(channel.wrapped)).run
 
@@ -385,7 +408,7 @@ class AsyncPullTest extends junit.framework.TestCase {
     val parser = AsyncParser()
 
     val strout = new java.io.StringWriter()
-    val (closer, iter) = pushXmlIter( strout , doc )
+    val (closer, iter) = pushXmlIter[Id]( strout , doc )
 
     val enumeratee = enumToMany(iter)(parser.iteratee)
     val ((out, thrown), cont) = (enumeratee &= dataChunkerEnumerator(channel)).run
@@ -402,20 +425,19 @@ class AsyncPullTest extends junit.framework.TestCase {
   def testSimpleLoadSerializingDirect =
     doSimpleLoadSerializing( s => new ReadableByteChannelWrapper(Channels.newChannel(s), bytePool = new DirectBufferPool()))
 
-  def testSimpleLoadSerializingDirectSmallArrays = 
-    doSimpleLoadSerializing{ s => 
+  def testSimpleLoadSerializingDirectSmallArrays =
+    doSimpleLoadSerializing{ s =>
       new ReadableByteChannelWrapper(Channels.newChannel(s), bytePool = new DirectBufferPool(), directBufferArrayPool = new ByteArrayPool(50))
     }
 
-  def testSimpleLoadSerializingSmallDirectLargerArrays = 
-    doSimpleLoadSerializing{ s => 
-      new ReadableByteChannelWrapper(Channels.newChannel(s), bytePool = new DirectBufferPool(50)) 
+  def testSimpleLoadSerializingSmallDirectLargerArrays =
+    doSimpleLoadSerializing{ s =>
+      new ReadableByteChannelWrapper(Channels.newChannel(s), bytePool = new DirectBufferPool(50))
     }
 
-  def testSimpleLoadSerializingSmallDirectSmallArrays = 
-    doSimpleLoadSerializing{ s => 
+  def testSimpleLoadSerializingSmallDirectSmallArrays =
+    doSimpleLoadSerializing{ s =>
       new ReadableByteChannelWrapper(Channels.newChannel(s), bytePool = new DirectBufferPool(50), directBufferArrayPool = new ByteArrayPool(50))
     }
 
 }
-*/

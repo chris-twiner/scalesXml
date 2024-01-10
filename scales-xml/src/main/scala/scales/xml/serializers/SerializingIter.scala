@@ -3,19 +3,20 @@ package scales.xml.serializers
 import scales.utils._
 import resources._
 import scalaz.Id.Id
+import scalaz.Monad
 import scalaz.iteratee.Input.Eof
-import scalaz.iteratee.Iteratee.iteratee
+import scalaz.iteratee.Iteratee.{iteratee, iterateeT}
 import scalaz.iteratee.StepT.{Cont, Done}
 import scales.xml._
-import scalaz.iteratee.{Enumerator, Input, Iteratee, StepT}
+import scalaz.iteratee.{Enumerator, Input, Iteratee, IterateeT, StepT}
 
 /**
  * Provide push based serializing Iteratee
  */ 
 trait SerializingIter {
 
-  type SerialIterT = Iteratee[PullType, (XmlOutput, Option[Throwable])]
-  type SerialStepT = StepT[PullType, Id, (XmlOutput, Option[Throwable])]
+  type SerialIterT[F[_]] = IterateeT[PullType, F, (XmlOutput, Option[Throwable])]
+  type SerialStepT[F[_]] = StepT[PullType, F, (XmlOutput, Option[Throwable])]
 
   import java.nio.charset.Charset
 
@@ -24,19 +25,19 @@ trait SerializingIter {
    * 
    * doc functions are only evaluated upon the first elem / last elem
    */
-  def serializeIter( output : XmlOutput, serializer : Serializer, closer : () => Unit, doc : DocLike = EmptyDoc()) : SerialIterT = {
+  def serializeIter[F[_]]( output : XmlOutput, serializer : Serializer, closer : () => Unit, doc : DocLike = EmptyDoc())(implicit F: Monad[F]) : SerialIterT[F] = {
 
     var empties = 0
 
-    def done( status : StreamStatus ) : SerialStepT = {
+    def done( status : StreamStatus ) : SerialStepT[F] = {
       // give it back
       closer()
       //println("empties was "+empties)
       Done((status.output, status.thrown), Eof[PullType])
     }
 
-    def rest( status : StreamStatus, prev : PullType, serializer : Serializer )(s : Input[PullType]) : SerialIterT =
-      iteratee(
+    def rest( status : StreamStatus, prev : PullType, serializer : Serializer )(s : Input[PullType]) : SerialIterT[F] =
+      iterateeT(F.point(
         s(el = e =>
             if (status.thrown.isDefined) done(status)
             else {
@@ -60,12 +61,10 @@ trait SerializingIter {
               done(lastStatus)
             }}
         )
-      )
+      ))
 
-
-
-    def first( status : StreamStatus, serializer : Serializer )(s : Input[PullType]) : SerialIterT =
-      iteratee(
+    def first( status : StreamStatus, serializer : Serializer )(s : Input[PullType]) : SerialIterT[F] =
+      iterateeT(F.point(
         s(el = e => {
           // decl and prolog misc, which should have been collected by now
           val opt = serializer.xmlDeclaration(status.output.data.encoding,
@@ -82,15 +81,15 @@ trait SerializingIter {
           },
           eof = Done((status.output, Some(NoDataInStream())), Eof[PullType])
         )
-      )
+      ))
 
-    iteratee( Cont(first(StreamStatus(output), serializer)) )
+    iterateeT( F.point( Cont(first(StreamStatus(output), serializer)) ) )
   }
 
   /**
    * Returns an Iteratee that can serialize PullTypes to out.  The serializer factory management is automatically handled upon calling with eof.  This can be triggered earlier by calling closeResource on the returned CloseOnNeed.
    */ 
-  def pushXmlIter( out: java.io.Writer, doc : DocLike = EmptyDoc(), version: Option[XmlVersion] = None, encoding: Option[Charset] = None )(implicit serializerFI: SerializerFactory) : (CloseOnNeed, SerialIterT) = {
+  def pushXmlIter[F[_]]( out: java.io.Writer, doc : DocLike = EmptyDoc(), version: Option[XmlVersion] = None, encoding: Option[Charset] = None )(implicit serializerFI: SerializerFactory, F: Monad[F]) : (CloseOnNeed, SerialIterT[F]) = {
 
     val decl = doc.prolog.decl
     val sd = SerializerData(out, 
@@ -103,10 +102,10 @@ trait SerializingIter {
 
     val closer : CloseOnNeed = new CloseOnNeed {
       def doClose() {
-	serializerFI.giveBack(ser)
+      	serializerFI.giveBack(ser)
       }
     }
-    val iter = serializeIter( xo, ser, () => closer.closeResource, doc)
+    val iter = serializeIter[F]( xo, ser, () => closer.closeResource, doc)
 
     (closer, iter)
   }

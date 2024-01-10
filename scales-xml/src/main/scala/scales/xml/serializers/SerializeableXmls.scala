@@ -88,11 +88,11 @@ class StreamSerializer[T](toP : T => Iterator[PullType]) extends SerializeableXm
     val r = it.++(dummyIterable.iterator).sliding(2).foldLeft(StreamStatus(out)) {  (status, two) =>
       if (status.thrown.isDefined) status
       else {
-	val asList = two.toList
-	if (!((asList.size == 1) && (asList.head eq dummy))) { // only == 1 with an empty input Iterator
-	  val List(ev, next) = asList
-	  pump((ev, next), status, serializer)
-	} else StreamStatus(status.output, Some(NoDataInStream()), true)
+        val asList = two.toList
+        if (!((asList.size == 1) && (asList.head eq dummy))) { // only == 1 with an empty input Iterator
+          val List(ev, next) = asList
+          pump((ev, next), status, serializer)
+        } else StreamStatus(status.output, Some(NoDataInStream()), true)
       }
     }
     (r.output, r.thrown)

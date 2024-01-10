@@ -660,7 +660,7 @@ trait Iteratees {
    *
    * If the dest returns EOF, the toMany is in turn called with EOF for any needed resource control processing.
    */ 
-  def enumToMany[E, F[_], A, R]( dest: ResumableIter[A,F,R])( toMany: ResumableIter[E, F, EphemeralStream[A]])(implicit F: Monad[F], AF: Applicative[F]): ResumableIter[E, F, R] = {
+  def enumToMany[E, F[_], A, R]( dest: ResumableIter[A,F,R])( toMany: ResumableIter[E, F, EphemeralStream[A]])(implicit F: Monad[F]): ResumableIter[E, F, R] = {
     val empty = () => EphemeralStream.emptyEphemeralStream[A]
 
     /**
@@ -1129,14 +1129,14 @@ class IterateeFunctions[F[_]](val F: Monad[F]) {
    * everything else
    * TODO - should it be a pair including the appendable?
    */
-  @inline def appendTo( to : Appendable )(implicit F: Monad[F]): IterateeT[CharSequence, F, CharSequence] =
+  @inline def appendTo( to : Appendable )(implicit F: Applicative[F]): IterateeT[CharSequence, F, CharSequence] =
     scales.utils.appendTo[F](to)
 
   /**
    * Calls the function param with the fed data and returns its
    * result - consider Scalaz 7 map directly rather than composing
    */
-  @inline def evalWith[FROM, TO]( f : (FROM) => TO )(implicit F: Monad[F]): IterateeT[FROM, F, TO] =
+  @inline def evalWith[FROM, TO]( f : (FROM) => TO )(implicit F: Applicative[F]): IterateeT[FROM, F, TO] =
     scales.utils.evalWith[FROM,F,TO](f)
 
   /**
@@ -1150,14 +1150,14 @@ class IterateeFunctions[F[_]](val F: Monad[F]) {
   /**
    * Sums an iteratee up, consider using the Scalaz IterateeT monadic sum instead
    */
-  @inline def sum[T](implicit n: Numeric[T], F: Monad[F]): IterateeT[T, F, T] =
+  @inline def sum[T](implicit n: Numeric[T], F: Applicative[F]): IterateeT[T, F, T] =
     scales.utils.sum[T,F]
 
   /**
    * Maps a given input to a function returning a Input[EphemeralStream].
    * If the Input is El it returns it, if EOF empty and continues on empty.
    */
-  @inline def mapTo[E, A]( f: E => Input[EphemeralStream[A]] )(implicit F: Monad[F]): IterateeT[E, F, EphemeralStream[A]] =
+  @inline def mapTo[E, A]( f: E => Input[EphemeralStream[A]] )(implicit F: Applicative[F]): IterateeT[E, F, EphemeralStream[A]] =
     scales.utils.mapTo[E,F,A](f)
 
   /**

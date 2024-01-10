@@ -35,26 +35,26 @@ abstract class BaseRandomChannelWrapper(bufSize: Int) extends java.nio.channels.
     if (cur0 > next0) {
       count0 += 1
       if (count0 > 10) { // feed 10 in
-	next0 = zeros.next
-	cur0 = 0
-	count0 = 0
-	//println("********* zeroed 10 times")
+        next0 = zeros.next
+        cur0 = 0
+        count0 = 0
+        //println("********* zeroed 10 times")
       }
       0
     } else {
       val red = {
-	val t = rand.nextInt(bufSize)
-	if (t == 0) {
-	  _zeroed += 1
-	  0
-	} else t
+        val t = rand.nextInt(bufSize)
+        if (t == 0) {
+          _zeroed += 1
+          0
+        } else t
       }
       if (red != 0) {
-	val did = fillBuffer(ourbuf, red)
-	if (did > -1) {
-	  buf.put(ourbuf, 0, did)
-	}
-	did
+        val did = fillBuffer(ourbuf, red)
+        if (did > -1) {
+          buf.put(ourbuf, 0, did)
+        }
+        did
       } else red
     }
   }

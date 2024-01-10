@@ -273,7 +273,7 @@ object AsyncParser {
     def step(s: Input[DataChunk]): ResumableIter[DataChunk, F, EphemeralStream[PullType]] =
       iterateeT(Monad[F].point(
         s(el = e => {
-            //println("Did get a large chunk "+e)
+            //println("Did get a large chunk "+new String(e.array, e.offset, e.length, "UTF-8"))
             val r = parser.nextInput(e)
             r( el = es => {
             //println("got el with es " + es.isEmpty + " feeder " + parser.feeder.needMoreInput)
