@@ -842,28 +842,24 @@ on both the qname matching (3 of them) and then the above combos
   val Headers = List("root"l,"section"l,"sectionHeader"l)
   val OfInterest = List("root"l,"section"l,"ofInterest"l)
 
-  val ofInterestOnDone = onDone(List(onQNames[Trampoline](Headers),
-    onQNames[Trampoline](OfInterest)))
+  def ofInterestOnDone[F[_]: Monad]() = onDone(List(onQNames[F](Headers),
+    onQNames[F](OfInterest)))
 
 
-  def testFoldOnDone(): Unit = {
 
-    val ionDone = ofInterestOnDone
+  /*
+   * this test is more than a little intensive, given we are
+   * purposefully quadratic so it explodes memory creation
+   * as such we aren't linked to maxIterations.
+   *
+   */
+  val foldOnDoneMax = 50
 
-    /*
-     * this test is more than a little intensive, given we are
-     * purposefully quadratic so it explodes memory creation
-     * as such we aren't linked to maxIterations.
-     *
-     */
-    val ourMax = 50
+  def doFoldOnDone[F[_]: Monad, C](enum: => EnumeratorT[PullType,F]): F[Unit] = {
 
-    var iter = withHeaders(ourMax)
-    val func = (e: WeakStream[PullType]) => {iter = e}
+    val ionDone = ofInterestOnDone[F]
 
-    def enum(e: WeakStream[PullType]) = enumWeakStreamF[PullType, Trampoline](func)(e)
-
-    val total = foldOnDone[PullType, Iterable[QNamesMatch], Trampoline, (Int,Int)](enum(iter))( (0, 0), ionDone ){
+    val total = foldOnDone[PullType, Iterable[QNamesMatch], F, (Int,Int)](enum)( (0, 0), ionDone ){
       (t, qnamesMatch) =>
         if (qnamesMatch.size == 0) {
           t // no matches
@@ -876,11 +872,11 @@ on both the qname matching (3 of them) and then the above combos
           // we should never have more than one child in the parent
           // and thats us
           assertEquals(1, head._2.get.zipUp.children.size)
-      /*	  val count = head._2.get.zipUp.children.size
-          if (count != 1) {
-            head._2.get.zipUp.children.foreach(println)
-            fail("Had more children "+ count)
-          }*/
+          /*	  val count = head._2.get.zipUp.children.size
+              if (count != 1) {
+                head._2.get.zipUp.children.foreach(println)
+                fail("Had more children "+ count)
+              }*/
           val i =  text(head._2.get).toInt
           if (head._1 eq Headers) {
             assertEquals(t._1, t._2)
@@ -889,35 +885,53 @@ on both the qname matching (3 of them) and then the above combos
           } else {
             (t._1, i)
           }
-	      }
+        }
     }
 
+    import scalaz.Scalaz._
     val p =
       for {
         pair <- total
       } yield {
-        assertEquals(ourMax - 1, pair._1)
+        assertEquals(foldOnDoneMax - 1, pair._1)
         assertEquals(pair._1, pair._2)
       }
 
+    p
+  }
+  def testFoldOnDoneId(): Unit = try {
+    var iter = withHeaders(foldOnDoneMax).iterator
+    doFoldOnDone(iteratorEnumerator(iter))
+    fail("Actually worked, really should SOE")
+  } catch {
+    case e: StackOverflowError => ()
+  }
+
+  def testFoldOnDoneTrampoline(): Unit = {
+    var iter = withHeaders(foldOnDoneMax)
+    val func = (e: WeakStream[PullType]) => {iter = e}
+
+    def enum(e: WeakStream[PullType]) = enumWeakStreamF[PullType, Trampoline](func)(e)
+    val p = doFoldOnDone(enum(iter))
     p run
   }
-/*
+
   type FiveStrings = (String,String,String,String,String)
 
-  def testIterator = {
+  def testIterator():Unit = {
     val pull = pullXml(sresource(this, "/data/svnLogIteratorEg.xml"))
     val LogEntries = List("log"l,"logentry"l)
 
     var i = 0
 
     val it = scales.xml.iterate(LogEntries, pull.it)
-    val bits = for{ entry : XmlPath <- it
-	revision <- entry.\.*@("revision"l).one
-	author <- entry.\*("author"l).one
-	path <- entry.\*("paths"l).|>{x=> i+=1;x}.\*("path"l)
-	kind <- path.\.*@("kind"l)
-	action <- path.\.*@("action"l)
+    val bits = for{
+      entry : XmlPath <- it
+      revision <- entry.\.*@("revision"l).one
+      author <- entry.\*("author"l).one
+      path <- entry.\*("paths"l).|>{x=> i+=1;x}.\*("path"l)
+      kind <- path.\.*@("kind"l)
+      action <- path.\.*@("action"l)
     } yield (text(revision), value(author), text(kind), text(action), value(path))
 
     val t = bits.next//iterator.next
@@ -1043,6 +1057,5 @@ on both the qname matching (3 of them) and then the above combos
 
     pull.close
   }
-*/
 }
 
