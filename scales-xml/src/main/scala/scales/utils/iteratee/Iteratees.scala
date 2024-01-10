@@ -162,6 +162,15 @@ trait Iteratees {
       )))
 
   /**
+   * Extract the continuation from a Done
+   */
+  def extractContS[E, F[_], A]( s : ResumableStep[E, F, A] )(implicit F: Monad[F]): ResumableIter[E, F, A] =
+    iterateeT( s(
+        cont = k => error("Was not done")
+        , done = (x, i) => x._2.asInstanceOf[ResumableIter[E, F, A]].value
+      ) )
+
+  /**
    * Extract the Some(value) from a Done or None if it was not Done.
    */
   def extract[E, F[_], A]( iter : ResumableIter[E, F, A] )(implicit F: Monad[F]) : F[Option[A]] =
@@ -169,6 +178,15 @@ trait Iteratees {
       done = (x, i) =>
 	      F.point(Some(x._1)),
       cont = f => F.point(None) )
+
+  /**
+   * Extract the Some(value) from a Done or None if it was not Done.
+   */
+  def extractS[E, F[_], A]( iter : ResumableStep[E, F, A] )(implicit F: Monad[F]) : Option[A] =
+    iter(
+      done = (x, i) =>
+        Some(x._1),
+      cont = f => None )
 
   /**
    * Helper to identify dones
@@ -286,22 +304,20 @@ trait Iteratees {
           isdone = isDoneS(value)
           iseof = isEOFS(value)
 
-          res <-
+          res =
             if (!isdone || (isdone && !iseof)) {
-              val t: F[(ACC,ResumableIter[E,F,A], Boolean)] =
+              val t: (ACC,ResumableIter[E,F,A], Boolean) =
                 if (isdone) {
-                  val a = extract(itr)
-                  F.map(a) { a =>
-                    if (a.isEmpty)
-                      (currentA, itr, true)
-                    else
-                      (f(currentA, a.get), extractCont(itr), false)
-                  }
+                  val a = extractS(value)
+                  if (a.isEmpty)
+                    (currentA, itr, true)
+                  else
+                    (f(currentA, a.get), extractCont(itr), false)
                 } else
-                  F.point((currentA, itr, true))
+                  (currentA, itr, true)
               t
             } else {
-              F.point((currentA, itr, true))
+              (currentA, itr, true)
             }
         } yield {
           val (currentA, itr, done) = res
