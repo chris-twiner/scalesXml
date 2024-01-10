@@ -1,12 +1,71 @@
 package scales.utils.iteratee
 
-import scalaz.{Applicative, EphemeralStream, Monad}
+import scalaz.Free.Trampoline
+import scalaz.Id.Id
+import scalaz.effect.IO
+import scalaz.{Applicative, Bind, EphemeralStream, Monad}
 import scalaz.iteratee.Input.{Element, Empty, Eof}
-import scalaz.iteratee.Iteratee.{cont, done, elInput, empty, enumEofT, enumOne, foldM, iterateeT, repeat}
+import scalaz.iteratee.Iteratee.{cont, done, elInput, empty, foldM, iterateeT, repeat}
 import scalaz.iteratee.StepT.{Cont, Done}
 import scalaz.iteratee.{EnumeratorT, Input, IterateeT, StepT}
 import scales.utils.ScalesUtils
-import scales.utils.ScalesUtils.{iteratorEnumerator, toEval}
+
+object EphemeralStreamEnum {
+
+  /**
+   * Enumerates over an EphemeralStream
+   * @param xs
+   * @tparam E
+   * @tparam F
+   * @return
+   */
+  def enumEphemeralStream[E, F[_] : Monad](xs: EphemeralStream[E]): EnumeratorT[E, F] = {
+    import EphemeralStream.##::
+
+    new EnumeratorT[E, F] {
+      def apply[A] = (s: StepT[E, F, A]) =>
+        xs match {
+          case h ##:: t => s.mapCont(k => k(scalaz.iteratee.Iteratee.elInput(h)) >>== enumEphemeralStream[E, F](t).apply[A])
+          case _ => s.pointI
+        }
+
+    }
+  }
+
+  /**
+   * Enumerates over an EphemeralStream but allows progress to be "saved" between calls
+   * @param state
+   * @param xs
+   * @tparam E
+   * @tparam F
+   * @return
+   */
+  def enumEphemeralStreamF[E, F[_] : Monad](state: EphemeralStream[E] => Unit)(xs: EphemeralStream[E]): EnumeratorT[E, F] = {
+    import EphemeralStream.##::
+
+    new EnumeratorT[E, F] {
+      def apply[A] = (s: StepT[E, F, A]) =>
+        xs match {
+          case h ##:: t => s.mapCont(k => k(scalaz.iteratee.Iteratee.elInput(h)) >>== enumEphemeralStreamF[E, F]({state(t);state})(t).apply[A])
+          case _ => s.pointI
+        }
+
+    }
+  }
+
+  /**
+   * Converts an iterator to EphemeralStream.  EphemeralStream then ensures next will not be called unexpectedly in the face of trampolining
+   * @param iterator
+   * @tparam A
+   * @return
+   */
+  def toEphemeral[A](iterator: Iterator[A]): EphemeralStream[A] =
+    if (iterator.isEmpty) EphemeralStream.emptyEphemeralStream else {
+      val next = iterator.next()
+      val after = toEphemeral(iterator)
+      EphemeralStream.cons(next, after)
+    }
+}
 
 /**
  * Evals once, the developer must check its Done, equivalent to a .run but
@@ -28,6 +87,13 @@ trait IterateeImplicits {
   implicit def toEval[WHAT, F[_], RETURN]( i : IterateeT[WHAT, F, RETURN] ) = new Eval[WHAT, F, RETURN] {
     lazy val orig = i
   }
+
+}
+
+/**
+ * Collection of iterateees
+ */
+trait Iteratees {
 
   /**
    * Taken from huynhjl's answer on StackOverflow, just abstracting the type to allow for better implicit inference
@@ -61,12 +127,6 @@ trait IterateeImplicits {
         go(iter)
       }
     }
-}
-
-/**
- * Collection of iterateees
- */
-trait Iteratees {
 
   def error(string: String) = sys.error(string)
 
@@ -143,9 +203,9 @@ trait Iteratees {
    * @return
    */
   def isResumableEOF[E, F[_], A](iter: ResumableIter[E,F,A])(implicit F: Monad[F]): F[Boolean] =
-    F.map(iter.value)(isResumableEOF[E,F,A])
+    F.map(iter.value)(isResumableEOFS[E,F,A])
 
-  def isResumableEOF[E, F[_], A](s: ResumableStep[E,F,A]): Boolean =
+  def isResumableEOFS[E, F[_], A](s: ResumableStep[E,F,A]): Boolean =
     s(
       cont= k => false
       , done= (a, i) => a._2 == null && i.isEof
@@ -290,7 +350,7 @@ trait Iteratees {
    *
    * combine with onDone to get through chunks of data.
    */
-  def foldOnDone[E, A, F[_], ACC]( e: => EnumeratorT[E, F] )( initAcc : ACC, initResumable : ResumableIter[E, F,A] )( f : (ACC, A) => ACC )(implicit F: Monad[F]) : F[ACC] = {
+  def foldOnDone[E, F[_], A, ACC]( e: => EnumeratorT[E, F] )( initAcc : ACC, initResumable : ResumableIter[E, F,A] )( f : (ACC, A) => ACC )(implicit F: Monad[F]) : F[ACC] = {
     import ScalesUtils._
     import scalaz.Scalaz._
 
@@ -300,31 +360,28 @@ trait Iteratees {
       (foldIM[ACC,F,(ACC, ResumableIter[E,F,A], Boolean)]((p, a) => {
         val (currentA, itr, _) = a
         for {
-          value <- itr.value
-          isdone = isDoneS(value)
-          iseof = isEOFS(value)
+          step <- itr.value
+          isdone = isDoneS(step)
+          iseof = isEOFS(step)
+
+          shouldStop = (currentA, itr, true)
 
           res =
-            if (!isdone || (isdone && !iseof)) {
-              val t: (ACC,ResumableIter[E,F,A], Boolean) =
-                if (isdone) {
-                  val a = extractS(value)
-                  if (a.isEmpty)
-                    (currentA, itr, true)
-                  else
-                    (f(currentA, a.get), extractContS(value), false)
-                } else
-                  (currentA, itr, true)
-              t
-            } else {
-              (currentA, itr, true)
-            }
+            if (isdone && !iseof) {
+              val a = extractS(step)
+              if (a.isEmpty)
+                shouldStop
+              else
+                (f(currentA, a.get), extractContS(step), false)
+            } else
+              shouldStop
+
         } yield {
           val (currentA, itr, done) = res
 
           (currentA, (itr &= e).eval, done)
         }
-      })(init = (initAcc, starter /*extractCont( starter )*/, false), stopOn = a => a._3) &= repeat[ACC,F](initAcc) ) run
+      })(init = (initAcc, starter, false), stopOn = a => a._3) &= repeat[ACC,F](initAcc) ) run
 
     F.map( r ) { r =>
       val ((acc, nr, b), cont) = r
@@ -332,30 +389,46 @@ trait Iteratees {
     }
   }
 
-  class ResumableIterIterator[E, F[_],A]( e : EnumeratorT[E, F])(init : ResumableIter[E, F,A]) extends Iterator[A] {
+  /**
+   * Only possible to work on IO as it allows us to exit the monad
+   * @param e
+   * @param init
+   * @tparam E
+   * @tparam A
+   */
+  class ResumableIterIterator[E, A]( e : EnumeratorT[E, IO])(init : ResumableIter[E, IO,A]) extends Iterator[A] {
     import ScalesUtils._
 
-    /*var cur = (init &= e).eval
-    var isdone = isDone(cur)
-    var r = extract(cur)
-*/
+    var cur = (init &= e).eval
+
     def next = {
-  /*    val t = r
+      val t =
+        (for {
+          step <- cur.value
+        } yield
+          extractS(step)
+        ).unsafePerformIO
+
       cur = (extractCont(cur) &= e).eval
-      isdone = isDone(cur)
-      r = extract(cur)
-      t.get // note we check for defined in hasNext*/
-      ???
+      t.get // note we check for defined in hasNext
     }
 
-    def hasNext = true//isdone && !isEOF(cur) && r.isDefined
+    def hasNext =
+      (for {
+        step <- cur.value
+        isdone = isDoneS(step)
+        r = extractS(step)
+      } yield {
+        isdone && !isEOFS(step) && r.isDefined
+      }).unsafePerformIO
   }
 
   /**
-   * Converts the iteratee/enumerator/source triple into a Iterator, not possible if it's not Id
-
-  def withIter[E, F[_],A]( e : EnumeratorT[E, F])(initResumable : ResumableIter[E, F,A]) = new ResumableIterIterator[E, F,A](e)(initResumable)
+   * Converts the iteratee/enumerator/source triple into a Iterator.  This is only possible in IO given the ability to exit the monad _and_ trampoline.
+   *
+   * For most uses iterate is a better option
    */
+  def withIter[E, A]( e : EnumeratorT[E, IO])(initResumable : ResumableIter[E, IO,A]) = new ResumableIterIterator[E, A](e)(initResumable)
 
   /**
    * onDone, iterates over the list of iteratees applying
@@ -477,7 +550,7 @@ trait Iteratees {
    * String => Int, enumerator Iterator[String] but IterV[Int, Int]
    */
   @deprecated(since="0.6.0-M5", message="Use Scalaz 7 IterateeT.contramap")
-  def enumerateeMap[E, A, F[_], R](target: IterateeT[A,F,R])(f : E => A )(implicit F: Monad[F]) : IterateeT[E, F, R] = {
+  def enumerateeMap[E, F[_], A, R](target: IterateeT[A,F,R])(f : E => A )(implicit F: Monad[F]) : IterateeT[E, F, R] = {
 
     def next( i : IterateeT[A,F,R] ) : IterateeT[E, F, R] =
       iterateeT( i.foldT[StepT[E, F, R]](
@@ -542,7 +615,7 @@ trait Iteratees {
    *
    * NB - This can be thought of the reverse of toResumableIter but also accumulating.
    */
-  def foldOnDoneIter[E,A, F[_], ACC]( initAcc : ACC, initIter : ResumableIter[E,F, A])( f : (ACC, A) => ACC )(implicit F: Monad[F]) : IterateeT[E, F, ACC] = {
+  def foldOnDoneIter[E, F[_], A, ACC]( initAcc : ACC, initIter : ResumableIter[E,F, A])( f : (ACC, A) => ACC )(implicit F: Monad[F]) : IterateeT[E, F, ACC] = {
 
     def next( acc : ACC, i : ResumableIter[E,F,A]) : IterateeT[E, F, ACC] =
       iterateeT(
@@ -587,7 +660,7 @@ trait Iteratees {
    *
    * If the dest returns EOF, the toMany is in turn called with EOF for any needed resource control processing.
    */ 
-  def enumToMany[E, A, F[_], R]( dest: ResumableIter[A,F,R])( toMany: ResumableIter[E, F, EphemeralStream[A]])(implicit F: Monad[F], AF: Applicative[F]): ResumableIter[E, F, R] = {
+  def enumToMany[E, F[_], A, R]( dest: ResumableIter[A,F,R])( toMany: ResumableIter[E, F, EphemeralStream[A]])(implicit F: Monad[F], AF: Applicative[F]): ResumableIter[E, F, R] = {
     val empty = () => EphemeralStream.emptyEphemeralStream[A]
 
     /**
@@ -805,67 +878,321 @@ trait Iteratees {
     through(itr)
   }
 
+  def iterateesOf[F[_]](implicit F: Monad[F]) = new IterateeFunctions[F](F)
+
+  val ioIteratees = iterateesOf[IO]
+  val trampolineIteratees = iterateesOf[Trampoline]
   /**
-   * Based on the Scalaz 7 map but exposes the monad through the f parameter
-   * @param itr
-   * @param f
+   * Warning: Id does not trampoline, consider trampolineIteratees or ioIteratees to import from
+   */
+  val idIteratees = iterateesOf[Id]
+
+}
+
+class IterateeFunctions[F[_]](val F: Monad[F]) {
+
+  type TheF[X] = F[X]
+
+  object EphemeralStreamEnum {
+
+    /**
+     * Enumerates over an EphemeralStream
+     * @param xs
+     * @tparam E
+     * @tparam F
+     * @return
+     */
+    @inline def enumEphemeralStream[E](xs: EphemeralStream[E])(implicit F: Monad[F]): EnumeratorT[E, F] =
+      scales.utils.iteratee.EphemeralStreamEnum.enumEphemeralStream[E,F](xs)
+
+    /**
+     * Enumerates over an EphemeralStream but allows progress to be "saved" between calls
+     * @param state
+     * @param xs
+     * @tparam E
+     * @tparam F
+     * @return
+     */
+    @inline def enumEphemeralStreamF[E](state: EphemeralStream[E] => Unit)(xs: EphemeralStream[E])(implicit F: Monad[F]): EnumeratorT[E, F] =
+      scales.utils.iteratee.EphemeralStreamEnum.enumEphemeralStreamF[E, F](state)(xs)
+
+    /**
+     * Converts an iterator to EphemeralStream.  EphemeralStream then ensures next will not be called unexpectedly in the face of trampolining
+     * @param iterator
+     * @tparam A
+     * @return
+     */
+    @inline def toEphemeral[A](iterator: Iterator[A]): EphemeralStream[A] =
+      scales.utils.iteratee.EphemeralStreamEnum.toEphemeral[A](iterator)
+  }
+
+  object IterateeImplicits {
+    @inline implicit def toEval[WHAT, RETURN]( i : IterateeT[WHAT, F, RETURN] ) =
+      scales.utils.ScalesUtils.toEval[WHAT,F,RETURN](i)
+
+    /**
+     * Taken from huynhjl's answer on StackOverflow, just abstracting the type to allow for better implicit inference
+     *
+     * def iteratorEnumerator[E](iter: Iterator[E]) = new EnumeratorT[E, Trampoline] {
+     * override def apply[A]: StepT[E, Trampoline, A] => IterateeT[E, Trampoline, A] =
+     * {
+     * case step if iter.isEmpty => iterateeT[E, Trampoline, A](Free.point(step))
+     * case step @ Done(acc, input) => iterateeT[E, Trampoline, A](Free.point(step))
+     * case step @ Cont(k) =>
+     * val x : E = iter.next
+     *
+     * k(Element(x)) >>== {
+     * s => s.mapContOr(_ => sys.error("diverging iteratee"), apply(s))
+     * }
+     * }
+     * }
+     */
+  }
+
+  @inline def iteratorEnumerator[E](iter: Iterator[E])(implicit F: Monad[F]): EnumeratorT[E, F] =
+    scales.utils.iteratorEnumerator[E,F](iter)
+  @inline def error(string: String) = scales.utils.error(string)
+
+  /** drop while iteratee, returning the possibly remaining data */
+  @inline def dropWhile[E](f: (E) => Boolean)(implicit F: Monad[F]): IterateeT[E, F, Option[E]] =
+    scales.utils.dropWhile[E,F](f)
+
+  /**
+   * Same as dropWhile but captures the Monad in F
+   */
+  @inline def dropWhileM[E](f: (E) => F[Boolean])(implicit F: Monad[F]): IterateeT[E, F, Option[E]] =
+    scales.utils.dropWhileM[E,F](f)
+
+  /** "find" iteratee, finds Some(first) or None */
+  @inline def find[E](f: (E) => Boolean)(implicit F: Monad[F]): IterateeT[E, F, Option[E]] =
+    scales.utils.find[E,F](f)
+
+  /** filter iteratee, greedily taking all content until eof */
+  @inline def filter[E](f: (E) => Boolean)(implicit F: Monad[F]): IterateeT[E, F, Iterable[E]] =
+    scales.utils.filter[E,F](f)
+
+  // defined again to make sure imports are smooth
+
+  type ResumableIterList[E, A] = IterateeT[E, F, (Iterable[A],IterateeT[E,F,_])]
+  type ResumableIterListStep[E, A] = StepT[E, F, (Iterable[A],IterateeT[E,F,_])]
+  type ResumableIter[E, A] = IterateeT[E, F, (A, IterateeT[E, F,_])]
+  type ResumableStep[E, A] = StepT[E, F, (A, IterateeT[E, F, _])]
+
+
+  /**
+   * marks a continuation resumableiter as actually being EOF - i.e. don't attempt to evaluate it
    * @param F
    * @tparam E
    * @tparam F
    * @tparam A
+   * @return
+   */
+  @inline def resumableEOF[E, A](input: A = null)(implicit F: Monad[F]): ResumableIter[E, A] =
+    scales.utils.resumableEOF[E,F,A](input)
+
+  @inline def resumableEOFDone[E, A](input: A)(implicit F: Monad[F]): ResumableStep[E, A] =
+    scales.utils.resumableEOFDone[E,F,A](input)
+
+  /**
+   * is this iteratee actually "empty"
+   * @param F
+   * @tparam E
+   * @tparam F
+   * @tparam A
+   * @return
+   */
+  @inline def isResumableEOF[E, A](iter: ResumableIter[E,A])(implicit F: Monad[F]): F[Boolean] =
+    scales.utils.isResumableEOF[E,F,A](iter)
+
+  @inline def isResumableEOFS[E, A](s: ResumableStep[E,A])(implicit F: Monad[F]): Boolean =
+    scales.utils.isResumableEOFS[E,F,A](s)
+
+  /**
+   * Extract the continuation from a Done
+   */
+  @inline def extractCont[E, A]( iter : ResumableIter[E,A] )(implicit F: Monad[F]): ResumableIter[E, A] =
+    scales.utils.extractCont[E,F,A](iter)
+
+  /**
+   * Extract the continuation from a Done
+   */
+  @inline def extractContS[E, A]( s : ResumableStep[E, A] )(implicit F: Monad[F]): ResumableIter[E, A] =
+    scales.utils.extractContS[E,F,A](s)
+
+  /**
+   * Extract the Some(value) from a Done or None if it was not Done.
+   */
+  @inline def extract[E, A]( iter : ResumableIter[E,  A] )(implicit F: Monad[F]) : F[Option[A]] =
+    scales.utils.extract[E,F,A](iter)
+
+  /**
+   * Extract the Some(value) from a Done or None if it was not Done.
+   */
+  @inline def extractS[E, A]( iter : ResumableStep[E, A] )(implicit F: Monad[F]) : Option[A] =
+    scales.utils.extractS[E,F,A](iter)
+
+  /**
+   * Helper to identify dones
+   */
+  @inline def isDone[E, A]( iter : IterateeT[E, F, A] )(implicit F: Monad[F]): F[Boolean] =
+    scales.utils.isDone[E,F,A](iter)
+
+  @inline def isDoneS[E, A]( step : StepT[E, F, A] )(implicit F: Monad[F]): Boolean =
+    scales.utils.isDoneS[E,F,A](step)
+
+  /**
+   * Helper for done and empty
+   */
+  @inline def isEmpty[E, A]( iter : IterateeT[E,F,A] )(implicit F: Monad[F]): F[Boolean] =
+    scales.utils.isEmpty(iter)
+
+  /**
+   * Helper for done and eof
+   */
+  @inline def isEOF[E, A]( iter : IterateeT[E,F,A] )(implicit F: Monad[F]): F[Boolean] =
+    scales.utils.isEOF[E,F,A](iter)
+
+  /**
+   * Helper for done and empty
+   */
+  @inline def isEmptyS[E,A]( step : StepT[E,F,A] )(implicit F: Monad[F]): Boolean =
+    scales.utils.isEmptyS[E,F,A](step)
+
+  /**
+   * Helper for done and eof
+   */
+  @inline def isEOFS[E, A]( step : StepT[E,F,A] )(implicit F: Monad[F]): Boolean =
+    scales.utils.isEOFS[E,F,A](step)
+
+  /**
+   * Converts a normal IterV[E,A] to a ResumableIter.
+   *
+   * Does so by folding over the iter once for an input
+   * and when its Done starting again
+   * with the original iter.  This is close to restarting the iter on
+   * a new "stream", otherwise all attempts to keep the Cont will be made.
+   */
+  @inline implicit def toResumableIter[E,A]( oiter : IterateeT[E,F,A]) (implicit F: Monad[F]): ResumableIter[E,A] =
+    scales.utils.toResumableIter[E,F,A](oiter)
+
+  /**
+   * Stepwise fold, each element is evaluated but each one is returned as a result+resumable iter.
+   */
+  @inline def foldI[E,A]( f : (E,A) => A )( init : A, stopOn: A => Boolean = (_: A) => true )(implicit F: Monad[F]) : ResumableIter[E,A] =
+    scales.utils.foldI[E,F,A](f)(init, stopOn)
+
+  /**
+   * Stepwise fold but the result of f is bound to F
+   */
+  @inline def foldIM[E,A]( f : (E,A) => F[A] )( init : A, stopOn: A => Boolean = (_: A) => true )(implicit F: Monad[F]) : ResumableIter[E,A] =
+    scales.utils.foldIM[E,F,A](f)(init, stopOn)
+
+  /**
+   * Folds over the Iteratee with Cont or Done and Empty, returning with Done and EOF.
+   * If there is a ping pong on enumerator -> Cont -> enumerator then we'll of course get an infinite loop.
+   *
+   * foldI returns a ResumableIter that performs a fold until a done, this folds over the enumerator to return a value.
+   *
+   * combine with onDone to get through chunks of data.
+   */
+  @inline def foldOnDone[E, A, ACC]( e: => EnumeratorT[E, F] )( initAcc : ACC, initResumable : ResumableIter[E, A] )( f : (ACC, A) => ACC ) (implicit F: Monad[F]): F[ACC] =
+    scales.utils.foldOnDone[E,F,A,ACC](e)(initAcc, initResumable)(f)
+
+  /**
+   * onDone, iterates over the list of iteratees applying
+   * the element, when the resulting list contains a Done
+   * then the list of Dones is returned.
+   *
+   * One can use tuples or pattern matching to discern which
+   * of the original lists iteratees have matched.
+   *
+   * Due to the return type of this iteratee all items
+   * in the list must return the same type and must return
+   * both an A and an IterV with the same interface to continue
+   * with the next and maintain state.
+   *
+   *
+   * In the case of EOF, an empty list is returned
+   */
+  @inline def onDone[E, A](originalList : List[ResumableIter[E, A]]) (implicit F: Monad[F]): ResumableIterList[E, A] =
+    scales.utils.onDone[E,F,A](originalList)
+
+  /**
+   * keeps a running count of each element, probably not of much use
+   * unless combined but acts as a good poc for ResumableIter
+   */
+  @inline def runningCount[E](implicit F: Monad[F]) =
+    scales.utils.runningCount[E,F]
+
+  /**
+   * Append to an appendable, always returns Done for a line, cont for
+   * everything else
+   * TODO - should it be a pair including the appendable?
+   */
+  @inline def appendTo( to : Appendable )(implicit F: Monad[F]): IterateeT[CharSequence, F, CharSequence] =
+    scales.utils.appendTo[F](to)
+
+  /**
+   * Calls the function param with the fed data and returns its
+   * result - consider Scalaz 7 map directly rather than composing
+   */
+  @inline def evalWith[FROM, TO]( f : (FROM) => TO )(implicit F: Monad[F]): IterateeT[FROM, F, TO] =
+    scales.utils.evalWith[FROM,F,TO](f)
+
+  /**
+   * Enumeratee that converts input 1:1
+   * String => Int, enumerator Iterator[String] but IterV[Int, Int]
+   */
+  @deprecated(since="0.6.0-M5", message="Use Scalaz 7 IterateeT.contramap")
+  @inline def enumerateeMap[E, A, R](target: IterateeT[A,F,R])(f : E => A )(implicit F: Monad[F]) : IterateeT[E, F, R] =
+    scales.utils.enumerateeMap[E,F,A,R](target)(f)
+
+  /**
+   * Sums an iteratee up, consider using the Scalaz IterateeT monadic sum instead
+   */
+  @inline def sum[T](implicit n: Numeric[T], F: Monad[F]): IterateeT[T, F, T] =
+    scales.utils.sum[T,F]
+
+  /**
+   * Maps a given input to a function returning a Input[EphemeralStream].
+   * If the Input is El it returns it, if EOF empty and continues on empty.
+   */
+  @inline def mapTo[E, A]( f: E => Input[EphemeralStream[A]] )(implicit F: Monad[F]): IterateeT[E, F, EphemeralStream[A]] =
+    scales.utils.mapTo[E,F,A](f)
+
+  /**
+   * Enumeratee that folds over the Iteratee with Cont or Done and Empty, returning with Done and EOF.
+   *
+   * Converts ResumableIters on Done via a fold, returning Done only when receiving EOF from the initIter.
+   *
+   * NB - This can be thought of the reverse of toResumableIter but also accumulating.
+   */
+  @inline def foldOnDoneIter[E,A, ACC]( initAcc : ACC, initIter : ResumableIter[E, A])( f : (ACC, A) => ACC )(implicit F: Monad[F]): IterateeT[E, F, ACC] =
+    scales.utils.foldOnDoneIter[E,F,A,ACC](initAcc, initIter)(f)
+
+  /**
+   * Takes Input[E] converts via toMany to an EphemeralStream[A].  This in turn is fed to the destination iteratee.
+   * The inputs can be 1 -> Many, Many -> 1, or indeed 1 -> 1.
+   *
+   * The callers must take care of what kind of continnuation Iteratee is returned in a Done.
+   *
+   * If the dest returns EOF, the toMany is in turn called with EOF for any needed resource control processing.
+   */
+  @inline def enumToMany[E, A, R]( dest: ResumableIter[A,R])( toMany: ResumableIter[E, EphemeralStream[A]])(implicit F: Monad[F]): ResumableIter[E, R] =
+    scales.utils.enumToMany[E,F,A,R](dest)(toMany)
+
+
+  /**
+   * Based on Scalaz 7 flatMap but exposes the monad through the f parameter
+   * @param itr
+   * @param f
+   * @param F
+   * @tparam E
+   * @tparam A
    * @tparam B
    * @return
    */
-  def mapStep[E,F[_],A,B](itr: IterateeT[E,F,A])(f: A => F[StepT[E,F,B]])(implicit F: Monad[F]): IterateeT[E, F, B] =
-    flatMap(itr)(a => iterateeT(f(a)))
+  @inline def flatMap[E,A,B](itr: IterateeT[E,F,A])(f: A => IterateeT[E, F, B])(implicit F: Monad[F]): IterateeT[E, F, B] =
+    scales.utils.flatMap[E,F,A,B](itr)(f)
 
-  /*
-  /*
-        def resumableMap[E, F[_], A, AA](source: ResumableIter[E,F,A])(output: A => AA)(implicit F: Monad[F]): ResumableIter[E, F, AA] =
-          (
-            mapStep[E,F,A,(AA, ResumableIter[E, F, AA])](source.asInstanceOf[IterateeT[E,F,A]]) { case ((a: A, cont: ResumableIter[E,F,A])) =>
-              F.bind(cont.value) {
-                contstep => // don't actually care about the value, just need F
-                  F.map(isResumableEOF(cont)) {
-                    isEOF =>
-                    if (isEOF)
-                      // don't further evaluate
-                      Done[E, F, (AA, ResumableIter[E, F, AA])]((output(a), resumableEOF), eofInput)
-                    else
-                      Done[E, F, (AA, ResumableIter[E, F, AA])]((output(a), resumableMap[E, F, A, AA](cont)(output)), emptyInput)
-                  }
-              }
-            }
-          ).asInstanceOf[ResumableIter[E, F, AA]]
-
-        def resumableContramap[E, A, F[_], R](target: ResumableIter[A,F,R])(f : E => A )(implicit F: Monad[F]) : ResumableIter[E, F, R] = {
-
-          def next( i : ResumableIter[A,F,R] ) : ResumableIter[E, F, R] = {
-            scalaz.iteratee.Iteratee.iterateeT( i.foldT[ResumableStep[E, F, R]](
-              done = (i, y) => {
-                val (a, cont) = i
-
-                F.point( Done[E, F, (R, ResumableIter[E,F, R])](
-                  (a,
-                    if (!y.isEof)
-                      resumableContramap(cont.asInstanceOf[ResumableIter[A,F,R]])(f)
-                    else
-                      resumableEOF
-                  ),
-                  if (y.isEof) eofInput else emptyInput).asInstanceOf[ResumableStep[E,F,R]] )
-              },
-              cont = k => F.point( Cont((x: Input[E]) =>
-                x(
-                  el = e => next(k(Element(f(e)))),
-                  empty = next(k(Empty[A])),
-                  eof = next(k(Eof[A])))
-              ))
-            ) )
-          }
-
-          next(target)
-        }
-    */
-
-   */
 }

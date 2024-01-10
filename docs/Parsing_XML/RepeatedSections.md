@@ -6,7 +6,7 @@ Many documents however have a more complex structure, of many repeated or altern
 
 ## Supported Repeating Section Examples
 
-Its far easier to discuss the solution with a few examples of the problem: 
+It's far easier to discuss the solution with a few examples of the problem: 
 
 ### Alternating and Repeating Elements 
 

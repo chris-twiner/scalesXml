@@ -1,5 +1,6 @@
-package scales.utils
-import ScalesUtils._
+package scales.utilsTest
+import scales.utils.ScalesUtils._
+import scales.utils.WeakStream
 import junit.framework.Assert.{assertTrue, fail}
 import scalaz.EphemeralStream.emptyEphemeralStream
 import scalaz.Free.Trampoline
@@ -11,9 +12,9 @@ import scalaz.Free._
 import scalaz.{Applicative, Bind, EphemeralStream, Monad}
 import scalaz.Scalaz._
 import scalaz.effect.IO
-import scales.utils.IterateeTests.{enumWeakStreamF, isDoneT, maxIterations}
+import scales.utilsTest.IterateeTests.{enumWeakStreamF, isDoneT, maxIterations}
 import scales.utils.iteratee.Eval
-
+import scales.utils._
 import scala.annotation.tailrec
 
 object StreamHelpers {
@@ -28,32 +29,6 @@ object StreamHelpers {
 }
 
 object IterateeTests {
-
-  def enumEphemeralStream[E, F[_] : Monad](xs: EphemeralStream[E]): EnumeratorT[E, F] = {
-    import EphemeralStream.##::
-
-    new EnumeratorT[E, F] {
-      def apply[A] = (s: StepT[E, F, A]) =>
-        xs match {
-          case h ##:: t => s.mapCont(k => k(scalaz.iteratee.Iteratee.elInput(h)) >>== enumEphemeralStream[E, F](t).apply[A])
-          case _ => s.pointI
-        }
-
-    }
-  }
-
-  def enumEphemeralStreamF[E, F[_] : Monad](state: EphemeralStream[E] => Unit)(xs: EphemeralStream[E]): EnumeratorT[E, F] = {
-    import EphemeralStream.##::
-
-    new EnumeratorT[E, F] {
-      def apply[A] = (s: StepT[E, F, A]) =>
-        xs match {
-          case h ##:: t => s.mapCont(k => k(scalaz.iteratee.Iteratee.elInput(h)) >>== enumEphemeralStreamF[E, F]({state(t);state})(t).apply[A])
-          case _ => s.pointI
-        }
-
-    }
-  }
 
   def enumWeakStream[E, F[_] : Monad](xs: WeakStream[E]): EnumeratorT[E, F] = {
     import WeakStream.##::
@@ -108,6 +83,8 @@ object IterateeTests {
     }
   }
 
+  import scales.utils._
+
   def isDoneT[E,F[_],A]( i : Int, res : ResumableIter[E,F,A])(test: A => Unit)(implicit F: Monad[F]) =
     Monad[F].map(res.value) { step =>
       step(
@@ -141,47 +118,45 @@ class IterateeTest extends junit.framework.TestCase {
   import scalaz.EphemeralStream
   import EphemeralStream.emptyEphemeralStream
 
-  import scales.utils.{sum => usum}
   import scalaz.Scalaz._
-
-  def F(implicit F: Monad[Trampoline]) = F
+  import scales.utils.trampolineIteratees._
 
   def testSimpleEnumerateeMap(): Unit = {
     
     val i = List("1","2","3","4").iterator
 
-    (enumerateeMap(usum[Int, Trampoline])( (s : String) => s.toInt ) &= iteratorEnumerator(i) ).run map
+    (enumerateeMap(sum[Int])( (s : String) => s.toInt ) &= iteratorEnumerator(i) ).run map
          { res =>
       assertEquals(10, res)
     } run
   }
 
   def testEnumToManyExhaustState(): Unit = {
-    
+
     val l = List(1,2,3,4)
 
-    def f(i: Int): ResumableIter[Int, Trampoline, EphemeralStream[Int]] = {
-      def step(i: Int)(s: Input[Int]): ResumableIter[Int, Trampoline, EphemeralStream[Int]] =
+    def f(i: Int): ResumableIter[Int, EphemeralStream[Int]] = {
+      def step(i: Int)(s: Input[Int]): ResumableIter[Int, EphemeralStream[Int]] =
         iterateeT( F.point(
           s( el = e => {
               //println("i "+i+" e "+e)
               Done((iTo(i, e), iterateeT( F.point( Cont(step(i + 1))) ) ), Input.Empty[Int])
             },
             empty = Cont(step(i)),
-            eof = Done((emptyEphemeralStream, iterateeT( F.point(  Cont(error("Shouldn't call cont on eof")).asInstanceOf[ResumableStep[Int, Trampoline, EphemeralStream[Int]]]) )), Eof[Int])
+            eof = Done((emptyEphemeralStream, iterateeT( F.point(  Cont(error("Shouldn't call cont on eof")).asInstanceOf[ResumableStep[Int, EphemeralStream[Int]]]) )), Eof[Int])
           ))
         )
 
       iterateeT( F.point( Cont(step(i)) ))
     }
 
-    val enum = (i: Int) => enumToMany(usum[Int, Trampoline])(f(i))
+    val enum = (i: Int) => enumToMany(sum[Int])(f(i))
 
     val p =
       for {
         // 1, 2, 3, 4 only, the to is ignored
         r <- (enum(1) &= iteratorEnumerator(l.iterator)).run
-        (res, cont: ResumableIter[Int, Trampoline, EphemeralStream[Int]]) = r
+        (res, cont: ResumableIter[Int, EphemeralStream[Int]]) = r
         is <- isDone(cont)
       } yield {
         assertEquals(10, res)
@@ -195,7 +170,7 @@ class IterateeTest extends junit.framework.TestCase {
       for {
         // -1->1 0, 0->2 3, 1->3 6, 2->4 9
         r <- (enum(-1) &= (iteratorEnumerator(l.iterator))).run
-        (res2, cont2: ResumableIter[Int, Trampoline, EphemeralStream[Int]]) = r
+        (res2, cont2: ResumableIter[Int, EphemeralStream[Int]]) = r
         is <- isDone(cont2)
       } yield {
         assertEquals(18, res2)
@@ -212,8 +187,8 @@ class IterateeTest extends junit.framework.TestCase {
 
     val p =
       for {
-        r <- (enumToMany(usum[Int, Trampoline])( mapTo[Int, Trampoline, Int]( (i: Int) => Element(iTo(1, i)) ) ) &= iteratorEnumerator(i)).run
-        (res, cont: ResumableIter[Int, Trampoline, EphemeralStream[Int]]) = r
+        r <- (enumToMany(sum[Int])( mapTo[Int, Int]( (i: Int) => Element(iTo(1, i)) ) ) &= iteratorEnumerator(i)).run
+        (res, cont: ResumableIter[Int, EphemeralStream[Int]]) = r
         done <- isDone(cont)
       } yield {
         assertEquals(20, res)
@@ -229,8 +204,8 @@ class IterateeTest extends junit.framework.TestCase {
 
     val p =
       for {
-        r <- (enumToMany(usum[Int, Trampoline])( mapTo[Int, Trampoline, Int]( (i: Int) => Eof[EphemeralStream[Int]] ) ) &= iteratorEnumerator(i)).run
-        (res, cont: ResumableIter[Int, Trampoline, EphemeralStream[Int]]) = r
+        r <- (enumToMany(sum[Int])( mapTo[Int, Int]( (i: Int) => Eof[EphemeralStream[Int]] ) ) &= iteratorEnumerator(i)).run
+        (res, cont: ResumableIter[Int, EphemeralStream[Int]]) = r
         done <- isDone(cont)
       } yield {
         assertEquals(0, res)
@@ -253,8 +228,8 @@ class IterateeTest extends junit.framework.TestCase {
 
     val p =
       for {
-        r <- (enumToMany(usum[Long, Trampoline])(mapTo[Long, Trampoline, Long]((_: Long) => Element(lTo(1L, 100L)))) &= iteratorEnumerator(i)).run
-        (res, cont: ResumableIter[Long, Trampoline, Long]) = r
+        r <- (enumToMany(sum[Long])(mapTo[Long, Long]((_: Long) => Element(lTo(1L, 100L)))) &= iteratorEnumerator(i)).run
+        (res, cont: ResumableIter[Long, Long]) = r
         done <- isDone(cont)
       } yield {
         assertEquals (25250000L, res)
@@ -268,8 +243,8 @@ class IterateeTest extends junit.framework.TestCase {
     val i = List[Long](1,2,3,4,5).iterator
 
     // force a restart at magic number 1
-    val sum: ResumableIter[Long,Trampoline, Long] = {
-      def step(acc: Long)( s : Input[Long] ) : ResumableIter[Long, Trampoline, Long] =
+    val sum: ResumableIter[Long,Long] = {
+      def step(acc: Long)( s : Input[Long] ) : ResumableIter[Long,Long] =
         iterateeT(F.point(
           s( el = e => {
               val nacc = acc + e
@@ -279,7 +254,7 @@ class IterateeTest extends junit.framework.TestCase {
                 Cont(step(nacc))
             },
             empty = Cont(step(acc)),
-            eof = Done((acc, iterateeT( F.point( Done(acc, Empty[Long]).asInstanceOf[ResumableStep[Long, Trampoline, Long]] ))), Eof[Long])
+            eof = Done((acc, iterateeT( F.point( Done(acc, Empty[Long]).asInstanceOf[ResumableStep[Long, Long]] ))), Eof[Long])
           )
         ))
 
@@ -288,10 +263,10 @@ class IterateeTest extends junit.framework.TestCase {
 
     val p =
       for {
-        r <- (enumToMany(sum) (mapTo[Long, Trampoline, Long]((_: Long) => Element(lTo(1L, 100000L)))) &= iteratorEnumerator (i)).run
-        (res, cont: ResumableIter[Long, Trampoline, Long]) = r
+        r <- (enumToMany(sum) (mapTo[Long, Long]((_: Long) => Element(lTo(1L, 100000L)))) &= iteratorEnumerator (i)).run
+        (res, cont: ResumableIter[Long, Long]) = r
         r2 <- cont.run
-        (res2, cont2: ResumableIter[Long, Trampoline, Long]) = r2
+        (res2, cont2: ResumableIter[Long, Long]) = r2
         done <- isDone(cont)
         done2 <- isDone(cont2)
       } yield {
@@ -308,12 +283,9 @@ class IterateeTest extends junit.framework.TestCase {
   def testEveryItem(): Unit = {
     val source = List[Long](1,4,7,10,13).iterator
 
-    type TheF[X] = Trampoline[X]
-    def F(implicit F: Monad[TheF]) = F
-
     // force a restart every entry
-    val echo: ResumableIter[Long,TheF, Long] = {
-      def step( s : Input[Long] ) : ResumableIter[Long, TheF, Long] =
+    val echo: ResumableIter[Long, Long] = {
+      def step( s : Input[Long] ) : ResumableIter[Long, Long] =
         iterateeT( F.point(
           s( el = e => {
         //	  println("got "+e)
@@ -332,7 +304,7 @@ class IterateeTest extends junit.framework.TestCase {
       iterateeT( F.point( Cont(step) ) )
     }
 
-    val oitr = enumToMany(echo)(mapTo[Long, TheF, Long] {
+    val oitr = enumToMany(echo)(mapTo[Long, Long] {
           (x: Long) =>
             Element(lTo(x, x + 2L))
         }) &= iteratorEnumerator(source)
@@ -340,16 +312,16 @@ class IterateeTest extends junit.framework.TestCase {
     val p =
       for {
         or <- oitr.run
-        (origres, origcont: ResumableIter[Long, TheF, Long]) = or
+        (origres, origcont: ResumableIter[Long, Long]) = or
 
         _ = assertEquals(1, origres)
 
-        r <- (foldM[Int, TheF, (Long, Int, ResumableIter[Long, TheF, Long])]((origres, 1, origcont)){ (quad, i) =>
+        r <- (foldM[Int, TheF, (Long, Int, ResumableIter[Long, Long])]((origres, 1, origcont)){ (quad, i) =>
           //println("loop !!!! "+i)
           val (res, count, itr) = quad
 
           assertEquals(i, res)
-          val cres : ResumableIter[Long, TheF, Long] = itr.eval
+          val cres : ResumableIter[Long, Long] = itr.eval
 
           F.bind(cres.value) { cresStep =>
 
@@ -365,7 +337,7 @@ class IterateeTest extends junit.framework.TestCase {
               // run on the source - as we need more data
               for {
                 r <- (cres &= iteratorEnumerator(source)).run
-                (nres: Long, ncont: ResumableIter[Long, TheF, Long]) = r
+                (nres: Long, ncont: ResumableIter[Long,  Long]) = r
               } yield {
                 if (count == 6) {
                   assertEquals("should have pushed the eof", 15, i)
@@ -374,10 +346,10 @@ class IterateeTest extends junit.framework.TestCase {
               }
             }
           }
-        } &= iteratorEnumerator[Int, TheF]((1 to 15).iterator)).run
+        } &= iteratorEnumerator[Int]((1 to 15).iterator)).run
 
         (res, count, itrr) = r
-        itr = itrr.asInstanceOf[ scalaz.iteratee.IterateeT[Long,TheF,(Long, scales.utils.ResumableIter[Long,TheF,Long])] ]
+        itr = itrr.asInstanceOf[ scalaz.iteratee.IterateeT[Long, TheF,(Long, ResumableIter[Long,Long])] ]
 
         done <- isDone(itr)
         eof <- isEOF(itr)
@@ -400,12 +372,12 @@ class IterateeTest extends junit.framework.TestCase {
     //val liter = (1 to maxIterations).toIterator
     var liter = WeakStream.iterTo( 1 to maxIterations iterator )//WeakStream.iTo(1, maxIterations)
 
-    type F[X] = IO[X]
+    import scales.utils.ioIteratees._
 
     val func = (s : WeakStream[Int]) => {liter = s}
 
     //def enum(i: Iterator[Int]) = iteratorEnumerator[Int, F](i)
-    def enum(i: WeakStream[Int]) = enumWeakStreamF[Int, F](func)(i)
+    def enum(i: WeakStream[Int]) = enumWeakStreamF[Int, TheF](func)(i)
     /*
         def enum(i: WeakStream[Int]) =
           //enumIndexedSeq2[Int, F](i.toIterator.toIndexedSeq)
@@ -413,9 +385,9 @@ class IterateeTest extends junit.framework.TestCase {
           //enumEphemeralStream[Int, F](i)
           enumWeakStream[Int, F](i)
     */
-    type ITER = ResumableIter[Int, F, Long]
+    type ITER = ResumableIter[Int, Long]
 
-    val counter = runningCount[Int, F]
+    val counter = runningCount[Int]
 
     def isDone( i : Int, res : ITER) =
       isDoneT(i, res){ x =>
@@ -430,14 +402,14 @@ class IterateeTest extends junit.framework.TestCase {
         _ <- isDone(1, starter)
 
         // check it does not blow up the stack and/or mem
-        r <- (foldM[Int, F, ITER](starter){ (itr, i) =>
-          Monad[F].bind(itr.value){
+        r <- (foldM[Int, TheF, ITER](starter){ (itr, i) =>
+          F.bind(itr.value){
             _ =>
               val nitr = (extractCont(itr) &= enum(liter)).eval
-              Monad[F].bind(nitr.value) {
+              F.bind(nitr.value) {
                 _ =>
                   val rc = isDone(i, nitr)
-                  Monad[F].map(rc) { _ =>
+                  F.map(rc) { _ =>
                     nitr
                   }
               }
@@ -473,15 +445,14 @@ class IterateeTest extends junit.framework.TestCase {
    * and another that is done only each three.
    */
   def testResumableOnDone():Unit = {
-    val F = implicitly[ Monad[Trampoline] ]
-    val counter = runningCount[Int, Trampoline]
+    val counter = runningCount[Int]
 
     var liter = WeakStream.iterTo((1 to maxIterations).iterator)
     val func = (s : WeakStream[Int]) => {liter = s}
 
     def enum(i: WeakStream[Int]) = enumWeakStreamF[Int, Trampoline](func)(i)
 
-    def step( list : List[Long])( s : Input[Int] ) : ResumableIter[Int, Trampoline, Long] =
+    def step( list : List[Long])( s : Input[Int] ) : ResumableIter[Int, Long] =
       iterateeT(F.point(
         s(el = {e =>
           val next = e.longValue :: list
@@ -497,9 +468,9 @@ class IterateeTest extends junit.framework.TestCase {
 
     val inThrees = iterateeT( F.point( Cont(step(List())) ) )
 
-    val ionDone = onDone[Int, Trampoline, Long](List(counter, inThrees))
+    val ionDone = onDone[Int, Long](List(counter, inThrees))
 
-    def isDone( i : Int, res : ResumableIterList[Int,Trampoline,Long]) =
+    def isDone( i : Int, res : ResumableIterList[Int, Long]) =
       F.map(res.value){ step =>
         step(
           done = (x,y) => (x,y) match {
@@ -523,7 +494,7 @@ class IterateeTest extends junit.framework.TestCase {
         _ <- isDone(1, starter)
 
         // check it does not blow up the stack and/or mem
-        r <- (foldM[Int, Trampoline, ResumableIterList[Int,Trampoline,Long]](starter){ (itr, i) =>
+        r <- (foldM[Int, Trampoline, ResumableIterList[Int,Long]](starter){ (itr, i) =>
           val nitr = (extractCont(itr) &= enum(liter)).eval
           Monad[Trampoline].map(nitr.value){
             _ =>
@@ -553,9 +524,9 @@ class IterateeTest extends junit.framework.TestCase {
   def testResumableIterConversion = {
     val liter = (1 to maxIterations).iterator
 
-    type ITER = ResumableIter[Int, Trampoline, Option[Int]]
+    type ITER = ResumableIter[Int, Option[Int]]
 
-    val itrOdd : ITER  = find[Int, Trampoline]( (x : Int) => x % 2 == 1 )
+    val itrOdd : ITER  = find[Int]( (x : Int) => x % 2 == 1 )
 
     def isDone( i : Int, res : ITER) =
       isDoneT(i, res){ x =>

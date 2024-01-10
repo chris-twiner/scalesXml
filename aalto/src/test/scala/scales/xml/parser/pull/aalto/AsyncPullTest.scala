@@ -1,7 +1,8 @@
 package scales.xml.parser.pull.aalto
 
+import scalaz.Free.Trampoline
 import scalaz.iteratee.Input.{Element, Empty, Eof}
-import scalaz.iteratee.Iteratee
+import scalaz.iteratee.{Iteratee, IterateeT}
 import scalaz.iteratee.Iteratee.{peek, iteratee => siteratee}
 import scalaz.iteratee.StepT.Done
 /*
@@ -69,7 +70,6 @@ class AsyncPullTest extends junit.framework.TestCase {
   /**
    * ensure that the enumerator doesn't break basic assumptions when it can get
    * all the data
-   */
   def testFlatMapMultipleDones = {
     val url = sresource(this, "/data/BaseXmlTest.xml")
 
@@ -100,16 +100,19 @@ class AsyncPullTest extends junit.framework.TestCase {
     parser.closeResource
     wrapped.closeResource
   }
+   */
 
-  def testSimpleLoadAndFold =
-    doSimpleLoadAndFold{
+  def testSimpleLoadAndFold(): Unit =
+    doSimpleLoadAndFold[Trampoline]{
       (p, iter, wrapped) => 
       val enumeratee = enumToMany(iter)(AsyncParser.parse(p))
-      val (e,cont) = (enumeratee &= dataChunkerEnumerator(wrapped)).run
-      e
-    }
+      for {
+        r <- (enumeratee &= dataChunkerEnumerator[DataChunk, Trampoline](wrapped)).run
+        (e,cont) = r
+      } yield e
+    } run
 
-  def doSimpleLoadAndFold[T](test: (AsyncParser, Iteratee[PullType, List[String]], ReadableByteChannelWrapper[DataChunk ]) =>  List[String] ) : Unit = {
+  def doSimpleLoadAndFold[F[_]: Monad](test: (AsyncParser, IterateeT[PullType, F, List[String]], ReadableByteChannelWrapper[DataChunk ]) =>  F[List[String]] ) : F[Unit] = {
     val url = sresource(this, "/data/BaseXmlTest.xml")
 
     val channel = Channels.newChannel(url.openStream())
@@ -119,29 +122,32 @@ class AsyncPullTest extends junit.framework.TestCase {
     val ns = Namespace("urn:default")
 
     val iter = foldOnDoneIter( List[String](), 
-      onQNames(List(ns("Default"), "NoNamespace"l,"DontRedeclare"l))){
-	(l, qmatch) => qmatch._2.  // its empty as it was eof
-	  map(p => qname(p.tree) :: l).getOrElse( l )
+      onQNames[F](List(ns("Default"), "NoNamespace"l,"DontRedeclare"l))){
+        (l, qmatch) => qmatch._2.  // its empty as it was eof
+          map(p => qname(p.tree) :: l).getOrElse( l )
       }
 
     val wrapped = new ReadableByteChannelWrapper(channel)
-    val e = test(parser, iter, wrapped)
-
-    assertEquals(2, e.size)
-    e match {
-      case List("DontRedeclare", "DontRedeclare") => ()
-      case _ => fail("got "+e)
+    for {
+      e <- test(parser, iter, wrapped)
+    } yield {
+      assertEquals(2, e.size)
+      e match {
+        case List("DontRedeclare", "DontRedeclare") => ()
+        case _ => fail("got " + e)
+      }
     }
   }
 
   def testSimpleLoadAndFoldAsync =
     // should have collected all anyway
-    doSimpleLoadAndFold{
+    doSimpleLoadAndFold[Trampoline]{
       (p, iter, wrapped) => 
       val enumeratee = enumToMany(iter)(AsyncParser.parse(p))
-      val (e,cont) = (enumeratee &= dataChunkerEnumerator(wrapped)).run
-      e
-    }
+      (enumeratee &= dataChunkerEnumerator[DataChunk, Trampoline](wrapped)).run map {
+        _._1
+      }
+    } run
 // here
 
   // Just using the parser
@@ -210,18 +216,18 @@ class AsyncPullTest extends junit.framework.TestCase {
 
     var res = Vector.empty[PullType]
 
-    var c = AsyncParser.parse(parser)
+    var c = AsyncParser.parse[Trampoline](parser)
     
     var b : DataChunk = EmptyData
     while(b != EOFData) {
       def input =
-	if (b.isEOF)
-	  Eof[DataChunk]
-	else
-	  if (b.isEmpty) {
-	    Empty[DataChunk]
-	  } else
-	    Element(b)
+        if (b.isEOF)
+          Eof[DataChunk]
+        else
+          if (b.isEmpty)
+            Empty[DataChunk]
+          else
+            Element(b)
       
       def nextC = 
         c.foldT (

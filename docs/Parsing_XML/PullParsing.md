@@ -13,7 +13,7 @@ Some of the advanced features of Pull Parsing may require importing Scalaz as we
 ```scala
   import scalaz._
   import Scalaz._
-  import IterV._ // may not always be required
+  import iteratee._ // may not always be required
 ```
 
 ## Pull Model

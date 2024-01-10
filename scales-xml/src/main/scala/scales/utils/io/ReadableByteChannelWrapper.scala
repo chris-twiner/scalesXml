@@ -2,11 +2,11 @@ package scales.utils.io
 
 import scales.utils._
 import resources._
-import scalaz.Id
+import scalaz.{Id, Monad}
 import scalaz.iteratee.Input.{Element, Empty, Eof}
-import scalaz.iteratee.Iteratee.iteratee
+import scalaz.iteratee.Iteratee.{iteratee, iterateeT}
 import scalaz.iteratee.StepT.{Cont, Done}
-import scalaz.iteratee.{Enumerator, Input, Iteratee, IterateeT, StepT}
+import scalaz.iteratee.{Enumerator, EnumeratorT, Input, Iteratee, IterateeT, StepT}
 
 import java.io._
 import java.nio.channels._
@@ -194,8 +194,8 @@ trait ReadableByteChannelWrapperImplicits {
 
   implicit def toRBCWrapper(channel: ReadableByteChannel)(implicit ev: DataChunkEvidence[DataChunk]): RBCImplicitWrapper = new RBCImplicitWrapper(channel)
 
-  implicit def dataChunkerEnumerator[E](chunker: DataChunker[E]): Enumerator[E] =
-    new AsyncDataChunkerEnumerator[E](chunker)
+  implicit def dataChunkerEnumerator[E, F[_]: Monad](chunker: DataChunker[E]): EnumeratorT[E, F] =
+    new AsyncDataChunkerEnumerator[E, F](chunker)
 
   /**
    * Use in a call to asyncReadableByteChannelEnumerator to turn it into a synchronous enumerator (constantly trying to get new chunks of data)
@@ -210,13 +210,13 @@ trait ReadableByteChannelWrapperImplicits {
    * Note: Call via eval only.
    * @param contOnCont INFINITE_RETRIES (-1) for keep on trying, the default is 5 (as exposed by the implicit enumerator readableByteChannelEnumerator)
    */
-  class AsyncDataChunkerEnumerator[E]( chunker: DataChunker[E], contOnCont: Int = 5 ) extends Enumerator[E] {
+  class AsyncDataChunkerEnumerator[E, F[_]]( chunker: DataChunker[E], contOnCont: Int = 5 )(implicit F: Monad[F]) extends EnumeratorT[E, F] {
+    import scalaz.Scalaz._
+    override def apply[A]: StepT[E, F, A] => IterateeT[E, F, A] = i => {
 
-    override def apply[A]: StepT[E, Id.Id, A] => IterateeT[E, Id.Id, A] = i => {
-
-      def apply(stepT: StepT[E, Id.Id, A], count: Int): IterateeT[E, Id.Id, A] = stepT match {
-        case i if chunker.underlyingClosed || chunker.isClosed => iteratee(i)
-        case i@Done(acc, input) => iteratee(i)
+      def apply(stepT: StepT[E, F, A], count: Int): IterateeT[E, F, A] = stepT match {
+        case i if chunker.underlyingClosed || chunker.isClosed => iterateeT(F.point(i))
+        case i@Done(acc, input) => iterateeT(F.point(i))
         case Cont(k) =>
           val realChunk = chunker.nextChunk
           val nextChunk = realChunk.asInstanceOf[E]
@@ -230,17 +230,25 @@ trait ReadableByteChannelWrapperImplicits {
               else
                 k(Element(nextChunk))
 
-          val nc =
-            if (realChunk.isEmpty && !isDone(nextI))
-              count + 1
-            else
-              0
+          iterateeT(
+            nextI.value >>= { nextIStep =>
 
-          if ((contOnCont != INFINITE_RETRIES) && (nc > contOnCont))
-            //println("had cont on cont count, returning")
-            nextI
-          else
-            apply(nextI.value, nc)
+              val res = {
+                val nc =
+                  if (realChunk.isEmpty && !isDoneS(nextIStep))
+                    count + 1
+                  else
+                    0
+
+                if ((contOnCont != INFINITE_RETRIES) && (nc > contOnCont))
+                  //println("had cont on cont count, returning")
+                  nextI
+                else
+                  apply(nextIStep, nc)
+              }
+              res.value
+            }
+          )
       }
 
       apply(i, 0)

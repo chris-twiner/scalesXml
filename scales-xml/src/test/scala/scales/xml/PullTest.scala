@@ -9,8 +9,9 @@ import scalaz.iteratee.{EnumeratorT, IterateeT, StepT}
 import scalaz.iteratee.Input.{Eof, elInput}
 import scalaz.iteratee.Iteratee.{done, elInput, enumEofT, enumIndexedSeq, enumIterator, foldM, head, iterateeT => siteratee}
 import scalaz.iteratee.StepT.{Cont, Done}
-import scales.utils.IterateeTests.{enumEphemeralStreamF, enumWeakStreamF, maxIterations}
-import scales.utils.StreamHelpers.iTo
+import scales.utilsTest.IterateeTests.{enumWeakStreamF, maxIterations}
+import scales.utils.iteratee.EphemeralStreamEnum.{enumEphemeralStreamF, toEphemeral}
+import scales.utilsTest.StreamHelpers.iTo
 import scales.xml.impl.NoVersionXmlReaderFactoryPool
 import scales.xml.serializers.XmlOutput
 
@@ -517,7 +518,7 @@ on both the qname matching (3 of them) and then the above combos
         cont = _ => fail("was not done with empty")
       )
 */
-      /* trampoline does not */
+      /* trampoline does not, it's not EOF and not Nil */
       val starter = (ionDone &= enum(iter)).eval
       val p =
         for {
@@ -630,8 +631,9 @@ on both the qname matching (3 of them) and then the above combos
 
   def testOnQNamesRepeatedQNames(): Unit = {
 
-    val ourMax = maxIterations / 10 // full takes too long but does work in constant space
+    import scales.utils.trampolineIteratees._
 
+    val ourMax = maxIterations / 10 // full takes too long but does work in constant space
 
     var iter = events(ourMax)
     val func = (e: WeakStream[PullType]) => {iter = e}
@@ -641,7 +643,7 @@ on both the qname matching (3 of them) and then the above combos
 
     val ionDone = onDone(List(onQNames[Trampoline](repeatingQNames)))
 
-    def isDone( i : Int, res : ResumableIterList[PullType,Trampoline,QNamesMatch]) =
+    def isDone( i : Int, res : ResumableIterList[PullType,QNamesMatch]) =
       Monad[Trampoline].map(res.value){_( done = (x,y) => (x,y) match {
         case (((repeatingQNames, Some(x)) :: Nil,cont), y)  =>
           // we want to see both sub text nodes
@@ -659,7 +661,7 @@ on both the qname matching (3 of them) and then the above combos
         _ <- isDone(1, starter)
         // check it does not blow up the stack and/or mem
 
-        r <- (foldM[Int, Trampoline, ResumableIterList[PullType, Trampoline, QNamesMatch]](starter) { (itr, i) =>
+        r <- (foldM[Int, Trampoline, ResumableIterList[PullType, QNamesMatch]](starter) { (itr, i) =>
           val res = (extractCont(itr) &= enum (iter)).eval
           Monad[Trampoline].bind(res.value) {
             _ =>
@@ -859,7 +861,7 @@ on both the qname matching (3 of them) and then the above combos
 
     val ionDone = ofInterestOnDone[F]
 
-    val total = foldOnDone[PullType, Iterable[QNamesMatch], F, (Int,Int)](enum)( (0, 0), ionDone ){
+    val total = foldOnDone[PullType, F, Iterable[QNamesMatch], (Int,Int)](enum)( (0, 0), ionDone ){
       (t, qnamesMatch) =>
         if (qnamesMatch.size == 0) {
           t // no matches
@@ -899,6 +901,7 @@ on both the qname matching (3 of them) and then the above combos
 
     p
   }
+
   def testFoldOnDoneId(): Unit = try {
     var iter = withHeaders(foldOnDoneMax).iterator
     doFoldOnDone(iteratorEnumerator(iter))

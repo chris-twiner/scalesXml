@@ -1,7 +1,7 @@
 package scales.xml
 
 import scalaz.EphemeralStream
-import scales.utils.IterateeTests.maxIterations
+import scales.utilsTest.IterateeTests.maxIterations
 
 /**
  * Prior to 0.4.4 iterate was based on onQNames, the PullTest qnames test covered this, and although the implementation is pretty much identical, these test from the iterate function directly.
