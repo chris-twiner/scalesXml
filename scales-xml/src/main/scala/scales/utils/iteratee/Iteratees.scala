@@ -282,8 +282,9 @@ trait Iteratees {
       (foldIM[ACC,F,(ACC, ResumableIter[E,F,A], Boolean)]((p, a) => {
         val (currentA, itr, _) = a
         for {
-          isdone <- isDone(itr)
-          iseof <- isEOF(itr)
+          value <- itr.value
+          isdone = isDoneS(value)
+          iseof = isEOFS(value)
 
           res <-
             if (!isdone || (isdone && !iseof)) {
@@ -291,7 +292,7 @@ trait Iteratees {
                 if (isdone) {
                   val a = extract(itr)
                   F.map(a) { a =>
-                    if (!a.isDefined)
+                    if (a.isEmpty)
                       (currentA, itr, true)
                     else
                       (f(currentA, a.get), extractCont(itr), false)
