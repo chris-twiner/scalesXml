@@ -312,7 +312,7 @@ trait Iteratees {
                   if (a.isEmpty)
                     (currentA, itr, true)
                   else
-                    (f(currentA, a.get), extractCont(itr), false)
+                    (f(currentA, a.get), extractContS(value), false)
                 } else
                   (currentA, itr, true)
               t
