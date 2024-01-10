@@ -4,18 +4,58 @@ import scales.utils._
 import scales.xml.{Elem, EndElem, PullType, QName, ScalesXml, XmlBuilder, XmlItem, XmlPath, addAndFocus, addChild, noXmlPath, parser, impl => ximpl}
 import scales.xml.parser.strategies.{MemoryOptimisationStrategy, OptimisationToken}
 import collection.FlatMapIterator
+import scalaz.Free.Trampoline
 import scalaz.Id.Id
 import scalaz.Scalaz.ToEqualOps
+import scalaz.effect.IO
 import scalaz.{Equal, Monad}
 import scalaz.iteratee.Input.{Empty, Eof}
 import scalaz.iteratee.Iteratee.{iteratee, iterateeT}
-import scalaz.iteratee.StepT
+import scalaz.iteratee.{IterateeT, StepT}
 import scalaz.iteratee.StepT.{Cont, Done}
+
+class PullIterateeFunctions[F[_]](val F: Monad[F]){
+  import scales.xml.{QNamesMatch, PeekMatch}
+
+  def onQNames(qnames: List[QName])(implicit F: Monad[F]): ResumableIter[PullType, F, QNamesMatch] =
+    scales.xml.onQNames[F](qnames)
+
+  /**
+   * Collects all data belonging to an element that matches
+   * the list. <top><middle><ofInterest> content </ofInterest><ofInterest....
+   * onQNames(List("top"l, "middle"l, "ofInterest"l))
+   * would return an iteratee that returned every <ofInterest> content </ofInterest>
+   * as a path (each parent node containing only one child node).
+   */
+  def onQNamesI(qnames: List[QName])(implicit qe: Equal[QName], F: Monad[F]): ResumableIter[PullType, F, QNamesMatch] =
+    scales.xml.onQNamesI[F](qnames)
+
+  def skipv(downTo: Int*)(implicit F: Monad[F]): IterateeT[PullType, F, PeekMatch] =
+    scales.xml.skipv[F](downTo: _*)
+
+  /**
+   * Skips all events until the indexes match downTo, can be seen as
+   * \*\*[b]\*[c] skipping until c with skip(List(b,c)).
+   * This can be used, for example, to identify qnames within a message and combined with capture to allow replaying.
+   * Identifying a soap doc-lit request would be skip(List(2,1)).
+   * It returns the XmlPath to the skipped position, for soap /Envelope/Body/Request but does not collect the contents of that node.
+   * An empty list will simply return the first Element found.
+   */
+  def skip(downTo: => List[Int])(implicit F: Monad[F]): IterateeT[PullType, F, PeekMatch] =
+    scales.xml.skip[F](downTo)
+}
 
 /**
  * Iteratees related to pull parsing
  */
 trait PullIteratees {
+
+  def pullIterateesOf[F[_]](implicit F: Monad[F]): PullIterateeFunctions[F] = new PullIterateeFunctions[F](F)
+
+  val ioPullIteratees = pullIterateesOf[IO]
+  val trampolinePullIteratees = pullIterateesOf[Trampoline]
+  // not recommended but may help migrations
+  val idPullIteratees = pullIterateesOf[Id]
 
   // enumerators and iteratees follow
 
@@ -119,7 +159,7 @@ trait PullIteratees {
 
   type PeekMatch = Option[XmlPath]
 
-  def skipv(downTo: Int*): Iteratee[PullType, PeekMatch] = skip(List(downTo: _*))
+  def skipv[F[_]](downTo: Int*)(implicit F: Monad[F]): IterateeT[PullType, F, PeekMatch] = skip[F](List(downTo: _*))
 
   /**
    * Skips all events until the indexes match downTo, can be seen as
@@ -129,12 +169,12 @@ trait PullIteratees {
    * It returns the XmlPath to the skipped position, for soap /Envelope/Body/Request but does not collect the contents of that node.
    * An empty list will simply return the first Element found.
    */
-  def skip(downTo: => List[Int]): Iteratee[PullType, PeekMatch] = {
+  def skip[F[_]](downTo: => List[Int])(implicit F: Monad[F]): IterateeT[PullType, F, PeekMatch] = {
 
-    lazy val dEof: StepT[PullType, Id, PeekMatch] = Done(None, Eof[PullType])
+    lazy val dEof: StepT[PullType, F, PeekMatch] = Done(None, Eof[PullType])
 
-    def step(before: List[Int], pos: List[Int], toGo: List[Int], path: XmlPath)(s: Input[PullType]): Iteratee[PullType, PeekMatch] =
-      iteratee(
+    def step(before: List[Int], pos: List[Int], toGo: List[Int], path: XmlPath)(s: Input[PullType]): IterateeT[PullType, F, PeekMatch] =
+      iterateeT(F.point(
         s(el = {
 
             case Left(elem@Elem(q, a, n)) => {
@@ -174,9 +214,9 @@ trait PullIteratees {
           empty = Cont(step(before, pos, toGo, path)),
           eof = dEof //Done((downTo, None),IterV.EOF[PullType])
           )
-      )
+      ))
 
-    iteratee( Cont(step(List[Int](), List(0), 1 :: downTo, noXmlPath)) )
+    iterateeT( F.point( Cont(step(List[Int](), List(0), 1 :: downTo, noXmlPath)) ) )
   }
 
   /**

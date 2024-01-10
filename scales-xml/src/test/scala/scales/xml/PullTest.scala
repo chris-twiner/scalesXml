@@ -1,4 +1,4 @@
-package scales.xml
+package scales.xmlTest
 
 import scalaz.EphemeralStream.emptyEphemeralStream
 import scalaz.Free.Trampoline
@@ -24,7 +24,8 @@ class PullTest extends junit.framework.TestCase {
   import scales.utils._
   import io._
   import ScalesUtils._
-  import ScalesXml._
+  import scales.xml._
+  import scales.xml.ScalesXml._
 
   import resources._
 
@@ -569,6 +570,7 @@ on both the qname matching (3 of them) and then the above combos
   }
 
   def testOnQNamesManyElementsBelow = {
+    import scales.xml.trampolinePullIteratees._
 
     val ourMax = maxIterations / 10 // full takes too long but does work in constant space
 
@@ -578,7 +580,7 @@ on both the qname matching (3 of them) and then the above combos
     def enum(e: WeakStream[PullType]) = enumWeakStreamF[PullType, Trampoline](func)(e)
 
     val QNames = List("root"l, "child"l)
-    val ionDone = onDone(List(onQNames[Trampoline](QNames)))
+    val ionDone = onDone(List(onQNames(QNames)))
 
     def isDone( i : Int, res : ResumableIterList[PullType, Trampoline, QNamesMatch]) =
       Monad[Trampoline].map(res.value){_( done = (x,y) => (x,y) match {
@@ -632,6 +634,7 @@ on both the qname matching (3 of them) and then the above combos
   def testOnQNamesRepeatedQNames(): Unit = {
 
     import scales.utils.trampolineIteratees._
+    import scales.xml.trampolinePullIteratees._
 
     val ourMax = maxIterations / 10 // full takes too long but does work in constant space
 
@@ -641,7 +644,7 @@ on both the qname matching (3 of them) and then the above combos
     def enum(e: WeakStream[PullType]) = enumWeakStreamF[PullType, Trampoline](func)(e)
 //    val iter = events(ourMax).iterator
 
-    val ionDone = onDone(List(onQNames[Trampoline](repeatingQNames)))
+    val ionDone = onDone(List(onQNames(repeatingQNames)))
 
     def isDone( i : Int, res : ResumableIterList[PullType,QNamesMatch]) =
       Monad[Trampoline].map(res.value){_( done = (x,y) => (x,y) match {
