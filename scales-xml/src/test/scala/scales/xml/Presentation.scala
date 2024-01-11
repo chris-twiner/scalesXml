@@ -5,6 +5,8 @@ import ScalesUtils._
 import scales.xml._
 import ScalesXml._
 
+import idIteratees._
+
 import collection.path.Replace
 
 /**
@@ -105,9 +107,9 @@ object Presentation {
     val Matcher = ElemMatcher(oqn, "fred", "jane")
     elem match {
       case Matcher( elem, Attr(fredsValue) :: janesAttribute :: Nil) =>
-	println("Matching - Our whole Elem "+asString(<(elem)))
-	println("Matching - fredsValue "+ fredsValue)
-	println("Matching - janesAttribute " + janesAttribute)
+        println("Matching - Our whole Elem "+asString(<(elem)))
+        println("Matching - fredsValue "+ fredsValue)
+        println("Matching - janesAttribute " + janesAttribute)
       case _ => error("matching didn't on Matcher")
     }
   }

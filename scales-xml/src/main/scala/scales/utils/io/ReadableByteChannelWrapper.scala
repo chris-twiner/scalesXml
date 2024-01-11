@@ -8,6 +8,8 @@ import scalaz.iteratee.Iteratee.{iteratee, iterateeT}
 import scalaz.iteratee.StepT.{Cont, Done}
 import scalaz.iteratee.{Enumerator, EnumeratorT, Input, Iteratee, IterateeT, StepT}
 
+import scales.utils.iteratee.functions.isDoneS
+
 import java.io._
 import java.nio.channels._
 import java.nio.ByteBuffer

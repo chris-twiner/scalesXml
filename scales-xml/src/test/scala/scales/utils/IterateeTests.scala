@@ -83,7 +83,7 @@ object IterateeTests {
     }
   }
 
-  import scales.utils._
+  import scales.utils.iteratee.functions._
 
   def isDoneT[E,F[_],A]( i : Int, res : ResumableIter[E,F,A])(test: A => Unit)(implicit F: Monad[F]) =
     Monad[F].map(res.value) { step =>

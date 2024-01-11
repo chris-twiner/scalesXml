@@ -2,6 +2,7 @@ package scales.xml.parser.pull.aalto
 
 import scales.xml._
 import scales.utils._
+import scales.utils.iteratee.functions._
 import io._
 import resources._
 import com.fasterxml.aalto._

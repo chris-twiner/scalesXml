@@ -1,40 +1,29 @@
 package scales.xmlTest
 
-import scalaz.EphemeralStream.emptyEphemeralStream
 import scalaz.Free.Trampoline
-import scalaz.Id.Id
 import scalaz.Monad
-import scalaz.effect.IO
-import scalaz.iteratee.{EnumeratorT, IterateeT, StepT}
-import scalaz.iteratee.Input.{Eof, elInput}
-import scalaz.iteratee.Iteratee.{done, elInput, enumEofT, enumIndexedSeq, enumIterator, foldM, head, iterateeT => siteratee}
-import scalaz.iteratee.StepT.{Cont, Done}
+import scalaz.iteratee.EnumeratorT
+import scalaz.iteratee.Iteratee.{done, foldM, head}
+import scales.utils.iteratee.EphemeralStreamEnum.enumEphemeralStreamF
+import scales.utils.iteratee.IterateeFunctions
+import scales.utils.iteratee.functions._
 import scales.utilsTest.IterateeTests.{enumWeakStreamF, maxIterations}
-import scales.utils.iteratee.EphemeralStreamEnum.{enumEphemeralStreamF, toEphemeral}
-import scales.utilsTest.StreamHelpers.iTo
-import scales.xml.impl.NoVersionXmlReaderFactoryPool
-import scales.xml.serializers.XmlOutput
+import scales.utils.iteratee.monadHelpers._
 
-import scala.annotation.tailrec
 class PullTest extends junit.framework.TestCase {
 
   import junit.framework.Assert._
-  import java.io._
-
   import scales.utils._
-  import io._
   import ScalesUtils._
-  import scales.xml._
-  import scales.xml.ScalesXml._
-
+  import io._
   import resources._
+  import scales.xml.ScalesXml._
+  import scales.xml._
 
   val Default = Namespace("urn:default")
   val DefaultRoot = Default("Default")
 
   import scalaz.EphemeralStream
-  import scalaz.iteratee.{Iteratee, Enumerator, Input}
-  
   import scales.utils.{resource => sresource}
 
   def testSimpleLoad = {
@@ -134,7 +123,7 @@ class PullTest extends junit.framework.TestCase {
     assertTrue("Should have been closed", pull.isClosed)
   }
 
-  def testDropWhileIterateeOwnEnum = {
+  def testDropWhileIterateeOwnEnum():Unit = {
     val pull = pullXml(sresource(this, "/data/BaseXmlTest.xml"))
 
     val isShouldRedeclare = (x : PullType) => x match {
@@ -698,13 +687,14 @@ on both the qname matching (3 of them) and then the above combos
     def alternating = events( alternate(1, ourMax) )
 
     //alternating.foreach(println)
+    val (isInteresting, isContent) = thePair[Trampoline]
 
     var iter = alternating
     val func = (e: WeakStream[PullType]) => {iter = e}
 
     def enum(e: WeakStream[PullType]) = enumWeakStreamF[PullType, Trampoline](func)(e)
 
-    var starter = (altOnDone &= enum(iter)).eval
+    var starter = (altOnDone[Trampoline] &= enum(iter)).eval
 
     val p =
       for {
@@ -740,13 +730,13 @@ on both the qname matching (3 of them) and then the above combos
   val repeatingQNames = List("root"l, "child"l, "interesting"l, "interesting"l)
   val stillInterestingQNames = List( "root"l, "anotherChild"l, "stillInteresting"l )
 
-  val altOnDone = onDone(List(onQNames[Trampoline](repeatingQNames),
-			      onQNames[Trampoline](stillInterestingQNames)))
+  def altOnDone[F[_]: Monad] = onDone(List(onQNames[F](repeatingQNames),
+			      onQNames[F](stillInterestingQNames)))
 
-  val (isInteresting, isContent) = {
+  def thePair[F[_]: Monad] = {
 
-    def isDone(content : String, QNames : List[QName])( i : Int, res : ResumableIterList[PullType, Trampoline, QNamesMatch]) =
-      Monad[Trampoline].map(res.value){_( done = (x,y) => (x,y) match {
+    def isDone(content : String, QNames : List[QName])( i : Int, res : ResumableIterList[PullType, F, QNamesMatch]) =
+      Monad[F].map(res.value){_( done = (x,y) => (x,y) match {
         case (((QNames, Some(x)) :: Nil,cont), y)  =>
           // we want to see both sub text nodes
           assertEquals( content+" "+ i
@@ -762,7 +752,11 @@ on both the qname matching (3 of them) and then the above combos
       isDone("content", repeatingQNames) _)
   }
 
-  def testFirstThenNext():Unit = {
+  def doTestFirstThenNext[F[_]: Monad: CanRunIt: IterateeFunctions: IdWrapper, W[_]: ({type l[A[_]]= MonadConverter[F, A]})#l](): Unit = {
+    val itFuncs = implicitly[IterateeFunctions[F]]
+    import itFuncs._
+
+    implicitly[MonadConverter[F,W]]
 
     val ourMax = maxIterations / 10 // full takes too long but does work in constant space
 
@@ -774,33 +768,36 @@ on both the qname matching (3 of them) and then the above combos
 
     //alternating.foreach(println)
 
+    val (isInteresting, isContent) = thePair[F]
+
     var iter = alternating
     val func = (e: WeakStream[PullType]) => {iter = e}
 
-    def enum(e: WeakStream[PullType]) = enumWeakStreamF[PullType, Trampoline](func)(e)
+    def enum(e: WeakStream[PullType]) = enumWeakStreamF[PullType, F](func)(e)
+    import scalaz.Scalaz._
 
-    val starter = (altOnDone &= enum(iter)).eval
+    val starter = (altOnDone[F] &= enum(iter)).eval
     val p =
       for {
-        _ <- isContent(2, starter)
+        _ <- isContent(2, starter).wrapId
         // check it does not blow up the stack and/or mem
 
-        content <- (foldM[Int, Trampoline, ResumableIterList[PullType, Trampoline, QNamesMatch]](starter) { (itr, i) =>
+        content <- (foldM[Int, F, ResumableIterList[PullType, QNamesMatch]](starter) { (itr, i) =>
           val res = (extractCont(itr) &= enum(iter)).eval
           for {
             _ <- isContent(i + 1, res)
           } yield res
-        } &= iteratorEnumerator((2 to (ourMax/2 - 1)).iterator)).run
+        } &= iteratorEnumerator((2 to (ourMax/2 - 1)).iterator)).run.wrapId
 
-        interesting <- (foldM[Int, Trampoline, ResumableIterList[PullType, Trampoline, QNamesMatch]](content) { (itr, i) =>
+        interesting <- (foldM[Int, F, ResumableIterList[PullType, QNamesMatch]](content) { (itr, i) =>
           val res = (extractCont(itr) &= enum(iter)).eval
           for {
             _ <- isInteresting(i, res)
           } yield res
-        } &= iteratorEnumerator((1 to (ourMax/2 - 1)).iterator)).run
+        } &= iteratorEnumerator((1 to (ourMax/2 - 1)).iterator)).run.wrapId
 
         last = (extractCont(interesting) &= enum(iter)).eval
-        step <- last.value
+        step <- last.value.wrapId
 
       } yield {
         step(done = (x, y) => (x, y) match {
@@ -809,9 +806,21 @@ on both the qname matching (3 of them) and then the above combos
         }, cont = _ => fail("was not done with empty"))
       }
 
-    p run
+    p.runIt
   }
 
+  def testFirstThenNextId():Unit = {
+    implicit val ev = idIteratees
+    new WrapitProivder[PullType, scalaz.Id.Id, DummyContainer](null: PullType)(MonadConverter.idToDummy)
+
+    doTestFirstThenNext[ev.TheF, DummyContainer]
+  }
+
+  def testFirstThenNextIO():Unit = {
+    implicit val ev = ioIteratees
+
+    doTestFirstThenNext[ev.TheF, ev.TheF]
+  }
 
   def ofInterestEvents(i : Int, max : Int) : WeakStream[PullType] = {
     def iOfInterestEvents( i : Int, max :Int) : WeakStream[PullType] =
@@ -860,7 +869,7 @@ on both the qname matching (3 of them) and then the above combos
    */
   val foldOnDoneMax = 50
 
-  def doFoldOnDone[F[_]: Monad, C](enum: => EnumeratorT[PullType,F]): F[Unit] = {
+  def doFoldOnDone[F[_]: Monad: scales.utils.iteratee.monadHelpers.CanRunIt, C](enum: => EnumeratorT[PullType,F]): (Int,Int) = {
 
     val ionDone = ofInterestOnDone[F]
 
@@ -892,21 +901,23 @@ on both the qname matching (3 of them) and then the above combos
           }
         }
     }
-
+    import scales.utils.iteratee.monadHelpers._
     import scalaz.Scalaz._
+
     val p =
       for {
         pair <- total
       } yield {
         assertEquals(foldOnDoneMax - 1, pair._1)
         assertEquals(pair._1, pair._2)
+        pair
       }
 
-    p
+    p.runIt
   }
 
   def testFoldOnDoneId(): Unit = try {
-    var iter = withHeaders(foldOnDoneMax).iterator
+    val iter = withHeaders(foldOnDoneMax).iterator
     doFoldOnDone(iteratorEnumerator(iter))
     fail("Actually worked, really should SOE")
   } catch {
@@ -918,8 +929,7 @@ on both the qname matching (3 of them) and then the above combos
     val func = (e: WeakStream[PullType]) => {iter = e}
 
     def enum(e: WeakStream[PullType]) = enumWeakStreamF[PullType, Trampoline](func)(e)
-    val p = doFoldOnDone(enum(iter))
-    p run
+    doFoldOnDone(enum(iter))
   }
 
   type FiveStrings = (String,String,String,String,String)

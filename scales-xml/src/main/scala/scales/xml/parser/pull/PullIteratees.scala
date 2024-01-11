@@ -14,6 +14,8 @@ import scalaz.iteratee.Iteratee.{iteratee, iterateeT}
 import scalaz.iteratee.{IterateeT, StepT}
 import scalaz.iteratee.StepT.{Cont, Done}
 
+import scales.utils.iteratee.functions._
+
 class PullIterateeFunctions[F[_]](val F: Monad[F]){
   import scales.xml.{QNamesMatch, PeekMatch}
 

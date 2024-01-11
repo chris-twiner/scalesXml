@@ -7,6 +7,8 @@ import scalaz.iteratee.StepT.{Cont, Done}
 import scalaz.iteratee.{Enumerator, Input, Iteratee}
 import scales.utils.{resource => sresource}
 
+import idIteratees._
+
 /**
  * Runs a previously eval'd continuation to completion - no "Diverging Iteratee" on the first iteration from a cont but may give "Confused Iteratee" when not finding an end state.  Its not in the standard utils as its dangerous and requires knowledge of both the enumerator and the data it enumerates.
  */

@@ -8,7 +8,6 @@ import scalaz.iteratee.StepT.Done
 import scalaz._
 import Scalaz._
 import junit.framework.Assert.assertTrue
-import scales.utils.isEOF
 import scales.utils.trampolineIteratees._
 
 class AsyncPullTest extends junit.framework.TestCase {
@@ -126,6 +125,7 @@ class AsyncPullTest extends junit.framework.TestCase {
     } run
 
   def doSimpleLoadAndFold[F[_]: Monad](test: (AsyncParser, IterateeT[PullType, F, List[String]], ReadableByteChannelWrapper[DataChunk ]) =>  F[List[String]] ) : F[Unit] = {
+    import scales.utils.iteratee.functions._
     val url = sresource(this, "/data/BaseXmlTest.xml")
 
     val channel = Channels.newChannel(url.openStream())
@@ -264,7 +264,7 @@ class AsyncPullTest extends junit.framework.TestCase {
               val nextb =
                 // if its done we have to pump
                 if (!randomChannel.isClosed && !isDoneS(step)) {
-                  randomChannel.nextChunk // odd ordering issues?  even Id doesn't "fix" it
+                  randomChannel.nextChunk
                 } else {
                   b
                 }
@@ -354,6 +354,7 @@ class AsyncPullTest extends junit.framework.TestCase {
   }*/
 
   def testSimpleLoadSerializingMisc = {
+    import idIteratees._
     val url = sresource(this, "/data/MiscTests.xml")
 
     val doc = loadXmlReader(url, parsers = NoVersionXmlReaderFactoryPool)
@@ -377,6 +378,7 @@ class AsyncPullTest extends junit.framework.TestCase {
   }
 
   def testSimpleLoad = {
+    import idIteratees._
     val url = sresource(this, "/data/BaseXmlTest.xml")
 
     val channel = Channels.newChannel(url.openStream())
@@ -398,6 +400,7 @@ class AsyncPullTest extends junit.framework.TestCase {
     doSimpleLoadSerializing(Channels.newChannel(_).wrapped)
 
   def doSimpleLoadSerializing(streamToChannel: java.io.InputStream => DataChunker[DataChunk]) = {
+    import idIteratees._
     val url = sresource(this, "/data/BaseXmlTest.xml")
 
     val doc = loadXmlReader(url, parsers = NoVersionXmlReaderFactoryPool)
