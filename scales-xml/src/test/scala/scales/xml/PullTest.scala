@@ -752,7 +752,7 @@ on both the qname matching (3 of them) and then the above combos
       isDone("content", repeatingQNames) _)
   }
 
-  def doTestFirstThenNext[F[_]: Monad: CanRunIt: IterateeFunctions: IdWrapper, W[_]: ({type l[A[_]]= MonadConverter[F, A]})#l](): Unit = {
+  def doTestFirstThenNext[F[_]: Monad: IterateeFunctions: IdWrapper, W[_]: Monad: CanRunIt](implicit converter: MonadConverter[F, W]): Unit = {
     val itFuncs = implicitly[IterateeFunctions[F]]
     import itFuncs._
 
