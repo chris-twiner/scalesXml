@@ -941,10 +941,6 @@ object monadHelpers {
   }
 
   object CanRunIt {
-    implicit val dummyContainerCanPerform: CanRunIt[DummyContainer] = new CanRunIt[DummyContainer] {
-      override def runIt[A](param: DummyContainer[A])(implicit F: Monad[DummyContainer]): A = param.a
-    }
-
     implicit val idCanPerform: CanRunIt[Id] = new CanRunIt[Id] {
       override def runIt[A](param: Id[A])(implicit F: Monad[Id]): A = param
     }
@@ -965,85 +961,6 @@ object monadHelpers {
   implicit class TrampolinePerformer[A](val a: Trampoline[A])(implicit c: CanRunIt[Trampoline], F: Monad[Trampoline]) {
     def runIt: A = c.runIt(a)
   }
-
-  trait NotId[F[_]]
-
-  object NotId {
-    implicit val trampolineIsNotId = new NotId[Trampoline] {}
-    implicit val ioIsNotId = new NotId[IO] {}
-  }
-
-  trait Mapper[A, B[_]] {
-    def map[C](f: A => C): B[C]
-    def flatMap[C](f: A => B[C]): B[C]
-  }
-
-  case class DummyContainer[A](a: A) extends Mapper[A, DummyContainer] {
-    def map[B](f: A => B): DummyContainer[B] = DummyContainer(f(a))
-    def flatMap[B](f: A => DummyContainer[B]): DummyContainer[B] = f(a)
-  }
-
-  object DummyContainer {
-    /**
-     * only used to ensure the helper finds instances
-     */
-    implicit val monadFarce = new Monad[DummyContainer] {
-      override def bind[A, B](fa: DummyContainer[A])(f: A => DummyContainer[B]): DummyContainer[B] =
-        f(fa.a)
-
-      override def point[A](a: => A): DummyContainer[A] = DummyContainer[A](a)
-    }
-  }
-
-  trait IdWrapper[F[_]] {
-    type B[_]
-
-    def wrapId[A](a: F[A]): B[A]
-  }
-
-  object IdWrapper {
-    implicit def idWrapper[F[_]](implicit ev: F[Unit] =:= Id[Unit]) = new IdWrapper[Id] {
-
-      override type B[_] = DummyContainer[_]
-
-      override def wrapId[A](a: Id[A]): DummyContainer[A] = new DummyContainer[A](a)
-    }
-    implicit def nonIdWrapper[F[_]](implicit ev: NotId[F]) = new IdWrapper[F] {
-
-      override type B[_] = F[_]
-
-      override def wrapId[A](a: F[A]): F[A] = a
-    }
-  }
-
-  trait MonadConverter[F[_], T[_]] {
-    def convert[A](f: F[A]): T[A]
-  }
-
-  object MonadConverter {
-    implicit def idToDummy(implicit idWrapper: IdWrapper[Id]): MonadConverter[Id, DummyContainer] = new MonadConverter[Id,DummyContainer] {
-
-      override def convert[A](f: scalaz.Id.Id[A]): DummyContainer[A] = idWrapper.wrapId(f).asInstanceOf[DummyContainer[A]]
-    }
-    implicit def allOthers[F[_]](implicit ev: NotId[F], idWrapper: IdWrapper[F]): MonadConverter[F,F] = new MonadConverter[F,F] {
-
-      override def convert[A](f: F[A]): F[A] = f
-    }
-  }
-
-  implicit class WrapitProivder[A, F[_], B[_]](val a: F[A])(implicit val converter: MonadConverter[F,B]){
-    def wrapId: B[A] = converter.convert(a)
-  }
-
-/*
-  implicit class IdHelper[A, F[_]](val a: F[A])(implicit wrapper: IdWrapper[F], ev: F[A] =:= Id[A]) {
-    def wrapId: DummyContainer[A] = new DummyContainer[A](a)
-  }
-
-  implicit class AnyOtherFHelper[A, F[_]](val a: F[A])(implicit wrapper: IdWrapper[F], ev: NotId[F]) {
-    def wrapId: F[A] = a
-  }
-*/
 }
 
 class IterateeFunctions[F[_]](val F: Monad[F]) {

@@ -752,11 +752,9 @@ on both the qname matching (3 of them) and then the above combos
       isDone("content", repeatingQNames) _)
   }
 
-  def doTestFirstThenNext[F[_]: Monad: IterateeFunctions: IdWrapper, W[_]: Monad: CanRunIt](implicit converter: MonadConverter[F, W]): Unit = {
+  def doTestFirstThenNext[F[_]: Monad: IterateeFunctions: CanRunIt]: Unit = {
     val itFuncs = implicitly[IterateeFunctions[F]]
     import itFuncs._
-
-    implicitly[MonadConverter[F,W]]
 
     val ourMax = maxIterations / 10 // full takes too long but does work in constant space
 
@@ -779,7 +777,7 @@ on both the qname matching (3 of them) and then the above combos
     val starter = (altOnDone[F] &= enum(iter)).eval
     val p =
       for {
-        _ <- isContent(2, starter).wrapId
+        _ <- isContent(2, starter)
         // check it does not blow up the stack and/or mem
 
         content <- (foldM[Int, F, ResumableIterList[PullType, QNamesMatch]](starter) { (itr, i) =>
@@ -787,17 +785,17 @@ on both the qname matching (3 of them) and then the above combos
           for {
             _ <- isContent(i + 1, res)
           } yield res
-        } &= iteratorEnumerator((2 to (ourMax/2 - 1)).iterator)).run.wrapId
+        } &= iteratorEnumerator((2 to (ourMax/2 - 1)).iterator)).run
 
         interesting <- (foldM[Int, F, ResumableIterList[PullType, QNamesMatch]](content) { (itr, i) =>
           val res = (extractCont(itr) &= enum(iter)).eval
           for {
             _ <- isInteresting(i, res)
           } yield res
-        } &= iteratorEnumerator((1 to (ourMax/2 - 1)).iterator)).run.wrapId
+        } &= iteratorEnumerator((1 to (ourMax/2 - 1)).iterator)).run
 
         last = (extractCont(interesting) &= enum(iter)).eval
-        step <- last.value.wrapId
+        step <- last.value
 
       } yield {
         step(done = (x, y) => (x, y) match {
@@ -806,20 +804,19 @@ on both the qname matching (3 of them) and then the above combos
         }, cont = _ => fail("was not done with empty"))
       }
 
-    p.runIt
+    p runIt
   }
 
   def testFirstThenNextId():Unit = {
     implicit val ev = idIteratees
-    new WrapitProivder[PullType, scalaz.Id.Id, DummyContainer](null: PullType)(MonadConverter.idToDummy)
 
-    doTestFirstThenNext[ev.TheF, DummyContainer]
+    doTestFirstThenNext[ev.TheF]
   }
 
   def testFirstThenNextIO():Unit = {
     implicit val ev = ioIteratees
 
-    doTestFirstThenNext[ev.TheF, ev.TheF]
+    doTestFirstThenNext[ev.TheF]
   }
 
   def ofInterestEvents(i : Int, max : Int) : WeakStream[PullType] = {
