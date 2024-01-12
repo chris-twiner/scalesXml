@@ -385,6 +385,10 @@ class AsyncPullTest extends junit.framework.TestCase {
             assertFalse("shouldn't have thrown", thrown.isDefined)
 
             assertTrue("should have been auto closed", closer.isClosed)
+            if (str != strout.toString) {
+              println
+              println(strout.toString)
+            }
             assertEquals(str, strout.toString)
 
             // the output stream is closed, the input stream and parser is closed

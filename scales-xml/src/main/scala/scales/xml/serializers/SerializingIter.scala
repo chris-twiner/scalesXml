@@ -103,6 +103,17 @@ trait SerializingIter {
    */
   def serializeIter[F[_]]( output : XmlOutput, serializer : Serializer, closer : () => Unit, doc : DocLike = EmptyDoc())(implicit F: Monad[F]) : SerialIterT[F] = {
 
+    var prevE: PullType = null
+    var lastR: StreamStatus = null
+
+    def pump(status: StreamStatus, e: PullType, serializer: Serializer) = {
+      if (e ne prevE) {
+        prevE = e
+        lastR = StreamSerializer.pump(e, status, serializer)
+      }
+      lastR
+    }
+
     var empties = 0
 
     def done( status : StreamStatus ) : F[SerialStepT[F]] = {
@@ -116,14 +127,13 @@ trait SerializingIter {
       iterateeT(
         s(el = e => {
           if (status.thrown.isDefined) done(status)
-          else {
-            println("pumping rest e "+System.identityHashCode(e) )
-
-            val r = StreamSerializer.pump(e, status, serializer)
-
-            if (r.thrown.isDefined) done(r)
-            else F.point(Cont(go(r, serializer)))
-          }},
+          else
+            F.point(Cont(go( {
+              val r = pump(status, e, serializer)
+              println("pumping rest e "+System.identityHashCode(e) +" r " +System.identityHashCode(r))
+              r
+            }, serializer)))
+          },
           empty = {
             empties += 1
             //println("outitr empty " +System.identityHashCode(prev))
