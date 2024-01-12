@@ -268,15 +268,13 @@ object AsyncParser {
         )))), Eof[DataChunk])
     }
 
-//    def emptyness : ResumableStep[DataChunk, EphemeralStream[PullType]] =
-  //    Done((emptyEphemeralStream, iteratee( Cont(step))), Input.Empty[DataChunk])
-
     def step(s: Input[DataChunk]): ResumableIter[DataChunk, F, EphemeralStream[PullType]] =
       iterateeT(Monad[F].point(
         s(el = e => {
             //println("Did get a large chunk "+new String(e.array, e.offset, e.length, "UTF-8"))
             val r = parser.nextInput(e)
             r( el = es => {
+             // println("got " + es.toList)
             //println("got el with es " + es.isEmpty + " feeder " + parser.feeder.needMoreInput)
                 Done((es,
                   iterateeT(Monad[F].point(Cont(

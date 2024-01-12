@@ -29,26 +29,26 @@ trait SerializingIter {
 
     var empties = 0
 
-    def done( status : StreamStatus ) : SerialStepT[F] = {
+    def done( status : StreamStatus ) : F[SerialStepT[F]] = {
       // give it back
       closer()
       //println("empties was "+empties)
-      Done((status.output, status.thrown), Eof[PullType])
+      F.point(Done((status.output, status.thrown), Eof[PullType]))
     }
 
     def rest( status : StreamStatus, prev : PullType, serializer : Serializer )(s : Input[PullType]) : SerialIterT[F] =
-      iterateeT(F.point(
+      iterateeT(
         s(el = e =>
             if (status.thrown.isDefined) done(status)
             else {
               val r = StreamSerializer.pump((prev, e), status, serializer)
               if (r.thrown.isDefined) done(r)
-              else Cont(rest(r, e, serializer))
+              else F.point(Cont(rest(r, e, serializer)))
             },
           empty = {
               empties += 1
               //println("outitr empty")
-              Cont(rest(status, prev, serializer))
+              F.point(Cont(rest(status, prev, serializer)))
             },
           eof =  {
             if (status.thrown.isDefined) done(status)
@@ -61,27 +61,29 @@ trait SerializingIter {
               done(lastStatus)
             }}
         )
-      ))
+      )
 
     def first( status : StreamStatus, serializer : Serializer )(s : Input[PullType]) : SerialIterT[F] =
-      iterateeT(F.point(
+      iterateeT(
         s(el = e => {
-          // decl and prolog misc, which should have been collected by now
-          val opt = serializer.xmlDeclaration(status.output.data.encoding,
-                  status.output.data.version).orElse{
-              serializeMisc(status.output, doc.prolog.misc, serializer)._2
-            }
-          val nstatus = status.copy(thrown = opt)
+            // decl and prolog misc, which should have been collected by now
+            val opt = serializer.xmlDeclaration(status.output.data.encoding,
+                    status.output.data.version).orElse{
+                serializeMisc(status.output, doc.prolog.misc, serializer)._2
+              }
+            val nstatus = status.copy(thrown = opt)
 
-          Cont(rest(nstatus, e, serializer))
+            println("doing the decl and prolog again")
+
+            F.point(Cont(rest(nstatus, e, serializer)))
           },
           empty = {
             empties += 1
-            Cont(first(status, serializer))
+            F.point(Cont(first(status, serializer)))
           },
-          eof = Done((status.output, Some(NoDataInStream())), Eof[PullType])
+          eof = F.point(Done((status.output, Some(NoDataInStream())), Eof[PullType]))
         )
-      ))
+      )
 
     iterateeT( F.point( Cont(first(StreamStatus(output), serializer)) ) )
   }

@@ -48,18 +48,18 @@ class AsyncPullTest extends junit.framework.TestCase {
 
   import java.nio.charset.Charset
   import scales.utils.{io, resources}
-  import resources._ 
+  import resources._
 
   /**
    * returns the cont and drops the input parameter or returns Done
-   */ 
-  trait EvalW[WHAT,RETURN] {
-    
-    val orig : IterateeT[WHAT, TheF, RETURN]
+   */
+  trait EvalW[WHAT, F[_], RETURN] {
 
-    def evalw(implicit F: Monad[TheF]) : IterateeT[WHAT, TheF, RETURN] =
+    val orig : IterateeT[WHAT, F, RETURN]
+
+    def evalw(implicit F: Monad[F]) : IterateeT[WHAT, F, RETURN] =
       iterateeT(
-        F.bind((orig &= empty[WHAT, TheF]).value)((s: StepT[WHAT, TheF, RETURN]) => s.fold(
+        F.bind((orig &= empty[WHAT, F]).value)((s: StepT[WHAT, F, RETURN]) => s.fold(
           cont = k => {
             orig.value
           }
@@ -67,7 +67,7 @@ class AsyncPullTest extends junit.framework.TestCase {
         )))
   }
 
-  implicit def toEvalw[WHAT, RETURN]( i : IterateeT[WHAT, TheF, RETURN] ) = new EvalW[WHAT, RETURN] {
+  implicit def toEvalw[WHAT, F[_], RETURN]( i : IterateeT[WHAT, F, RETURN] ) = new EvalW[WHAT, F, RETURN] {
     lazy val orig = i
   }
 
@@ -289,7 +289,7 @@ class AsyncPullTest extends junit.framework.TestCase {
 
     p run
   }
-/*
+
 
   /**
    * Hideously spams with various sizes of data, and more than a few 0 lengths.
@@ -298,6 +298,8 @@ class AsyncPullTest extends junit.framework.TestCase {
    */
   def testRandomAmounts = {
     val url = sresource(this, "/data/BaseXmlTest.xml")
+
+    import idIteratees._ // trampoline doesn't work, in either the while loop or repeatUntil versions - le odd
 
     val doc = loadXmlReader(url, parsers = NoVersionXmlReaderFactoryPool)
     val str = asString(doc)
@@ -321,37 +323,75 @@ class AsyncPullTest extends junit.framework.TestCase {
     val readableByteChannelEnumerator = new AsyncDataChunkerEnumerator[DataChunk, TheF](wrapped, 6 )
 
     val cstable = (enumeratee &= readableByteChannelEnumerator).evalw
+
+    var done = false
     var c = cstable
 
-    type cType = cstable.type
-
+    import scales.utils.iteratee.monadHelpers._
     var count = 0
-    while(!isDone(c)) {
+/*
+    do {
       c = (c &= dataChunkerEnumerator(wrapped)).evalw
       count += 1
-    }
+      done = (for {
+        r <- isDone(c)
+      } yield r).runIt
+    } while (!done) */
 
-    if (randomChannel.zeroed > 0) {
-      assertTrue("There were "+randomChannel.zeroed+" zeros fed but it never left the evalw", count > 0)
-    }
+    val itr =
+      isDone(cstable).flatMap {
+        done =>
+          repeatUntilM((cstable, done, 0)) {
+            triple =>
+              val (c, stop, count) = triple
+              F.bind(c.value) { _ =>
+                if (!stop) {
+                  val newc = (c &= dataChunkerEnumerator(wrapped)).evalw
+                  c.value.flatMap { _ =>
+                    newc.value.map {
+                      step =>
 
-    c.foldT[Unit](
-      done = (a,i) => {
-        val ((out, thrown), cont) = a
-        assertFalse( "shouldn't have thrown", thrown.isDefined)
+                        (newc, isDoneS(step), count + 1)
+                    }
+                  }
+                } else
+                  F.point(triple)
+              }
+          }(_._2)
+      }
 
-        assertTrue("should have been auto closed", closer.isClosed)
-        assertEquals(str, strout.toString)
-      },
-      cont = f => fail("Should have been done")
-    )
+    val p =
+      for {
+        r <- itr
+         ((cont, _, count), remainingCont) = r
+        //step <- c.value
+        step <- cont.value
+      } yield {
+
+        if (randomChannel.zeroed > 0) {
+          assertTrue("There were " + randomChannel.zeroed + " zeros fed but it never left the evalw", count > 0)
+        }
+
+        step(
+          done = (a, i) => {
+            val ((out, thrown), cont) = a
+            assertFalse("shouldn't have thrown", thrown.isDefined)
+
+            assertTrue("should have been auto closed", closer.isClosed)
+            assertEquals(str, strout.toString)
+
+            // the output stream is closed, the input stream and parser is closed
+            assertTrue("should have been EOF", i.isEof)
+          },
+          cont = f => fail("Should have been done")
+        )
+      }
+
+    p.runIt
 
     assertTrue("Parser should have been closed ", parser.isClosed)
     assertTrue("Wrapper should have been closed ", wrapped.isClosed)
-
-    // the output stream is closed, the input stream and parser is closed
-    assertTrue("should have been EOF", isEOF(c))
-  }*/
+  }
 
   def testSimpleLoadSerializingMisc = {
     import idIteratees._

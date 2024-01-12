@@ -79,8 +79,8 @@ class ReadableByteChannelWrapperBase[T](val channel: ReadableByteChannel, protec
     val read = channel.read(buffer)
     read match {
       case -1 => {
-	closeResource
-	EOFData
+        closeResource
+        EOFData
       }
       case 0 => EmptyData
       case _ => Chunk(buffer.array, 0, read)
@@ -98,10 +98,10 @@ class ReadableByteChannelWrapperBase[T](val channel: ReadableByteChannel, protec
       // println("remains "+leftInBuffer)
       val used = math.min(leftInBuffer, backingArray.length)
       if (leftInBuffer >= used) {
-	// still got some left to push
-	leftInBuffer = leftInBuffer - used
+        // still got some left to push
+        leftInBuffer = leftInBuffer - used
       } else {
-	leftInBuffer = 0
+        leftInBuffer = 0
       }
       // if there is still data read it out in a chunk
       buffer.get(backingArray, 0, used)
@@ -114,31 +114,31 @@ class ReadableByteChannelWrapperBase[T](val channel: ReadableByteChannel, protec
       // println("read this "+read)
       val rem = buffer.remaining
       read match {
-	case -1 => 
-	  closeResource
-	EOFData
-	
-	case 0 => EmptyData
-	
-	case _ => 
+        case -1 =>
+          closeResource
+          EOFData
 
-	  val used = math.min(math.min(rem, read), backingArray.length)
-	  if (read > used) {
-	    leftInBuffer = read - used
-	  }
+        case 0 => EmptyData
 
-	  buffer.rewind()
-	  // println("calling get with "+used)
-	  //try{
-	    buffer.get(backingArray, 0, used)
-	    //println("read "+ new String(to, 0, used, "UTF-8"))
-	  //} catch {
-	  //  case t: Throwable => 
-	      // println("threw "+t.getMessage)
-	  //    t.printStackTrace
-	  //    throw t
-	  //}
-	  Chunk(backingArray, 0, used)
+        case _ =>
+
+          val used = math.min(math.min(rem, read), backingArray.length)
+          if (read > used) {
+            leftInBuffer = read - used
+          }
+
+          buffer.rewind()
+          // println("calling get with "+used)
+          //try{
+            buffer.get(backingArray, 0, used)
+            //println("read "+ new String(to, 0, used, "UTF-8"))
+          //} catch {
+          //  case t: Throwable =>
+              // println("threw "+t.getMessage)
+          //    t.printStackTrace
+          //    throw t
+          //}
+          Chunk(backingArray, 0, used)
       }
     }
   }

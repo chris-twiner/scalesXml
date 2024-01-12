@@ -39,30 +39,30 @@ object StreamSerializer {
       
       val (ev, next) = event
       ev match {
-	case Left(i: XmlItem) =>
-	  StreamStatus(output, serializer.item(i, output.path), false)
-	case Left(x: Elem) =>
-	  // if next is an end elem then its an empty
-	  if (next.isRight) {
+        case Left(i: XmlItem) =>
+          StreamStatus(output, serializer.item(i, output.path), false)
+        case Left(x: Elem) =>
+          // if next is an end elem then its an empty
+          if (next.isRight) {
 
-	    // x.namespaces can't be used any further
-	    val nc = doElement(x, output.currentMappings.head)
-	    StreamStatus(output, serializer.emptyElement(x.name, x.attributes, nc.declMap, nc.addDefault, x.name :: output.path), true) // let us know to ignore the next end
-	  } else {
-	    val npath = x.name :: output.path
+            // x.namespaces can't be used any further
+            val nc = doElement(x, output.currentMappings.head)
+            StreamStatus(output, serializer.emptyElement(x.name, x.attributes, nc.declMap, nc.addDefault, x.name :: output.path), true) // let us know to ignore the next end
+          } else {
+            val npath = x.name :: output.path
 
-	    val nc = doElement(x, output.currentMappings.head)
-	    StreamStatus(output.copy(currentMappings = nc.mappings +: output.currentMappings, path = npath),
-	      serializer.startElement(x.name, x.attributes, nc.declMap, nc.addDefault, npath), false)
-	  }
-	case Right(endElem) =>
-	  if (isEmpty)
-	    StreamStatus(output, None, false)
-	  else
-	    // pop the last ones
-	    StreamStatus(output.copy(currentMappings = output.currentMappings.tail,
-				     path = output.path.tail), 
-	      serializer.endElement(endElem.name, output.path), false)
+            val nc = doElement(x, output.currentMappings.head)
+            StreamStatus(output.copy(currentMappings = nc.mappings +: output.currentMappings, path = npath),
+              serializer.startElement(x.name, x.attributes, nc.declMap, nc.addDefault, npath), false)
+          }
+        case Right(endElem) =>
+          if (isEmpty)
+            StreamStatus(output, None, false)
+          else
+            // pop the last ones
+            StreamStatus(output.copy(currentMappings = output.currentMappings.tail,
+                   path = output.path.tail),
+              serializer.endElement(endElem.name, output.path), false)
 
       }
     }

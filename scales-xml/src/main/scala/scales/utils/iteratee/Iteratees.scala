@@ -355,7 +355,7 @@ object functions {
    * @tparam A
    * @return
    */
-  def repeatUntil[E, F[_], A](init: A)(f: A => F[A])(stopOn: A => Boolean)(implicit F: Monad[F]): F[(A, ResumableIter[A, F, A])] =
+  def repeatUntil[E, F[_], A](init: A)(f: A => A)(stopOn: A => Boolean)(implicit F: Monad[F]): F[(A, ResumableIter[A, F, A])] =
     repeatUntilM[E, F, A](init)(a => F.point(a))(stopOn)
 
   /**
@@ -1173,7 +1173,7 @@ class IterateeFunctions[F[_]](val F: Monad[F]) {
    * @tparam A
    * @return
    */
-  def repeatUntil[E,A](init: A)(f : A => F[A] )(stopOn: A => Boolean)(implicit F: Monad[F]): F[(A,ResumableIter[A,A])] =
+  def repeatUntil[E,A](init: A)(f : A => A)(stopOn: A => Boolean)(implicit F: Monad[F]): F[(A,ResumableIter[A,A])] =
     scales.utils.iteratee.functions.repeatUntilM[E,F,A](init)(a => F.point(a))(stopOn)
 
   /**
