@@ -496,7 +496,7 @@ class XmlMarshallingTest extends junit.framework.TestCase {
 
   def testEmptyStream : Unit = {
     try {
-      asString(List.empty[PullType].iterator)
+      val r = asString(List.empty[PullType].iterator)
       fail("Should have thrown")
     } catch {
       case t : NoDataInStream => ()

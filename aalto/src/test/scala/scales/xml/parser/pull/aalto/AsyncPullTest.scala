@@ -59,12 +59,13 @@ class AsyncPullTest extends junit.framework.TestCase {
 
     def evalw(implicit F: Monad[F]) : IterateeT[WHAT, F, RETURN] =
       iterateeT(
-        F.bind((orig &= empty[WHAT, F]).value)((s: StepT[WHAT, F, RETURN]) => s.fold(
-          cont = k => {
-            orig.value
-          }
-          , done = (a, i) => F.point(Done(a, i))
-        )))
+       F.bind((orig &= empty[WHAT, F]).value)((s: StepT[WHAT, F, RETURN]) => s.fold(
+         cont = k => {
+           orig.value
+         }
+         , done = (a, i) => F.point(Done(a, i))
+       )))
+
   }
 
   implicit def toEvalw[WHAT, F[_], RETURN]( i : IterateeT[WHAT, F, RETURN] ) = new EvalW[WHAT, F, RETURN] {
@@ -294,12 +295,18 @@ class AsyncPullTest extends junit.framework.TestCase {
   /**
    * Hideously spams with various sizes of data, and more than a few 0 lengths.
    *
-   * The aim is to test the proverbial out of the asynch code.  It should be able to handle being called with a single byte repeatedly.
+   * The aim is to test the proverbial out of the async code.  It should be able to handle being called with a single byte repeatedly.
    */
   def testRandomAmounts = {
     val url = sresource(this, "/data/BaseXmlTest.xml")
 
-    import idIteratees._ // trampoline doesn't work, in either the while loop or repeatUntil versions - le odd
+    import trampolineIteratees._
+    // trampoline doesn't work as the continuations are called multiple times and the output handling is not safe
+    // The other calls just use run which only evaluates once, but the act of trying to suspend it causes failure on
+    // re-evaluation.  So for most use cases this is fine, but if there is an expectation to allow reaction of
+    // pauses in the async feed (why else would you be using aalto) then we have fail town.
+    // SerializingIter (pushXmlIter) does not expect restarts, the re-feeding of prolog or other attributes triggers
+    // the status to be corrupted.
 
     val doc = loadXmlReader(url, parsers = NoVersionXmlReaderFactoryPool)
     val str = asString(doc)

@@ -718,6 +718,8 @@ class EqualsNormalImportsTest extends junit.framework.TestCase {
 
     val upTo = context.toDifferenceAsStream(x)
 
+    //upTo.foreach{println}
+
     val upToStr = asString(upTo.iterator)
 
     assertEquals(232, upToStr.size)
