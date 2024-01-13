@@ -124,6 +124,7 @@ class AsyncPullTest extends junit.framework.TestCase {
       e <- test(parser, iter, wrapped)
     } yield {
       assertEquals(2, e.size)
+      assertTrue("Channel was not closed", !channel.isOpen)
       e match {
         case List("DontRedeclare", "DontRedeclare") => ()
         case _ => fail("got " + e)
@@ -186,6 +187,7 @@ class AsyncPullTest extends junit.framework.TestCase {
     assertEquals(s, str)
 
     assertTrue("we should have more nexted then zeroed - due to boundaries on the available data", randomChannelOrig.zeroed + 1 < nexted)
+    assertTrue("Random channel should have been closed", !randomChannelOrig.isOpen)
   }
 
   // using the parser and the parse iteratee
@@ -264,6 +266,8 @@ class AsyncPullTest extends junit.framework.TestCase {
 
         assertTrue("Cont should have been eof", isEOFS(cStep))
         assertTrue("Parser should have been closed", parser.isClosed)
+
+        assertTrue("Channel should have been closed", randomChannel.isClosed)
       }
 
     p run
@@ -402,7 +406,11 @@ class AsyncPullTest extends junit.framework.TestCase {
     // we can swallow the lot, but endmiscs don't know there is more until the main loop, which needs evaling
     assertFalse( "shouldn't have thrown", thrown.isDefined)
 
+    assertTrue("parser should have been closed", parser.isClosed)
     assertTrue("should have been auto closed", closer.isClosed)
+    assertTrue("channel should have been auto closed", channel.isClosed)
+
+
     assertEquals(str, strout.toString)
   }
 
@@ -423,6 +431,8 @@ class AsyncPullTest extends junit.framework.TestCase {
 
     assertEquals("{urn:default}Default", e.right.get.name.qualifiedName)
     assertTrue("The parser should have been closed", parser.isClosed)
+    assertTrue("The channel should have been closed", !channel.isOpen)
+
   }
 
   def testSimpleLoadSerializing =
