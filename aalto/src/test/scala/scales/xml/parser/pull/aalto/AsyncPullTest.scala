@@ -337,29 +337,18 @@ class AsyncPullTest extends junit.framework.TestCase {
                 }
               } else
                 F.point(triple.copy(_3 = count + 1))
-              /*
-            if (!stop || !isEOFS(cstep)) {
-              val newc = (c &= dataChunkerEnumerator(wrapped)).evalAcceptEmpty
-              newc.value.map { step =>
-                if (!isDoneS(step)) {
-                  (newc, false, count + 1)
-                } else {
-                  val cont = extractContS(step)
-                  (cont, false, count + 1)
-                }
-              }
-            } else
-              F.point(triple)*/
             }
           } else
             F.point(triple)
       }(_._2)
 
-
     val p =
       for {
         r <- itr
-         ((cont, _, count), remainingCont) = r
+        // stopped on EOF for the cont - but never pushes the eof to the parser
+        ((cont, _, count), remainingCont) = r
+        // for side effect of closing
+        res <- (cont &= dataChunkerEnumerator(wrapped)).run
         //step <- c.value
         step <- cont.value
       } yield {

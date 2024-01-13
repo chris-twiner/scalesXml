@@ -266,61 +266,69 @@ object AsyncParser {
    */
   def parse[F[_]: Monad](parser: AsyncParser): ResumableIter[DataChunk, F, EphemeralStream[PullType]] = {
 
-    var lastInput: DataChunk = null
-    // should we pump?
-    def nextInput(e: DataChunk): Option[DataChunk] =
-      if (lastInput ne e) {
-        lastInput = e
-        Some(e)
-      } else None
+    def state =
+      new {
+        var lastInput: DataChunk = null
+
+        // should we pump?
+        def nextInput(e: DataChunk): Option[DataChunk] =
+          if (lastInput ne e) {
+            lastInput = e
+            Some(e)
+          } else None
 
 
-    def EOF: ResumableStep[DataChunk, F, EphemeralStream[PullType]] = {
-      parser.closeResource
+        def EOF: ResumableStep[DataChunk, F, EphemeralStream[PullType]] = {
+          parser.closeResource
 
-      //println("closing against EOF from parse")
-      Done((emptyEphemeralStream,
-        iterateeT(Monad[F].point(Cont[DataChunk, F, EphemeralStream[PullType]](
-          error("Called the continuation on a closed parser")
-        )))), Eof[DataChunk])
-    }
+          //println("closing against EOF from parse")
+          Done((emptyEphemeralStream,
+            iterateeT(Monad[F].point(Cont[DataChunk, F, EphemeralStream[PullType]](
+              error("Called the continuation on a closed parser")
+            )))), Eof[DataChunk])
+        }
 
-    def step(s: Input[DataChunk]): ResumableIter[DataChunk, F, EphemeralStream[PullType]] =
-      iterateeT(Monad[F].point(
-        s(el = e => {
-            val toPump = nextInput(e)
-            toPump.fold(Cont(step)) { e =>
-              val r = parser.nextInput(e)
-              //println("Did get a large chunk " + new String(e.array, e.offset, e.length, "UTF-8") + " e " + System.identityHashCode(e) + " r " + System.identityHashCode(r))
+        def step(s: Input[DataChunk]): ResumableIter[DataChunk, F, EphemeralStream[PullType]] =
+          iterateeT(Monad[F].point(
+            s(el = e => {
+              val toPump = nextInput(e)
+              toPump.fold(Cont(step)) { e =>
+                val r = parser.nextInput(e)
+                //println("Did get a large chunk " + new String(e.array, e.offset, e.length, "UTF-8") + " e " + System.identityHashCode(e) + " r " + System.identityHashCode(r))
 
-              r(el = es => {
-                // println("got " + es.toList)
-                //println("got el with es " + es.isEmpty + " feeder " + parser.feeder.needMoreInput)
-                Done((es,
-                  iterateeT(Monad[F].point(Cont(
-                    step
-                  )))), Input.Empty[DataChunk])
-              },
-                empty =
-                //println("empty from input")
+                r(el = es => {
+                  // println("got " + es.toList)
+                  //println("got el with es " + es.isEmpty + " feeder " + parser.feeder.needMoreInput)
+                  Done((es,
+                    iterateeT(Monad[F].point(Cont(
+                      step
+                    )))), Input.Empty[DataChunk])
+                },
+                  empty =
+                  //println("empty from input")
+                  //emptyness
+                    Cont(step)
+                  ,
+                  eof =
+                    EOF
+                )
+              }
+            },
+              empty = {
+                //println("empty input")
                 //emptyness
-                  Cont(step)
-                ,
-                eof = EOF
-              )
-            }
-          },
-          empty = {
-            //println("empty input")
-            //emptyness
-            //Done((EphemeralStream.empty, Cont(step)), IterV.Empty[DataChunk]) // nothing that can be done on empty
-            Cont(step)
-          },
-          eof = EOF
-        )
-      ))
+                //Done((EphemeralStream.empty, Cont(step)), IterV.Empty[DataChunk]) // nothing that can be done on empty
+                Cont(step)
+              },
+              eof =
+                EOF
+            )
+          ))
 
-    iterateeT( Monad[F].point( Cont(step) ))
+        def start = iterateeT( Monad[F].point( Cont(step) ))
+      }
+
+    state.start
   }
 
 
