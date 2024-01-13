@@ -282,14 +282,9 @@ class AsyncPullTest extends junit.framework.TestCase {
   def testRandomAmounts = {
     val url = sresource(this, "/data/BaseXmlTest.xml")
 
-    import ioIteratees._
-    // Trampoline doesn't work as the continuations are called multiple times and the output handling is not safe
-    // The other calls just use run which only evaluates once, but the act of trying to suspend it causes failure on
-    // re-evaluation.  So for most use cases this is fine, but if there is an expectation to allow reaction of
-    // pauses in the async feed (why else would you be using aalto) then we have fail town.
-    // SerializingIter (pushXmlIter) does not expect/cannot handle restarts, the re-feeding of prolog or other attributes triggers
-    // the status to be corrupted.  Moreover the order of events fed into pushXmlIter are incorrect and randomly so
-    // IO seems different and fails more quickly in the decl section.
+    // idIteratees works if you don't eval, the old evalw didn't force the stack.
+    // evalAcceptEmpty does more but it's also the kind of behaviour you actually want
+    import trampolineIteratees._
 
     val doc = loadXmlReader(url, parsers = NoVersionXmlReaderFactoryPool)
     val str = asString(doc)

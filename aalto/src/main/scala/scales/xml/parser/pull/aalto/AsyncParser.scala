@@ -273,7 +273,9 @@ object AsyncParser {
       if (lastInput ne e) {
         lastInput = e
         Some(e)
-      } else None
+      } else
+        // Duplicates happen when restarting the processing in the face of trampolines.  Using run without asynchronous empties does not suffer this issue
+        None
 
 
     def EOF: ResumableStep[DataChunk, F, EphemeralStream[PullType]] = {
