@@ -9,7 +9,7 @@ import scales.utils._
 /**
  * Status of stream processing
  */
-case class StreamStatus(output : XmlOutput, thrown: Option[Throwable] = None, isEmpty : Boolean = false, prev: Option[PullType] = None)
+case class StreamStatus(output : XmlOutput, thrown: Option[Throwable] = None, isEmpty : Boolean = false, prev: Option[PullType] = None, haveSetProlog: Boolean = false)
 
 /**
  * Provides basis for serialisation of streams.
@@ -46,33 +46,33 @@ object StreamSerializer {
         case (Some(Right(lastElem)), EOF) if status.isEmpty =>
           status // nothing to do
         case (Some(Right(lastElem)), EOF) =>
-          StreamStatus(output.copy(currentMappings = output.currentMappings.tail,
+          status.copy(output.copy(currentMappings = output.currentMappings.tail,
             path = output.path.tail),
             serializer.endElement(lastElem.name, output.path), false, Some(currentEvent))
         case (Some(Left(p: XmlItem)), _) => // allow EOF's through for xmlitems
-          StreamStatus(output, serializer.item(p, output.path), false, Some(currentEvent))
+          status.copy(output, serializer.item(p, output.path), false, Some(currentEvent))
         case (_, EOF) =>
           status.copy(thrown = Some(new IllegalStateException("EOF should only be sent after the closing element")))
         case (Some(Right(endElem)), Left(i: XmlItem)) if !status.isEmpty => // don't do this for other end elements
-          StreamStatus(output.copy(currentMappings = output.currentMappings.tail,
+          status.copy(output.copy(currentMappings = output.currentMappings.tail,
               path = output.path.tail),
               serializer.endElement(endElem.name, output.path), false, Some(currentEvent))
         case (Some(Right(endElem)), Left(i: XmlItem)) if status.isEmpty => // it's already closed
           status.copy(prev = Some(currentEvent))
         case (Some(Right(endElem)), Left(x: Elem)) if !status.isEmpty => // unrelated elements
-          StreamStatus(output.copy(currentMappings = output.currentMappings.tail,
+          status.copy(output.copy(currentMappings = output.currentMappings.tail,
               path = output.path.tail),
               serializer.endElement(endElem.name, output.path), false, Some(currentEvent))
         case (Some(Left(x: Elem)), Right(endElem)) =>
           // must be an empty
           // x.namespaces can't be used any further
           val nc = doElement(x, output.currentMappings.head)
-          StreamStatus(output, serializer.emptyElement(x.name, x.attributes, nc.declMap, nc.addDefault, x.name :: output.path), true, Some(currentEvent)) // let us know to ignore the next end
+          status.copy(output, serializer.emptyElement(x.name, x.attributes, nc.declMap, nc.addDefault, x.name :: output.path), true, Some(currentEvent)) // let us know to ignore the next end
         case (Some(Left(x: Elem)), _) =>
           val npath = x.name :: output.path
 
           val nc = doElement(x, output.currentMappings.head)
-          StreamStatus(output.copy(currentMappings = nc.mappings +: output.currentMappings, path = npath),
+          status.copy(output.copy(currentMappings = nc.mappings +: output.currentMappings, path = npath),
             serializer.startElement(x.name, x.attributes, nc.declMap, nc.addDefault, npath), false, Some(currentEvent))
       }
     }

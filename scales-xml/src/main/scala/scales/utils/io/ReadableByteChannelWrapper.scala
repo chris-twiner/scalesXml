@@ -218,37 +218,45 @@ trait ReadableByteChannelWrapperImplicits {
 
       def apply(stepT: StepT[E, F, A], count: Int): IterateeT[E, F, A] = stepT match {
         case i if chunker.underlyingClosed || chunker.isClosed => iterateeT(F.point(i))
-        case i@Done(acc, input) => iterateeT(F.point(i))
+        case i@Done(acc, input) =>
+          iterateeT(F.point(i))
         case Cont(k) =>
-          val realChunk = chunker.nextChunk
-          val nextChunk = realChunk.asInstanceOf[E]
-          val nextI =
-            if (realChunk.isEOF)
-              // println("actual data was EOF !!!")
-              k(Eof[E])
-            else
-              if (realChunk.isEmpty)
-                k(Empty[E])
-              else
-                k(Element(nextChunk))
-
+          val realChunk = F.point(chunker.nextChunk)
           iterateeT(
-            nextI.value >>= { nextIStep =>
+            F.bind(realChunk) { realChunk =>
 
-              val res = {
-                val nc =
-                  if (realChunk.isEmpty && !isDoneS(nextIStep))
-                    count + 1
-                  else
-                    0
+//              if (realChunk != EOFData) {
+  //              println("got chunk " + new String(realChunk.array, realChunk.offset, realChunk.length))
+    //          }
 
-                if ((contOnCont != INFINITE_RETRIES) && (nc > contOnCont))
-                  //println("had cont on cont count, returning")
-                  nextI
+              val nextChunk = realChunk.asInstanceOf[E]
+              val nextI =
+                if (realChunk.isEOF)
+                  // println("actual data was EOF !!!")
+                  k(Eof[E])
                 else
-                  apply(nextIStep, nc)
+                  if (realChunk.isEmpty)
+                    k(Empty[E])
+                  else
+                    k(Element(nextChunk))
+
+              nextI.value >>= { nextIStep =>
+
+                val res = {
+                  val nc =
+                    if (realChunk.isEmpty && !isDoneS(nextIStep))
+                      count + 1
+                    else
+                      0
+
+                  if ((contOnCont != INFINITE_RETRIES) && (nc > contOnCont))
+                    //println("had cont on cont count, returning")
+                    nextI
+                  else
+                    apply(nextIStep, nc)
+                }
+                res.value
               }
-              res.value
             }
           )
       }

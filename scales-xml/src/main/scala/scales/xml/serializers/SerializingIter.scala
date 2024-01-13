@@ -103,16 +103,16 @@ trait SerializingIter {
    */
   def serializeIter[F[_]]( output : XmlOutput, serializer : Serializer, closer : () => Unit, doc : DocLike = EmptyDoc())(implicit F: Monad[F]) : SerialIterT[F] = {
 
-    var prevE: PullType = null
-    var lastR: StreamStatus = null
+    // cannot pass it on the stack as we'll get odd ordering with trampolines
+    var status: StreamStatus = StreamStatus(output)
 
-    def pump(status: StreamStatus, e: PullType, serializer: Serializer) = {
+    var prevE: PullType = null
+
+    def shouldPump(e: PullType): Option[PullType] =
       if (e ne prevE) {
         prevE = e
-        lastR = StreamSerializer.pump(e, status, serializer)
-      }
-      lastR
-    }
+        Some(e)
+      } else None
 
     var empties = 0
 
@@ -123,21 +123,39 @@ trait SerializingIter {
       F.point(Done((status.output, status.thrown), Eof[PullType]))
     }
 
-    def go( status : StreamStatus, serializer : Serializer )(s : Input[PullType]) : SerialIterT[F] =
+    def go( serializer : Serializer )(s : Input[PullType]) : SerialIterT[F] =
       iterateeT(
         s(el = e => {
           if (status.thrown.isDefined) done(status)
-          else
-            F.point(Cont(go( {
-              val r = pump(status, e, serializer)
-              println("pumping rest e "+System.identityHashCode(e) +" r " +System.identityHashCode(r))
-              r
-            }, serializer)))
-          },
+          else {
+            val r = shouldPump(e)
+            F.point(
+              r.fold(Cont(go(serializer))) { e =>
+                val nstatus =
+                  if (!status.haveSetProlog) {
+                    // decl and prolog misc, which should have been collected by now
+                    val opt = serializer.xmlDeclaration(status.output.data.encoding,
+                      status.output.data.version).orElse{
+                      serializeMisc(status.output, doc.prolog.misc, serializer)._2
+                    }
+
+                    status.copy(thrown = opt, haveSetProlog = true)
+                  } else
+                    status
+
+                val r = StreamSerializer.pump(e, nstatus, serializer)
+                status = r
+
+                //println("pumped rest e " + System.identityHashCode(e) + " r " + System.identityHashCode(r))
+                Cont(go(serializer))
+              }
+            )
+          }
+        },
           empty = {
             empties += 1
             //println("outitr empty " +System.identityHashCode(prev))
-            F.point(Cont(go(status, serializer)))
+            F.point(Cont(go(serializer)))
           },
           eof =  {
             if (status.thrown.isDefined) done(status)
@@ -168,18 +186,7 @@ trait SerializingIter {
         )
       ) */
 
-    lazy val nstatus = {
-      val status = StreamStatus(output)
-      // decl and prolog misc, which should have been collected by now
-      val opt = serializer.xmlDeclaration(status.output.data.encoding,
-        status.output.data.version).orElse{
-        serializeMisc(status.output, doc.prolog.misc, serializer)._2
-      }
-
-      status.copy(thrown = opt)
-    }
-
-    iterateeT( F.point( Cont(go(nstatus, serializer)) ) )
+    iterateeT( F.point( Cont(go(serializer)) ) )
   }
 
 

@@ -199,7 +199,7 @@ object PullUtils {
                                             prolog: Prolog,
                                             idepth: Int,
                                             strictPath: List[QName] = Nil,
-                                            ipath: List[QName]= Nil)(otherEventHandler : Int => PullType) : (PullType, Int, Int, Prolog, List[QName]) = {
+                                            ipath: List[QName]= Nil)(otherEventHandler: Either[Int, Throwable] => PullType) : (PullType, Int, Int, Prolog, List[QName]) = {
     var depth = idepth
     var vprolog = prolog
     var vpath = ipath
@@ -249,64 +249,70 @@ object PullUtils {
     }
 
     var nextEvent = XMLStreamConstants.END_DOCUMENT // use this in the case of error from calling next as well, blow it up but try to shut down
-    nextEvent = parser.next
 
-    val event: PullType = nextEvent match {
-      case XMLStreamConstants.START_ELEMENT => //1
-        depth += 1
-        if (strictPath.isEmpty)
-          strategy.elem(getElemQName(parser, strategy, token), getAttributes(parser, strategy, token), getNamespaces(parser, strategy, token), token)
-        else {
-          val elemQName = PullUtils.getElemQName(parser, strategy, token)
-          vpath = ipath :+ elemQName
-          val validSubtree = vpath.take(strictPath.size).equals(strictPath)
-          if (idepth == StartDepth || validSubtree) {
-            val attributes = PullUtils.getAttributes(parser, strategy, token)
-            val namespaces = PullUtils.getNamespaces(parser, strategy, token)
-            strategy.elem(elemQName, attributes, namespaces, token)
-          } else {
-            dropWhile()
+    val event: PullType =
+      try {
+        nextEvent = parser.next
+
+        nextEvent match {
+          case XMLStreamConstants.START_ELEMENT => //1
+            depth += 1
+            if (strictPath.isEmpty)
+              strategy.elem(getElemQName(parser, strategy, token), getAttributes(parser, strategy, token), getNamespaces(parser, strategy, token), token)
+            else {
+              val elemQName = PullUtils.getElemQName(parser, strategy, token)
+              vpath = ipath :+ elemQName
+              val validSubtree = vpath.take(strictPath.size).equals(strictPath)
+              if (idepth == StartDepth || validSubtree) {
+                val attributes = PullUtils.getAttributes(parser, strategy, token)
+                val namespaces = PullUtils.getNamespaces(parser, strategy, token)
+                strategy.elem(elemQName, attributes, namespaces, token)
+              } else {
+                dropWhile()
+              }
+            }
+          case XMLStreamConstants.END_ELEMENT => //2
+            depth -= 1
+            if (strictPath.isEmpty)
+              EndElem(getElemQName(parser, strategy, token), getNamespaces(parser, strategy, token))
+            else {
+              val elemQName = PullUtils.getElemQName(parser, strategy, token)
+              val namespaces = PullUtils.getNamespaces(parser, strategy, token)
+              vpath = ipath.take(ipath.size - 1)
+              EndElem(elemQName, namespaces)
+            }
+          case XMLStreamConstants.CHARACTERS => Text(parser.getText)
+          case XMLStreamConstants.CDATA => CData(parser.getText)
+          case XMLStreamConstants.COMMENT => Comment(parser.getText)
+          case XMLStreamConstants.PROCESSING_INSTRUCTION => PI(parser.getPITarget(), parser.getPIData())
+          case XMLStreamConstants.SPACE => Text(parser.getText) // jdk impl never calls but to be safe we should grab it
+          case XMLStreamConstants.START_DOCUMENT => {
+            // get the encoding etc
+            // NB the asynch variety can also call this, if no more events are available then it returns the waiting object.
+            val ec = parser.getCharacterEncodingScheme()
+
+            vprolog = vprolog.copy(decl = Declaration(
+              version = if (parser.getVersion() == "1.1")
+                Xml11 else Xml10,
+              encoding = if (ec eq null) defaultCharset else java.nio.charset.Charset.forName(ec), // TODO what do we do about unsupported, throwing is probably fine, but it irritates, if we can get here the parser at least supports it, even if we can't write to it
+              standalone = parser.isStandalone()))
+
+            val (nev, nex, nde, vvp, _) = pumpEvent(parser, strategy, token, vprolog, depth)(otherEventHandler) // we don't want to handle this
+
+            // reset to keep the correct values
+            nextEvent = nex
+            depth = nde
+            vprolog = vvp
+            nev
           }
+          case XMLStreamConstants.DTD => dtdDummy // push it through in start
+
+          // we don't really want to handle other types?
+          case _ => otherEventHandler(Left(nextEvent))
         }
-      case XMLStreamConstants.END_ELEMENT => //2
-        depth -= 1
-        if (strictPath.isEmpty)
-          EndElem(getElemQName(parser, strategy, token), getNamespaces(parser, strategy, token))
-        else {
-          val elemQName = PullUtils.getElemQName(parser, strategy, token)
-          val namespaces = PullUtils.getNamespaces(parser, strategy, token)
-          vpath = ipath.take(ipath.size - 1)
-          EndElem(elemQName, namespaces)
-        }
-      case XMLStreamConstants.CHARACTERS => Text(parser.getText)
-      case XMLStreamConstants.CDATA => CData(parser.getText)
-      case XMLStreamConstants.COMMENT => Comment(parser.getText)
-      case XMLStreamConstants.PROCESSING_INSTRUCTION => PI(parser.getPITarget(), parser.getPIData())
-      case XMLStreamConstants.SPACE => Text(parser.getText) // jdk impl never calls but to be safe we should grab it
-      case XMLStreamConstants.START_DOCUMENT => {
-        // get the encoding etc
-	// NB the asynch variety can also call this, if no more events are available then it returns the waiting object.
-        val ec = parser.getCharacterEncodingScheme()
-
-        vprolog = vprolog.copy(decl = Declaration(
-          version = if (parser.getVersion() == "1.1")
-            Xml11 else Xml10,
-          encoding = if (ec eq null) defaultCharset else java.nio.charset.Charset.forName(ec), // TODO what do we do about unsupported, throwing is probably fine, but it irritates, if we can get here the parser at least supports it, even if we can't write to it
-          standalone = parser.isStandalone()))
-
-        val (nev, nex, nde, vvp, _) = pumpEvent(parser, strategy, token, vprolog, depth)(otherEventHandler) // we don't want to handle this
-
-	// reset to keep the correct values
-	nextEvent = nex
-	depth = nde
-	vprolog = vvp
-	nev
+      } catch {
+        case t: Throwable => otherEventHandler(Right(t))
       }
-      case XMLStreamConstants.DTD => dtdDummy // push it through in start
-
-      // we don't really want to handle other types?
-      case _ => otherEventHandler(nextEvent)
-    }
     (event, nextEvent, depth, vprolog, vpath)
   }
 

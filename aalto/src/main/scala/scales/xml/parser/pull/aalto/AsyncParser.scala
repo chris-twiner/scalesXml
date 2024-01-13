@@ -82,11 +82,19 @@ abstract class AsyncParser(implicit xmlVersion : XmlVersion) extends CloseOnNeed
   
   protected val incompOrEnd : PullType = Left(Text("I am incomplete or doc end"))
 
-  protected val eventHandler = (x : Int) => {
-    if (x == EVENT_INCOMPLETE || x == END_DOCUMENT)
-      incompOrEnd
-    else
-      error("Got an unexpected event type " + x +" cannot proceed.") 
+  protected val eventHandler = (x : Either[Int, Throwable]) => x match {
+    case Left(x) =>
+      if (x == EVENT_INCOMPLETE || x == END_DOCUMENT)
+        incompOrEnd
+      else
+        error("Got an unexpected event type " + x +" cannot proceed.")
+    case Right(t) =>
+      // in the case that the prolog isn't actually parsed we don't get EVENT_INCOMPLETE but instead
+      // com.fasterxml.aalto.WFCException: Unexpected keyword 've' in XML declaration: expected 'version'
+      if (t.getStackTrace.exists(_.getMethodName.contains("handleXmlDecleration")))
+        incompOrEnd
+      else
+        throw t
   }
 
   /**
@@ -117,14 +125,14 @@ abstract class AsyncParser(implicit xmlVersion : XmlVersion) extends CloseOnNeed
       //println("didn't get out of misc , none??")
       
       if (event.isLeft && (event.left.get eq PullUtils.dtdDummy)) {
-	copyProlog( prolog.copy(dtd = Some(
-	  DTD("", "", "") // DTD has funnyness TODO find out what it looks like
-        )))
-      } else {
-	if (!started)
-	  addPrologMisc(event)
-	else
-	  addEndMisc(event)	      
+        copyProlog( prolog.copy(dtd = Some(
+          DTD("", "", "") // DTD has funnyness TODO find out what it looks like
+              )))
+            } else {
+        if (!started)
+          addPrologMisc(event)
+        else
+          addEndMisc(event)
       }
 
       Input.Empty[PullType]//None
@@ -184,18 +192,18 @@ abstract class AsyncParser(implicit xmlVersion : XmlVersion) extends CloseOnNeed
 	// push one more off
       val pumped = pump
       pumped(
-	el = e => {
-//	  println("got some "+e)
-	  EphemeralStream.cons[PullType](e, nextStream())
-	},
-	empty = {
-//	  println("pumped all we have")
-	  emptyEphemeralStream
-	},
-	eof = {
-//	  println("eof from pump but returned empty")
-	  emptyEphemeralStream // next run will pick it up
-	}
+        el = e => {
+      //	  println("got some "+e)
+          EphemeralStream.cons[PullType](e, nextStream())
+        },
+        empty = {
+      //	  println("pumped all we have")
+          emptyEphemeralStream
+        },
+        eof = {
+      //	  println("eof from pump but returned empty")
+          emptyEphemeralStream // next run will pick it up
+        }
       ) // 
     }
   }
@@ -258,6 +266,15 @@ object AsyncParser {
    */
   def parse[F[_]: Monad](parser: AsyncParser): ResumableIter[DataChunk, F, EphemeralStream[PullType]] = {
 
+    var lastInput: DataChunk = null
+    // should we pump?
+    def nextInput(e: DataChunk): Option[DataChunk] =
+      if (lastInput ne e) {
+        lastInput = e
+        Some(e)
+      } else None
+
+
     def EOF: ResumableStep[DataChunk, F, EphemeralStream[PullType]] = {
       parser.closeResource
 
@@ -271,23 +288,27 @@ object AsyncParser {
     def step(s: Input[DataChunk]): ResumableIter[DataChunk, F, EphemeralStream[PullType]] =
       iterateeT(Monad[F].point(
         s(el = e => {
-            //println("Did get a large chunk "+new String(e.array, e.offset, e.length, "UTF-8"))
-            val r = parser.nextInput(e)
-            r( el = es => {
-             // println("got " + es.toList)
-            //println("got el with es " + es.isEmpty + " feeder " + parser.feeder.needMoreInput)
+            val toPump = nextInput(e)
+            toPump.fold(Cont(step)) { e =>
+              val r = parser.nextInput(e)
+              //println("Did get a large chunk " + new String(e.array, e.offset, e.length, "UTF-8") + " e " + System.identityHashCode(e) + " r " + System.identityHashCode(r))
+
+              r(el = es => {
+                // println("got " + es.toList)
+                //println("got el with es " + es.isEmpty + " feeder " + parser.feeder.needMoreInput)
                 Done((es,
                   iterateeT(Monad[F].point(Cont(
                     step
-                    )))), Input.Empty[DataChunk])
-                },
+                  )))), Input.Empty[DataChunk])
+              },
                 empty =
-                  //println("empty from input")
-                  //emptyness
+                //println("empty from input")
+                //emptyness
                   Cont(step)
                 ,
                 eof = EOF
-            )
+              )
+            }
           },
           empty = {
             //println("empty input")

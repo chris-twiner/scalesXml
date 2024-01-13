@@ -44,7 +44,16 @@ final case class FullChunk( array: Array[Byte] ) extends DataChunk {
 }
 
 /**
- * A section of a Byte array
+ * A section of a Byte array.  Due to Trampolining this cannot be re-used, as such a copy is made.  TODO Perhaps this should be optional
  */ 
-final case class Chunk( array: Array[Byte], offset: Int, length: Int) extends DataChunk
+//final case class Chunk( array: Array[Byte], offset: Int, length: Int) extends DataChunk
+
+object Chunk{
+  def apply( array: Array[Byte], offset: Int, length: Int): DataChunk =
+    FullChunk{
+      val c = Array.ofDim[Byte](length)
+      Array.copy(array, offset, c, 0, length)
+      c
+    }
+}
 

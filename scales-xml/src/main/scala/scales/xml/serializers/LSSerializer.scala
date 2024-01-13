@@ -207,20 +207,20 @@ trait XHTMLLSSerializer extends LSSerializer {
     doElem(qName, attributes, namespaces, declareDefaultNS) orElse {
       // #6 
       val canBeEmpty = 
-	if (qName.namespace.uri == LSSerializerFactoryXHTML.xhtmlNS)
-	  if (LSSerializerFactoryXHTML.canBeEmpty(qName.local))
-	    true
-	  else
-	    false // all others must be <></>
-	else
-	  true
+        if (qName.namespace.uri == LSSerializerFactoryXHTML.xhtmlNS)
+          if (LSSerializerFactoryXHTML.canBeEmpty(qName.local))
+            true
+          else
+            false // all others must be <></>
+        else
+          true
       
       if (canBeEmpty) {
-	out.append(" />")
-	None
+        out.append(" />")
+        None
       } else {
-	out.append(">")
-	endElement(qName, path)
+        out.append(">")
+        endElement(qName, path)
       }
     }
 }
@@ -370,7 +370,7 @@ trait LSSerializer extends Serializer {
         r orElse {
           // check the prefix is valid
           if (QNameCharUtils.validXmlPrefix(x._1)(version) &&
-	    QNameCharUtils.validXmlNamespace(x._2)(version)) {
+            QNameCharUtils.validXmlNamespace(x._2)(version)) {
             out.append(" xmlns:")
             encMap(x._1) orElse
               writeAttr(x._1 + "=\"", x._2, "\"")
@@ -385,7 +385,7 @@ trait LSSerializer extends Serializer {
 
       attribs.foldLeft(None: Option[Throwable]) { (r, x) =>
         r orElse {
-	  val name = x.name
+          val name = x.name
           // is the name valid
           if (name.qNameVersion == Xml11 && version == Xml10)
             Some(IncompatibleQNameVersions("Attr:"+name.qName))

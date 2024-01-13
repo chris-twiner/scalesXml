@@ -5,7 +5,7 @@ import scalaz.Id.Id
 import scalaz.effect.IO
 import scalaz.{Applicative, Bind, EphemeralStream, Free, Monad}
 import scalaz.iteratee.Input.{Element, Empty, Eof}
-import scalaz.iteratee.Iteratee.{cont, done, elInput, empty, foldM, iterateeT, repeat}
+import scalaz.iteratee.Iteratee.{cont, done, elInput, empty, enumEofT, foldM, iterateeT, repeat}
 import scalaz.iteratee.StepT.{Cont, Done}
 import scalaz.iteratee.{EnumeratorT, Input, IterateeT, StepT}
 import scalaz.syntax.{BindOps, ToBifoldableOps, ToBindOps}
@@ -76,10 +76,27 @@ trait Eval[WHAT, F[_],RETURN] {
 
   val orig : IterateeT[WHAT, F, RETURN]
 
+  /**
+   * Enumerates over Empty, evaluates fully until the iteratee returns Done with a value (Sending Eof)
+   * @param F
+   * @return
+   */
   def eval(implicit F: Monad[F]) : IterateeT[WHAT, F, RETURN] =
     iterateeT(
       F.bind((orig &= empty[WHAT,F]).value)((s: StepT[WHAT, F, RETURN]) => s.fold(
         cont = k => k(Eof[WHAT]).value
+        , done = (a, i) => F.point(Done(a, i))
+      )))
+
+  /**
+   * Enumerates over Empty, Evaluates partially accepting a lack of progress (Sending Empty).
+   * @param F
+   * @return
+   */
+  def evalAcceptEmpty(implicit F: Monad[F]) : IterateeT[WHAT, F, RETURN] =
+    iterateeT(
+      F.bind((orig &= empty[WHAT,F]).value)((s: StepT[WHAT, F, RETURN]) => s.fold(
+        cont = k => k(Empty[WHAT]).value
         , done = (a, i) => F.point(Done(a, i))
       )))
 }

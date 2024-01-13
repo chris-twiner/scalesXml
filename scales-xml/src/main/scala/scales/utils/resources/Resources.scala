@@ -52,9 +52,9 @@ trait CloseOnNeed extends IsClosed {
      
     override def closeResource = 
       if (!closed) {
-	closed = true;
-	parent.closeResource
-	close2.closeResource
+        closed = true;
+        parent.closeResource
+        close2.closeResource
       } else ()
 
     // flip it back to stop from endlessly repeating ourselves

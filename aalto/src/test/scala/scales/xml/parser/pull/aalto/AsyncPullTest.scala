@@ -51,28 +51,6 @@ class AsyncPullTest extends junit.framework.TestCase {
   import resources._
 
   /**
-   * returns the cont and drops the input parameter or returns Done
-   */
-  trait EvalW[WHAT, F[_], RETURN] {
-
-    val orig : IterateeT[WHAT, F, RETURN]
-
-    def evalw(implicit F: Monad[F]) : IterateeT[WHAT, F, RETURN] =
-      iterateeT(
-       F.bind((orig &= empty[WHAT, F]).value)((s: StepT[WHAT, F, RETURN]) => s.fold(
-         cont = k => {
-           orig.value
-         }
-         , done = (a, i) => F.point(Done(a, i))
-       )))
-
-  }
-
-  implicit def toEvalw[WHAT, F[_], RETURN]( i : IterateeT[WHAT, F, RETURN] ) = new EvalW[WHAT, F, RETURN] {
-    lazy val orig = i
-  }
-
-  /**
    * ensure that the enumerator doesn't break basic assumptions when it can get
    * all the data
    */
@@ -300,13 +278,14 @@ class AsyncPullTest extends junit.framework.TestCase {
   def testRandomAmounts = {
     val url = sresource(this, "/data/BaseXmlTest.xml")
 
-    import trampolineIteratees._
-    // trampoline doesn't work as the continuations are called multiple times and the output handling is not safe
+    import ioIteratees._
+    // Trampoline doesn't work as the continuations are called multiple times and the output handling is not safe
     // The other calls just use run which only evaluates once, but the act of trying to suspend it causes failure on
     // re-evaluation.  So for most use cases this is fine, but if there is an expectation to allow reaction of
     // pauses in the async feed (why else would you be using aalto) then we have fail town.
-    // SerializingIter (pushXmlIter) does not expect restarts, the re-feeding of prolog or other attributes triggers
-    // the status to be corrupted.
+    // SerializingIter (pushXmlIter) does not expect/cannot handle restarts, the re-feeding of prolog or other attributes triggers
+    // the status to be corrupted.  Moreover the order of events fed into pushXmlIter are incorrect and randomly so
+    // IO seems different and fails more quickly in the decl section.
 
     val doc = loadXmlReader(url, parsers = NoVersionXmlReaderFactoryPool)
     val str = asString(doc)
@@ -329,9 +308,8 @@ class AsyncPullTest extends junit.framework.TestCase {
      */
     val readableByteChannelEnumerator = new AsyncDataChunkerEnumerator[DataChunk, TheF](wrapped, 6 )
 
-    val cstable = (enumeratee &= readableByteChannelEnumerator).evalw
+    val cstable = (enumeratee &= readableByteChannelEnumerator).evalAcceptEmpty
 
-    var done = false
     var c = cstable
 
     import scales.utils.iteratee.monadHelpers._
@@ -346,26 +324,37 @@ class AsyncPullTest extends junit.framework.TestCase {
     } while (!done) */
 
     val itr =
-      isDone(cstable).flatMap {
-        done =>
-          repeatUntilM((cstable, done, 0)) {
-            triple =>
-              val (c, stop, count) = triple
-              F.bind(c.value) { _ =>
-                if (!stop) {
-                  val newc = (c &= dataChunkerEnumerator(wrapped)).evalw
-                  c.value.flatMap { _ =>
-                    newc.value.map {
-                      step =>
-
-                        (newc, isDoneS(step), count + 1)
-                    }
-                  }
-                } else
-                  F.point(triple)
+      repeatUntilM((cstable, false, 0)) {
+        triple =>
+          val (c, stop, count) = triple
+          if (!stop) {
+            F.bind(c.value) { cstep =>
+              if (isDoneS(cstep)) {
+                val cont = extractContS(cstep)
+                val newc = (cont &= dataChunkerEnumerator(wrapped)).evalAcceptEmpty
+                newc.value.map { step =>
+                  (newc, isEOFS(step), count)
+                }
+              } else
+                F.point(triple.copy(_3 = count + 1))
+              /*
+            if (!stop || !isEOFS(cstep)) {
+              val newc = (c &= dataChunkerEnumerator(wrapped)).evalAcceptEmpty
+              newc.value.map { step =>
+                if (!isDoneS(step)) {
+                  (newc, false, count + 1)
+                } else {
+                  val cont = extractContS(step)
+                  (cont, false, count + 1)
+                }
               }
-          }(_._2)
-      }
+            } else
+              F.point(triple)*/
+            }
+          } else
+            F.point(triple)
+      }(_._2)
+
 
     val p =
       for {
