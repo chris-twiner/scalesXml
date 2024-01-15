@@ -440,6 +440,8 @@ on both the qname matching (3 of them) and then the above combos
     // we won't get past iterator...
     val ourMax = maxIterations / 10 // full takes too long but does work in constant space
 
+    import scalaz.Scalaz._
+
     type TheF[X] = Trampoline[X]
 
     var at = -1
@@ -448,7 +450,9 @@ on both the qname matching (3 of them) and then the above combos
 
       var iter = eevents(ourMax)
       //var iter = WeakStream.iterTo(EphemeralStream.toIterable(eevents(ourMax)).iterator)
-      val func = (e: EphemeralStream[PullType]) => {iter = e}
+      val func = (e: EphemeralStream[PullType]) => {
+        iter = e
+      }
 
       def enum(e: EphemeralStream[PullType]) = enumEphemeralStreamF[PullType, TheF](func)(e)
 
@@ -530,7 +534,7 @@ on both the qname matching (3 of them) and then the above combos
               }
             ){ n1 =>
               val n2 = (extractCont(n1) &= enum(iter)).eval
-              Monad[TheF].map(n1.value){
+              Monad[TheF].map(n2.value){
                 _ =>
                   isDone(i + 1, n2)
                   at += 1
@@ -552,7 +556,7 @@ on both the qname matching (3 of them) and then the above combos
           )
         }
 
-      p run
+      p runIt
     } catch {
       case e : StackOverflowError => println("got to " + at)
     }

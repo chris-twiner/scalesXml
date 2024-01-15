@@ -8,7 +8,7 @@ import scalaz.iteratee.StepT.Done
 import scalaz._
 import Scalaz._
 import junit.framework.Assert.assertTrue
-import scales.utils.iteratee.functions.referenceDedup
+//import scales.utils.iteratee.functions.referenceDedup
 import scales.utils.trampolineIteratees._
 
 class AsyncPullTest extends junit.framework.TestCase {
