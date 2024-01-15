@@ -277,7 +277,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">StreamStatus</span><span class="params">(<span name="output">output: <a href="XmlOutput.html" class="extype" name="scales.xml.serializers.XmlOutput">XmlOutput</a></span>, <span name="thrown">thrown: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Throwable">Throwable</span>] = <span class="symbol">None</span></span>, <span name="isEmpty">isEmpty: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">StreamStatus</span><span class="params">(<span name="output">output: <a href="XmlOutput.html" class="extype" name="scales.xml.serializers.XmlOutput">XmlOutput</a></span>, <span name="thrown">thrown: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Throwable">Throwable</span>] = <span class="symbol">None</span></span>, <span name="isEmpty">isEmpty: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>, <span name="prev">prev: <span class="extype" name="scala.Option">Option</span>[<a href="../index.html#PullType=Either[scales.xml.XmlEvent,scales.xml.EndElem]" class="extmbr" name="scales.xml.PullType">xml.PullType</a>] = <span class="symbol">None</span></span>, <span name="haveSetProlog">haveSetProlog: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
 
@@ -344,9 +344,9 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="scales.xml.serializers.StreamStatus#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(output:scales.xml.serializers.XmlOutput,thrown:Option[Throwable],isEmpty:Boolean):scales.xml.serializers.StreamStatus"></a><a id="&lt;init&gt;:StreamStatus"></a>
+      <a id="&lt;init&gt;(output:scales.xml.serializers.XmlOutput,thrown:Option[Throwable],isEmpty:Boolean,prev:Option[scales.xml.PullType],haveSetProlog:Boolean):scales.xml.serializers.StreamStatus"></a><a id="&lt;init&gt;:StreamStatus"></a>
       <span class="permalink">
-      <a href="../../../scales/xml/serializers/StreamStatus.html#&lt;init&gt;(output:scales.xml.serializers.XmlOutput,thrown:Option[Throwable],isEmpty:Boolean):scales.xml.serializers.StreamStatus" title="Permalink">
+      <a href="../../../scales/xml/serializers/StreamStatus.html#&lt;init&gt;(output:scales.xml.serializers.XmlOutput,thrown:Option[Throwable],isEmpty:Boolean,prev:Option[scales.xml.PullType],haveSetProlog:Boolean):scales.xml.serializers.StreamStatus" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -355,7 +355,7 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">StreamStatus</span><span class="params">(<span name="output">output: <a href="XmlOutput.html" class="extype" name="scales.xml.serializers.XmlOutput">XmlOutput</a></span>, <span name="thrown">thrown: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Throwable">Throwable</span>] = <span class="symbol">None</span></span>, <span name="isEmpty">isEmpty: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span>
+        <span class="name">StreamStatus</span><span class="params">(<span name="output">output: <a href="XmlOutput.html" class="extype" name="scales.xml.serializers.XmlOutput">XmlOutput</a></span>, <span name="thrown">thrown: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Throwable">Throwable</span>] = <span class="symbol">None</span></span>, <span name="isEmpty">isEmpty: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>, <span name="prev">prev: <span class="extype" name="scala.Option">Option</span>[<a href="../index.html#PullType=Either[scales.xml.XmlEvent,scales.xml.EndElem]" class="extmbr" name="scales.xml.PullType">xml.PullType</a>] = <span class="symbol">None</span></span>, <span name="haveSetProlog">haveSetProlog: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span>
       </span>
       
       
@@ -514,6 +514,22 @@
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li name="scales.xml.serializers.StreamStatus#haveSetProlog" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="haveSetProlog:Boolean"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/serializers/StreamStatus.html#haveSetProlog:Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">haveSetProlog</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      
     </li><li name="scales.xml.serializers.StreamStatus#isEmpty" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="isEmpty:Boolean"></a>
       <span class="permalink">
@@ -613,6 +629,22 @@
       </span>
       <span class="symbol">
         <span class="name">output</span><span class="result">: <a href="XmlOutput.html" class="extype" name="scales.xml.serializers.XmlOutput">XmlOutput</a></span>
+      </span>
+      
+      
+    </li><li name="scales.xml.serializers.StreamStatus#prev" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="prev:Option[scales.xml.PullType]"></a><a id="prev:Option[xml.PullType]"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/serializers/StreamStatus.html#prev:Option[scales.xml.PullType]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">prev</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="../index.html#PullType=Either[scales.xml.XmlEvent,scales.xml.EndElem]" class="extmbr" name="scales.xml.PullType">xml.PullType</a>]</span>
       </span>
       
       

@@ -346,9 +346,9 @@
         <div id="types" class="types members">
               <h3>Type Members</h3>
               <ol><li name="scales.xml.serializers.SerializingIter.SerialIterT" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="SerialIterT=scalaz.iteratee.Iteratee[scales.xml.PullType,(scales.xml.serializers.XmlOutput,Option[Throwable])]"></a><a id="SerialIterT:SerialIterT"></a>
+      <a id="SerialIterT[F[_]]=scalaz.iteratee.IterateeT[scales.xml.PullType,F,(scales.xml.serializers.XmlOutput,Option[Throwable])]"></a><a id="SerialIterT[F[_]]:SerialIterT[F]"></a>
       <span class="permalink">
-      <a href="../../../scales/xml/serializers/SerializingIter.html#SerialIterT=scalaz.iteratee.Iteratee[scales.xml.PullType,(scales.xml.serializers.XmlOutput,Option[Throwable])]" title="Permalink">
+      <a href="../../../scales/xml/serializers/SerializingIter.html#SerialIterT[F[_]]=scalaz.iteratee.IterateeT[scales.xml.PullType,F,(scales.xml.serializers.XmlOutput,Option[Throwable])]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -357,14 +357,14 @@
         <span class="kind">type</span>
       </span>
       <span class="symbol">
-        <span class="name">SerialIterT</span><span class="result alias"> = <span class="extype" name="scalaz.iteratee.IterateeT">IterateeT</span>[<a href="../index.html#PullType=Either[scales.xml.XmlEvent,scales.xml.EndElem]" class="extmbr" name="scales.xml.PullType">xml.PullType</a>, <span class="extype" name="scalaz.IdInstances.Id">scalaz.Id.Id</span>, (<a href="XmlOutput.html" class="extype" name="scales.xml.serializers.XmlOutput">XmlOutput</a>, <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Throwable">Throwable</span>])]</span>
+        <span class="name">SerialIterT</span><span class="tparams">[<span name="F">F<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="result alias"> = <span class="extype" name="scalaz.iteratee.IterateeT">IterateeT</span>[<a href="../index.html#PullType=Either[scales.xml.XmlEvent,scales.xml.EndElem]" class="extmbr" name="scales.xml.PullType">xml.PullType</a>, <span class="extype" name="scales.xml.serializers.SerializingIter.SerialIterT.F">F</span>, (<a href="XmlOutput.html" class="extype" name="scales.xml.serializers.XmlOutput">XmlOutput</a>, <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Throwable">Throwable</span>])]</span>
       </span>
       
       
     </li><li name="scales.xml.serializers.SerializingIter.SerialStepT" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="SerialStepT=scalaz.iteratee.StepT[scales.xml.PullType,scalaz.Id.Id,(scales.xml.serializers.XmlOutput,Option[Throwable])]"></a><a id="SerialStepT:SerialStepT"></a>
+      <a id="SerialStepT[F[_]]=scalaz.iteratee.StepT[scales.xml.PullType,F,(scales.xml.serializers.XmlOutput,Option[Throwable])]"></a><a id="SerialStepT[F[_]]:SerialStepT[F]"></a>
       <span class="permalink">
-      <a href="../../../scales/xml/serializers/SerializingIter.html#SerialStepT=scalaz.iteratee.StepT[scales.xml.PullType,scalaz.Id.Id,(scales.xml.serializers.XmlOutput,Option[Throwable])]" title="Permalink">
+      <a href="../../../scales/xml/serializers/SerializingIter.html#SerialStepT[F[_]]=scalaz.iteratee.StepT[scales.xml.PullType,F,(scales.xml.serializers.XmlOutput,Option[Throwable])]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -373,7 +373,7 @@
         <span class="kind">type</span>
       </span>
       <span class="symbol">
-        <span class="name">SerialStepT</span><span class="result alias"> = <span class="extype" name="scalaz.iteratee.StepT">StepT</span>[<a href="../index.html#PullType=Either[scales.xml.XmlEvent,scales.xml.EndElem]" class="extmbr" name="scales.xml.PullType">xml.PullType</a>, <span class="extype" name="scalaz.IdInstances.Id">scalaz.Id.Id</span>, (<a href="XmlOutput.html" class="extype" name="scales.xml.serializers.XmlOutput">XmlOutput</a>, <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Throwable">Throwable</span>])]</span>
+        <span class="name">SerialStepT</span><span class="tparams">[<span name="F">F<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="result alias"> = <span class="extype" name="scalaz.iteratee.StepT">StepT</span>[<a href="../index.html#PullType=Either[scales.xml.XmlEvent,scales.xml.EndElem]" class="extmbr" name="scales.xml.PullType">xml.PullType</a>, <span class="extype" name="scales.xml.serializers.SerializingIter.SerialStepT.F">F</span>, (<a href="XmlOutput.html" class="extype" name="scales.xml.serializers.XmlOutput">XmlOutput</a>, <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Throwable">Throwable</span>])]</span>
       </span>
       
       
@@ -636,9 +636,9 @@
               
         </dd></dl></div>
     </li><li name="scales.xml.serializers.SerializingIter#pushXmlIter" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="pushXmlIter(out:java.io.Writer,doc:scales.xml.DocLike,version:Option[scales.xml.XmlVersion],encoding:Option[java.nio.charset.Charset])(implicitserializerFI:scales.xml.serializers.SerializerFactory):(scales.utils.resources.CloseOnNeed,SerializingIter.this.SerialIterT)"></a><a id="pushXmlIter(Writer,DocLike,Option[XmlVersion],Option[Charset])(SerializerFactory):(CloseOnNeed,SerialIterT)"></a>
+      <a id="pushXmlIter[F[_]](out:java.io.Writer,doc:scales.xml.DocLike,version:Option[scales.xml.XmlVersion],encoding:Option[java.nio.charset.Charset])(implicitserializerFI:scales.xml.serializers.SerializerFactory,implicitF:scalaz.Monad[F]):(scales.utils.resources.CloseOnNeed,SerializingIter.this.SerialIterT[F])"></a><a id="pushXmlIter[F[_]](Writer,DocLike,Option[XmlVersion],Option[Charset])(SerializerFactory,Monad[F]):(CloseOnNeed,SerialIterT[F])"></a>
       <span class="permalink">
-      <a href="../../../scales/xml/serializers/SerializingIter.html#pushXmlIter(out:java.io.Writer,doc:scales.xml.DocLike,version:Option[scales.xml.XmlVersion],encoding:Option[java.nio.charset.Charset])(implicitserializerFI:scales.xml.serializers.SerializerFactory):(scales.utils.resources.CloseOnNeed,SerializingIter.this.SerialIterT)" title="Permalink">
+      <a href="../../../scales/xml/serializers/SerializingIter.html#pushXmlIter[F[_]](out:java.io.Writer,doc:scales.xml.DocLike,version:Option[scales.xml.XmlVersion],encoding:Option[java.nio.charset.Charset])(implicitserializerFI:scales.xml.serializers.SerializerFactory,implicitF:scalaz.Monad[F]):(scales.utils.resources.CloseOnNeed,SerializingIter.this.SerialIterT[F])" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -647,15 +647,15 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">pushXmlIter</span><span class="params">(<span name="out">out: <span class="extype" name="java.io.Writer">Writer</span></span>, <span name="doc">doc: <a href="../DocLike.html" class="extype" name="scales.xml.DocLike">DocLike</a> = <span class="symbol"><span class="name"><a href="../../index.html">EmptyDoc()</a></span></span></span>, <span name="version">version: <span class="extype" name="scala.Option">Option</span>[<a href="../XmlVersion.html" class="extype" name="scales.xml.XmlVersion">XmlVersion</a>] = <span class="symbol">None</span></span>, <span name="encoding">encoding: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="java.nio.charset.Charset">Charset</span>] = <span class="symbol">None</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="serializerFI">serializerFI: <a href="SerializerFactory.html" class="extype" name="scales.xml.serializers.SerializerFactory">SerializerFactory</a></span>)</span><span class="result">: (<a href="../../utils/resources/CloseOnNeed.html" class="extype" name="scales.utils.resources.CloseOnNeed">CloseOnNeed</a>, <a href="#SerialIterT=scalaz.iteratee.Iteratee[scales.xml.PullType,(scales.xml.serializers.XmlOutput,Option[Throwable])]" class="extmbr" name="scales.xml.serializers.SerializingIter.SerialIterT">SerialIterT</a>)</span>
+        <span class="name">pushXmlIter</span><span class="tparams">[<span name="F">F<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="params">(<span name="out">out: <span class="extype" name="java.io.Writer">Writer</span></span>, <span name="doc">doc: <a href="../DocLike.html" class="extype" name="scales.xml.DocLike">DocLike</a> = <span class="symbol"><span class="name"><a href="../../index.html">EmptyDoc()</a></span></span></span>, <span name="version">version: <span class="extype" name="scala.Option">Option</span>[<a href="../XmlVersion.html" class="extype" name="scales.xml.XmlVersion">XmlVersion</a>] = <span class="symbol">None</span></span>, <span name="encoding">encoding: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="java.nio.charset.Charset">Charset</span>] = <span class="symbol">None</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="serializerFI">serializerFI: <a href="SerializerFactory.html" class="extype" name="scales.xml.serializers.SerializerFactory">SerializerFactory</a></span>, <span name="F">F: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scales.xml.serializers.SerializingIter.pushXmlIter.F">F</span>]</span>)</span><span class="result">: (<a href="../../utils/resources/CloseOnNeed.html" class="extype" name="scales.utils.resources.CloseOnNeed">CloseOnNeed</a>, <a href="#SerialIterT[F[_]]=scalaz.iteratee.IterateeT[scales.xml.PullType,F,(scales.xml.serializers.XmlOutput,Option[Throwable])]" class="extmbr" name="scales.xml.serializers.SerializingIter.SerialIterT">SerialIterT</a>[<span class="extype" name="scales.xml.serializers.SerializingIter.pushXmlIter.F">F</span>])</span>
       </span>
       
       <p class="shortcomment cmt">Returns an Iteratee that can serialize PullTypes to out.</p><div class="fullcomment"><div class="comment cmt"><p>Returns an Iteratee that can serialize PullTypes to out.  The serializer factory management is automatically handled upon calling with eof.  This can be triggered earlier by calling closeResource on the returned CloseOnNeed.
 </p></div></div>
     </li><li name="scales.xml.serializers.SerializingIter#serializeIter" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="serializeIter(output:scales.xml.serializers.XmlOutput,serializer:scales.xml.serializers.Serializer,closer:()=&gt;Unit,doc:scales.xml.DocLike):SerializingIter.this.SerialIterT"></a><a id="serializeIter(XmlOutput,Serializer,()⇒Unit,DocLike):SerialIterT"></a>
+      <a id="serializeIter[F[_]](output:scales.xml.serializers.XmlOutput,serializer:scales.xml.serializers.Serializer,closer:()=&gt;Unit,doc:scales.xml.DocLike)(implicitF:scalaz.Monad[F]):SerializingIter.this.SerialIterT[F]"></a><a id="serializeIter[F[_]](XmlOutput,Serializer,()⇒Unit,DocLike)(Monad[F]):SerialIterT[F]"></a>
       <span class="permalink">
-      <a href="../../../scales/xml/serializers/SerializingIter.html#serializeIter(output:scales.xml.serializers.XmlOutput,serializer:scales.xml.serializers.Serializer,closer:()=&gt;Unit,doc:scales.xml.DocLike):SerializingIter.this.SerialIterT" title="Permalink">
+      <a href="../../../scales/xml/serializers/SerializingIter.html#serializeIter[F[_]](output:scales.xml.serializers.XmlOutput,serializer:scales.xml.serializers.Serializer,closer:()=&gt;Unit,doc:scales.xml.DocLike)(implicitF:scalaz.Monad[F]):SerializingIter.this.SerialIterT[F]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -664,7 +664,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">serializeIter</span><span class="params">(<span name="output">output: <a href="XmlOutput.html" class="extype" name="scales.xml.serializers.XmlOutput">XmlOutput</a></span>, <span name="serializer">serializer: <a href="Serializer.html" class="extype" name="scales.xml.serializers.Serializer">Serializer</a></span>, <span name="closer">closer: () ⇒ <span class="extype" name="scala.Unit">Unit</span></span>, <span name="doc">doc: <a href="../DocLike.html" class="extype" name="scales.xml.DocLike">DocLike</a> = <span class="symbol"><span class="name"><a href="../../index.html">EmptyDoc()</a></span></span></span>)</span><span class="result">: <a href="#SerialIterT=scalaz.iteratee.Iteratee[scales.xml.PullType,(scales.xml.serializers.XmlOutput,Option[Throwable])]" class="extmbr" name="scales.xml.serializers.SerializingIter.SerialIterT">SerialIterT</a></span>
+        <span class="name">serializeIter</span><span class="tparams">[<span name="F">F<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="params">(<span name="output">output: <a href="XmlOutput.html" class="extype" name="scales.xml.serializers.XmlOutput">XmlOutput</a></span>, <span name="serializer">serializer: <a href="Serializer.html" class="extype" name="scales.xml.serializers.Serializer">Serializer</a></span>, <span name="closer">closer: () ⇒ <span class="extype" name="scala.Unit">Unit</span></span>, <span name="doc">doc: <a href="../DocLike.html" class="extype" name="scales.xml.DocLike">DocLike</a> = <span class="symbol"><span class="name"><a href="../../index.html">EmptyDoc()</a></span></span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="F">F: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scales.xml.serializers.SerializingIter.serializeIter.F">F</span>]</span>)</span><span class="result">: <a href="#SerialIterT[F[_]]=scalaz.iteratee.IterateeT[scales.xml.PullType,F,(scales.xml.serializers.XmlOutput,Option[Throwable])]" class="extmbr" name="scales.xml.serializers.SerializingIter.SerialIterT">SerialIterT</a>[<span class="extype" name="scales.xml.serializers.SerializingIter.serializeIter.F">F</span>]</span>
       </span>
       
       <p class="shortcomment cmt">The serializer will be returned automatically to the pool by calling closer</p><div class="fullcomment"><div class="comment cmt"><p>The serializer will be returned automatically to the pool by calling closer</p><p>doc functions are only evaluated upon the first elem / last elem

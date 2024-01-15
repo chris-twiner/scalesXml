@@ -526,6 +526,35 @@
 <a class="md-nav__link" href="#scalaz-iteratee">
     Scalaz Iteratee
   </a>
+<nav aria-label="Scalaz Iteratee" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#foldi-foldim-and-repeatuntil-repeatuntilm">
+    foldI, foldIM and repeatUntil / repeatUntilM
+  </a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#upgrading-to-monadic-usage">
+    Upgrading to Monadic usage
+  </a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#a-note-on-id-trampoline-and-io">
+    A note on Id, Trampoline and IO
+  </a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#beware-the-iterator">
+    BEWARE THE ITERATOR
+  </a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#beware-side-effecting-output-state-as-well">
+    Beware Side Effecting Output State as well
+  </a>
+</li>
+</ul>
+</nav>
 </li>
 <li class="md-nav__item">
 <a class="md-nav__link" href="#scala-213-support">
@@ -547,14 +576,253 @@
 <li><a class="magiclink magiclink-github magiclink-issue" href="https://github.com/sparkutils/quality/issues/52" title="GitHub Issue: sparkutils/quality #52">#52</a> - Scala 2.13 support</li>
 </ol>
 <h2 id="scalaz-iteratee">Scalaz Iteratee<a class="headerlink" href="#scalaz-iteratee" title="Permanent link">¶</a></h2>
-<p>The pull api (and async pull api) remains the same, however user iteratee usage will have to change.  Largely this involves swapping Cont and Done for cont and done and migrating enumeratee / run usage to:</p>
+<p>The pull api (and async pull api) have changed to be fully monadic and will require code changes, the default Id implementation is not (always) tail recursive and leads to SOEs - as such the iteratees are no longer imported by utils._ directly you must choose the right import for your use case.  The PullTest.testFoldOnDoneId for example will fail on 2.11 and 2.12, but sometimes works on 2.13 when running all tests (despite having the same scalaz version as 2.12), so ymmv across runtimes.</p>
+<p>Iteratee[E,A] is a type alias for IterateeT[E,Id,A] so everything is "wrapped" in an Id container (Id[X]=X), as such you may need to specify an appropriate Monad type to get a proper compilation and runtime behaviour, e.g. IO or Trampoline.  Indeed, if the compiler doesn't present an error it's typically derived as Id, which can SOE.</p>
+<p>To aid in this, and type-inference given a specific monad, the following helper function and defaults are provided:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">iterateesOf</span><span class="p">[</span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">]]:</span><span class="w"> </span><span class="nc">IterateeFunctions</span><span class="p">[</span><span class="nc">F</span><span class="p">]</span>
+
+<span class="kd">val</span><span class="w"> </span><span class="n">ioIteratees</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">iterateesOf</span><span class="p">[</span><span class="nc">IO</span><span class="p">]</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">trampolineIteratees</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">iterateesOf</span><span class="p">[</span><span class="nc">Trampoline</span><span class="p">]</span>
+<span class="c1">// not recommended but may help migrations</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">idIteratees</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">iterateesOf</span><span class="p">[</span><span class="nc">Id</span><span class="p">]</span>
+
+<span class="c1">// similarly</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">pullIterateesOf</span><span class="p">[</span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">]]:</span><span class="w"> </span><span class="nc">PullIterateeFunctions</span><span class="p">[</span><span class="nc">F</span><span class="p">]</span>
+
+<span class="kd">val</span><span class="w"> </span><span class="n">ioPullIteratees</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pullIterateesOf</span><span class="p">[</span><span class="nc">IO</span><span class="p">]</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">trampolinePullIteratees</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pullIterateesOf</span><span class="p">[</span><span class="nc">Trampoline</span><span class="p">]</span>
+<span class="c1">// not recommended but may help migrations</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">idPullIteratees</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pullIterateesOf</span><span class="p">[</span><span class="nc">Id</span><span class="p">]</span>
+</code></pre></div>
+<p>The functions in IterateeFunctions already have F captured with the type TheF (although F is not stored as an implicit given conflicts with import Scalaz._). So using:</p>
+<div class="highlight"><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="nn">scales</span><span class="p">.</span><span class="nn">utils</span><span class="p">.</span><span class="nn">trampolineIteratees</span><span class="p">.</span><span class="n">_</span>
+<span class="k">import</span><span class="w"> </span><span class="nn">scales</span><span class="p">.</span><span class="nn">xml</span><span class="p">.</span><span class="nn">trampolinePullIteratees</span><span class="p">.</span><span class="n">_</span>
+<span class="k">import</span><span class="w"> </span><span class="nn">scales</span><span class="p">.</span><span class="nn">utils</span><span class="p">.</span><span class="n">_</span>
+<span class="k">import</span><span class="w"> </span><span class="nn">scales</span><span class="p">.</span><span class="nn">xml</span><span class="p">.</span><span class="n">_</span>
+</code></pre></div>
+<p>will bring in the iteratee functions already defined within Trampoline, allowing better type inference (you may need to have the imports at different scopes to properly shadow).</p>
+<p>If your code can benefit from either specifying the monad at use site or type inference you can import the base functions with F[_] type parameters via:</p>
+<div class="highlight"><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="nn">scales</span><span class="p">.</span><span class="nn">utils</span><span class="p">.</span><span class="nn">iteratee</span><span class="p">.</span><span class="nn">functions</span><span class="p">.</span><span class="n">_</span>
+</code></pre></div>
+<details class="info"><summary>Diverging implicit expansion for type scalaz..</summary><p>This is probably occurring as you have imported the functions twice for different monads or the underlying functions. In order to ensure the type derivation is correct for the implicits you are best defining them at the use site directly e.g.:</p>
+<div class="highlight"><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="nn">scales</span><span class="p">.</span><span class="nn">utils</span><span class="p">.</span><span class="nn">trampolineIteratees</span><span class="p">.</span><span class="n">_</span>
+
+<span class="kd">val</span><span class="w"> </span><span class="n">iter</span><span class="p">:</span><span class="w"> </span><span class="nc">IterateeT</span><span class="p">[</span><span class="nc">PullType</span><span class="p">,</span><span class="w"> </span><span class="nc">TheF</span><span class="p">,</span><span class="w"> </span><span class="nc">Option</span><span class="p">[</span><span class="nc">PullType</span><span class="p">]]</span><span class="w"> </span><span class="o">=</span>
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">_</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">peek</span><span class="p">[</span><span class="nc">PullType</span><span class="p">,</span><span class="w"> </span><span class="nc">TheF</span><span class="p">]</span>
+<span class="w">    </span><span class="n">_</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">peek</span><span class="p">[</span><span class="nc">PullType</span><span class="p">,</span><span class="w"> </span><span class="nc">TheF</span><span class="p">]</span>
+<span class="w">    </span><span class="n">_</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">peek</span><span class="p">[</span><span class="nc">PullType</span><span class="p">,</span><span class="w"> </span><span class="nc">TheF</span><span class="p">]</span>
+<span class="w">    </span><span class="n">_</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">peek</span><span class="p">[</span><span class="nc">PullType</span><span class="p">,</span><span class="w"> </span><span class="nc">TheF</span><span class="p">]</span>
+<span class="w">    </span><span class="n">_</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">peek</span><span class="p">[</span><span class="nc">PullType</span><span class="p">,</span><span class="w"> </span><span class="nc">TheF</span><span class="p">]</span>
+<span class="w">    </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">evalWith</span><span class="p">((</span><span class="n">p</span><span class="p">:</span><span class="w"> </span><span class="nc">PullType</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">p</span>
+<span class="w">    </span><span class="p">})(</span><span class="n">implicitly</span><span class="p">[</span><span class="nc">Applicative</span><span class="p">[</span><span class="nc">TheF</span><span class="p">]])</span>
+<span class="w">    </span><span class="n">j</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dropWhile</span><span class="p">((</span><span class="n">p</span><span class="p">:</span><span class="w"> </span><span class="nc">PullType</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">p</span><span class="p">.</span><span class="n">fold</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="o">!</span><span class="n">x</span><span class="p">.</span><span class="k">isInstanceOf</span><span class="p">[</span><span class="nc">Elem</span><span class="p">],</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="kc">false</span><span class="p">)</span>
+<span class="w">    </span><span class="p">})(</span><span class="n">implicitly</span><span class="p">[</span><span class="nc">Monad</span><span class="p">[</span><span class="nc">TheF</span><span class="p">]])</span>
+<span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="k">yield</span><span class="w"> </span><span class="n">j</span>
+</code></pre></div>
+</details>
+<p>Direct usage of iteratee's largely involves swapping Cont and Done for cont and done and migrating enumeratee / run usage to:</p>
 <div class="highlight"><pre><span></span><code><span class="p">(</span><span class="n">iteratee</span><span class="w"> </span><span class="o">&amp;=</span><span class="w"> </span><span class="n">iteratorEnumerator</span><span class="p">(</span><span class="n">pull</span><span class="p">.</span><span class="n">it</span><span class="p">))</span><span class="w"> </span><span class="n">run</span>
 </code></pre></div>
 <p>instead of</p>
 <div class="highlight"><pre><span></span><code><span class="n">iteratee</span><span class="p">(</span><span class="n">pull</span><span class="p">.</span><span class="n">it</span><span class="p">)</span><span class="w"> </span><span class="n">run</span>
 </code></pre></div>
-<p>this is because enumerators are no longer implicitly bound, things are notably more verbose.  Scalaz provides a good selection of useful starting enumerators.</p>
-<p>Also note that Iteratee[E,A] is a type alias for Iteratee[E,Id,A] so everything is "wrapped" in an Id container (Id[X]=X), as such you may need to specify types to get a proper compilation.</p>
+<p>this is because enumerators are no longer implicitly bound, using the monad type directly can notably increase verbosity.  Scalaz now provides a good selection of useful starting enumerators.</p>
+<h3 id="foldi-foldim-and-repeatuntil-repeatuntilm">foldI, foldIM and repeatUntil / repeatUntilM<a class="headerlink" href="#foldi-foldim-and-repeatuntil-repeatuntilm" title="Permanent link">¶</a></h3>
+<p>foldI and foldIM have an additional stopOn parameter alongside the init starter parameter, by default both functions will, as before, stop on each done.  This can be overridden to allow control of when to trigger done based on the ACC type.</p>
+<p>This pattern is used to implement foldOnDone and a number of tests via a repeat EnumeratorT, as such it has a new function repeatUntil[M] which mimics a do while loop / repeat until loop.  i.e. the following are equivalent:</p>
+<div class="highlight"><pre><span></span><code><span class="n">repeatUntilM</span><span class="p">((</span><span class="n">initAcc</span><span class="p">,</span><span class="w"> </span><span class="n">starter</span><span class="p">,</span><span class="w"> </span><span class="kc">false</span><span class="p">))(</span><span class="n">a</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="p">(</span><span class="n">currentA</span><span class="p">,</span><span class="w"> </span><span class="n">itr</span><span class="p">,</span><span class="w"> </span><span class="n">_</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">step</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">itr</span><span class="p">.</span><span class="n">value</span>
+<span class="w">      </span><span class="n">isdone</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">isDoneS</span><span class="p">(</span><span class="n">step</span><span class="p">)</span>
+<span class="w">      </span><span class="n">iseof</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">isEOFS</span><span class="p">(</span><span class="n">step</span><span class="p">)</span>
+
+<span class="w">      </span><span class="n">shouldStop</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">currentA</span><span class="p">,</span><span class="w"> </span><span class="n">itr</span><span class="p">,</span><span class="w"> </span><span class="kc">true</span><span class="p">)</span>
+
+<span class="w">      </span><span class="n">res</span><span class="w"> </span><span class="o">=</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">isdone</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="o">!</span><span class="n">iseof</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="kd">val</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">extractS</span><span class="p">(</span><span class="n">step</span><span class="p">)</span>
+<span class="w">          </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">isEmpty</span><span class="p">)</span>
+<span class="w">            </span><span class="n">shouldStop</span>
+<span class="w">          </span><span class="k">else</span>
+<span class="w">            </span><span class="p">(</span><span class="n">f</span><span class="p">(</span><span class="n">currentA</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">get</span><span class="p">),</span><span class="w"> </span><span class="n">extractContS</span><span class="p">(</span><span class="n">step</span><span class="p">),</span><span class="w"> </span><span class="kc">false</span><span class="p">)</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span>
+<span class="w">          </span><span class="n">shouldStop</span>
+
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">yield</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="kd">val</span><span class="w"> </span><span class="p">(</span><span class="n">currentA</span><span class="p">,</span><span class="w"> </span><span class="n">itr</span><span class="p">,</span><span class="w"> </span><span class="n">done</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">res</span>
+
+<span class="w">      </span><span class="p">(</span><span class="n">currentA</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">itr</span><span class="w"> </span><span class="o">&amp;=</span><span class="w"> </span><span class="n">e</span><span class="p">).</span><span class="n">eval</span><span class="p">,</span><span class="w"> </span><span class="n">done</span><span class="p">)</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">})(</span><span class="n">stopOn</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">_3</span><span class="p">)</span>
+</code></pre></div>
+<p>and</p>
+<div class="highlight"><pre><span></span><code><span class="p">(</span><span class="n">foldIM</span><span class="p">[</span><span class="nc">ACC</span><span class="p">,</span><span class="nc">F</span><span class="p">,(</span><span class="nc">ACC</span><span class="p">,</span><span class="w"> </span><span class="nc">ResumableIter</span><span class="p">[</span><span class="nc">E</span><span class="p">,</span><span class="nc">F</span><span class="p">,</span><span class="nc">A</span><span class="p">],</span><span class="w"> </span><span class="nc">Boolean</span><span class="p">)]((</span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="p">(</span><span class="n">currentA</span><span class="p">,</span><span class="w"> </span><span class="n">itr</span><span class="p">,</span><span class="w"> </span><span class="n">_</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">step</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">itr</span><span class="p">.</span><span class="n">value</span>
+<span class="w">      </span><span class="n">isdone</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">isDoneS</span><span class="p">(</span><span class="n">step</span><span class="p">)</span>
+<span class="w">      </span><span class="n">iseof</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">isEOFS</span><span class="p">(</span><span class="n">step</span><span class="p">)</span>
+
+<span class="w">      </span><span class="n">shouldStop</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">currentA</span><span class="p">,</span><span class="w"> </span><span class="n">itr</span><span class="p">,</span><span class="w"> </span><span class="kc">true</span><span class="p">)</span>
+
+<span class="w">      </span><span class="n">res</span><span class="w"> </span><span class="o">=</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">isdone</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="o">!</span><span class="n">iseof</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="kd">val</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">extractS</span><span class="p">(</span><span class="n">step</span><span class="p">)</span>
+<span class="w">          </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">isEmpty</span><span class="p">)</span>
+<span class="w">            </span><span class="n">shouldStop</span>
+<span class="w">          </span><span class="k">else</span>
+<span class="w">            </span><span class="p">(</span><span class="n">f</span><span class="p">(</span><span class="n">currentA</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">get</span><span class="p">),</span><span class="w"> </span><span class="n">extractContS</span><span class="p">(</span><span class="n">step</span><span class="p">),</span><span class="w"> </span><span class="kc">false</span><span class="p">)</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span>
+<span class="w">          </span><span class="n">shouldStop</span>
+
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">yield</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="kd">val</span><span class="w"> </span><span class="p">(</span><span class="n">currentA</span><span class="p">,</span><span class="w"> </span><span class="n">itr</span><span class="p">,</span><span class="w"> </span><span class="n">done</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">res</span>
+
+<span class="w">      </span><span class="p">(</span><span class="n">currentA</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">itr</span><span class="w"> </span><span class="o">&amp;=</span><span class="w"> </span><span class="n">e</span><span class="p">).</span><span class="n">eval</span><span class="p">,</span><span class="w"> </span><span class="n">done</span><span class="p">)</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">})(</span><span class="n">init</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">initAcc</span><span class="p">,</span><span class="w"> </span><span class="n">starter</span><span class="p">,</span><span class="w"> </span><span class="kc">false</span><span class="p">),</span><span class="w"> </span><span class="n">stopOn</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">_3</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;=</span><span class="w"> </span><span class="n">repeat</span><span class="p">[</span><span class="nc">ACC</span><span class="p">,</span><span class="nc">F</span><span class="p">](</span><span class="n">initAcc</span><span class="p">)</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="n">run</span>
+</code></pre></div>
+<h3 id="upgrading-to-monadic-usage">Upgrading to Monadic usage<a class="headerlink" href="#upgrading-to-monadic-usage" title="Permanent link">¶</a></h3>
+<p>IterV would allow non-monadic usage with tail recursion, this is no longer directly possible in Scalaz 7 IterateeT usage.  A "great" example of this is the foldOnDone method implementation, the original IterV based code is fairly simple:</p>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="kd">var</span><span class="w"> </span><span class="n">currentI</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">initResumable</span><span class="p">(</span><span class="n">it</span><span class="p">).</span><span class="n">eval</span>
+<span class="w">    </span><span class="kd">var</span><span class="w"> </span><span class="n">isdone</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">isDone</span><span class="p">(</span><span class="n">currentI</span><span class="p">)</span>
+<span class="w">    </span><span class="kd">var</span><span class="w"> </span><span class="n">currentA</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">initAcc</span>
+<span class="w">    </span><span class="k">while</span><span class="p">(</span><span class="w"> </span><span class="o">!</span><span class="n">isdone</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">(</span><span class="n">isdone</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="o">!</span><span class="n">isEOF</span><span class="p">(</span><span class="n">currentI</span><span class="p">))</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">isdone</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kd">val</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">extract</span><span class="p">(</span><span class="n">currentI</span><span class="p">)</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">a</span><span class="p">.</span><span class="n">isDefined</span><span class="p">)</span>
+<span class="w">          </span><span class="k">return</span><span class="w"> </span><span class="n">currentA</span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="n">currentA</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">f</span><span class="p">(</span><span class="n">currentA</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">get</span><span class="p">)</span>
+<span class="w">          </span><span class="n">currentI</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">extractCont</span><span class="p">(</span><span class="n">currentI</span><span class="p">)</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">      </span><span class="p">}</span>
+
+<span class="w">      </span><span class="n">currentI</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">currentI</span><span class="p">(</span><span class="n">it</span><span class="p">).</span><span class="n">eval</span>
+<span class="w">      </span><span class="n">isdone</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">isDone</span><span class="p">(</span><span class="n">currentI</span><span class="p">)</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="n">currentA</span>
+</code></pre></div>
+<p>i.e. keep extracting the next continuation and call the f fold function when you find a done.  The code runs fast (400ms on the dev box) and in constant space, as you'd expect.  An "obvious" translation to a monadic version is:</p>
+<div class="highlight"><pre><span></span><code><span class="kd">val</span><span class="w"> </span><span class="n">starter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">initResumable</span><span class="w"> </span><span class="o">&amp;=</span><span class="w"> </span><span class="n">e</span><span class="p">).</span><span class="n">eval</span>
+
+<span class="kd">val</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="o">=</span>
+<span class="w">  </span><span class="p">(</span><span class="n">foldIM</span><span class="p">[</span><span class="nc">ACC</span><span class="p">,</span><span class="nc">F</span><span class="p">,(</span><span class="nc">ACC</span><span class="p">,</span><span class="w"> </span><span class="nc">ResumableIter</span><span class="p">[</span><span class="nc">E</span><span class="p">,</span><span class="nc">F</span><span class="p">,</span><span class="nc">A</span><span class="p">],</span><span class="w"> </span><span class="nc">Boolean</span><span class="p">)]((</span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="p">(</span><span class="n">currentA</span><span class="p">,</span><span class="w"> </span><span class="n">itr</span><span class="p">,</span><span class="w"> </span><span class="n">_</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">isdone</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">isDone</span><span class="p">(</span><span class="n">itr</span><span class="p">)</span>
+<span class="w">      </span><span class="n">iseof</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">isEOF</span><span class="p">(</span><span class="n">itr</span><span class="p">)</span>
+
+<span class="w">      </span><span class="n">res</span><span class="w"> </span><span class="o">&lt;-</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">isdone</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="o">!</span><span class="n">iseof</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="kd">val</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">extract</span><span class="p">(</span><span class="n">itr</span><span class="p">)</span>
+<span class="w">          </span><span class="nc">F</span><span class="p">.</span><span class="n">map</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">a</span><span class="p">.</span><span class="n">isDefined</span><span class="p">)</span>
+<span class="w">              </span><span class="p">(</span><span class="n">currentA</span><span class="p">,</span><span class="w"> </span><span class="n">itr</span><span class="p">,</span><span class="w"> </span><span class="kc">true</span><span class="p">)</span>
+<span class="w">            </span><span class="k">else</span>
+<span class="w">              </span><span class="p">(</span><span class="n">f</span><span class="p">(</span><span class="n">currentA</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">get</span><span class="p">),</span><span class="w"> </span><span class="n">extractCont</span><span class="p">(</span><span class="n">itr</span><span class="p">),</span><span class="w"> </span><span class="kc">false</span><span class="p">)</span>
+<span class="w">          </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span>
+<span class="w">           </span><span class="nc">F</span><span class="p">.</span><span class="n">point</span><span class="p">((</span><span class="n">currentA</span><span class="p">,</span><span class="w"> </span><span class="n">itr</span><span class="p">,</span><span class="w"> </span><span class="kc">true</span><span class="p">))</span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">yield</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="kd">val</span><span class="w"> </span><span class="p">(</span><span class="n">currentA</span><span class="p">,</span><span class="w"> </span><span class="n">itr</span><span class="p">,</span><span class="w"> </span><span class="n">done</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">res</span>
+
+<span class="w">      </span><span class="p">(</span><span class="n">currentA</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">itr</span><span class="w"> </span><span class="o">&amp;=</span><span class="w"> </span><span class="n">e</span><span class="p">).</span><span class="n">eval</span><span class="p">,</span><span class="w"> </span><span class="n">done</span><span class="p">)</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">})(</span><span class="n">init</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">initAcc</span><span class="p">,</span><span class="w"> </span><span class="n">starter</span><span class="p">,</span><span class="w"> </span><span class="kc">false</span><span class="p">),</span><span class="w"> </span><span class="n">stopOn</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">_3</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;=</span><span class="w"> </span><span class="n">repeat</span><span class="p">[</span><span class="nc">ACC</span><span class="p">,</span><span class="nc">F</span><span class="p">](</span><span class="n">initAcc</span><span class="p">)</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="n">run</span>
+
+<span class="nc">F</span><span class="p">.</span><span class="n">map</span><span class="p">(</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="w">  </span><span class="kd">val</span><span class="w"> </span><span class="p">((</span><span class="n">acc</span><span class="p">,</span><span class="w"> </span><span class="n">nr</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">),</span><span class="w"> </span><span class="n">cont</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">r</span>
+<span class="w">  </span><span class="n">acc</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>We have to loop, so we use a fold with an early exit and drive it through a never ending enumerator (whose value "p" above is ignored), unlike foldI, foldIM expects an accumulator wrapped in the monad.  As we are looping we cannot return and have to handle all exit criteria directly, so more "if" branches are introduced.</p>
+<p>Finally, as we must stay in the monad there is lots of direct map/point and of course the hidden bind/flatmaps.  This code runs <em>very</em> slowly - 20 seconds (on the dev box), we've gone from a non-monadic version at 400ms to 20s, why?</p>
+<p><a href="https://stackoverflow.com/a/41128527/1028537">This SO post</a> does an excellent job of explaining how seemingly innocuous and correct code can become a very large chain of O(N) calls under the hood.  This version of "r" brings us back to the 400-450ms mark (still a bit slower but no SOEs and monadic):</p>
+<div class="highlight"><pre><span></span><code><span class="kd">val</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="o">=</span>
+<span class="w">  </span><span class="p">(</span><span class="n">foldIM</span><span class="p">[</span><span class="nc">ACC</span><span class="p">,</span><span class="nc">F</span><span class="p">,(</span><span class="nc">ACC</span><span class="p">,</span><span class="w"> </span><span class="nc">ResumableIter</span><span class="p">[</span><span class="nc">E</span><span class="p">,</span><span class="nc">F</span><span class="p">,</span><span class="nc">A</span><span class="p">],</span><span class="w"> </span><span class="nc">Boolean</span><span class="p">)]((</span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="p">(</span><span class="n">currentA</span><span class="p">,</span><span class="w"> </span><span class="n">itr</span><span class="p">,</span><span class="w"> </span><span class="n">_</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">step</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">itr</span><span class="p">.</span><span class="n">value</span>
+<span class="w">      </span><span class="n">isdone</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">isDoneS</span><span class="p">(</span><span class="n">step</span><span class="p">)</span>
+<span class="w">      </span><span class="n">iseof</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">isEOFS</span><span class="p">(</span><span class="n">step</span><span class="p">)</span>
+
+<span class="w">      </span><span class="n">shouldStop</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">currentA</span><span class="p">,</span><span class="w"> </span><span class="n">itr</span><span class="p">,</span><span class="w"> </span><span class="kc">true</span><span class="p">)</span>
+
+<span class="w">      </span><span class="n">res</span><span class="w"> </span><span class="o">=</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">isdone</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="o">!</span><span class="n">iseof</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="kd">val</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">extractS</span><span class="p">(</span><span class="n">step</span><span class="p">)</span>
+<span class="w">          </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">isEmpty</span><span class="p">)</span>
+<span class="w">            </span><span class="n">shouldStop</span>
+<span class="w">          </span><span class="k">else</span>
+<span class="w">            </span><span class="p">(</span><span class="n">f</span><span class="p">(</span><span class="n">currentA</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">get</span><span class="p">),</span><span class="w"> </span><span class="n">extractContS</span><span class="p">(</span><span class="n">step</span><span class="p">),</span><span class="w"> </span><span class="kc">false</span><span class="p">)</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span>
+<span class="w">          </span><span class="n">shouldStop</span>
+
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">yield</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="kd">val</span><span class="w"> </span><span class="p">(</span><span class="n">currentA</span><span class="p">,</span><span class="w"> </span><span class="n">itr</span><span class="p">,</span><span class="w"> </span><span class="n">done</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">res</span>
+
+<span class="w">      </span><span class="p">(</span><span class="n">currentA</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">itr</span><span class="w"> </span><span class="o">&amp;=</span><span class="w"> </span><span class="n">e</span><span class="p">).</span><span class="n">eval</span><span class="p">,</span><span class="w"> </span><span class="n">done</span><span class="p">)</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">})(</span><span class="n">init</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">initAcc</span><span class="p">,</span><span class="w"> </span><span class="n">starter</span><span class="p">,</span><span class="w"> </span><span class="kc">false</span><span class="p">),</span><span class="w"> </span><span class="n">stopOn</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">_3</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;=</span><span class="w"> </span><span class="n">repeat</span><span class="p">[</span><span class="nc">ACC</span><span class="p">,</span><span class="nc">F</span><span class="p">](</span><span class="n">initAcc</span><span class="p">)</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="n">run</span>
+</code></pre></div>
+<p>Here, instead of 2 flatmaps and 1 flatmap containing a map that is also mapped we are left with only one flatmap - that of the underlying step.  To enable this there are now new functions ending in S designed to behave like the old IterV based function and stay out of monads.  If your code runs slower than expected this is a likely culprit. </p>
+<h3 id="a-note-on-id-trampoline-and-io">A note on Id, Trampoline and IO<a class="headerlink" href="#a-note-on-id-trampoline-and-io" title="Permanent link">¶</a></h3>
+<p>Although the base Monad types have a consistent API actually running them is inconsistent (as can be using them in for loops - make sure to import scalaz.Scalaz._).  Id doesn't actually get run, Trampoline/Free has a run function and IO has an unsafePerformIO.</p>
+<p>This makes code a little fragile to simply swap out implementations despite the handy monad specific iteratee imports.  As such Scales also adds the scales.utils.monadHelpers._ imports which provides wrappers for these behaviours, with run/unsafePerformIO becoming "runIt" (perform is taken by Scalaz for common imports).</p>
+<p>Note: you'll have to use p.runIt:</p>
+<div class="highlight"><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="nn">scales</span><span class="p">.</span><span class="nn">utils</span><span class="p">.</span><span class="nn">iteratee</span><span class="p">.</span><span class="nn">monadHelpers</span><span class="p">.</span><span class="n">_</span>
+<span class="k">import</span><span class="w"> </span><span class="nn">scalaz</span><span class="p">.</span><span class="nc">Scalaz</span><span class="p">.</span><span class="n">_</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">doSomethingReturningAnFofA</span>
+
+<span class="kd">val</span><span class="w"> </span><span class="n">a</span><span class="p">:</span><span class="w"> </span><span class="nc">A</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="n">runIt</span>
+</code></pre></div>
+<p>In order to make re-usable code specify the correct implicits, including the correct monad iteratees:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">theResuableCode</span><span class="p">[</span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">]:</span><span class="w"> </span><span class="nc">Monad</span><span class="p">:</span><span class="w"> </span><span class="nc">IterateeFunctions</span><span class="p">:</span><span class="w"> </span><span class="nc">CanRunIt</span><span class="p">]():</span><span class="w"> </span><span class="nc">F</span><span class="p">[</span><span class="nc">SomeResult</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span>
+<span class="p">}</span>
+</code></pre></div>
+<p>It is suggested that CanRunIt is only used in testing, rather prefer to bring the actual state change, of running the monad, to the edges of your code where you probably know which monad you are using.</p>
+<h3 id="beware-the-iterator">BEWARE THE ITERATOR<a class="headerlink" href="#beware-the-iterator" title="Permanent link">¶</a></h3>
+<p>As Trampolining is now used anything that generates with side effects e.g. Iterator[PullType] can case significant oddities as one part of the code you'd reasoned is finished starts up again and calls next.</p>
+<p>In order to aid this there is a memory and state trade off to be had and wrapping the iterator in EphemeralStream.  To aid this three functions are introduced:</p>
+<div class="highlight"><pre><span></span><code><span class="k">package</span><span class="w"> </span><span class="nn">scales</span><span class="p">.</span><span class="nn">utils</span><span class="p">.</span><span class="n">iteratee</span>
+
+<span class="k">object</span><span class="w"> </span><span class="nc">EphemeralStreamEnum</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">def</span><span class="w"> </span><span class="nf">enumEphemeralStream</span><span class="p">[</span><span class="nc">E</span><span class="p">,</span><span class="w"> </span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">]</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="nc">Monad</span><span class="p">](</span><span class="n">xs</span><span class="p">:</span><span class="w"> </span><span class="nc">EphemeralStream</span><span class="p">[</span><span class="nc">E</span><span class="p">]):</span><span class="w"> </span><span class="nc">EnumeratorT</span><span class="p">[</span><span class="nc">E</span><span class="p">,</span><span class="w"> </span><span class="nc">F</span><span class="p">]</span>
+
+<span class="w">  </span><span class="k">def</span><span class="w"> </span><span class="nf">enumEphemeralStreamF</span><span class="p">[</span><span class="nc">E</span><span class="p">,</span><span class="w"> </span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">]</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="nc">Monad</span><span class="p">](</span><span class="n">state</span><span class="p">:</span><span class="w"> </span><span class="nc">EphemeralStream</span><span class="p">[</span><span class="nc">E</span><span class="p">]</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nc">Unit</span><span class="p">)(</span><span class="n">xs</span><span class="p">:</span><span class="w"> </span><span class="nc">EphemeralStream</span><span class="p">[</span><span class="nc">E</span><span class="p">]):</span><span class="w"> </span><span class="nc">EnumeratorT</span><span class="p">[</span><span class="nc">E</span><span class="p">,</span><span class="w"> </span><span class="nc">F</span><span class="p">]</span>
+
+<span class="w">  </span><span class="k">def</span><span class="w"> </span><span class="nf">toEphemeral</span><span class="p">[</span><span class="nc">A</span><span class="p">](</span><span class="n">iterator</span><span class="p">:</span><span class="w"> </span><span class="nc">Iterator</span><span class="p">[</span><span class="nc">A</span><span class="p">]):</span><span class="w"> </span><span class="nc">EphemeralStream</span><span class="p">[</span><span class="nc">A</span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>toEphemeral safely wraps an iterator in EphemeralStream ensuring trampolining does not trigger more .next calls.</p>
+<p>The enumEphemeralStreamF variant lets you use a workaround to keep the progress and restart processing the stream:</p>
+<div class="highlight"><pre><span></span><code><span class="kd">var</span><span class="w"> </span><span class="n">theStream</span><span class="p">:</span><span class="w"> </span><span class="nc">EphemeralStream</span><span class="p">[</span><span class="nc">PullType</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">toEphemeral</span><span class="p">(</span><span class="n">xmlpull</span><span class="p">:</span><span class="w"> </span><span class="nc">Iterator</span><span class="p">[</span><span class="nc">PullType</span><span class="p">])</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">func</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">e</span><span class="p">:</span><span class="w"> </span><span class="nc">EphemeralStream</span><span class="p">[</span><span class="nc">PullType</span><span class="p">])</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">iter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="p">}</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">enum</span><span class="p">(</span><span class="n">e</span><span class="p">:</span><span class="w"> </span><span class="nc">EphemeralStream</span><span class="p">[</span><span class="nc">PullType</span><span class="p">])</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">enumEphemeralStreamF</span><span class="p">[</span><span class="nc">PullType</span><span class="p">,</span><span class="w"> </span><span class="nc">TheF</span><span class="p">](</span><span class="n">func</span><span class="p">)(</span><span class="n">e</span><span class="p">)</span>
+
+<span class="kd">val</span><span class="w"> </span><span class="n">starter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">ionDone</span><span class="w"> </span><span class="o">&amp;=</span><span class="w"> </span><span class="k">enum</span><span class="p">(</span><span class="n">theStream</span><span class="p">)).</span><span class="n">eval</span>
+
+<span class="c1">// some time later, restart the stream processing</span>
+<span class="p">(</span><span class="n">extractCont</span><span class="p">(</span><span class="n">starter</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;=</span><span class="w"> </span><span class="k">enum</span><span class="p">(</span><span class="n">theStream</span><span class="p">)).</span><span class="n">eval</span>
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Consider iteratee composition</p>
+<p>If you are using iteratee's already consider composing them via for and only processing the stream once (i.e. not using extractCont) if intermediate values aren't needed.</p>
+</div>
+<h3 id="beware-side-effecting-output-state-as-well">Beware Side Effecting Output State as well<a class="headerlink" href="#beware-side-effecting-output-state-as-well" title="Permanent link">¶</a></h3>
+<p>Although you may have written your iteratee's in a functional fashion (passing state to the next steps) if you are using side effecting state (like the base use case of processing a stream of xml pull events) if you are not running your IterateeT with ".run" you may fall afoul of trampolining restarting your state.</p>
+<p>This can be seen as duplicate events being sent or, as a result, events seemingly being out of order.  This is does not happen when running in Id or (at least it has not be observed to be the case) when using .run.</p>
+<p>Using eval or evalAcceptEmpty to process continuations of the stream when faced with empty (instead of Eof as with .run) can leave the iteratee needing to restart outside of the trampoline mechanism.  As of Scalaz 7.3.8 this triggers restarts of at least the previous iteratee - not the resulting next cont (again this does not happen with Id).  </p>
+<p>As counter-intuitive as it seems this requires managing duplicate feed detection in the iteratee.  Both pushXmlIter and AsyncParser face this issue, state is moved to a var closure and next inputs are checked against the previous inputs.  Given their use cases this is acceptable, each iteratee that manages state needs to verify this.</p>
+<p>It is highly likely this behaviour is tied to that of the above iterator warning and possibly some bug.</p>
 <h2 id="scala-213-support">Scala 2.13 support<a class="headerlink" href="#scala-213-support" title="Permanent link">¶</a></h2>
 <p>2.13 re-worked much of the internal collection logic, including CanBuildFrom.  Scales required the ability to swap out the actual container used for Tree's in order to reduce allocation cost (yielding better performance).</p>
 <p>As such there is a compatibility layer working around most of this unpleasantness, however for compatibility CanBuildfrom is still implicitly required in the apis.</p>
@@ -564,10 +832,10 @@
 <small>
     
       Last update:
-      <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime">December 27, 2023 11:48:21</span>
+      <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime">January 15, 2024 16:35:25</span>
 <br/>
         Created:
-        <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime">December 27, 2023 11:48:21</span>
+        <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime">January 15, 2024 16:35:25</span>
 </small>
 </div>
 </article>

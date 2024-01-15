@@ -513,9 +513,9 @@
               
         </dd></dl></div>
     </li><li name="scales.xml.parser.pull.aalto.AsyncParser#parse" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="parse(parser:scales.xml.parser.pull.aalto.AsyncParser):scales.utils.ResumableIter[scales.utils.io.DataChunk,scalaz.EphemeralStream[scales.xml.PullType]]"></a><a id="parse(AsyncParser):utils.ResumableIter[DataChunk,EphemeralStream[xml.PullType]]"></a>
+      <a id="parse[F[_]](parser:scales.xml.parser.pull.aalto.AsyncParser)(implicitevidence$2:scalaz.Monad[F]):scales.utils.iteratee.functions.ResumableIter[scales.utils.io.DataChunk,F,scalaz.EphemeralStream[scales.xml.PullType]]"></a><a id="parse[F[_]](AsyncParser)(Monad[F]):ResumableIter[DataChunk,F,EphemeralStream[xml.PullType]]"></a>
       <span class="permalink">
-      <a href="../../../../../scales/xml/parser/pull/aalto/AsyncParser$.html#parse(parser:scales.xml.parser.pull.aalto.AsyncParser):scales.utils.ResumableIter[scales.utils.io.DataChunk,scalaz.EphemeralStream[scales.xml.PullType]]" title="Permalink">
+      <a href="../../../../../scales/xml/parser/pull/aalto/AsyncParser$.html#parse[F[_]](parser:scales.xml.parser.pull.aalto.AsyncParser)(implicitevidence$2:scalaz.Monad[F]):scales.utils.iteratee.functions.ResumableIter[scales.utils.io.DataChunk,F,scalaz.EphemeralStream[scales.xml.PullType]]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -524,7 +524,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">parse</span><span class="params">(<span name="parser">parser: <a href="AsyncParser.html" class="extype" name="scales.xml.parser.pull.aalto.AsyncParser">AsyncParser</a></span>)</span><span class="result">: <a href="../../../../utils/index.html#ResumableIter[E,A]=scalaz.iteratee.Iteratee[E,(A,scalaz.iteratee.Iteratee[E,_])]" class="extmbr" name="scales.utils.ResumableIter">utils.ResumableIter</a>[<span class="extype" name="scales.utils.io.DataChunk">DataChunk</span>, <span class="extype" name="scalaz.EphemeralStream">EphemeralStream</span>[<a href="../../../index.html#PullType=Either[scales.xml.XmlEvent,scales.xml.EndElem]" class="extmbr" name="scales.xml.PullType">xml.PullType</a>]]</span>
+        <span class="name">parse</span><span class="tparams">[<span name="F">F<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="params">(<span name="parser">parser: <a href="AsyncParser.html" class="extype" name="scales.xml.parser.pull.aalto.AsyncParser">AsyncParser</a></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scales.xml.parser.pull.aalto.AsyncParser.parse.F">F</span>]</span>)</span><span class="result">: <span class="extype" name="scales.utils.iteratee.functions.ResumableIter">ResumableIter</span>[<span class="extype" name="scales.utils.io.DataChunk">DataChunk</span>, <span class="extype" name="scales.xml.parser.pull.aalto.AsyncParser.parse.F">F</span>, <span class="extype" name="scalaz.EphemeralStream">EphemeralStream</span>[<a href="../../../index.html#PullType=Either[scales.xml.XmlEvent,scales.xml.EndElem]" class="extmbr" name="scales.xml.PullType">xml.PullType</a>]]</span>
       </span>
       
       <p class="shortcomment cmt">Provides a ResumableIter that converts DataChunks via a parser into a stream of PullTypes.</p><div class="fullcomment"><div class="comment cmt"><p>Provides a ResumableIter that converts DataChunks via a parser into a stream of PullTypes.  Returns Done when there are results from the pushed chunks.

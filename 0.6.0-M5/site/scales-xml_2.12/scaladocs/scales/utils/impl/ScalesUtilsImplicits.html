@@ -474,24 +474,6 @@ how to combine
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="scales.utils.iteratee.IterateeImplicits#iteratorEnumerator" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="iteratorEnumerator[E](iter:Iterator[E]):scalaz.iteratee.Enumerator[E]"></a><a id="iteratorEnumerator[E](Iterator[E]):Enumerator[E]"></a>
-      <span class="permalink">
-      <a href="../../../scales/utils/impl/ScalesUtilsImplicits.html#iteratorEnumerator[E](iter:Iterator[E]):scalaz.iteratee.Enumerator[E]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">iteratorEnumerator</span><span class="tparams">[<span name="E">E</span>]</span><span class="params">(<span name="iter">iter: <span class="extype" name="scala.Iterator">Iterator</span>[<span class="extype" name="scales.utils.iteratee.IterateeImplicits.iteratorEnumerator.E">E</span>]</span>)</span><span class="result">: <span class="extype" name="scalaz.iteratee.Enumerator">Enumerator</span>[<span class="extype" name="scales.utils.iteratee.IterateeImplicits.iteratorEnumerator.E">E</span>]</span>
-      </span>
-      
-      <p class="shortcomment cmt">Taken from huynhjl's answer on StackOverflow, just abstracting the type to allow for better implicit inference
-</p><div class="fullcomment"><div class="comment cmt"><p>Taken from huynhjl's answer on StackOverflow, just abstracting the type to allow for better implicit inference
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../iteratee/IterateeImplicits.html" class="extype" name="scales.utils.iteratee.IterateeImplicits">IterateeImplicits</a></dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a><a id="ne(AnyRef):Boolean"></a>
       <span class="permalink">
@@ -563,9 +545,9 @@ how to combine
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
     </li><li name="scales.utils.iteratee.IterateeImplicits#toEval" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="toEval[WHAT,RETURN](i:scalaz.iteratee.Iteratee[WHAT,RETURN]):scales.utils.iteratee.Eval[WHAT,RETURN]"></a><a id="toEval[WHAT,RETURN](Iteratee[WHAT,RETURN]):Eval[WHAT,RETURN]"></a>
+      <a id="toEval[WHAT,F[_],RETURN](i:scalaz.iteratee.IterateeT[WHAT,F,RETURN]):scales.utils.iteratee.Eval[WHAT,F,RETURN]"></a><a id="toEval[WHAT,F[_],RETURN](IterateeT[WHAT,F,RETURN]):Eval[WHAT,F,RETURN]"></a>
       <span class="permalink">
-      <a href="../../../scales/utils/impl/ScalesUtilsImplicits.html#toEval[WHAT,RETURN](i:scalaz.iteratee.Iteratee[WHAT,RETURN]):scales.utils.iteratee.Eval[WHAT,RETURN]" title="Permalink">
+      <a href="../../../scales/utils/impl/ScalesUtilsImplicits.html#toEval[WHAT,F[_],RETURN](i:scalaz.iteratee.IterateeT[WHAT,F,RETURN]):scales.utils.iteratee.Eval[WHAT,F,RETURN]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -574,7 +556,7 @@ how to combine
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">toEval</span><span class="tparams">[<span name="WHAT">WHAT</span>, <span name="RETURN">RETURN</span>]</span><span class="params">(<span name="i">i: <span class="extype" name="scalaz.iteratee.Iteratee">Iteratee</span>[<span class="extype" name="scales.utils.iteratee.IterateeImplicits.toEval.WHAT">WHAT</span>, <span class="extype" name="scales.utils.iteratee.IterateeImplicits.toEval.RETURN">RETURN</span>]</span>)</span><span class="result">: <a href="../iteratee/Eval.html" class="extype" name="scales.utils.iteratee.Eval">Eval</a>[<span class="extype" name="scales.utils.iteratee.IterateeImplicits.toEval.WHAT">WHAT</span>, <span class="extype" name="scales.utils.iteratee.IterateeImplicits.toEval.RETURN">RETURN</span>]</span>
+        <span class="name">toEval</span><span class="tparams">[<span name="WHAT">WHAT</span>, <span name="F">F<span class="tparams">[<span name="_">_</span>]</span></span>, <span name="RETURN">RETURN</span>]</span><span class="params">(<span name="i">i: <span class="extype" name="scalaz.iteratee.IterateeT">IterateeT</span>[<span class="extype" name="scales.utils.iteratee.IterateeImplicits.toEval.WHAT">WHAT</span>, <span class="extype" name="scales.utils.iteratee.IterateeImplicits.toEval.F">F</span>, <span class="extype" name="scales.utils.iteratee.IterateeImplicits.toEval.RETURN">RETURN</span>]</span>)</span><span class="result">: <a href="../iteratee/Eval.html" class="extype" name="scales.utils.iteratee.Eval">Eval</a>[<span class="extype" name="scales.utils.iteratee.IterateeImplicits.toEval.WHAT">WHAT</span>, <span class="extype" name="scales.utils.iteratee.IterateeImplicits.toEval.F">F</span>, <span class="extype" name="scales.utils.iteratee.IterateeImplicits.toEval.RETURN">RETURN</span>]</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../iteratee/IterateeImplicits.html" class="extype" name="scales.utils.iteratee.IterateeImplicits">IterateeImplicits</a></dd></dl></div>

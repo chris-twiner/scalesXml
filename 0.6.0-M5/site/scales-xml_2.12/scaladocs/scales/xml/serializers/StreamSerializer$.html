@@ -390,6 +390,22 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scales.xml.serializers.StreamSerializer#EOF" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="EOF:scala.util.Left[scales.xml.Elem,Nothing]"></a><a id="EOF:Left[Elem,Nothing]"></a>
+      <span class="permalink">
+      <a href="../../../scales/xml/serializers/StreamSerializer$.html#EOF:scala.util.Left[scales.xml.Elem,Nothing]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">EOF</span><span class="result">: <span class="extype" name="scala.util.Left">Left</span>[<a href="../Elem.html" class="extype" name="scales.xml.Elem">Elem</a>, <span class="extype" name="scala.Nothing">Nothing</span>]</span>
+      </span>
+      
+      
     </li><li name="scala.Any#asInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <span class="permalink">
@@ -625,9 +641,9 @@
               
         </dd></dl></div>
     </li><li name="scales.xml.serializers.StreamSerializer#pump" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="pump(event:(scales.xml.PullType,scales.xml.PullType),status:scales.xml.serializers.StreamStatus,serializer:scales.xml.serializers.Serializer):scales.xml.serializers.StreamStatus"></a><a id="pump((xml.PullType,xml.PullType),StreamStatus,Serializer):StreamStatus"></a>
+      <a id="pump(currentEvent:scales.xml.PullType,status:scales.xml.serializers.StreamStatus,serializer:scales.xml.serializers.Serializer):scales.xml.serializers.StreamStatus"></a><a id="pump(xml.PullType,StreamStatus,Serializer):StreamStatus"></a>
       <span class="permalink">
-      <a href="../../../scales/xml/serializers/StreamSerializer$.html#pump(event:(scales.xml.PullType,scales.xml.PullType),status:scales.xml.serializers.StreamStatus,serializer:scales.xml.serializers.Serializer):scales.xml.serializers.StreamStatus" title="Permalink">
+      <a href="../../../scales/xml/serializers/StreamSerializer$.html#pump(currentEvent:scales.xml.PullType,status:scales.xml.serializers.StreamStatus,serializer:scales.xml.serializers.Serializer):scales.xml.serializers.StreamStatus" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -636,10 +652,10 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">pump</span><span class="params">(<span name="event">event: (<a href="../index.html#PullType=Either[scales.xml.XmlEvent,scales.xml.EndElem]" class="extmbr" name="scales.xml.PullType">xml.PullType</a>, <a href="../index.html#PullType=Either[scales.xml.XmlEvent,scales.xml.EndElem]" class="extmbr" name="scales.xml.PullType">xml.PullType</a>)</span>, <span name="status">status: <a href="StreamStatus.html" class="extype" name="scales.xml.serializers.StreamStatus">StreamStatus</a></span>, <span name="serializer">serializer: <a href="Serializer.html" class="extype" name="scales.xml.serializers.Serializer">Serializer</a></span>)</span><span class="result">: <a href="StreamStatus.html" class="extype" name="scales.xml.serializers.StreamStatus">StreamStatus</a></span>
+        <span class="name">pump</span><span class="params">(<span name="currentEvent">currentEvent: <a href="../index.html#PullType=Either[scales.xml.XmlEvent,scales.xml.EndElem]" class="extmbr" name="scales.xml.PullType">xml.PullType</a></span>, <span name="status">status: <a href="StreamStatus.html" class="extype" name="scales.xml.serializers.StreamStatus">StreamStatus</a></span>, <span name="serializer">serializer: <a href="Serializer.html" class="extype" name="scales.xml.serializers.Serializer">Serializer</a></span>)</span><span class="result">: <a href="StreamStatus.html" class="extype" name="scales.xml.serializers.StreamStatus">StreamStatus</a></span>
       </span>
       
-      <p class="shortcomment cmt">Pushes a single PullType to the given output, requires pairing of events.</p><div class="fullcomment"><div class="comment cmt"><p>Pushes a single PullType to the given output, requires pairing of events.
+      <p class="shortcomment cmt">Pushes a single PullType to the given output, requires a finishing &quot;dummy&quot; event to indicate the end of the document.</p><div class="fullcomment"><div class="comment cmt"><p>Pushes a single PullType to the given output, requires a finishing &quot;dummy&quot; event to indicate the end of the document.
 If status.thrown is defined status is returned
 </p></div></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">

@@ -68,9 +68,18 @@
 </span>44 <span style=''>}
 </span>45 <span style=''>
 </span>46 <span style=''>/**
-</span>47 <span style=''> * A section of a Byte array
+</span>47 <span style=''> * A section of a Byte array.  Due to Trampolining this cannot be re-used, as such a copy is made.  TODO Perhaps this should be optional
 </span>48 <span style=''> */ 
-</span>49 <span style=''>final case class Chunk( array: Array[Byte], offset: Int, length: Int) extends DataChunk
+</span>49 <span style=''>//final case class Chunk( array: Array[Byte], offset: Int, length: Int) extends DataChunk
+</span>50 <span style=''>
+</span>51 <span style=''>object Chunk{
+</span>52 <span style=''>  def apply( array: Array[Byte], offset: Int, length: Int): DataChunk =
+</span>53 <span style=''>    </span><span style='background: #F0ADAD'>FullChunk{
+</span>54 <span style=''></span><span style='background: #F0ADAD'>      val c = Array.ofDim[Byte](length)
+</span>55 <span style=''></span><span style='background: #F0ADAD'>      Array.copy(array, offset, c, 0, length)
+</span>56 <span style=''></span><span style='background: #F0ADAD'>      c
+</span>57 <span style=''></span><span style='background: #F0ADAD'>    }</span><span style=''>
+</span>58 <span style=''>}
 </span></pre>
           </div>
           <div class="tab-pane" id="statementlist">
@@ -370,6 +379,82 @@
         </td>
         <td style="background: #F0ADAD">
           FullChunk.this.array.length
+        </td>
+      </tr><tr>
+        <td>
+          53
+        </td>
+        <td>
+          1252
+        </td>
+        <td>
+          1225
+          -
+          1335
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.io.FullChunk.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          FullChunk.apply({
+  val c: Array[Byte] = scala.Array.ofDim[Byte](length)((ClassTag.Byte: scala.reflect.ClassTag[Byte]));
+  scala.Array.copy(array, offset, c, 0, length);
+  c
+})
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          1250
+        </td>
+        <td>
+          1250
+          -
+          1275
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.Array.ofDim
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Array.ofDim[Byte](length)((ClassTag.Byte: scala.reflect.ClassTag[Byte]))
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          1251
+        </td>
+        <td>
+          1282
+          -
+          1321
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Array.copy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Array.copy(array, offset, c, 0, length)
         </td>
       </tr>
     </table>

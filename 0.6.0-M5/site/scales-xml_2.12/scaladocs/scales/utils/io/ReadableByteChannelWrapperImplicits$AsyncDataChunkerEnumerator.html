@@ -162,7 +162,7 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">AsyncDataChunkerEnumerator</span><span class="tparams">[<span name="E">E</span>]</span><span class="result"> extends <span class="extype" name="scalaz.iteratee.Enumerator">Enumerator</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>]</span>
+        <span class="name">AsyncDataChunkerEnumerator</span><span class="tparams">[<span name="E">E</span>, <span name="F">F<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="result"> extends <span class="extype" name="scalaz.iteratee.EnumeratorT">EnumeratorT</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>, <span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F">F</span>]</span>
       </span>
       </h4>
 
@@ -171,12 +171,12 @@
           <span class="toggle">
             Linear Supertypes
           </span>
-          <div class="superTypes hiddenContent"><span class="extype" name="scalaz.iteratee.EnumeratorT">EnumeratorT</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>, <span class="extype" name="scalaz.IdInstances.Id">scalaz.Id.Id</span>], <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="scalaz.iteratee.EnumeratorT">EnumeratorT</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>, <span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F">F</span>], <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
         </div><div class="toggleContainer block diagram-container" id="inheritance-diagram-container">
                 <span class="toggle diagram-link">
                   Type Hierarchy
                 </span>
-                <div class="diagram" id="inheritance-diagram"><svg class="class-diagram" id="graph1" width="232pt" height="118pt" viewBox="0.00 0.00 232.00 118.00" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><g id="page0,1_graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 114)"><polygon fill="white" stroke="transparent" points="-4,4 -4,-114 228,-114 228,4 -4,4"></polygon><g id="clust1" class="cluster"></g><g id="clust2" class="cluster"></g><!-- node0 --><g class="node this class" id="graph1_0"><g id="a_this class|graph1_0"><a xlink:href="#inheritance-diagram" xlink:title="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator (this class)"><path fill="#418565" stroke="#418565" d="M192.17,-49C192.17,-49 31.83,-49 31.83,-49 27.67,-49 23.5,-44.83 23.5,-40.67 23.5,-40.67 23.5,-32.33 23.5,-32.33 23.5,-28.17 27.67,-24 31.83,-24 31.83,-24 192.17,-24 192.17,-24 196.33,-24 200.5,-28.17 200.5,-32.33 200.5,-32.33 200.5,-40.67 200.5,-40.67 200.5,-44.83 196.33,-49 192.17,-49"></path><image xlink:href="../../../lib/class_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="34" y="-43.5"></image><text text-anchor="start" x="55" y="-34.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">AsyncDataChunkerEnumerator[E]</text></a></g></g><!-- node1 --><g class="node trait" id="graph1_1"><g id="a_trait|graph1_1"><a xlink:title="scalaz.iteratee.EnumeratorT"><path fill="#2e6d82" stroke="#2e6d82" d="M156.17,-110C156.17,-110 67.83,-110 67.83,-110 63.67,-110 59.5,-105.83 59.5,-101.67 59.5,-101.67 59.5,-93.33 59.5,-93.33 59.5,-89.17 63.67,-85 67.83,-85 67.83,-85 156.17,-85 156.17,-85 160.33,-85 164.5,-89.17 164.5,-93.33 164.5,-93.33 164.5,-101.67 164.5,-101.67 164.5,-105.83 160.33,-110 156.17,-110"></path><image xlink:href="../../../lib/trait_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="70" y="-104.5"></image><text text-anchor="start" x="91" y="-95.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">Enumerator[E]</text></a></g></g><!-- node1&#45;&gt;node0 --><g class="edge inheritance" id="graph1_1_0"><g id="a_inheritance|graph1_1_0"><a xlink:title="AsyncDataChunkerEnumerator[E] is a subtype of Enumerator[E]"><path fill="none" stroke="#d4d4d4" d="M112,-77.76C112,-68.37 112,-57.29 112,-49.13"></path><polygon fill="none" stroke="#d4d4d4" points="109.55,-77.84 112,-84.84 114.45,-77.84 109.55,-77.84"></polygon></a></g></g></g></svg></div>
+                <div class="diagram" id="inheritance-diagram"><svg class="class-diagram" id="graph1" width="246pt" height="118pt" viewBox="0.00 0.00 246.00 118.00" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><g id="page0,1_graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 114)"><polygon fill="white" stroke="transparent" points="-4,4 -4,-114 242,-114 242,4 -4,4"></polygon><g id="clust1" class="cluster"></g><g id="clust2" class="cluster"></g><!-- node0 --><g class="node this class" id="graph1_0"><g id="a_this class|graph1_0"><a xlink:href="#inheritance-diagram" xlink:title="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator (this class)"><path fill="#418565" stroke="#418565" d="M205.67,-49C205.67,-49 32.33,-49 32.33,-49 28.17,-49 24,-44.83 24,-40.67 24,-40.67 24,-32.33 24,-32.33 24,-28.17 28.17,-24 32.33,-24 32.33,-24 205.67,-24 205.67,-24 209.83,-24 214,-28.17 214,-32.33 214,-32.33 214,-40.67 214,-40.67 214,-44.83 209.83,-49 205.67,-49"></path><image xlink:href="../../../lib/class_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="34" y="-43.5"></image><text text-anchor="start" x="55" y="-34.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">AsyncDataChunkerEnumerator[E, F]</text></a></g></g><!-- node1 --><g class="node trait" id="graph1_1"><g id="a_trait|graph1_1"><a xlink:title="scalaz.iteratee.EnumeratorT"><path fill="#2e6d82" stroke="#2e6d82" d="M172.17,-110C172.17,-110 65.83,-110 65.83,-110 61.67,-110 57.5,-105.83 57.5,-101.67 57.5,-101.67 57.5,-93.33 57.5,-93.33 57.5,-89.17 61.67,-85 65.83,-85 65.83,-85 172.17,-85 172.17,-85 176.33,-85 180.5,-89.17 180.5,-93.33 180.5,-93.33 180.5,-101.67 180.5,-101.67 180.5,-105.83 176.33,-110 172.17,-110"></path><image xlink:href="../../../lib/trait_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="68" y="-104.5"></image><text text-anchor="start" x="89" y="-95.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">EnumeratorT[E, F]</text></a></g></g><!-- node1&#45;&gt;node0 --><g class="edge inheritance" id="graph1_1_0"><g id="a_inheritance|graph1_1_0"><a xlink:title="AsyncDataChunkerEnumerator[E, F] is a subtype of EnumeratorT[E, F]"><path fill="none" stroke="#d4d4d4" d="M119,-77.76C119,-68.37 119,-57.29 119,-49.13"></path><polygon fill="none" stroke="#d4d4d4" points="116.55,-77.84 119,-84.84 121.45,-77.84 116.55,-77.84"></polygon></a></g></g></g></svg></div>
                 <div id="diagram-controls" class="hiddenContent">
                   <button id="diagram-zoom-out" class="diagram-btn"><i class="material-icons"></i></button>
                   <button id="diagram-zoom-in" class="diagram-btn"><i class="material-icons"></i></button>
@@ -228,9 +228,9 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="&lt;init&gt;(chunker:scales.utils.io.DataChunker[E],contOnCont:Int):ReadableByteChannelWrapperImplicits.this.AsyncDataChunkerEnumerator[E]"></a><a id="&lt;init&gt;:AsyncDataChunkerEnumerator[E]"></a>
+      <a id="&lt;init&gt;(chunker:scales.utils.io.DataChunker[E],contOnCont:Int)(implicitF:scalaz.Monad[F]):ReadableByteChannelWrapperImplicits.this.AsyncDataChunkerEnumerator[E,F]"></a><a id="&lt;init&gt;:AsyncDataChunkerEnumerator[E,F]"></a>
       <span class="permalink">
-      <a href="../../../scales/utils/io/ReadableByteChannelWrapperImplicits$AsyncDataChunkerEnumerator.html#&lt;init&gt;(chunker:scales.utils.io.DataChunker[E],contOnCont:Int):ReadableByteChannelWrapperImplicits.this.AsyncDataChunkerEnumerator[E]" title="Permalink">
+      <a href="../../../scales/utils/io/ReadableByteChannelWrapperImplicits$AsyncDataChunkerEnumerator.html#&lt;init&gt;(chunker:scales.utils.io.DataChunker[E],contOnCont:Int)(implicitF:scalaz.Monad[F]):ReadableByteChannelWrapperImplicits.this.AsyncDataChunkerEnumerator[E,F]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -239,7 +239,7 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">AsyncDataChunkerEnumerator</span><span class="params">(<span name="chunker">chunker: <a href="DataChunker.html" class="extype" name="scales.utils.io.DataChunker">DataChunker</a>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>]</span>, <span name="contOnCont">contOnCont: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">5</span></span>)</span>
+        <span class="name">AsyncDataChunkerEnumerator</span><span class="params">(<span name="chunker">chunker: <a href="DataChunker.html" class="extype" name="scales.utils.io.DataChunker">DataChunker</a>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>]</span>, <span name="contOnCont">contOnCont: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">5</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="F">F: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F">F</span>]</span>)</span>
       </span>
       
       <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt class="param">contOnCont</dt><dd class="cmt"><p>INFINITE_RETRIES (-1) for keep on trying, the default is 5 (as exposed by the implicit enumerator readableByteChannelEnumerator)</p></dd></dl></div>
@@ -286,7 +286,7 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="scalaz.iteratee.EnumeratorT##::" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="#::(e:E)(implicitF:scalaz.Monad[F]):scalaz.iteratee.EnumeratorT[E,F]"></a><a id="#::(E)(Monad[scalaz.Id.Id]):EnumeratorT[E,scalaz.Id.Id]"></a>
+      <a id="#::(e:E)(implicitF:scalaz.Monad[F]):scalaz.iteratee.EnumeratorT[E,F]"></a><a id="#::(E)(Monad[F]):EnumeratorT[E,F]"></a>
       <span class="permalink">
       <a href="../../../scales/utils/io/ReadableByteChannelWrapperImplicits$AsyncDataChunkerEnumerator.html##::(e:E)(implicitF:scalaz.Monad[F]):scalaz.iteratee.EnumeratorT[E,F]" title="Permalink">
         <i class="material-icons"></i>
@@ -297,7 +297,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span title="gt4s: $hash$colon$colon" class="name">#::</span><span class="params">(<span name="e">e: <span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="F">F: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scalaz.IdInstances.Id">scalaz.Id.Id</span>]</span>)</span><span class="result">: <span class="extype" name="scalaz.iteratee.EnumeratorT">EnumeratorT</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>, <span class="extype" name="scalaz.IdInstances.Id">scalaz.Id.Id</span>]</span>
+        <span title="gt4s: $hash$colon$colon" class="name">#::</span><span class="params">(<span name="e">e: <span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="F">F: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F">F</span>]</span>)</span><span class="result">: <span class="extype" name="scalaz.iteratee.EnumeratorT">EnumeratorT</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>, <span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F">F</span>]</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>EnumeratorT</dd></dl></div>
@@ -318,9 +318,9 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator#apply" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="apply[A]:scalaz.iteratee.StepT[E,scalaz.Id.Id,A]=&gt;scalaz.iteratee.IterateeT[E,scalaz.Id.Id,A]"></a><a id="apply[A]:(StepT[E,scalaz.Id.Id,A])⇒IterateeT[E,scalaz.Id.Id,A]"></a>
+      <a id="apply[A]:scalaz.iteratee.StepT[E,F,A]=&gt;scalaz.iteratee.IterateeT[E,F,A]"></a><a id="apply[A]:(StepT[E,F,A])⇒IterateeT[E,F,A]"></a>
       <span class="permalink">
-      <a href="../../../scales/utils/io/ReadableByteChannelWrapperImplicits$AsyncDataChunkerEnumerator.html#apply[A]:scalaz.iteratee.StepT[E,scalaz.Id.Id,A]=&gt;scalaz.iteratee.IterateeT[E,scalaz.Id.Id,A]" title="Permalink">
+      <a href="../../../scales/utils/io/ReadableByteChannelWrapperImplicits$AsyncDataChunkerEnumerator.html#apply[A]:scalaz.iteratee.StepT[E,F,A]=&gt;scalaz.iteratee.IterateeT[E,F,A]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -329,7 +329,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">apply</span><span class="tparams">[<span name="A">A</span>]</span><span class="result">: (<span class="extype" name="scalaz.iteratee.StepT">StepT</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>, <span class="extype" name="scalaz.IdInstances.Id">scalaz.Id.Id</span>, <span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.apply.A">A</span>]) ⇒ <span class="extype" name="scalaz.iteratee.IterateeT">IterateeT</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>, <span class="extype" name="scalaz.IdInstances.Id">scalaz.Id.Id</span>, <span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.apply.A">A</span>]</span>
+        <span class="name">apply</span><span class="tparams">[<span name="A">A</span>]</span><span class="result">: (<span class="extype" name="scalaz.iteratee.StepT">StepT</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>, <span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F">F</span>, <span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.apply.A">A</span>]) ⇒ <span class="extype" name="scalaz.iteratee.IterateeT">IterateeT</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>, <span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F">F</span>, <span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.apply.A">A</span>]</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator">AsyncDataChunkerEnumerator</a> → EnumeratorT</dd></dl></div>
@@ -350,7 +350,7 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li name="scalaz.iteratee.EnumeratorT#bindM" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="bindM[B,G[_]](f:E=&gt;G[scalaz.iteratee.EnumeratorT[B,F]])(implicitF:scalaz.Monad[F],implicitG:scalaz.Monad[G]):F[G[scalaz.iteratee.EnumeratorT[B,F]]]"></a><a id="bindM[B,G[_]]((E)⇒G[EnumeratorT[B,scalaz.Id.Id]])(Monad[scalaz.Id.Id],Monad[G]):scalaz.Id.Id[G[EnumeratorT[B,scalaz.Id.Id]]]"></a>
+      <a id="bindM[B,G[_]](f:E=&gt;G[scalaz.iteratee.EnumeratorT[B,F]])(implicitF:scalaz.Monad[F],implicitG:scalaz.Monad[G]):F[G[scalaz.iteratee.EnumeratorT[B,F]]]"></a><a id="bindM[B,G[_]]((E)⇒G[EnumeratorT[B,F]])(Monad[F],Monad[G]):F[G[EnumeratorT[B,F]]]"></a>
       <span class="permalink">
       <a href="../../../scales/utils/io/ReadableByteChannelWrapperImplicits$AsyncDataChunkerEnumerator.html#bindM[B,G[_]](f:E=&gt;G[scalaz.iteratee.EnumeratorT[B,F]])(implicitF:scalaz.Monad[F],implicitG:scalaz.Monad[G]):F[G[scalaz.iteratee.EnumeratorT[B,F]]]" title="Permalink">
         <i class="material-icons"></i>
@@ -361,7 +361,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">bindM</span><span class="tparams">[<span name="B">B</span>, <span name="G">G<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="params">(<span name="f">f: (<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>) ⇒ <span class="extype" name="scalaz.iteratee.EnumeratorT.bindM.G">G</span>[<span class="extype" name="scalaz.iteratee.EnumeratorT">EnumeratorT</span>[<span class="extype" name="scalaz.iteratee.EnumeratorT.bindM.B">B</span>, <span class="extype" name="scalaz.IdInstances.Id">scalaz.Id.Id</span>]]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="F">F: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scalaz.IdInstances.Id">scalaz.Id.Id</span>]</span>, <span name="G">G: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scalaz.iteratee.EnumeratorT.bindM.G">G</span>]</span>)</span><span class="result">: <span class="extype" name="scalaz.IdInstances.Id">scalaz.Id.Id</span>[<span class="extype" name="scalaz.iteratee.EnumeratorT.bindM.G">G</span>[<span class="extype" name="scalaz.iteratee.EnumeratorT">EnumeratorT</span>[<span class="extype" name="scalaz.iteratee.EnumeratorT.bindM.B">B</span>, <span class="extype" name="scalaz.IdInstances.Id">scalaz.Id.Id</span>]]]</span>
+        <span class="name">bindM</span><span class="tparams">[<span name="B">B</span>, <span name="G">G<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="params">(<span name="f">f: (<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>) ⇒ <span class="extype" name="scalaz.iteratee.EnumeratorT.bindM.G">G</span>[<span class="extype" name="scalaz.iteratee.EnumeratorT">EnumeratorT</span>[<span class="extype" name="scalaz.iteratee.EnumeratorT.bindM.B">B</span>, <span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F">F</span>]]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="F">F: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F">F</span>]</span>, <span name="G">G: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scalaz.iteratee.EnumeratorT.bindM.G">G</span>]</span>)</span><span class="result">: <span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F">F</span>[<span class="extype" name="scalaz.iteratee.EnumeratorT.bindM.G">G</span>[<span class="extype" name="scalaz.iteratee.EnumeratorT">EnumeratorT</span>[<span class="extype" name="scalaz.iteratee.EnumeratorT.bindM.B">B</span>, <span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F">F</span>]]]</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>EnumeratorT</dd></dl></div>
@@ -390,7 +390,7 @@
               
         </dd></dl></div>
     </li><li name="scalaz.iteratee.EnumeratorT#collect" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="collect[B](pf:PartialFunction[E,B])(implicitmonad:scalaz.Monad[F]):scalaz.iteratee.EnumeratorT[B,F]"></a><a id="collect[B](PartialFunction[E,B])(Monad[scalaz.Id.Id]):EnumeratorT[B,scalaz.Id.Id]"></a>
+      <a id="collect[B](pf:PartialFunction[E,B])(implicitmonad:scalaz.Monad[F]):scalaz.iteratee.EnumeratorT[B,F]"></a><a id="collect[B](PartialFunction[E,B])(Monad[F]):EnumeratorT[B,F]"></a>
       <span class="permalink">
       <a href="../../../scales/utils/io/ReadableByteChannelWrapperImplicits$AsyncDataChunkerEnumerator.html#collect[B](pf:PartialFunction[E,B])(implicitmonad:scalaz.Monad[F]):scalaz.iteratee.EnumeratorT[B,F]" title="Permalink">
         <i class="material-icons"></i>
@@ -401,12 +401,12 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">collect</span><span class="tparams">[<span name="B">B</span>]</span><span class="params">(<span name="pf">pf: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>, <span class="extype" name="scalaz.iteratee.EnumeratorT.collect.B">B</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="monad">monad: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scalaz.IdInstances.Id">scalaz.Id.Id</span>]</span>)</span><span class="result">: <span class="extype" name="scalaz.iteratee.EnumeratorT">EnumeratorT</span>[<span class="extype" name="scalaz.iteratee.EnumeratorT.collect.B">B</span>, <span class="extype" name="scalaz.IdInstances.Id">scalaz.Id.Id</span>]</span>
+        <span class="name">collect</span><span class="tparams">[<span name="B">B</span>]</span><span class="params">(<span name="pf">pf: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>, <span class="extype" name="scalaz.iteratee.EnumeratorT.collect.B">B</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="monad">monad: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F">F</span>]</span>)</span><span class="result">: <span class="extype" name="scalaz.iteratee.EnumeratorT">EnumeratorT</span>[<span class="extype" name="scalaz.iteratee.EnumeratorT.collect.B">B</span>, <span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F">F</span>]</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>EnumeratorT</dd></dl></div>
     </li><li name="scalaz.iteratee.EnumeratorT#cross" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="cross[E2](e2:scalaz.iteratee.EnumeratorT[E2,F])(implicitM:scalaz.Monad[F]):scalaz.iteratee.EnumeratorT[(E,E2),F]"></a><a id="cross[E2](EnumeratorT[E2,scalaz.Id.Id])(Monad[scalaz.Id.Id]):EnumeratorT[(E,E2),scalaz.Id.Id]"></a>
+      <a id="cross[E2](e2:scalaz.iteratee.EnumeratorT[E2,F])(implicitM:scalaz.Monad[F]):scalaz.iteratee.EnumeratorT[(E,E2),F]"></a><a id="cross[E2](EnumeratorT[E2,F])(Monad[F]):EnumeratorT[(E,E2),F]"></a>
       <span class="permalink">
       <a href="../../../scales/utils/io/ReadableByteChannelWrapperImplicits$AsyncDataChunkerEnumerator.html#cross[E2](e2:scalaz.iteratee.EnumeratorT[E2,F])(implicitM:scalaz.Monad[F]):scalaz.iteratee.EnumeratorT[(E,E2),F]" title="Permalink">
         <i class="material-icons"></i>
@@ -417,12 +417,12 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">cross</span><span class="tparams">[<span name="E2">E2</span>]</span><span class="params">(<span name="e2">e2: <span class="extype" name="scalaz.iteratee.EnumeratorT">EnumeratorT</span>[<span class="extype" name="scalaz.iteratee.EnumeratorT.cross.E2">E2</span>, <span class="extype" name="scalaz.IdInstances.Id">scalaz.Id.Id</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="M">M: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scalaz.IdInstances.Id">scalaz.Id.Id</span>]</span>)</span><span class="result">: <span class="extype" name="scalaz.iteratee.EnumeratorT">EnumeratorT</span>[(<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>, <span class="extype" name="scalaz.iteratee.EnumeratorT.cross.E2">E2</span>), <span class="extype" name="scalaz.IdInstances.Id">scalaz.Id.Id</span>]</span>
+        <span class="name">cross</span><span class="tparams">[<span name="E2">E2</span>]</span><span class="params">(<span name="e2">e2: <span class="extype" name="scalaz.iteratee.EnumeratorT">EnumeratorT</span>[<span class="extype" name="scalaz.iteratee.EnumeratorT.cross.E2">E2</span>, <span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F">F</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="M">M: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F">F</span>]</span>)</span><span class="result">: <span class="extype" name="scalaz.iteratee.EnumeratorT">EnumeratorT</span>[(<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>, <span class="extype" name="scalaz.iteratee.EnumeratorT.cross.E2">E2</span>), <span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F">F</span>]</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>EnumeratorT</dd></dl></div>
     </li><li name="scalaz.iteratee.EnumeratorT#drainTo" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="drainTo[M[_]](implicitM:scalaz.Monad[F],implicitP:scalaz.PlusEmpty[M],implicitZ:scalaz.Applicative[M]):F[M[E]]"></a><a id="drainTo[M[_]](Monad[scalaz.Id.Id],PlusEmpty[M],Applicative[M]):scalaz.Id.Id[M[E]]"></a>
+      <a id="drainTo[M[_]](implicitM:scalaz.Monad[F],implicitP:scalaz.PlusEmpty[M],implicitZ:scalaz.Applicative[M]):F[M[E]]"></a><a id="drainTo[M[_]](Monad[F],PlusEmpty[M],Applicative[M]):F[M[E]]"></a>
       <span class="permalink">
       <a href="../../../scales/utils/io/ReadableByteChannelWrapperImplicits$AsyncDataChunkerEnumerator.html#drainTo[M[_]](implicitM:scalaz.Monad[F],implicitP:scalaz.PlusEmpty[M],implicitZ:scalaz.Applicative[M]):F[M[E]]" title="Permalink">
         <i class="material-icons"></i>
@@ -433,7 +433,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">drainTo</span><span class="tparams">[<span name="M">M<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="params">(<span class="implicit">implicit </span><span name="M">M: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scalaz.IdInstances.Id">scalaz.Id.Id</span>]</span>, <span name="P">P: <span class="extype" name="scalaz.PlusEmpty">PlusEmpty</span>[<span class="extype" name="scalaz.iteratee.EnumeratorT.drainTo.M">M</span>]</span>, <span name="Z">Z: <span class="extype" name="scalaz.Applicative">Applicative</span>[<span class="extype" name="scalaz.iteratee.EnumeratorT.drainTo.M">M</span>]</span>)</span><span class="result">: <span class="extype" name="scalaz.IdInstances.Id">scalaz.Id.Id</span>[<span class="extype" name="scalaz.iteratee.EnumeratorT.drainTo.M">M</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>]]</span>
+        <span class="name">drainTo</span><span class="tparams">[<span name="M">M<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="params">(<span class="implicit">implicit </span><span name="M">M: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F">F</span>]</span>, <span name="P">P: <span class="extype" name="scalaz.PlusEmpty">PlusEmpty</span>[<span class="extype" name="scalaz.iteratee.EnumeratorT.drainTo.M">M</span>]</span>, <span name="Z">Z: <span class="extype" name="scalaz.Applicative">Applicative</span>[<span class="extype" name="scalaz.iteratee.EnumeratorT.drainTo.M">M</span>]</span>)</span><span class="result">: <span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F">F</span>[<span class="extype" name="scalaz.iteratee.EnumeratorT.drainTo.M">M</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>]]</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>EnumeratorT</dd></dl></div>
@@ -492,7 +492,7 @@
               
         </dd></dl></div>
     </li><li name="scalaz.iteratee.EnumeratorT#flatMap" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="flatMap[B](f:E=&gt;scalaz.iteratee.EnumeratorT[B,F])(implicitM1:scalaz.Monad[F]):scalaz.iteratee.EnumeratorT[B,F]"></a><a id="flatMap[B]((E)⇒EnumeratorT[B,scalaz.Id.Id])(Monad[scalaz.Id.Id]):EnumeratorT[B,scalaz.Id.Id]"></a>
+      <a id="flatMap[B](f:E=&gt;scalaz.iteratee.EnumeratorT[B,F])(implicitM1:scalaz.Monad[F]):scalaz.iteratee.EnumeratorT[B,F]"></a><a id="flatMap[B]((E)⇒EnumeratorT[B,F])(Monad[F]):EnumeratorT[B,F]"></a>
       <span class="permalink">
       <a href="../../../scales/utils/io/ReadableByteChannelWrapperImplicits$AsyncDataChunkerEnumerator.html#flatMap[B](f:E=&gt;scalaz.iteratee.EnumeratorT[B,F])(implicitM1:scalaz.Monad[F]):scalaz.iteratee.EnumeratorT[B,F]" title="Permalink">
         <i class="material-icons"></i>
@@ -503,12 +503,12 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">flatMap</span><span class="tparams">[<span name="B">B</span>]</span><span class="params">(<span name="f">f: (<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>) ⇒ <span class="extype" name="scalaz.iteratee.EnumeratorT">EnumeratorT</span>[<span class="extype" name="scalaz.iteratee.EnumeratorT.flatMap.B">B</span>, <span class="extype" name="scalaz.IdInstances.Id">scalaz.Id.Id</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="M1">M1: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scalaz.IdInstances.Id">scalaz.Id.Id</span>]</span>)</span><span class="result">: <span class="extype" name="scalaz.iteratee.EnumeratorT">EnumeratorT</span>[<span class="extype" name="scalaz.iteratee.EnumeratorT.flatMap.B">B</span>, <span class="extype" name="scalaz.IdInstances.Id">scalaz.Id.Id</span>]</span>
+        <span class="name">flatMap</span><span class="tparams">[<span name="B">B</span>]</span><span class="params">(<span name="f">f: (<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>) ⇒ <span class="extype" name="scalaz.iteratee.EnumeratorT">EnumeratorT</span>[<span class="extype" name="scalaz.iteratee.EnumeratorT.flatMap.B">B</span>, <span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F">F</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="M1">M1: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F">F</span>]</span>)</span><span class="result">: <span class="extype" name="scalaz.iteratee.EnumeratorT">EnumeratorT</span>[<span class="extype" name="scalaz.iteratee.EnumeratorT.flatMap.B">B</span>, <span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F">F</span>]</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>EnumeratorT</dd></dl></div>
     </li><li name="scalaz.iteratee.EnumeratorT#flatten" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="flatten[B](implicitev:E===F[B],implicitF:scalaz.Monad[F]):scalaz.iteratee.EnumeratorT[B,F]"></a><a id="flatten[B](===[E,scalaz.Id.Id[B]],Monad[scalaz.Id.Id]):EnumeratorT[B,scalaz.Id.Id]"></a>
+      <a id="flatten[B](implicitev:E===F[B],implicitF:scalaz.Monad[F]):scalaz.iteratee.EnumeratorT[B,F]"></a><a id="flatten[B](===[E,F[B]],Monad[F]):EnumeratorT[B,F]"></a>
       <span class="permalink">
       <a href="../../../scales/utils/io/ReadableByteChannelWrapperImplicits$AsyncDataChunkerEnumerator.html#flatten[B](implicitev:E===F[B],implicitF:scalaz.Monad[F]):scalaz.iteratee.EnumeratorT[B,F]" title="Permalink">
         <i class="material-icons"></i>
@@ -519,7 +519,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">flatten</span><span class="tparams">[<span name="B">B</span>]</span><span class="params">(<span class="implicit">implicit </span><span name="ev">ev: <span class="extype" name="scalaz.===">===</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>, <span class="extype" name="scalaz.IdInstances.Id">scalaz.Id.Id</span>[<span class="extype" name="scalaz.iteratee.EnumeratorT.flatten.B">B</span>]]</span>, <span name="F">F: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scalaz.IdInstances.Id">scalaz.Id.Id</span>]</span>)</span><span class="result">: <span class="extype" name="scalaz.iteratee.EnumeratorT">EnumeratorT</span>[<span class="extype" name="scalaz.iteratee.EnumeratorT.flatten.B">B</span>, <span class="extype" name="scalaz.IdInstances.Id">scalaz.Id.Id</span>]</span>
+        <span class="name">flatten</span><span class="tparams">[<span name="B">B</span>]</span><span class="params">(<span class="implicit">implicit </span><span name="ev">ev: <span class="extype" name="scalaz.===">===</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>, <span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F">F</span>[<span class="extype" name="scalaz.iteratee.EnumeratorT.flatten.B">B</span>]]</span>, <span name="F">F: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F">F</span>]</span>)</span><span class="result">: <span class="extype" name="scalaz.iteratee.EnumeratorT">EnumeratorT</span>[<span class="extype" name="scalaz.iteratee.EnumeratorT.flatten.B">B</span>, <span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F">F</span>]</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>EnumeratorT</dd></dl></div>
@@ -578,7 +578,7 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li name="scalaz.iteratee.EnumeratorT#map" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="map[B](f:E=&gt;B)(implicitev:scalaz.Monad[F]):scalaz.iteratee.EnumeratorT[B,F]"></a><a id="map[B]((E)⇒B)(Monad[scalaz.Id.Id]):EnumeratorT[B,scalaz.Id.Id]"></a>
+      <a id="map[B](f:E=&gt;B)(implicitev:scalaz.Monad[F]):scalaz.iteratee.EnumeratorT[B,F]"></a><a id="map[B]((E)⇒B)(Monad[F]):EnumeratorT[B,F]"></a>
       <span class="permalink">
       <a href="../../../scales/utils/io/ReadableByteChannelWrapperImplicits$AsyncDataChunkerEnumerator.html#map[B](f:E=&gt;B)(implicitev:scalaz.Monad[F]):scalaz.iteratee.EnumeratorT[B,F]" title="Permalink">
         <i class="material-icons"></i>
@@ -589,12 +589,12 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">map</span><span class="tparams">[<span name="B">B</span>]</span><span class="params">(<span name="f">f: (<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>) ⇒ <span class="extype" name="scalaz.iteratee.EnumeratorT.map.B">B</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="ev">ev: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scalaz.IdInstances.Id">scalaz.Id.Id</span>]</span>)</span><span class="result">: <span class="extype" name="scalaz.iteratee.EnumeratorT">EnumeratorT</span>[<span class="extype" name="scalaz.iteratee.EnumeratorT.map.B">B</span>, <span class="extype" name="scalaz.IdInstances.Id">scalaz.Id.Id</span>]</span>
+        <span class="name">map</span><span class="tparams">[<span name="B">B</span>]</span><span class="params">(<span name="f">f: (<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>) ⇒ <span class="extype" name="scalaz.iteratee.EnumeratorT.map.B">B</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="ev">ev: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F">F</span>]</span>)</span><span class="result">: <span class="extype" name="scalaz.iteratee.EnumeratorT">EnumeratorT</span>[<span class="extype" name="scalaz.iteratee.EnumeratorT.map.B">B</span>, <span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F">F</span>]</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>EnumeratorT</dd></dl></div>
     </li><li name="scalaz.iteratee.EnumeratorT#mapE" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="mapE[I](et:scalaz.iteratee.EnumerateeT[E,I,F])(implicitM:scalaz.Monad[F]):scalaz.iteratee.EnumeratorT[I,F]"></a><a id="mapE[I](EnumerateeT[E,I,scalaz.Id.Id])(Monad[scalaz.Id.Id]):EnumeratorT[I,scalaz.Id.Id]"></a>
+      <a id="mapE[I](et:scalaz.iteratee.EnumerateeT[E,I,F])(implicitM:scalaz.Monad[F]):scalaz.iteratee.EnumeratorT[I,F]"></a><a id="mapE[I](EnumerateeT[E,I,F])(Monad[F]):EnumeratorT[I,F]"></a>
       <span class="permalink">
       <a href="../../../scales/utils/io/ReadableByteChannelWrapperImplicits$AsyncDataChunkerEnumerator.html#mapE[I](et:scalaz.iteratee.EnumerateeT[E,I,F])(implicitM:scalaz.Monad[F]):scalaz.iteratee.EnumeratorT[I,F]" title="Permalink">
         <i class="material-icons"></i>
@@ -605,7 +605,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">mapE</span><span class="tparams">[<span name="I">I</span>]</span><span class="params">(<span name="et">et: <span class="extype" name="scalaz.iteratee.EnumerateeT">EnumerateeT</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>, <span class="extype" name="scalaz.iteratee.EnumeratorT.mapE.I">I</span>, <span class="extype" name="scalaz.IdInstances.Id">scalaz.Id.Id</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="M">M: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scalaz.IdInstances.Id">scalaz.Id.Id</span>]</span>)</span><span class="result">: <span class="extype" name="scalaz.iteratee.EnumeratorT">EnumeratorT</span>[<span class="extype" name="scalaz.iteratee.EnumeratorT.mapE.I">I</span>, <span class="extype" name="scalaz.IdInstances.Id">scalaz.Id.Id</span>]</span>
+        <span class="name">mapE</span><span class="tparams">[<span name="I">I</span>]</span><span class="params">(<span name="et">et: <span class="extype" name="scalaz.iteratee.EnumerateeT">EnumerateeT</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>, <span class="extype" name="scalaz.iteratee.EnumeratorT.mapE.I">I</span>, <span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F">F</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="M">M: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F">F</span>]</span>)</span><span class="result">: <span class="extype" name="scalaz.iteratee.EnumeratorT">EnumeratorT</span>[<span class="extype" name="scalaz.iteratee.EnumeratorT.mapE.I">I</span>, <span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F">F</span>]</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>EnumeratorT</dd></dl></div>
@@ -664,7 +664,7 @@
               
         </dd></dl></div>
     </li><li name="scalaz.iteratee.EnumeratorT#reduced" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="reduced[B](b:B)(f:(B,E)=&gt;B)(implicitM:scalaz.Monad[F]):scalaz.iteratee.EnumeratorT[B,F]"></a><a id="reduced[B](B)((B,E)⇒B)(Monad[scalaz.Id.Id]):EnumeratorT[B,scalaz.Id.Id]"></a>
+      <a id="reduced[B](b:B)(f:(B,E)=&gt;B)(implicitM:scalaz.Monad[F]):scalaz.iteratee.EnumeratorT[B,F]"></a><a id="reduced[B](B)((B,E)⇒B)(Monad[F]):EnumeratorT[B,F]"></a>
       <span class="permalink">
       <a href="../../../scales/utils/io/ReadableByteChannelWrapperImplicits$AsyncDataChunkerEnumerator.html#reduced[B](b:B)(f:(B,E)=&gt;B)(implicitM:scalaz.Monad[F]):scalaz.iteratee.EnumeratorT[B,F]" title="Permalink">
         <i class="material-icons"></i>
@@ -675,7 +675,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">reduced</span><span class="tparams">[<span name="B">B</span>]</span><span class="params">(<span name="b">b: <span class="extype" name="scalaz.iteratee.EnumeratorT.reduced.B">B</span></span>)</span><span class="params">(<span name="f">f: (<span class="extype" name="scalaz.iteratee.EnumeratorT.reduced.B">B</span>, <span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>) ⇒ <span class="extype" name="scalaz.iteratee.EnumeratorT.reduced.B">B</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="M">M: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scalaz.IdInstances.Id">scalaz.Id.Id</span>]</span>)</span><span class="result">: <span class="extype" name="scalaz.iteratee.EnumeratorT">EnumeratorT</span>[<span class="extype" name="scalaz.iteratee.EnumeratorT.reduced.B">B</span>, <span class="extype" name="scalaz.IdInstances.Id">scalaz.Id.Id</span>]</span>
+        <span class="name">reduced</span><span class="tparams">[<span name="B">B</span>]</span><span class="params">(<span name="b">b: <span class="extype" name="scalaz.iteratee.EnumeratorT.reduced.B">B</span></span>)</span><span class="params">(<span name="f">f: (<span class="extype" name="scalaz.iteratee.EnumeratorT.reduced.B">B</span>, <span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>) ⇒ <span class="extype" name="scalaz.iteratee.EnumeratorT.reduced.B">B</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="M">M: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F">F</span>]</span>)</span><span class="result">: <span class="extype" name="scalaz.iteratee.EnumeratorT">EnumeratorT</span>[<span class="extype" name="scalaz.iteratee.EnumeratorT.reduced.B">B</span>, <span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F">F</span>]</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>EnumeratorT</dd></dl></div>
@@ -712,7 +712,7 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="scalaz.iteratee.EnumeratorT#uniq" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="uniq(implicitord:scalaz.Order[E],implicitM:scalaz.Monad[F]):scalaz.iteratee.EnumeratorT[E,F]"></a><a id="uniq(Order[E],Monad[scalaz.Id.Id]):EnumeratorT[E,scalaz.Id.Id]"></a>
+      <a id="uniq(implicitord:scalaz.Order[E],implicitM:scalaz.Monad[F]):scalaz.iteratee.EnumeratorT[E,F]"></a><a id="uniq(Order[E],Monad[F]):EnumeratorT[E,F]"></a>
       <span class="permalink">
       <a href="../../../scales/utils/io/ReadableByteChannelWrapperImplicits$AsyncDataChunkerEnumerator.html#uniq(implicitord:scalaz.Order[E],implicitM:scalaz.Monad[F]):scalaz.iteratee.EnumeratorT[E,F]" title="Permalink">
         <i class="material-icons"></i>
@@ -723,7 +723,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">uniq</span><span class="params">(<span class="implicit">implicit </span><span name="ord">ord: <span class="extype" name="scalaz.Order">Order</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>]</span>, <span name="M">M: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scalaz.IdInstances.Id">scalaz.Id.Id</span>]</span>)</span><span class="result">: <span class="extype" name="scalaz.iteratee.EnumeratorT">EnumeratorT</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>, <span class="extype" name="scalaz.IdInstances.Id">scalaz.Id.Id</span>]</span>
+        <span class="name">uniq</span><span class="params">(<span class="implicit">implicit </span><span name="ord">ord: <span class="extype" name="scalaz.Order">Order</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>]</span>, <span name="M">M: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F">F</span>]</span>)</span><span class="result">: <span class="extype" name="scalaz.iteratee.EnumeratorT">EnumeratorT</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>, <span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F">F</span>]</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>EnumeratorT</dd></dl></div>
@@ -796,7 +796,7 @@
               
         </dd></dl></div>
     </li><li name="scalaz.iteratee.EnumeratorT#zipWithIndex" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="zipWithIndex(implicitM:scalaz.Monad[F]):scalaz.iteratee.EnumeratorT[(E,Long),F]"></a><a id="zipWithIndex(Monad[scalaz.Id.Id]):EnumeratorT[(E,Long),scalaz.Id.Id]"></a>
+      <a id="zipWithIndex(implicitM:scalaz.Monad[F]):scalaz.iteratee.EnumeratorT[(E,Long),F]"></a><a id="zipWithIndex(Monad[F]):EnumeratorT[(E,Long),F]"></a>
       <span class="permalink">
       <a href="../../../scales/utils/io/ReadableByteChannelWrapperImplicits$AsyncDataChunkerEnumerator.html#zipWithIndex(implicitM:scalaz.Monad[F]):scalaz.iteratee.EnumeratorT[(E,Long),F]" title="Permalink">
         <i class="material-icons"></i>
@@ -807,7 +807,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">zipWithIndex</span><span class="params">(<span class="implicit">implicit </span><span name="M">M: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scalaz.IdInstances.Id">scalaz.Id.Id</span>]</span>)</span><span class="result">: <span class="extype" name="scalaz.iteratee.EnumeratorT">EnumeratorT</span>[(<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>, <span class="extype" name="scala.Long">Long</span>), <span class="extype" name="scalaz.IdInstances.Id">scalaz.Id.Id</span>]</span>
+        <span class="name">zipWithIndex</span><span class="params">(<span class="implicit">implicit </span><span name="M">M: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F">F</span>]</span>)</span><span class="result">: <span class="extype" name="scalaz.iteratee.EnumeratorT">EnumeratorT</span>[(<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>, <span class="extype" name="scala.Long">Long</span>), <span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F">F</span>]</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>EnumeratorT</dd></dl></div>
@@ -822,7 +822,7 @@
 
         <div id="inheritedMembers">
         <div class="parent" name="scalaz.iteratee.EnumeratorT">
-              <h3>Inherited from <span class="extype" name="scalaz.iteratee.EnumeratorT">EnumeratorT</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>, <span class="extype" name="scalaz.IdInstances.Id">scalaz.Id.Id</span>]</h3>
+              <h3>Inherited from <span class="extype" name="scalaz.iteratee.EnumeratorT">EnumeratorT</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>, <span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F">F</span>]</h3>
             </div><div class="parent" name="scala.AnyRef">
               <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
             </div><div class="parent" name="scala.Any">

@@ -223,7 +223,7 @@
 </span>199 <span style=''>                                            prolog: Prolog,
 </span>200 <span style=''>                                            idepth: Int,
 </span>201 <span style=''>                                            strictPath: List[QName] = Nil,
-</span>202 <span style=''>                                            ipath: List[QName]= Nil)(otherEventHandler : Int =&gt; PullType) : (PullType, Int, Int, Prolog, List[QName]) = {
+</span>202 <span style=''>                                            ipath: List[QName]= Nil)(otherEventHandler: Either[Int, Throwable] =&gt; PullType) : (PullType, Int, Int, Prolog, List[QName]) = {
 </span>203 <span style=''>    var depth = idepth
 </span>204 <span style=''>    var vprolog = prolog
 </span>205 <span style=''>    var vpath = ipath
@@ -273,68 +273,74 @@
 </span>249 <span style=''>    }
 </span>250 <span style=''>
 </span>251 <span style=''>    var nextEvent = </span><span style='background: #AEF1AE'>XMLStreamConstants.END_DOCUMENT</span><span style=''> // use this in the case of error from calling next as well, blow it up but try to shut down
-</span>252 <span style=''>    nextEvent = </span><span style='background: #AEF1AE'>parser.next</span><span style=''>
-</span>253 <span style=''>
-</span>254 <span style=''>    val event: PullType = nextEvent match {
-</span>255 <span style=''>      case XMLStreamConstants.START_ELEMENT </span><span style='background: #AEF1AE'>=&gt; //1
-</span>256 <span style=''></span><span style='background: #AEF1AE'>        depth += 1
-</span>257 <span style=''></span><span style='background: #AEF1AE'>        if (strictPath.isEmpty)
-</span>258 <span style=''></span><span style='background: #AEF1AE'>          strategy.elem(getElemQName(parser, strategy, token), getAttributes(parser, strategy, token), getNamespaces(parser, strategy, token), token)
-</span>259 <span style=''></span><span style='background: #AEF1AE'>        else {
-</span>260 <span style=''></span><span style='background: #AEF1AE'>          val elemQName = PullUtils.getElemQName(parser, strategy, token)
-</span>261 <span style=''></span><span style='background: #AEF1AE'>          vpath = ipath :+ elemQName
-</span>262 <span style=''></span><span style='background: #AEF1AE'>          val validSubtree = vpath.take(strictPath.size).equals(strictPath)
-</span>263 <span style=''></span><span style='background: #AEF1AE'>          if (idepth == StartDepth || validSubtree) {
-</span>264 <span style=''></span><span style='background: #AEF1AE'>            val attributes = PullUtils.getAttributes(parser, strategy, token)
-</span>265 <span style=''></span><span style='background: #AEF1AE'>            val namespaces = PullUtils.getNamespaces(parser, strategy, token)
-</span>266 <span style=''></span><span style='background: #AEF1AE'>            strategy.elem(elemQName, attributes, namespaces, token)
-</span>267 <span style=''></span><span style='background: #AEF1AE'>          } else {
-</span>268 <span style=''></span><span style='background: #AEF1AE'>            dropWhile()
-</span>269 <span style=''></span><span style='background: #AEF1AE'>          }
-</span>270 <span style=''></span><span style='background: #AEF1AE'>        }</span><span style=''>
-</span>271 <span style=''>      case XMLStreamConstants.END_ELEMENT </span><span style='background: #AEF1AE'>=&gt; //2
-</span>272 <span style=''></span><span style='background: #AEF1AE'>        depth -= 1
-</span>273 <span style=''></span><span style='background: #AEF1AE'>        if (strictPath.isEmpty)
-</span>274 <span style=''></span><span style='background: #AEF1AE'>          EndElem(getElemQName(parser, strategy, token), getNamespaces(parser, strategy, token))
-</span>275 <span style=''></span><span style='background: #AEF1AE'>        else {
-</span>276 <span style=''></span><span style='background: #AEF1AE'>          val elemQName = PullUtils.getElemQName(parser, strategy, token)
-</span>277 <span style=''></span><span style='background: #AEF1AE'>          val namespaces = PullUtils.getNamespaces(parser, strategy, token)
-</span>278 <span style=''></span><span style='background: #AEF1AE'>          vpath = ipath.take(ipath.size - 1)
-</span>279 <span style=''></span><span style='background: #AEF1AE'>          EndElem(elemQName, namespaces)
-</span>280 <span style=''></span><span style='background: #AEF1AE'>        }</span><span style=''>
-</span>281 <span style=''>      case XMLStreamConstants.CHARACTERS =&gt; </span><span style='background: #AEF1AE'>Text(parser.getText)</span><span style=''>
-</span>282 <span style=''>      case XMLStreamConstants.CDATA =&gt; </span><span style='background: #AEF1AE'>CData(parser.getText)</span><span style=''>
-</span>283 <span style=''>      case XMLStreamConstants.COMMENT =&gt; </span><span style='background: #AEF1AE'>Comment(parser.getText)</span><span style=''>
-</span>284 <span style=''>      case XMLStreamConstants.PROCESSING_INSTRUCTION =&gt; </span><span style='background: #AEF1AE'>PI(parser.getPITarget(), parser.getPIData())</span><span style=''>
-</span>285 <span style=''>      case XMLStreamConstants.SPACE =&gt; </span><span style='background: #F0ADAD'>Text(parser.getText)</span><span style=''> // jdk impl never calls but to be safe we should grab it
-</span>286 <span style=''>      case XMLStreamConstants.START_DOCUMENT =&gt; </span><span style='background: #AEF1AE'>{
-</span>287 <span style=''></span><span style='background: #AEF1AE'>        // get the encoding etc
-</span>288 <span style=''></span><span style='background: #AEF1AE'>	// NB the asynch variety can also call this, if no more events are available then it returns the waiting object.
-</span>289 <span style=''></span><span style='background: #AEF1AE'>        val ec = parser.getCharacterEncodingScheme()
-</span>290 <span style=''></span><span style='background: #AEF1AE'>
-</span>291 <span style=''></span><span style='background: #AEF1AE'>        vprolog = vprolog.copy(decl = Declaration(
-</span>292 <span style=''></span><span style='background: #AEF1AE'>          version = if (parser.getVersion() == &quot;1.1&quot;)
-</span>293 <span style=''></span><span style='background: #AEF1AE'>            </span><span style='background: #F0ADAD'>Xml11</span><span style='background: #AEF1AE'> else Xml10,
-</span>294 <span style=''></span><span style='background: #AEF1AE'>          encoding = if (ec eq null) </span><span style='background: #F0ADAD'>defaultCharset</span><span style='background: #AEF1AE'> else java.nio.charset.Charset.forName(ec), // TODO what do we do about unsupported, throwing is probably fine, but it irritates, if we can get here the parser at least supports it, even if we can't write to it
-</span>295 <span style=''></span><span style='background: #AEF1AE'>          standalone = parser.isStandalone()))
-</span>296 <span style=''></span><span style='background: #AEF1AE'>
-</span>297 <span style=''></span><span style='background: #AEF1AE'>        val (nev, nex, nde, vvp, _) = pumpEvent(parser, strategy, token, vprolog, depth)(otherEventHandler) // we don't want to handle this
-</span>298 <span style=''></span><span style='background: #AEF1AE'>
-</span>299 <span style=''></span><span style='background: #AEF1AE'>	// reset to keep the correct values
-</span>300 <span style=''></span><span style='background: #AEF1AE'>	nextEvent = nex
-</span>301 <span style=''></span><span style='background: #AEF1AE'>	depth = nde
-</span>302 <span style=''></span><span style='background: #AEF1AE'>	vprolog = vvp
-</span>303 <span style=''></span><span style='background: #AEF1AE'>	nev
-</span>304 <span style=''></span><span style='background: #AEF1AE'>      }</span><span style=''>
-</span>305 <span style=''>      case XMLStreamConstants.DTD =&gt; </span><span style='background: #F0ADAD'>dtdDummy</span><span style=''> // push it through in start
-</span>306 <span style=''>
-</span>307 <span style=''>      // we don't really want to handle other types?
-</span>308 <span style=''>      case _ =&gt; </span><span style='background: #AEF1AE'>otherEventHandler(nextEvent)</span><span style=''>
-</span>309 <span style=''>    }
-</span>310 <span style=''>    </span><span style='background: #AEF1AE'>(event, nextEvent, depth, vprolog, vpath)</span><span style=''>
-</span>311 <span style=''>  }
-</span>312 <span style=''>
-</span>313 <span style=''>}
+</span>252 <span style=''>
+</span>253 <span style=''>    val event: PullType =
+</span>254 <span style=''>      try {
+</span>255 <span style=''>        </span><span style='background: #AEF1AE'>nextEvent = parser.next
+</span>256 <span style=''></span><span style='background: #AEF1AE'>
+</span>257 <span style=''></span><span style='background: #AEF1AE'>        nextEvent match {
+</span>258 <span style=''></span><span style='background: #AEF1AE'>          case XMLStreamConstants.START_ELEMENT =&gt; //1
+</span>259 <span style=''></span><span style='background: #AEF1AE'>            depth += 1
+</span>260 <span style=''></span><span style='background: #AEF1AE'>            if (strictPath.isEmpty)
+</span>261 <span style=''></span><span style='background: #AEF1AE'>              strategy.elem(getElemQName(parser, strategy, token), getAttributes(parser, strategy, token), getNamespaces(parser, strategy, token), token)
+</span>262 <span style=''></span><span style='background: #AEF1AE'>            else {
+</span>263 <span style=''></span><span style='background: #AEF1AE'>              val elemQName = PullUtils.getElemQName(parser, strategy, token)
+</span>264 <span style=''></span><span style='background: #AEF1AE'>              vpath = ipath :+ elemQName
+</span>265 <span style=''></span><span style='background: #AEF1AE'>              val validSubtree = vpath.take(strictPath.size).equals(strictPath)
+</span>266 <span style=''></span><span style='background: #AEF1AE'>              if (idepth == StartDepth || validSubtree) {
+</span>267 <span style=''></span><span style='background: #AEF1AE'>                val attributes = PullUtils.getAttributes(parser, strategy, token)
+</span>268 <span style=''></span><span style='background: #AEF1AE'>                val namespaces = PullUtils.getNamespaces(parser, strategy, token)
+</span>269 <span style=''></span><span style='background: #AEF1AE'>                strategy.elem(elemQName, attributes, namespaces, token)
+</span>270 <span style=''></span><span style='background: #AEF1AE'>              } else {
+</span>271 <span style=''></span><span style='background: #AEF1AE'>                dropWhile()
+</span>272 <span style=''></span><span style='background: #AEF1AE'>              }
+</span>273 <span style=''></span><span style='background: #AEF1AE'>            }
+</span>274 <span style=''></span><span style='background: #AEF1AE'>          case XMLStreamConstants.END_ELEMENT =&gt; //2
+</span>275 <span style=''></span><span style='background: #AEF1AE'>            depth -= 1
+</span>276 <span style=''></span><span style='background: #AEF1AE'>            if (strictPath.isEmpty)
+</span>277 <span style=''></span><span style='background: #AEF1AE'>              EndElem(getElemQName(parser, strategy, token), getNamespaces(parser, strategy, token))
+</span>278 <span style=''></span><span style='background: #AEF1AE'>            else {
+</span>279 <span style=''></span><span style='background: #AEF1AE'>              val elemQName = PullUtils.getElemQName(parser, strategy, token)
+</span>280 <span style=''></span><span style='background: #AEF1AE'>              val namespaces = PullUtils.getNamespaces(parser, strategy, token)
+</span>281 <span style=''></span><span style='background: #AEF1AE'>              vpath = ipath.take(ipath.size - 1)
+</span>282 <span style=''></span><span style='background: #AEF1AE'>              EndElem(elemQName, namespaces)
+</span>283 <span style=''></span><span style='background: #AEF1AE'>            }
+</span>284 <span style=''></span><span style='background: #AEF1AE'>          case XMLStreamConstants.CHARACTERS =&gt; Text(parser.getText)
+</span>285 <span style=''></span><span style='background: #AEF1AE'>          case XMLStreamConstants.CDATA =&gt; CData(parser.getText)
+</span>286 <span style=''></span><span style='background: #AEF1AE'>          case XMLStreamConstants.COMMENT =&gt; Comment(parser.getText)
+</span>287 <span style=''></span><span style='background: #AEF1AE'>          case XMLStreamConstants.PROCESSING_INSTRUCTION =&gt; PI(parser.getPITarget(), parser.getPIData())
+</span>288 <span style=''></span><span style='background: #AEF1AE'>          case XMLStreamConstants.SPACE =&gt; </span><span style='background: #F0ADAD'>Text(parser.getText)</span><span style='background: #AEF1AE'> // jdk impl never calls but to be safe we should grab it
+</span>289 <span style=''></span><span style='background: #AEF1AE'>          case XMLStreamConstants.START_DOCUMENT =&gt; {
+</span>290 <span style=''></span><span style='background: #AEF1AE'>            // get the encoding etc
+</span>291 <span style=''></span><span style='background: #AEF1AE'>            // NB the asynch variety can also call this, if no more events are available then it returns the waiting object.
+</span>292 <span style=''></span><span style='background: #AEF1AE'>            val ec = parser.getCharacterEncodingScheme()
+</span>293 <span style=''></span><span style='background: #AEF1AE'>
+</span>294 <span style=''></span><span style='background: #AEF1AE'>            vprolog = vprolog.copy(decl = Declaration(
+</span>295 <span style=''></span><span style='background: #AEF1AE'>              version = if (parser.getVersion() == &quot;1.1&quot;)
+</span>296 <span style=''></span><span style='background: #AEF1AE'>                </span><span style='background: #F0ADAD'>Xml11</span><span style='background: #AEF1AE'> else Xml10,
+</span>297 <span style=''></span><span style='background: #AEF1AE'>              encoding = if (ec eq null) </span><span style='background: #F0ADAD'>defaultCharset</span><span style='background: #AEF1AE'> else java.nio.charset.Charset.forName(ec), // TODO what do we do about unsupported, throwing is probably fine, but it irritates, if we can get here the parser at least supports it, even if we can't write to it
+</span>298 <span style=''></span><span style='background: #AEF1AE'>              standalone = parser.isStandalone()))
+</span>299 <span style=''></span><span style='background: #AEF1AE'>
+</span>300 <span style=''></span><span style='background: #AEF1AE'>            val (nev, nex, nde, vvp, _) = pumpEvent(parser, strategy, token, vprolog, depth)(otherEventHandler) // we don't want to handle this
+</span>301 <span style=''></span><span style='background: #AEF1AE'>
+</span>302 <span style=''></span><span style='background: #AEF1AE'>            // reset to keep the correct values
+</span>303 <span style=''></span><span style='background: #AEF1AE'>            nextEvent = nex
+</span>304 <span style=''></span><span style='background: #AEF1AE'>            depth = nde
+</span>305 <span style=''></span><span style='background: #AEF1AE'>            vprolog = vvp
+</span>306 <span style=''></span><span style='background: #AEF1AE'>            nev
+</span>307 <span style=''></span><span style='background: #AEF1AE'>          }
+</span>308 <span style=''></span><span style='background: #AEF1AE'>          case XMLStreamConstants.DTD =&gt; </span><span style='background: #F0ADAD'>dtdDummy</span><span style='background: #AEF1AE'> // push it through in start
+</span>309 <span style=''></span><span style='background: #AEF1AE'>
+</span>310 <span style=''></span><span style='background: #AEF1AE'>          // we don't really want to handle other types?
+</span>311 <span style=''></span><span style='background: #AEF1AE'>          case _ =&gt; otherEventHandler(Left(nextEvent))
+</span>312 <span style=''></span><span style='background: #AEF1AE'>        }</span><span style=''>
+</span>313 <span style=''>      } catch {
+</span>314 <span style=''>        case t: Throwable =&gt; </span><span style='background: #F0ADAD'>otherEventHandler(Right(t))</span><span style=''>
+</span>315 <span style=''>      }
+</span>316 <span style=''>    </span><span style='background: #AEF1AE'>(event, nextEvent, depth, vprolog, vpath)</span><span style=''>
+</span>317 <span style=''>  }
+</span>318 <span style=''>
+</span>319 <span style=''>}
 </span></pre>
           </div>
           <div class="tab-pane" id="statementlist">
@@ -352,7 +358,7 @@
           19
         </td>
         <td>
-          4060
+          4167
         </td>
         <td>
           640
@@ -376,7 +382,7 @@
           26
         </td>
         <td>
-          4061
+          4168
         </td>
         <td>
           818
@@ -400,7 +406,7 @@
           35
         </td>
         <td>
-          4062
+          4169
         </td>
         <td>
           1278
@@ -424,7 +430,7 @@
           36
         </td>
         <td>
-          4063
+          4170
         </td>
         <td>
           1321
@@ -448,7 +454,7 @@
           38
         </td>
         <td>
-          4064
+          4171
         </td>
         <td>
           1365
@@ -472,7 +478,7 @@
           44
         </td>
         <td>
-          4065
+          4172
         </td>
         <td>
           1450
@@ -496,7 +502,7 @@
           45
         </td>
         <td>
-          4066
+          4173
         </td>
         <td>
           1495
@@ -520,7 +526,7 @@
           47
         </td>
         <td>
-          4067
+          4174
         </td>
         <td>
           1521
@@ -544,7 +550,7 @@
           48
         </td>
         <td>
-          4068
+          4175
         </td>
         <td>
           1541
@@ -568,7 +574,7 @@
           56
         </td>
         <td>
-          4069
+          4176
         </td>
         <td>
           1813
@@ -592,7 +598,7 @@
           57
         </td>
         <td>
-          4070
+          4177
         </td>
         <td>
           1848
@@ -616,7 +622,7 @@
           63
         </td>
         <td>
-          4071
+          4178
         </td>
         <td>
           1971
@@ -640,7 +646,7 @@
           63
         </td>
         <td>
-          4097
+          4204
         </td>
         <td>
           1984
@@ -664,7 +670,7 @@
           63
         </td>
         <td>
-          4098
+          4205
         </td>
         <td>
           1984
@@ -713,7 +719,7 @@
           63
         </td>
         <td>
-          4099
+          4206
         </td>
         <td>
           1964
@@ -737,7 +743,7 @@
           63
         </td>
         <td>
-          4100
+          4207
         </td>
         <td>
           1964
@@ -761,7 +767,7 @@
           64
         </td>
         <td>
-          4072
+          4179
         </td>
         <td>
           2002
@@ -785,7 +791,7 @@
           64
         </td>
         <td>
-          4073
+          4180
         </td>
         <td>
           1992
@@ -809,7 +815,7 @@
           65
         </td>
         <td>
-          4074
+          4181
         </td>
         <td>
           2061
@@ -833,7 +839,7 @@
           65
         </td>
         <td>
-          4075
+          4182
         </td>
         <td>
           2041
@@ -857,7 +863,7 @@
           65
         </td>
         <td>
-          4076
+          4183
         </td>
         <td>
           2022
@@ -881,7 +887,7 @@
           65
         </td>
         <td>
-          4083
+          4190
         </td>
         <td>
           2018
@@ -905,7 +911,7 @@
           65
         </td>
         <td>
-          4084
+          4191
         </td>
         <td>
           2018
@@ -929,7 +935,7 @@
           66
         </td>
         <td>
-          4077
+          4184
         </td>
         <td>
           2102
@@ -953,7 +959,7 @@
           66
         </td>
         <td>
-          4079
+          4186
         </td>
         <td>
           2121
@@ -977,7 +983,7 @@
           66
         </td>
         <td>
-          4080
+          4187
         </td>
         <td>
           2102
@@ -1001,7 +1007,7 @@
           66
         </td>
         <td>
-          4081
+          4188
         </td>
         <td>
           2092
@@ -1031,7 +1037,7 @@
           66
         </td>
         <td>
-          4082
+          4189
         </td>
         <td>
           2092
@@ -1061,7 +1067,7 @@
           67
         </td>
         <td>
-          4078
+          4185
         </td>
         <td>
           2137
@@ -1085,7 +1091,7 @@
           71
         </td>
         <td>
-          4085
+          4192
         </td>
         <td>
           2239
@@ -1109,7 +1115,7 @@
           71
         </td>
         <td>
-          4095
+          4202
         </td>
         <td>
           2235
@@ -1133,7 +1139,7 @@
           71
         </td>
         <td>
-          4096
+          4203
         </td>
         <td>
           2235
@@ -1157,7 +1163,7 @@
           72
         </td>
         <td>
-          4086
+          4193
         </td>
         <td>
           2272
@@ -1181,7 +1187,7 @@
           72
         </td>
         <td>
-          4087
+          4194
         </td>
         <td>
           2326
@@ -1205,7 +1211,7 @@
           72
         </td>
         <td>
-          4088
+          4195
         </td>
         <td>
           2335
@@ -1229,7 +1235,7 @@
           72
         </td>
         <td>
-          4089
+          4196
         </td>
         <td>
           2308
@@ -1253,7 +1259,7 @@
           72
         </td>
         <td>
-          4090
+          4197
         </td>
         <td>
           2305
@@ -1277,7 +1283,7 @@
           72
         </td>
         <td>
-          4091
+          4198
         </td>
         <td>
           2292
@@ -1301,7 +1307,7 @@
           72
         </td>
         <td>
-          4092
+          4199
         </td>
         <td>
           2272
@@ -1325,7 +1331,7 @@
           72
         </td>
         <td>
-          4093
+          4200
         </td>
         <td>
           2262
@@ -1355,7 +1361,7 @@
           72
         </td>
         <td>
-          4094
+          4201
         </td>
         <td>
           2262
@@ -1385,7 +1391,7 @@
           79
         </td>
         <td>
-          4101
+          4208
         </td>
         <td>
           2424
@@ -1409,7 +1415,7 @@
           82
         </td>
         <td>
-          4102
+          4209
         </td>
         <td>
           2478
@@ -1433,7 +1439,7 @@
           83
         </td>
         <td>
-          4103
+          4210
         </td>
         <td>
           2511
@@ -1457,7 +1463,7 @@
           83
         </td>
         <td>
-          4104
+          4211
         </td>
         <td>
           2528
@@ -1481,7 +1487,7 @@
           83
         </td>
         <td>
-          4105
+          4212
         </td>
         <td>
           2528
@@ -1505,7 +1511,7 @@
           83
         </td>
         <td>
-          4106
+          4213
         </td>
         <td>
           2507
@@ -1529,7 +1535,7 @@
           83
         </td>
         <td>
-          4107
+          4214
         </td>
         <td>
           2507
@@ -1553,7 +1559,7 @@
           85
         </td>
         <td>
-          4108
+          4215
         </td>
         <td>
           2620
@@ -1577,7 +1583,7 @@
           85
         </td>
         <td>
-          4109
+          4216
         </td>
         <td>
           2610
@@ -1601,7 +1607,7 @@
           86
         </td>
         <td>
-          4110
+          4217
         </td>
         <td>
           2671
@@ -1625,7 +1631,7 @@
           86
         </td>
         <td>
-          4111
+          4218
         </td>
         <td>
           2680
@@ -1649,7 +1655,7 @@
           86
         </td>
         <td>
-          4112
+          4219
         </td>
         <td>
           2699
@@ -1673,7 +1679,7 @@
           86
         </td>
         <td>
-          4113
+          4220
         </td>
         <td>
           2659
@@ -1697,7 +1703,7 @@
           86
         </td>
         <td>
-          4126
+          4233
         </td>
         <td>
           2712
@@ -1735,7 +1741,7 @@
           86
         </td>
         <td>
-          4127
+          4234
         </td>
         <td>
           2655
@@ -1759,7 +1765,7 @@
           86
         </td>
         <td>
-          4128
+          4235
         </td>
         <td>
           2655
@@ -1783,7 +1789,7 @@
           88
         </td>
         <td>
-          4114
+          4221
         </td>
         <td>
           2799
@@ -1807,7 +1813,7 @@
           89
         </td>
         <td>
-          4115
+          4222
         </td>
         <td>
           2822
@@ -1831,7 +1837,7 @@
           89
         </td>
         <td>
-          4122
+          4229
         </td>
         <td>
           2836
@@ -1855,7 +1861,7 @@
           89
         </td>
         <td>
-          4123
+          4230
         </td>
         <td>
           2836
@@ -1885,7 +1891,7 @@
           89
         </td>
         <td>
-          4124
+          4231
         </td>
         <td>
           2815
@@ -1909,7 +1915,7 @@
           89
         </td>
         <td>
-          4125
+          4232
         </td>
         <td>
           2815
@@ -1933,7 +1939,7 @@
           90
         </td>
         <td>
-          4116
+          4223
         </td>
         <td>
           2886
@@ -1957,7 +1963,7 @@
           90
         </td>
         <td>
-          4117
+          4224
         </td>
         <td>
           2883
@@ -1981,7 +1987,7 @@
           90
         </td>
         <td>
-          4118
+          4225
         </td>
         <td>
           2872
@@ -2005,7 +2011,7 @@
           90
         </td>
         <td>
-          4119
+          4226
         </td>
         <td>
           2854
@@ -2029,7 +2035,7 @@
           90
         </td>
         <td>
-          4120
+          4227
         </td>
         <td>
           2846
@@ -2053,7 +2059,7 @@
           91
         </td>
         <td>
-          4121
+          4228
         </td>
         <td>
           2947
@@ -2077,7 +2083,7 @@
           99
         </td>
         <td>
-          4129
+          4236
         </td>
         <td>
           3053
@@ -2101,7 +2107,7 @@
           99
         </td>
         <td>
-          4130
+          4237
         </td>
         <td>
           3077
@@ -2125,7 +2131,7 @@
           99
         </td>
         <td>
-          4131
+          4238
         </td>
         <td>
           3070
@@ -2149,7 +2155,7 @@
           99
         </td>
         <td>
-          4132
+          4239
         </td>
         <td>
           3049
@@ -2173,7 +2179,7 @@
           99
         </td>
         <td>
-          4133
+          4240
         </td>
         <td>
           3049
@@ -2197,7 +2203,7 @@
           101
         </td>
         <td>
-          4134
+          4241
         </td>
         <td>
           3103
@@ -2221,7 +2227,7 @@
           102
         </td>
         <td>
-          4143
+          4250
         </td>
         <td>
           3151
@@ -2239,7 +2245,7 @@
         </td>
         <td style="background: #AEF1AE">
           {
-  &lt;synthetic&gt; &lt;artifact&gt; private[this] val x$2: (scales.xml.PullType, Int, Int, scales.xml.Prolog, List[scales.xml.QName]) = (PullUtils.pumpEvent[XmlPull.this.Token](XmlPull.this.parser, XmlPull.this.strategy, XmlPull.this.token, XmlPull.this.vprolog, XmlPull.this.depth, XmlPull.this.iStrictPath, XmlPull.this.path)(((x$1: Int) =&gt; XmlPull.this.pumpEvent)): (scales.xml.PullType, Int, Int, scales.xml.Prolog, List[scales.xml.QName]) @unchecked) match {
+  &lt;synthetic&gt; &lt;artifact&gt; private[this] val x$2: (scales.xml.PullType, Int, Int, scales.xml.Prolog, List[scales.xml.QName]) = (PullUtils.pumpEvent[XmlPull.this.Token](XmlPull.this.parser, XmlPull.this.strategy, XmlPull.this.token, XmlPull.this.vprolog, XmlPull.this.depth, XmlPull.this.iStrictPath, XmlPull.this.path)(((x$1: Either[Int,Throwable]) =&gt; XmlPull.this.pumpEvent)): (scales.xml.PullType, Int, Int, scales.xml.Prolog, List[scales.xml.QName]) @unchecked) match {
     case (_1: scales.xml.PullType, _2: Int, _3: Int, _4: scales.xml.Prolog, _5: List[scales.xml.QName])(scales.xml.PullType, Int, Int, scales.xml.Prolog, List[scales.xml.QName])((event @ _), (num @ _), (odepth @ _), (oprolog @ _), (opath @ _)) =&gt; scala.Tuple5.apply[scales.xml.PullType, Int, Int, scales.xml.Prolog, List[scales.xml.QName]](event, num, odepth, oprolog, opath)
   };
   val event: scales.xml.PullType = x$2._1;
@@ -2259,7 +2265,7 @@
           103
         </td>
         <td>
-          4135
+          4242
         </td>
         <td>
           3156
@@ -2283,7 +2289,7 @@
           103
         </td>
         <td>
-          4136
+          4243
         </td>
         <td>
           3163
@@ -2307,7 +2313,7 @@
           103
         </td>
         <td>
-          4137
+          4244
         </td>
         <td>
           3168
@@ -2331,7 +2337,7 @@
           103
         </td>
         <td>
-          4138
+          4245
         </td>
         <td>
           3176
@@ -2355,7 +2361,7 @@
           103
         </td>
         <td>
-          4139
+          4246
         </td>
         <td>
           3185
@@ -2379,7 +2385,7 @@
           105
         </td>
         <td>
-          4140
+          4247
         </td>
         <td>
           3321
@@ -2403,7 +2409,7 @@
           106
         </td>
         <td>
-          4141
+          4248
         </td>
         <td>
           3342
@@ -2427,7 +2433,7 @@
           107
         </td>
         <td>
-          4142
+          4249
         </td>
         <td>
           3366
@@ -2451,7 +2457,7 @@
           111
         </td>
         <td>
-          4144
+          4251
         </td>
         <td>
           3446
@@ -2475,7 +2481,7 @@
           111
         </td>
         <td>
-          4147
+          4254
         </td>
         <td>
           3442
@@ -2499,7 +2505,7 @@
           111
         </td>
         <td>
-          4148
+          4255
         </td>
         <td>
           3442
@@ -2523,7 +2529,7 @@
           111
         </td>
         <td>
-          4149
+          4256
         </td>
         <td>
           3442
@@ -2550,7 +2556,7 @@ else
           112
         </td>
         <td>
-          4145
+          4252
         </td>
         <td>
           3502
@@ -2574,7 +2580,7 @@ else
           112
         </td>
         <td>
-          4146
+          4253
         </td>
         <td>
           3502
@@ -2598,7 +2604,7 @@ else
           119
         </td>
         <td>
-          4150
+          4257
         </td>
         <td>
           3594
@@ -2622,7 +2628,7 @@ else
           121
         </td>
         <td>
-          4151
+          4258
         </td>
         <td>
           3631
@@ -2646,7 +2652,7 @@ else
           121
         </td>
         <td>
-          4152
+          4259
         </td>
         <td>
           3644
@@ -2670,7 +2676,7 @@ else
           121
         </td>
         <td>
-          4153
+          4260
         </td>
         <td>
           3630
@@ -2694,7 +2700,7 @@ else
           121
         </td>
         <td>
-          4154
+          4261
         </td>
         <td>
           3628
@@ -2718,7 +2724,7 @@ else
           123
         </td>
         <td>
-          4155
+          4262
         </td>
         <td>
           3698
@@ -2742,7 +2748,7 @@ else
           126
         </td>
         <td>
-          4165
+          4272
         </td>
         <td>
           3763
@@ -2770,7 +2776,7 @@ else
           127
         </td>
         <td>
-          4156
+          4263
         </td>
         <td>
           3817
@@ -2794,7 +2800,7 @@ else
           127
         </td>
         <td>
-          4157
+          4264
         </td>
         <td>
           3817
@@ -2818,7 +2824,7 @@ else
           128
         </td>
         <td>
-          4158
+          4265
         </td>
         <td>
           3847
@@ -2842,7 +2848,7 @@ else
           128
         </td>
         <td>
-          4159
+          4266
         </td>
         <td>
           3847
@@ -2866,7 +2872,7 @@ else
           129
         </td>
         <td>
-          4160
+          4267
         </td>
         <td>
           3879
@@ -2890,7 +2896,7 @@ else
           129
         </td>
         <td>
-          4161
+          4268
         </td>
         <td>
           3873
@@ -2914,7 +2920,7 @@ else
           129
         </td>
         <td>
-          4162
+          4269
         </td>
         <td>
           3873
@@ -2938,7 +2944,7 @@ else
           130
         </td>
         <td>
-          4163
+          4270
         </td>
         <td>
           3957
@@ -2962,7 +2968,7 @@ else
           130
         </td>
         <td>
-          4164
+          4271
         </td>
         <td>
           3951
@@ -2986,7 +2992,7 @@ else
           136
         </td>
         <td>
-          4166
+          4273
         </td>
         <td>
           4240
@@ -3010,7 +3016,7 @@ else
           137
         </td>
         <td>
-          4167
+          4274
         </td>
         <td>
           4279
@@ -3034,7 +3040,7 @@ else
           138
         </td>
         <td>
-          4168
+          4275
         </td>
         <td>
           4295
@@ -3058,7 +3064,7 @@ else
           139
         </td>
         <td>
-          4169
+          4276
         </td>
         <td>
           4322
@@ -3082,7 +3088,7 @@ else
           139
         </td>
         <td>
-          4185
+          4292
         </td>
         <td>
           4333
@@ -3106,7 +3112,7 @@ else
           139
         </td>
         <td>
-          4186
+          4293
         </td>
         <td>
           4333
@@ -3143,7 +3149,7 @@ else
           139
         </td>
         <td>
-          4187
+          4294
         </td>
         <td>
           4315
@@ -3167,7 +3173,7 @@ else
           139
         </td>
         <td>
-          4188
+          4295
         </td>
         <td>
           4315
@@ -3191,7 +3197,7 @@ else
           140
         </td>
         <td>
-          4170
+          4277
         </td>
         <td>
           4354
@@ -3215,7 +3221,7 @@ else
           141
         </td>
         <td>
-          4171
+          4278
         </td>
         <td>
           4397
@@ -3239,7 +3245,7 @@ else
           142
         </td>
         <td>
-          4172
+          4279
         </td>
         <td>
           4432
@@ -3263,7 +3269,7 @@ else
           145
         </td>
         <td>
-          4173
+          4280
         </td>
         <td>
           4568
@@ -3287,7 +3293,7 @@ else
           145
         </td>
         <td>
-          4174
+          4281
         </td>
         <td>
           4578
@@ -3311,7 +3317,7 @@ else
           145
         </td>
         <td>
-          4175
+          4282
         </td>
         <td>
           4560
@@ -3335,7 +3341,7 @@ else
           147
         </td>
         <td>
-          4176
+          4283
         </td>
         <td>
           4632
@@ -3359,7 +3365,7 @@ else
           147
         </td>
         <td>
-          4177
+          4284
         </td>
         <td>
           4632
@@ -3383,7 +3389,7 @@ else
           149
         </td>
         <td>
-          4178
+          4285
         </td>
         <td>
           4735
@@ -3407,7 +3413,7 @@ else
           149
         </td>
         <td>
-          4179
+          4286
         </td>
         <td>
           4705
@@ -3431,7 +3437,7 @@ else
           149
         </td>
         <td>
-          4180
+          4287
         </td>
         <td>
           4705
@@ -3455,7 +3461,7 @@ else
           151
         </td>
         <td>
-          4183
+          4290
         </td>
         <td>
           4794
@@ -3479,7 +3485,7 @@ else
           152
         </td>
         <td>
-          4182
+          4289
         </td>
         <td>
           4810
@@ -3503,7 +3509,7 @@ else
           153
         </td>
         <td>
-          4181
+          4288
         </td>
         <td>
           4847
@@ -3527,7 +3533,7 @@ else
           155
         </td>
         <td>
-          4184
+          4291
         </td>
         <td>
           4890
@@ -3551,7 +3557,7 @@ else
           161
         </td>
         <td>
-          4189
+          4296
         </td>
         <td>
           5093
@@ -3575,7 +3581,7 @@ else
           162
         </td>
         <td>
-          4190
+          4297
         </td>
         <td>
           5132
@@ -3599,7 +3605,7 @@ else
           163
         </td>
         <td>
-          4191
+          4298
         </td>
         <td>
           5148
@@ -3623,7 +3629,7 @@ else
           164
         </td>
         <td>
-          4192
+          4299
         </td>
         <td>
           5181
@@ -3647,7 +3653,7 @@ else
           164
         </td>
         <td>
-          4202
+          4309
         </td>
         <td>
           5192
@@ -3671,7 +3677,7 @@ else
           164
         </td>
         <td>
-          4203
+          4310
         </td>
         <td>
           5192
@@ -3705,7 +3711,7 @@ else
           164
         </td>
         <td>
-          4204
+          4311
         </td>
         <td>
           5174
@@ -3729,7 +3735,7 @@ else
           164
         </td>
         <td>
-          4205
+          4312
         </td>
         <td>
           5174
@@ -3753,7 +3759,7 @@ else
           165
         </td>
         <td>
-          4193
+          4300
         </td>
         <td>
           5210
@@ -3777,7 +3783,7 @@ else
           166
         </td>
         <td>
-          4194
+          4301
         </td>
         <td>
           5249
@@ -3801,7 +3807,7 @@ else
           166
         </td>
         <td>
-          4199
+          4306
         </td>
         <td>
           5245
@@ -3825,7 +3831,7 @@ else
           166
         </td>
         <td>
-          4200
+          4307
         </td>
         <td>
           5245
@@ -3849,7 +3855,7 @@ else
           167
         </td>
         <td>
-          4195
+          4302
         </td>
         <td>
           5287
@@ -3873,7 +3879,7 @@ else
           167
         </td>
         <td>
-          4196
+          4303
         </td>
         <td>
           5280
@@ -3897,7 +3903,7 @@ else
           167
         </td>
         <td>
-          4197
+          4304
         </td>
         <td>
           5272
@@ -3921,7 +3927,7 @@ else
           167
         </td>
         <td>
-          4198
+          4305
         </td>
         <td>
           5272
@@ -3945,7 +3951,7 @@ else
           169
         </td>
         <td>
-          4201
+          4308
         </td>
         <td>
           5440
@@ -3969,7 +3975,7 @@ else
           181
         </td>
         <td>
-          4206
+          4313
         </td>
         <td>
           5815
@@ -3993,7 +3999,7 @@ else
           182
         </td>
         <td>
-          4207
+          4314
         </td>
         <td>
           5852
@@ -4017,7 +4023,7 @@ else
           183
         </td>
         <td>
-          4208
+          4315
         </td>
         <td>
           5885
@@ -4041,7 +4047,7 @@ else
           185
         </td>
         <td>
-          4209
+          4316
         </td>
         <td>
           5922
@@ -4065,7 +4071,7 @@ else
           185
         </td>
         <td>
-          4210
+          4317
         </td>
         <td>
           5932
@@ -4089,7 +4095,7 @@ else
           185
         </td>
         <td>
-          4211
+          4318
         </td>
         <td>
           5914
@@ -4113,7 +4119,7 @@ else
           187
         </td>
         <td>
-          4212
+          4319
         </td>
         <td>
           5989
@@ -4137,7 +4143,7 @@ else
           187
         </td>
         <td>
-          4213
+          4320
         </td>
         <td>
           5999
@@ -4161,7 +4167,7 @@ else
           187
         </td>
         <td>
-          4214
+          4321
         </td>
         <td>
           5982
@@ -4185,7 +4191,7 @@ else
           187
         </td>
         <td>
-          4219
+          4326
         </td>
         <td>
           5978
@@ -4212,7 +4218,7 @@ else
           188
         </td>
         <td>
-          4215
+          4322
         </td>
         <td>
           6024
@@ -4236,7 +4242,7 @@ else
           188
         </td>
         <td>
-          4216
+          4323
         </td>
         <td>
           6024
@@ -4260,7 +4266,7 @@ else
           190
         </td>
         <td>
-          4217
+          4324
         </td>
         <td>
           6076
@@ -4284,7 +4290,7 @@ else
           190
         </td>
         <td>
-          4218
+          4325
         </td>
         <td>
           6076
@@ -4308,7 +4314,7 @@ else
           192
         </td>
         <td>
-          4220
+          4327
         </td>
         <td>
           6136
@@ -4332,7 +4338,7 @@ else
           192
         </td>
         <td>
-          4221
+          4328
         </td>
         <td>
           6136
@@ -4356,12 +4362,12 @@ else
           211
         </td>
         <td>
-          4235
+          4342
         </td>
         <td>
-          6989
+          7007
           -
-          7470
+          7488
         </td>
         <td>
           Block
@@ -4392,12 +4398,12 @@ else
           212
         </td>
         <td>
-          4222
+          4329
         </td>
         <td>
-          7004
+          7022
           -
-          7014
+          7032
         </td>
         <td>
           Apply
@@ -4416,12 +4422,12 @@ else
           213
         </td>
         <td>
-          4223
+          4330
         </td>
         <td>
-          7050
+          7068
           -
-          7097
+          7115
         </td>
         <td>
           Apply
@@ -4440,12 +4446,12 @@ else
           214
         </td>
         <td>
-          4224
+          4331
         </td>
         <td>
-          7124
+          7142
           -
-          7124
+          7142
         </td>
         <td>
           TypeApply
@@ -4464,12 +4470,12 @@ else
           214
         </td>
         <td>
-          4225
+          4332
         </td>
         <td>
-          7118
-          -
           7136
+          -
+          7154
         </td>
         <td>
           ApplyToImplicitArgs
@@ -4488,12 +4494,12 @@ else
           215
         </td>
         <td>
-          4226
+          4333
         </td>
         <td>
-          7153
+          7171
           -
-          7177
+          7195
         </td>
         <td>
           Apply
@@ -4512,12 +4518,12 @@ else
           215
         </td>
         <td>
-          4232
+          4339
         </td>
         <td>
-          7179
+          7197
           -
-          7430
+          7448
         </td>
         <td>
           Block
@@ -4540,12 +4546,12 @@ else
           216
         </td>
         <td>
-          4227
+          4334
         </td>
         <td>
-          7212
+          7230
           -
-          7260
+          7278
         </td>
         <td>
           Apply
@@ -4564,12 +4570,12 @@ else
           217
         </td>
         <td>
-          4228
+          4335
         </td>
         <td>
-          7292
+          7310
           -
-          7340
+          7358
         </td>
         <td>
           Apply
@@ -4588,12 +4594,12 @@ else
           218
         </td>
         <td>
-          4229
+          4336
         </td>
         <td>
-          7360
+          7378
           -
-          7415
+          7433
         </td>
         <td>
           Apply
@@ -4612,12 +4618,12 @@ else
           218
         </td>
         <td>
-          4230
+          4337
         </td>
         <td>
-          7360
+          7378
           -
-          7415
+          7433
         </td>
         <td>
           ApplyImplicitView
@@ -4636,12 +4642,12 @@ else
           218
         </td>
         <td>
-          4231
+          4338
         </td>
         <td>
-          7355
+          7373
           -
-          7416
+          7434
         </td>
         <td>
           Apply
@@ -4660,12 +4666,12 @@ else
           220
         </td>
         <td>
-          4233
+          4340
         </td>
         <td>
-          7452
+          7470
           -
-          7456
+          7474
         </td>
         <td>
           Select
@@ -4684,12 +4690,12 @@ else
           220
         </td>
         <td>
-          4234
+          4341
         </td>
         <td>
-          7452
+          7470
           -
-          7456
+          7474
         </td>
         <td>
           Block
@@ -4708,12 +4714,12 @@ else
           222
         </td>
         <td>
-          4252
+          4359
         </td>
         <td>
-          7517
+          7535
           -
-          8031
+          8049
         </td>
         <td>
           Block
@@ -4747,12 +4753,12 @@ else
           223
         </td>
         <td>
-          4236
+          4343
         </td>
         <td>
-          7532
+          7550
           -
-          7542
+          7560
         </td>
         <td>
           Apply
@@ -4771,12 +4777,12 @@ else
           224
         </td>
         <td>
-          4237
+          4344
         </td>
         <td>
-          7610
+          7628
           -
-          7629
+          7647
         </td>
         <td>
           Apply
@@ -4795,12 +4801,12 @@ else
           224
         </td>
         <td>
-          4238
+          4345
         </td>
         <td>
-          7594
+          7612
           -
-          7630
+          7648
         </td>
         <td>
           Apply
@@ -4819,12 +4825,12 @@ else
           224
         </td>
         <td>
-          4239
+          4346
         </td>
         <td>
-          7581
+          7599
           -
-          7631
+          7649
         </td>
         <td>
           Apply
@@ -4843,12 +4849,12 @@ else
           225
         </td>
         <td>
-          4247
+          4354
         </td>
         <td>
-          7669
+          7687
           -
-          7942
+          7960
         </td>
         <td>
           Block
@@ -4872,12 +4878,12 @@ else
           226
         </td>
         <td>
-          4240
+          4347
         </td>
         <td>
-          7701
+          7719
           -
-          7748
+          7766
         </td>
         <td>
           Apply
@@ -4896,12 +4902,12 @@ else
           227
         </td>
         <td>
-          4241
+          4348
         </td>
         <td>
-          7780
+          7798
           -
-          7828
+          7846
         </td>
         <td>
           Apply
@@ -4920,12 +4926,12 @@ else
           228
         </td>
         <td>
-          4242
+          4349
         </td>
         <td>
-          7862
+          7880
           -
-          7876
+          7894
         </td>
         <td>
           Apply
@@ -4944,12 +4950,12 @@ else
           228
         </td>
         <td>
-          4243
+          4350
         </td>
         <td>
-          7851
+          7869
           -
-          7877
+          7895
         </td>
         <td>
           Apply
@@ -4968,12 +4974,12 @@ else
           229
         </td>
         <td>
-          4244
+          4351
         </td>
         <td>
-          7897
+          7915
           -
-          7927
+          7945
         </td>
         <td>
           Apply
@@ -4992,12 +4998,12 @@ else
           229
         </td>
         <td>
-          4245
+          4352
         </td>
         <td>
-          7897
+          7915
           -
-          7927
+          7945
         </td>
         <td>
           ApplyImplicitView
@@ -5016,12 +5022,12 @@ else
           229
         </td>
         <td>
-          4246
+          4353
         </td>
         <td>
-          7892
+          7910
           -
-          7928
+          7946
         </td>
         <td>
           Apply
@@ -5040,12 +5046,12 @@ else
           230
         </td>
         <td>
-          4251
+          4358
         </td>
         <td>
-          7948
+          7966
           -
-          8031
+          8049
         </td>
         <td>
           Block
@@ -5067,12 +5073,12 @@ else
           231
         </td>
         <td>
-          4248
+          4355
         </td>
         <td>
-          7983
+          8001
           -
-          7997
+          8015
         </td>
         <td>
           Apply
@@ -5091,12 +5097,12 @@ else
           231
         </td>
         <td>
-          4249
+          4356
         </td>
         <td>
-          7972
+          7990
           -
-          7998
+          8016
         </td>
         <td>
           Apply
@@ -5115,12 +5121,12 @@ else
           232
         </td>
         <td>
-          4250
+          4357
         </td>
         <td>
-          8013
+          8031
           -
-          8017
+          8035
         </td>
         <td>
           Select
@@ -5139,12 +5145,12 @@ else
           235
         </td>
         <td>
-          4253
+          4360
         </td>
         <td>
-          8094
+          8112
           -
-          8104
+          8122
         </td>
         <td>
           Apply
@@ -5163,12 +5169,12 @@ else
           235
         </td>
         <td>
-          4254
+          4361
         </td>
         <td>
-          8094
+          8112
           -
-          8104
+          8122
         </td>
         <td>
           Block
@@ -5187,12 +5193,12 @@ else
           237
         </td>
         <td>
-          4255
+          4362
         </td>
         <td>
-          8137
+          8155
           -
-          8141
+          8159
         </td>
         <td>
           Select
@@ -5211,12 +5217,12 @@ else
           237
         </td>
         <td>
-          4256
+          4363
         </td>
         <td>
-          8137
+          8155
           -
-          8141
+          8159
         </td>
         <td>
           Block
@@ -5235,12 +5241,12 @@ else
           241
         </td>
         <td>
-          4257
+          4364
         </td>
         <td>
-          8171
+          8189
           -
-          8185
+          8203
         </td>
         <td>
           Apply
@@ -5259,12 +5265,12 @@ else
           242
         </td>
         <td>
-          4258
+          4365
         </td>
         <td>
-          8204
+          8222
           -
-          8217
+          8235
         </td>
         <td>
           Apply
@@ -5283,12 +5289,12 @@ else
           242
         </td>
         <td>
-          4259
+          4366
         </td>
         <td>
-          8197
+          8215
           -
-          8218
+          8236
         </td>
         <td>
           Apply
@@ -5307,12 +5313,12 @@ else
           242
         </td>
         <td>
-          4263
+          4370
         </td>
         <td>
-          8197
+          8215
           -
-          8303
+          8321
         </td>
         <td>
           Match
@@ -5334,12 +5340,12 @@ else
           243
         </td>
         <td>
-          4260
+          4367
         </td>
         <td>
-          8255
+          8273
           -
-          8258
+          8276
         </td>
         <td>
           Ident
@@ -5358,12 +5364,12 @@ else
           244
         </td>
         <td>
-          4261
+          4368
         </td>
         <td>
-          8282
+          8300
           -
-          8293
+          8311
         </td>
         <td>
           Apply
@@ -5382,12 +5388,12 @@ else
           244
         </td>
         <td>
-          4262
+          4369
         </td>
         <td>
-          8282
+          8300
           -
-          8293
+          8311
         </td>
         <td>
           Block
@@ -5406,12 +5412,12 @@ else
           247
         </td>
         <td>
-          4264
+          4371
         </td>
         <td>
-          8327
+          8345
           -
-          8360
+          8378
         </td>
         <td>
           Apply
@@ -5430,12 +5436,12 @@ else
           247
         </td>
         <td>
-          4265
+          4372
         </td>
         <td>
-          8327
+          8345
           -
-          8360
+          8378
         </td>
         <td>
           Block
@@ -5454,12 +5460,12 @@ else
           251
         </td>
         <td>
-          4266
+          4373
         </td>
         <td>
-          8396
+          8414
           -
-          8427
+          8445
         </td>
         <td>
           Literal
@@ -5475,15 +5481,108 @@ else
         </td>
       </tr><tr>
         <td>
-          252
+          254
         </td>
         <td>
-          4267
+          4461
         </td>
         <td>
-          8536
+          8585
           -
-          8547
+          11661
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  nextEvent = parser.next();
+  nextEvent match {
+    case 1 =&gt; {
+      depth = depth.+(1);
+      if (strictPath.isEmpty)
+        xml.this.`package`.toLeft(strategy.elem(PullUtils.this.getElemQName[Token](parser, strategy, token), PullUtils.this.getAttributes[Token](parser, strategy, token), PullUtils.this.getNamespaces[Token](parser, strategy, token), token))
+      else
+        {
+          val elemQName: scales.xml.QName = PullUtils.getElemQName[Token](parser, strategy, token);
+          vpath = ipath.:+[scales.xml.QName, List[scales.xml.QName]](elemQName)(immutable.this.List.canBuildFrom[scales.xml.QName]);
+          val validSubtree: Boolean = vpath.take(strictPath.size).equals(strictPath);
+          if (idepth.==(-1).||(validSubtree))
+            {
+              val attributes: scales.xml.Attributes = PullUtils.getAttributes[Token](parser, strategy, token);
+              val namespaces: Map[String,String] = PullUtils.getNamespaces[Token](parser, strategy, token);
+              xml.this.`package`.toLeft(strategy.elem(elemQName, attributes, namespaces, token))
+            }
+          else
+            dropWhile()
+        }
+    }
+    case 2 =&gt; {
+      depth = depth.-(1);
+      if (strictPath.isEmpty)
+        xml.this.`package`.toRight(scales.xml.EndElem.apply(PullUtils.this.getElemQName[Token](parser, strategy, token), PullUtils.this.getNamespaces[Token](parser, strategy, token)))
+      else
+        {
+          val elemQName: scales.xml.QName = PullUtils.getElemQName[Token](parser, strategy, token);
+          val namespaces: Map[String,String] = PullUtils.getNamespaces[Token](parser, strategy, token);
+          vpath = ipath.take(ipath.size.-(1));
+          xml.this.`package`.toRight(scales.xml.EndElem.apply(elemQName, namespaces))
+        }
+    }
+    case 4 =&gt; xml.this.`package`.toLeft(scales.xml.Text.apply(parser.getText()))
+    case 12 =&gt; xml.this.`package`.toLeft(scales.xml.CData.apply(parser.getText())(PullUtils.this.weAreInAParser))
+    case 5 =&gt; xml.this.`package`.toLeft(scales.xml.Comment.apply(parser.getText())(PullUtils.this.weAreInAParser))
+    case 3 =&gt; xml.this.`package`.toLeft(scales.xml.PI.apply(parser.getPITarget(), parser.getPIData())(PullUtils.this.weAreInAParser))
+    case 6 =&gt; xml.this.`package`.toLeft(scales.xml.Text.apply(parser.getText()))
+    case 7 =&gt; {
+      val ec: String = parser.getCharacterEncodingScheme();
+      vprolog = {
+        &lt;artifact&gt; val qual$1: scales.xml.Prolog = vprolog;
+        &lt;artifact&gt; val x$1: scales.xml.Declaration = scales.xml.Declaration.apply(if (parser.getVersion().==(&quot;1.1&quot;))
+          scales.xml.Xml11
+        else
+          scales.xml.Xml10, if (ec.eq(null))
+          scales.utils.`package`.defaultCharset
+        else
+          java.nio.charset.Charset.forName(ec), parser.isStandalone());
+        &lt;artifact&gt; val x$2: scales.xml.Miscs = qual$1.copy$default$2;
+        &lt;artifact&gt; val x$3: Option[scales.xml.DTD] = qual$1.copy$default$3;
+        qual$1.copy(x$1, x$2, x$3)
+      };
+      &lt;synthetic&gt; &lt;artifact&gt; private[this] val x$3: (scales.xml.PullType, Int, Int, scales.xml.Prolog) = (PullUtils.this.pumpEvent[Token](parser, strategy, token, vprolog, depth, PullUtils.this.pumpEvent$default$6[Nothing], PullUtils.this.pumpEvent$default$7[Nothing])(otherEventHandler): (scales.xml.PullType, Int, Int, scales.xml.Prolog, List[scales.xml.QName]) @unchecked) match {
+        case (_1: scales.xml.PullType, _2: Int, _3: Int, _4: scales.xml.Prolog, _5: List[scales.xml.QName])(scales.xml.PullType, Int, Int, scales.xml.Prolog, List[scales.xml.QName])((nev @ _), (nex @ _), (nde @ _), (vvp @ _), _) =&gt; scala.Tuple4.apply[scales.xml.PullType, Int, Int, scales.xml.Prolog](nev, nex, nde, vvp)
+      };
+      val nev: scales.xml.PullType = x$3._1;
+      val nex: Int = x$3._2;
+      val nde: Int = x$3._3;
+      val vvp: scales.xml.Prolog = x$3._4;
+      nextEvent = nex;
+      depth = nde;
+      vprolog = vvp;
+      nev
+    }
+    case 11 =&gt; xml.this.`package`.toLeft(PullUtils.this.dtdDummy)
+    case _ =&gt; otherEventHandler.apply(scala.`package`.Left.apply[Int, Nothing](nextEvent))
+  }
+}
+        </td>
+      </tr><tr>
+        <td>
+          255
+        </td>
+        <td>
+          4374
+        </td>
+        <td>
+          8597
+          -
+          8608
         </td>
         <td>
           Apply
@@ -5499,15 +5598,15 @@ else
         </td>
       </tr><tr>
         <td>
-          255
+          258
         </td>
         <td>
-          4289
+          4396
         </td>
         <td>
-          8637
+          8684
           -
-          9389
+          9496
         </td>
         <td>
           Block
@@ -5541,15 +5640,15 @@ else
         </td>
       </tr><tr>
         <td>
-          256
+          259
         </td>
         <td>
-          4268
+          4375
         </td>
         <td>
-          8652
+          8703
           -
-          8662
+          8713
         </td>
         <td>
           Apply
@@ -5565,15 +5664,15 @@ else
         </td>
       </tr><tr>
         <td>
-          257
+          260
         </td>
         <td>
-          4269
+          4376
         </td>
         <td>
-          8675
+          8730
           -
-          8693
+          8748
         </td>
         <td>
           Select
@@ -5589,15 +5688,15 @@ else
         </td>
       </tr><tr>
         <td>
-          258
+          261
         </td>
         <td>
-          4270
+          4377
         </td>
         <td>
-          8719
+          8778
           -
-          8756
+          8815
         </td>
         <td>
           Apply
@@ -5613,15 +5712,15 @@ else
         </td>
       </tr><tr>
         <td>
-          258
+          261
         </td>
         <td>
-          4271
+          4378
         </td>
         <td>
-          8758
+          8817
           -
-          8796
+          8855
         </td>
         <td>
           Apply
@@ -5637,15 +5736,15 @@ else
         </td>
       </tr><tr>
         <td>
-          258
+          261
         </td>
         <td>
-          4272
+          4379
         </td>
         <td>
-          8798
+          8857
           -
-          8836
+          8895
         </td>
         <td>
           Apply
@@ -5661,15 +5760,15 @@ else
         </td>
       </tr><tr>
         <td>
-          258
+          261
         </td>
         <td>
-          4273
+          4380
         </td>
         <td>
-          8705
+          8764
           -
-          8844
+          8903
         </td>
         <td>
           Apply
@@ -5685,15 +5784,15 @@ else
         </td>
       </tr><tr>
         <td>
-          258
+          261
         </td>
         <td>
-          4274
+          4381
         </td>
         <td>
-          8705
+          8764
           -
-          8844
+          8903
         </td>
         <td>
           ApplyImplicitView
@@ -5709,15 +5808,15 @@ else
         </td>
       </tr><tr>
         <td>
-          258
+          261
         </td>
         <td>
-          4275
+          4382
         </td>
         <td>
-          8705
+          8764
           -
-          8844
+          8903
         </td>
         <td>
           Block
@@ -5733,15 +5832,15 @@ else
         </td>
       </tr><tr>
         <td>
-          259
+          262
         </td>
         <td>
-          4288
+          4395
         </td>
         <td>
-          8858
+          8921
           -
-          9389
+          9496
         </td>
         <td>
           Block
@@ -5769,15 +5868,15 @@ else
         </td>
       </tr><tr>
         <td>
-          260
+          263
         </td>
         <td>
-          4276
+          4383
         </td>
         <td>
-          8886
+          8953
           -
-          8933
+          9000
         </td>
         <td>
           Apply
@@ -5793,15 +5892,15 @@ else
         </td>
       </tr><tr>
         <td>
-          261
+          264
         </td>
         <td>
-          4277
+          4384
         </td>
         <td>
-          8958
+          9029
           -
-          8958
+          9029
         </td>
         <td>
           TypeApply
@@ -5817,15 +5916,15 @@ else
         </td>
       </tr><tr>
         <td>
-          261
+          264
         </td>
         <td>
-          4278
+          4385
         </td>
         <td>
-          8952
+          9023
           -
-          8970
+          9041
         </td>
         <td>
           ApplyToImplicitArgs
@@ -5841,15 +5940,15 @@ else
         </td>
       </tr><tr>
         <td>
-          262
+          265
         </td>
         <td>
-          4279
+          4386
         </td>
         <td>
-          9000
+          9075
           -
-          9046
+          9121
         </td>
         <td>
           Apply
@@ -5865,15 +5964,15 @@ else
         </td>
       </tr><tr>
         <td>
-          263
+          266
         </td>
         <td>
-          4280
+          4387
         </td>
         <td>
-          9061
+          9140
           -
-          9097
+          9176
         </td>
         <td>
           Apply
@@ -5889,15 +5988,15 @@ else
         </td>
       </tr><tr>
         <td>
-          263
+          266
         </td>
         <td>
-          4285
+          4392
         </td>
         <td>
-          9099
+          9178
           -
-          9336
+          9431
         </td>
         <td>
           Block
@@ -5917,15 +6016,15 @@ else
         </td>
       </tr><tr>
         <td>
-          264
+          267
         </td>
         <td>
-          4281
+          4388
         </td>
         <td>
-          9130
+          9213
           -
-          9178
+          9261
         </td>
         <td>
           Apply
@@ -5941,15 +6040,15 @@ else
         </td>
       </tr><tr>
         <td>
-          265
+          268
         </td>
         <td>
-          4282
+          4389
         </td>
         <td>
-          9208
+          9295
           -
-          9256
+          9343
         </td>
         <td>
           Apply
@@ -5965,15 +6064,15 @@ else
         </td>
       </tr><tr>
         <td>
-          266
+          269
         </td>
         <td>
-          4283
+          4390
         </td>
         <td>
-          9269
+          9360
           -
-          9324
+          9415
         </td>
         <td>
           Apply
@@ -5989,15 +6088,15 @@ else
         </td>
       </tr><tr>
         <td>
-          266
+          269
         </td>
         <td>
-          4284
+          4391
         </td>
         <td>
-          9269
+          9360
           -
-          9324
+          9415
         </td>
         <td>
           ApplyImplicitView
@@ -6013,15 +6112,15 @@ else
         </td>
       </tr><tr>
         <td>
-          268
+          271
         </td>
         <td>
-          4286
+          4393
         </td>
         <td>
-          9356
+          9455
           -
-          9367
+          9466
         </td>
         <td>
           Apply
@@ -6037,15 +6136,15 @@ else
         </td>
       </tr><tr>
         <td>
-          268
+          271
         </td>
         <td>
-          4287
+          4394
         </td>
         <td>
-          9356
+          9455
           -
-          9367
+          9466
         </td>
         <td>
           Block
@@ -6061,15 +6160,15 @@ else
         </td>
       </tr><tr>
         <td>
-          271
+          274
         </td>
         <td>
-          4304
+          4411
         </td>
         <td>
-          9432
+          9543
           -
-          9847
+          9994
         </td>
         <td>
           Block
@@ -6096,15 +6195,15 @@ else
         </td>
       </tr><tr>
         <td>
-          272
+          275
         </td>
         <td>
-          4290
+          4397
         </td>
         <td>
-          9447
+          9562
           -
-          9457
+          9572
         </td>
         <td>
           Apply
@@ -6120,15 +6219,15 @@ else
         </td>
       </tr><tr>
         <td>
-          273
+          276
         </td>
         <td>
-          4291
+          4398
         </td>
         <td>
-          9470
+          9589
           -
-          9488
+          9607
         </td>
         <td>
           Select
@@ -6144,15 +6243,15 @@ else
         </td>
       </tr><tr>
         <td>
-          274
+          277
         </td>
         <td>
-          4292
+          4399
         </td>
         <td>
-          9508
+          9631
           -
-          9545
+          9668
         </td>
         <td>
           Apply
@@ -6168,15 +6267,15 @@ else
         </td>
       </tr><tr>
         <td>
-          274
+          277
         </td>
         <td>
-          4293
+          4400
         </td>
         <td>
-          9547
+          9670
           -
-          9585
+          9708
         </td>
         <td>
           Apply
@@ -6192,15 +6291,15 @@ else
         </td>
       </tr><tr>
         <td>
-          274
+          277
         </td>
         <td>
-          4294
+          4401
         </td>
         <td>
-          9500
+          9623
           -
-          9586
+          9709
         </td>
         <td>
           Apply
@@ -6216,15 +6315,15 @@ else
         </td>
       </tr><tr>
         <td>
-          274
+          277
         </td>
         <td>
-          4295
+          4402
         </td>
         <td>
-          9500
+          9623
           -
-          9586
+          9709
         </td>
         <td>
           ApplyImplicitView
@@ -6240,15 +6339,15 @@ else
         </td>
       </tr><tr>
         <td>
-          274
+          277
         </td>
         <td>
-          4296
+          4403
         </td>
         <td>
-          9500
+          9623
           -
-          9586
+          9709
         </td>
         <td>
           Block
@@ -6264,15 +6363,15 @@ else
         </td>
       </tr><tr>
         <td>
-          275
+          278
         </td>
         <td>
-          4303
+          4410
         </td>
         <td>
-          9600
+          9727
           -
-          9847
+          9994
         </td>
         <td>
           Block
@@ -6293,15 +6392,15 @@ else
         </td>
       </tr><tr>
         <td>
-          276
+          279
         </td>
         <td>
-          4297
+          4404
         </td>
         <td>
-          9628
+          9759
           -
-          9675
+          9806
         </td>
         <td>
           Apply
@@ -6317,15 +6416,15 @@ else
         </td>
       </tr><tr>
         <td>
-          277
+          280
         </td>
         <td>
-          4298
+          4405
         </td>
         <td>
-          9703
+          9838
           -
-          9751
+          9886
         </td>
         <td>
           Apply
@@ -6341,15 +6440,15 @@ else
         </td>
       </tr><tr>
         <td>
-          278
+          281
         </td>
         <td>
-          4299
+          4406
         </td>
         <td>
-          9781
+          9920
           -
-          9795
+          9934
         </td>
         <td>
           Apply
@@ -6365,15 +6464,15 @@ else
         </td>
       </tr><tr>
         <td>
-          278
+          281
         </td>
         <td>
-          4300
+          4407
         </td>
         <td>
-          9770
+          9909
           -
-          9796
+          9935
         </td>
         <td>
           Apply
@@ -6389,15 +6488,15 @@ else
         </td>
       </tr><tr>
         <td>
-          279
+          282
         </td>
         <td>
-          4301
+          4408
         </td>
         <td>
-          9807
+          9950
           -
-          9837
+          9980
         </td>
         <td>
           Apply
@@ -6413,15 +6512,15 @@ else
         </td>
       </tr><tr>
         <td>
-          279
+          282
         </td>
         <td>
-          4302
+          4409
         </td>
         <td>
-          9807
+          9950
           -
-          9837
+          9980
         </td>
         <td>
           ApplyImplicitView
@@ -6437,15 +6536,15 @@ else
         </td>
       </tr><tr>
         <td>
-          281
+          284
         </td>
         <td>
-          4305
+          4412
         </td>
         <td>
-          9897
+          10048
           -
-          9911
+          10062
         </td>
         <td>
           Apply
@@ -6461,15 +6560,15 @@ else
         </td>
       </tr><tr>
         <td>
-          281
+          284
         </td>
         <td>
-          4306
+          4413
         </td>
         <td>
-          9892
+          10043
           -
-          9912
+          10063
         </td>
         <td>
           Apply
@@ -6485,15 +6584,15 @@ else
         </td>
       </tr><tr>
         <td>
-          281
+          284
         </td>
         <td>
-          4307
+          4414
         </td>
         <td>
-          9892
+          10043
           -
-          9912
+          10063
         </td>
         <td>
           ApplyImplicitView
@@ -6509,15 +6608,15 @@ else
         </td>
       </tr><tr>
         <td>
-          281
+          284
         </td>
         <td>
-          4308
+          4415
         </td>
         <td>
-          9892
+          10043
           -
-          9912
+          10063
         </td>
         <td>
           Block
@@ -6533,15 +6632,15 @@ else
         </td>
       </tr><tr>
         <td>
-          282
+          285
         </td>
         <td>
-          4309
+          4416
         </td>
         <td>
-          9958
+          10113
           -
-          9972
+          10127
         </td>
         <td>
           Apply
@@ -6557,15 +6656,15 @@ else
         </td>
       </tr><tr>
         <td>
-          282
+          285
         </td>
         <td>
-          4310
+          4417
         </td>
         <td>
-          9957
+          10112
           -
-          9957
+          10112
         </td>
         <td>
           Select
@@ -6581,15 +6680,15 @@ else
         </td>
       </tr><tr>
         <td>
-          282
+          285
         </td>
         <td>
-          4311
+          4418
         </td>
         <td>
-          9952
+          10107
           -
-          9973
+          10128
         </td>
         <td>
           ApplyToImplicitArgs
@@ -6605,15 +6704,15 @@ else
         </td>
       </tr><tr>
         <td>
-          282
+          285
         </td>
         <td>
-          4312
+          4419
         </td>
         <td>
-          9952
+          10107
           -
-          9973
+          10128
         </td>
         <td>
           ApplyImplicitView
@@ -6629,15 +6728,15 @@ else
         </td>
       </tr><tr>
         <td>
-          282
+          285
         </td>
         <td>
-          4313
+          4420
         </td>
         <td>
-          9952
+          10107
           -
-          9973
+          10128
         </td>
         <td>
           Block
@@ -6653,15 +6752,15 @@ else
         </td>
       </tr><tr>
         <td>
-          283
+          286
         </td>
         <td>
-          4314
+          4421
         </td>
         <td>
-          10023
+          10182
           -
-          10037
+          10196
         </td>
         <td>
           Apply
@@ -6677,15 +6776,15 @@ else
         </td>
       </tr><tr>
         <td>
-          283
+          286
         </td>
         <td>
-          4315
+          4422
         </td>
         <td>
-          10022
+          10181
           -
-          10022
+          10181
         </td>
         <td>
           Select
@@ -6701,15 +6800,15 @@ else
         </td>
       </tr><tr>
         <td>
-          283
+          286
         </td>
         <td>
-          4316
+          4423
         </td>
         <td>
-          10015
+          10174
           -
-          10038
+          10197
         </td>
         <td>
           ApplyToImplicitArgs
@@ -6725,15 +6824,15 @@ else
         </td>
       </tr><tr>
         <td>
-          283
+          286
         </td>
         <td>
-          4317
+          4424
         </td>
         <td>
-          10015
+          10174
           -
-          10038
+          10197
         </td>
         <td>
           ApplyImplicitView
@@ -6749,15 +6848,15 @@ else
         </td>
       </tr><tr>
         <td>
-          283
+          286
         </td>
         <td>
-          4318
+          4425
         </td>
         <td>
-          10015
+          10174
           -
-          10038
+          10197
         </td>
         <td>
           Block
@@ -6773,15 +6872,15 @@ else
         </td>
       </tr><tr>
         <td>
-          284
+          287
         </td>
         <td>
-          4319
+          4426
         </td>
         <td>
-          10098
+          10261
           -
-          10118
+          10281
         </td>
         <td>
           Apply
@@ -6797,15 +6896,15 @@ else
         </td>
       </tr><tr>
         <td>
-          284
+          287
         </td>
         <td>
-          4320
+          4427
         </td>
         <td>
-          10120
+          10283
           -
-          10138
+          10301
         </td>
         <td>
           Apply
@@ -6821,15 +6920,15 @@ else
         </td>
       </tr><tr>
         <td>
-          284
+          287
         </td>
         <td>
-          4321
+          4428
         </td>
         <td>
-          10097
+          10260
           -
-          10097
+          10260
         </td>
         <td>
           Select
@@ -6845,15 +6944,15 @@ else
         </td>
       </tr><tr>
         <td>
-          284
+          287
         </td>
         <td>
-          4322
+          4429
         </td>
         <td>
-          10095
+          10258
           -
-          10139
+          10302
         </td>
         <td>
           ApplyToImplicitArgs
@@ -6869,15 +6968,15 @@ else
         </td>
       </tr><tr>
         <td>
-          284
+          287
         </td>
         <td>
-          4323
+          4430
         </td>
         <td>
-          10095
+          10258
           -
-          10139
+          10302
         </td>
         <td>
           ApplyImplicitView
@@ -6893,15 +6992,15 @@ else
         </td>
       </tr><tr>
         <td>
-          284
+          287
         </td>
         <td>
-          4324
+          4431
         </td>
         <td>
-          10095
+          10258
           -
-          10139
+          10302
         </td>
         <td>
           Block
@@ -6917,15 +7016,15 @@ else
         </td>
       </tr><tr>
         <td>
-          285
+          288
         </td>
         <td>
-          4325
+          4432
         </td>
         <td>
-          10184
+          10351
           -
-          10198
+          10365
         </td>
         <td>
           Apply
@@ -6941,15 +7040,15 @@ else
         </td>
       </tr><tr>
         <td>
-          285
+          288
         </td>
         <td>
-          4326
+          4433
         </td>
         <td>
-          10179
+          10346
           -
-          10199
+          10366
         </td>
         <td>
           Apply
@@ -6965,15 +7064,15 @@ else
         </td>
       </tr><tr>
         <td>
-          285
+          288
         </td>
         <td>
-          4327
+          4434
         </td>
         <td>
-          10179
+          10346
           -
-          10199
+          10366
         </td>
         <td>
           ApplyImplicitView
@@ -6989,15 +7088,15 @@ else
         </td>
       </tr><tr>
         <td>
-          285
+          288
         </td>
         <td>
-          4328
+          4435
         </td>
         <td>
-          10179
+          10346
           -
-          10199
+          10366
         </td>
         <td>
           Block
@@ -7013,15 +7112,15 @@ else
         </td>
       </tr><tr>
         <td>
-          286
+          289
         </td>
         <td>
-          4347
+          4454
         </td>
         <td>
-          10305
+          10476
           -
-          11187
+          11460
         </td>
         <td>
           Block
@@ -7063,15 +7162,15 @@ else
         </td>
       </tr><tr>
         <td>
-          289
+          292
         </td>
         <td>
-          4329
+          4436
         </td>
         <td>
-          10470
+          10660
           -
-          10505
+          10695
         </td>
         <td>
           Apply
@@ -7087,15 +7186,15 @@ else
         </td>
       </tr><tr>
         <td>
-          291
+          294
         </td>
         <td>
-          4341
+          4448
         </td>
         <td>
-          10545
+          10739
           -
-          10949
+          11159
         </td>
         <td>
           Apply
@@ -7117,15 +7216,15 @@ else
         </td>
       </tr><tr>
         <td>
-          291
+          294
         </td>
         <td>
-          4342
+          4449
         </td>
         <td>
-          10525
+          10719
           -
-          10950
+          11160
         </td>
         <td>
           Apply
@@ -7141,15 +7240,15 @@ else
         </td>
       </tr><tr>
         <td>
-          292
+          295
         </td>
         <td>
-          4330
+          4437
         </td>
         <td>
-          10582
+          10780
           -
-          10610
+          10808
         </td>
         <td>
           Apply
@@ -7165,15 +7264,15 @@ else
         </td>
       </tr><tr>
         <td>
-          293
+          296
         </td>
         <td>
-          4331
+          4438
         </td>
         <td>
-          10624
+          10826
           -
-          10629
+          10831
         </td>
         <td>
           Select
@@ -7189,15 +7288,15 @@ else
         </td>
       </tr><tr>
         <td>
-          293
+          296
         </td>
         <td>
-          4332
+          4439
         </td>
         <td>
-          10624
+          10826
           -
-          10629
+          10831
         </td>
         <td>
           Block
@@ -7213,15 +7312,15 @@ else
         </td>
       </tr><tr>
         <td>
-          293
+          296
         </td>
         <td>
-          4333
+          4440
         </td>
         <td>
-          10635
+          10837
           -
-          10640
+          10842
         </td>
         <td>
           Select
@@ -7237,15 +7336,15 @@ else
         </td>
       </tr><tr>
         <td>
-          293
+          296
         </td>
         <td>
-          4334
+          4441
         </td>
         <td>
-          10635
+          10837
           -
-          10640
+          10842
         </td>
         <td>
           Block
@@ -7261,15 +7360,15 @@ else
         </td>
       </tr><tr>
         <td>
-          294
+          297
         </td>
         <td>
-          4335
+          4442
         </td>
         <td>
-          10667
+          10873
           -
-          10677
+          10883
         </td>
         <td>
           Apply
@@ -7285,15 +7384,15 @@ else
         </td>
       </tr><tr>
         <td>
-          294
+          297
         </td>
         <td>
-          4336
+          4443
         </td>
         <td>
-          10679
+          10885
           -
-          10693
+          10899
         </td>
         <td>
           Select
@@ -7309,15 +7408,15 @@ else
         </td>
       </tr><tr>
         <td>
-          294
+          297
         </td>
         <td>
-          4337
+          4444
         </td>
         <td>
-          10679
+          10885
           -
-          10693
+          10899
         </td>
         <td>
           Block
@@ -7333,15 +7432,15 @@ else
         </td>
       </tr><tr>
         <td>
-          294
+          297
         </td>
         <td>
-          4338
+          4445
         </td>
         <td>
-          10699
+          10905
           -
-          10735
+          10941
         </td>
         <td>
           Apply
@@ -7357,15 +7456,15 @@ else
         </td>
       </tr><tr>
         <td>
-          294
+          297
         </td>
         <td>
-          4339
+          4446
         </td>
         <td>
-          10699
+          10905
           -
-          10735
+          10941
         </td>
         <td>
           Block
@@ -7381,15 +7480,15 @@ else
         </td>
       </tr><tr>
         <td>
-          295
+          298
         </td>
         <td>
-          4340
+          4447
         </td>
         <td>
-          10927
+          11137
           -
-          10948
+          11158
         </td>
         <td>
           Apply
@@ -7405,15 +7504,15 @@ else
         </td>
       </tr><tr>
         <td>
-          297
+          300
         </td>
         <td>
-          4343
+          4450
         </td>
         <td>
-          10965
+          11179
           -
-          10965
+          11179
         </td>
         <td>
           Select
@@ -7429,15 +7528,15 @@ else
         </td>
       </tr><tr>
         <td>
-          297
+          300
         </td>
         <td>
-          4344
+          4451
         </td>
         <td>
-          10970
+          11184
           -
-          10970
+          11184
         </td>
         <td>
           Select
@@ -7453,15 +7552,15 @@ else
         </td>
       </tr><tr>
         <td>
-          297
+          300
         </td>
         <td>
-          4345
+          4452
         </td>
         <td>
-          10975
+          11189
           -
-          10975
+          11189
         </td>
         <td>
           Select
@@ -7477,15 +7576,15 @@ else
         </td>
       </tr><tr>
         <td>
-          297
+          300
         </td>
         <td>
-          4346
+          4453
         </td>
         <td>
-          10980
+          11194
           -
-          10980
+          11194
         </td>
         <td>
           Select
@@ -7501,15 +7600,15 @@ else
         </td>
       </tr><tr>
         <td>
-          305
+          308
         </td>
         <td>
-          4348
+          4455
         </td>
         <td>
-          11225
+          11502
           -
-          11233
+          11510
         </td>
         <td>
           Select
@@ -7525,15 +7624,15 @@ else
         </td>
       </tr><tr>
         <td>
-          305
+          308
         </td>
         <td>
-          4349
+          4456
         </td>
         <td>
-          11225
+          11502
           -
-          11233
+          11510
         </td>
         <td>
           ApplyImplicitView
@@ -7549,15 +7648,15 @@ else
         </td>
       </tr><tr>
         <td>
-          305
+          308
         </td>
         <td>
-          4350
+          4457
         </td>
         <td>
-          11225
+          11502
           -
-          11233
+          11510
         </td>
         <td>
           Block
@@ -7573,15 +7672,39 @@ else
         </td>
       </tr><tr>
         <td>
-          308
+          311
         </td>
         <td>
-          4351
+          4458
         </td>
         <td>
-          11332
+          11635
           -
-          11360
+          11650
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Left.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Left.apply[Int, Nothing](nextEvent)
+        </td>
+      </tr><tr>
+        <td>
+          311
+        </td>
+        <td>
+          4459
+        </td>
+        <td>
+          11617
+          -
+          11651
         </td>
         <td>
           Apply
@@ -7593,19 +7716,19 @@ else
           
         </td>
         <td style="background: #AEF1AE">
-          otherEventHandler.apply(nextEvent)
+          otherEventHandler.apply(scala.`package`.Left.apply[Int, Nothing](nextEvent))
         </td>
       </tr><tr>
         <td>
-          308
+          311
         </td>
         <td>
-          4352
+          4460
         </td>
         <td>
-          11332
+          11617
           -
-          11360
+          11651
         </td>
         <td>
           Block
@@ -7617,19 +7740,91 @@ else
           
         </td>
         <td style="background: #AEF1AE">
-          otherEventHandler.apply(nextEvent)
+          otherEventHandler.apply(scala.`package`.Left.apply[Int, Nothing](nextEvent))
         </td>
       </tr><tr>
         <td>
-          310
+          314
         </td>
         <td>
-          4353
+          4462
         </td>
         <td>
-          11371
+          11725
           -
-          11412
+          11733
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Right.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.`package`.Right.apply[Nothing, Throwable](t)
+        </td>
+      </tr><tr>
+        <td>
+          314
+        </td>
+        <td>
+          4463
+        </td>
+        <td>
+          11707
+          -
+          11734
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          otherEventHandler.apply(scala.`package`.Right.apply[Nothing, Throwable](t))
+        </td>
+      </tr><tr>
+        <td>
+          314
+        </td>
+        <td>
+          4464
+        </td>
+        <td>
+          11707
+          -
+          11734
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          otherEventHandler.apply(scala.`package`.Right.apply[Nothing, Throwable](t))
+        </td>
+      </tr><tr>
+        <td>
+          316
+        </td>
+        <td>
+          4465
+        </td>
+        <td>
+          11747
+          -
+          11788
         </td>
         <td>
           Apply

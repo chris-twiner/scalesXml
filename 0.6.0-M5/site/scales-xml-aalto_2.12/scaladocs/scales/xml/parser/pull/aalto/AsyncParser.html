@@ -613,9 +613,9 @@ When the Input is El then the stream may be evaluated to get all available event
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="scales.xml.parser.pull.aalto.AsyncParser#eventHandler" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="eventHandler:Int=&gt;scales.xml.PullType"></a><a id="eventHandler:(Int)⇒xml.PullType"></a>
+      <a id="eventHandler:Either[Int,Throwable]=&gt;scales.xml.PullType"></a><a id="eventHandler:(Either[Int,Throwable])⇒xml.PullType"></a>
       <span class="permalink">
-      <a href="../../../../../scales/xml/parser/pull/aalto/AsyncParser.html#eventHandler:Int=&gt;scales.xml.PullType" title="Permalink">
+      <a href="../../../../../scales/xml/parser/pull/aalto/AsyncParser.html#eventHandler:Either[Int,Throwable]=&gt;scales.xml.PullType" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -624,7 +624,7 @@ When the Input is El then the stream may be evaluated to get all available event
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">eventHandler</span><span class="result">: (<span class="extype" name="scala.Int">Int</span>) ⇒ <a href="../../../index.html#PullType=Either[scales.xml.XmlEvent,scales.xml.EndElem]" class="extmbr" name="scales.xml.PullType">xml.PullType</a></span>
+        <span class="name">eventHandler</span><span class="result">: (<span class="extype" name="scala.Either">Either</span>[<span class="extype" name="scala.Int">Int</span>, <span class="extype" name="scala.Throwable">Throwable</span>]) ⇒ <a href="../../../index.html#PullType=Either[scales.xml.XmlEvent,scales.xml.EndElem]" class="extmbr" name="scales.xml.PullType">xml.PullType</a></span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
@@ -737,9 +737,9 @@ When the Input is El then the stream may be evaluated to get all available event
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li name="scales.xml.parser.pull.aalto.AsyncParser#iteratee" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="iteratee:scales.utils.ResumableIter[scales.utils.io.DataChunk,scalaz.EphemeralStream[scales.xml.PullType]]"></a><a id="iteratee:utils.ResumableIter[DataChunk,EphemeralStream[xml.PullType]]"></a>
+      <a id="iteratee[F[_]](implicitevidence$1:scalaz.Monad[F]):scales.utils.iteratee.functions.ResumableIter[scales.utils.io.DataChunk,F,scalaz.EphemeralStream[scales.xml.PullType]]"></a><a id="iteratee[F[_]](Monad[F]):ResumableIter[DataChunk,F,EphemeralStream[xml.PullType]]"></a>
       <span class="permalink">
-      <a href="../../../../../scales/xml/parser/pull/aalto/AsyncParser.html#iteratee:scales.utils.ResumableIter[scales.utils.io.DataChunk,scalaz.EphemeralStream[scales.xml.PullType]]" title="Permalink">
+      <a href="../../../../../scales/xml/parser/pull/aalto/AsyncParser.html#iteratee[F[_]](implicitevidence$1:scalaz.Monad[F]):scales.utils.iteratee.functions.ResumableIter[scales.utils.io.DataChunk,F,scalaz.EphemeralStream[scales.xml.PullType]]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -748,7 +748,7 @@ When the Input is El then the stream may be evaluated to get all available event
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">iteratee</span><span class="result">: <a href="../../../../utils/index.html#ResumableIter[E,A]=scalaz.iteratee.Iteratee[E,(A,scalaz.iteratee.Iteratee[E,_])]" class="extmbr" name="scales.utils.ResumableIter">utils.ResumableIter</a>[<span class="extype" name="scales.utils.io.DataChunk">DataChunk</span>, <span class="extype" name="scalaz.EphemeralStream">EphemeralStream</span>[<a href="../../../index.html#PullType=Either[scales.xml.XmlEvent,scales.xml.EndElem]" class="extmbr" name="scales.xml.PullType">xml.PullType</a>]]</span>
+        <span class="name">iteratee</span><span class="tparams">[<span name="F">F<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scales.xml.parser.pull.aalto.AsyncParser.iteratee.F">F</span>]</span>)</span><span class="result">: <span class="extype" name="scales.utils.iteratee.functions.ResumableIter">ResumableIter</span>[<span class="extype" name="scales.utils.io.DataChunk">DataChunk</span>, <span class="extype" name="scales.xml.parser.pull.aalto.AsyncParser.iteratee.F">F</span>, <span class="extype" name="scalaz.EphemeralStream">EphemeralStream</span>[<a href="../../../index.html#PullType=Either[scales.xml.XmlEvent,scales.xml.EndElem]" class="extmbr" name="scales.xml.PullType">xml.PullType</a>]]</span>
       </span>
       
       <p class="shortcomment cmt">Provides a ResumableIter that converts DataChunks via a parser into a stream of PullTypes.</p><div class="fullcomment"><div class="comment cmt"><p>Provides a ResumableIter that converts DataChunks via a parser into a stream of PullTypes.  Returns Done when there are results from the pushed chunks.</p><p>Calls AsyncParser parse

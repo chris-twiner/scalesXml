@@ -396,9 +396,9 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>PullIteratees</dd></dl></div>
     </li><li name="scales.xml.serializers.SerializingIter.SerialIterT" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="SerialIterT=scalaz.iteratee.Iteratee[scales.xml.PullType,(scales.xml.serializers.XmlOutput,Option[Throwable])]"></a><a id="SerialIterT:SerialIterT"></a>
+      <a id="SerialIterT[F[_]]=scalaz.iteratee.IterateeT[scales.xml.PullType,F,(scales.xml.serializers.XmlOutput,Option[Throwable])]"></a><a id="SerialIterT[F[_]]:SerialIterT[F]"></a>
       <span class="permalink">
-      <a href="../../scales/xml/index.html#SerialIterT=scalaz.iteratee.Iteratee[scales.xml.PullType,(scales.xml.serializers.XmlOutput,Option[Throwable])]" title="Permalink">
+      <a href="../../scales/xml/index.html#SerialIterT[F[_]]=scalaz.iteratee.IterateeT[scales.xml.PullType,F,(scales.xml.serializers.XmlOutput,Option[Throwable])]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -407,14 +407,14 @@
         <span class="kind">type</span>
       </span>
       <span class="symbol">
-        <span class="name">SerialIterT</span><span class="result alias"> = <span class="extype" name="scalaz.iteratee.IterateeT">IterateeT</span>[<a href="#PullType=Either[scales.xml.XmlEvent,scales.xml.EndElem]" class="extmbr" name="scales.xml.PullType">PullType</a>, <span class="extype" name="scalaz.IdInstances.Id">scalaz.Id.Id</span>, (<span class="extype" name="scales.xml.serializers.XmlOutput">XmlOutput</span>, <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Throwable">Throwable</span>])]</span>
+        <span class="name">SerialIterT</span><span class="tparams">[<span name="F">F<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="result alias"> = <span class="extype" name="scalaz.iteratee.IterateeT">IterateeT</span>[<a href="#PullType=Either[scales.xml.XmlEvent,scales.xml.EndElem]" class="extmbr" name="scales.xml.PullType">PullType</a>, <span class="extype" name="scales.xml.serializers.SerializingIter.SerialIterT.F">F</span>, (<span class="extype" name="scales.xml.serializers.XmlOutput">XmlOutput</span>, <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Throwable">Throwable</span>])]</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SerializingIter</dd></dl></div>
     </li><li name="scales.xml.serializers.SerializingIter.SerialStepT" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="SerialStepT=scalaz.iteratee.StepT[scales.xml.PullType,scalaz.Id.Id,(scales.xml.serializers.XmlOutput,Option[Throwable])]"></a><a id="SerialStepT:SerialStepT"></a>
+      <a id="SerialStepT[F[_]]=scalaz.iteratee.StepT[scales.xml.PullType,F,(scales.xml.serializers.XmlOutput,Option[Throwable])]"></a><a id="SerialStepT[F[_]]:SerialStepT[F]"></a>
       <span class="permalink">
-      <a href="../../scales/xml/index.html#SerialStepT=scalaz.iteratee.StepT[scales.xml.PullType,scalaz.Id.Id,(scales.xml.serializers.XmlOutput,Option[Throwable])]" title="Permalink">
+      <a href="../../scales/xml/index.html#SerialStepT[F[_]]=scalaz.iteratee.StepT[scales.xml.PullType,F,(scales.xml.serializers.XmlOutput,Option[Throwable])]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -423,7 +423,7 @@
         <span class="kind">type</span>
       </span>
       <span class="symbol">
-        <span class="name">SerialStepT</span><span class="result alias"> = <span class="extype" name="scalaz.iteratee.StepT">StepT</span>[<a href="#PullType=Either[scales.xml.XmlEvent,scales.xml.EndElem]" class="extmbr" name="scales.xml.PullType">PullType</a>, <span class="extype" name="scalaz.IdInstances.Id">scalaz.Id.Id</span>, (<span class="extype" name="scales.xml.serializers.XmlOutput">XmlOutput</span>, <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Throwable">Throwable</span>])]</span>
+        <span class="name">SerialStepT</span><span class="tparams">[<span name="F">F<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="result alias"> = <span class="extype" name="scalaz.iteratee.StepT">StepT</span>[<a href="#PullType=Either[scales.xml.XmlEvent,scales.xml.EndElem]" class="extmbr" name="scales.xml.PullType">PullType</a>, <span class="extype" name="scales.xml.serializers.SerializingIter.SerialStepT.F">F</span>, (<span class="extype" name="scales.xml.serializers.XmlOutput">XmlOutput</span>, <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Throwable">Throwable</span>])]</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SerializingIter</dd></dl></div>
@@ -1043,6 +1043,38 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>XmlPrinter</dd></dl></div>
+    </li><li name="scales.xml.parser.pull.PullIteratees#idPullIteratees" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="idPullIteratees:scales.xml.parser.pull.PullIterateeFunctions[scalaz.Id.Id]"></a><a id="idPullIteratees:PullIterateeFunctions[scalaz.Id.Id]"></a>
+      <span class="permalink">
+      <a href="../../scales/xml/index.html#idPullIteratees:scales.xml.parser.pull.PullIterateeFunctions[scalaz.Id.Id]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">idPullIteratees</span><span class="result">: <span class="extype" name="scales.xml.parser.pull.PullIterateeFunctions">PullIterateeFunctions</span>[<span class="extype" name="scalaz.IdInstances.Id">scalaz.Id.Id</span>]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>PullIteratees</dd></dl></div>
+    </li><li name="scales.xml.parser.pull.PullIteratees#ioPullIteratees" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ioPullIteratees:scales.xml.parser.pull.PullIterateeFunctions[scalaz.effect.IO]"></a><a id="ioPullIteratees:PullIterateeFunctions[IO]"></a>
+      <span class="permalink">
+      <a href="../../scales/xml/index.html#ioPullIteratees:scales.xml.parser.pull.PullIterateeFunctions[scalaz.effect.IO]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ioPullIteratees</span><span class="result">: <span class="extype" name="scales.xml.parser.pull.PullIterateeFunctions">PullIterateeFunctions</span>[<span class="extype" name="scalaz.effect.IO">IO</span>]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>PullIteratees</dd></dl></div>
     </li><li name="scales.xml.xpath.XmlPaths#isElem" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isElem:scales.xml.XmlPath=&gt;Boolean"></a><a id="isElem:(XmlPath)⇒Boolean"></a>
       <span class="permalink">
@@ -1172,9 +1204,9 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>XmlPrinter</dd></dl></div>
     </li><li name="scales.xml.parser.pull.PullIteratees#iterate" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="iterate(path:List[scales.xml.QName],xml:Iterator[scales.xml.PullType]):scales.utils.collection.FlatMapIterator[scales.xml.XmlPath]"></a><a id="iterate(List[QName],Iterator[PullType]):FlatMapIterator[XmlPath]"></a>
+      <a id="iterate(path:List[scales.xml.QName],xml:Iterator[scales.xml.PullType])(implicitqe:scalaz.Equal[scales.xml.QName]):scales.utils.collection.FlatMapIterator[scales.xml.XmlPath]"></a><a id="iterate(List[QName],Iterator[PullType])(Equal[QName]):FlatMapIterator[XmlPath]"></a>
       <span class="permalink">
-      <a href="../../scales/xml/index.html#iterate(path:List[scales.xml.QName],xml:Iterator[scales.xml.PullType]):scales.utils.collection.FlatMapIterator[scales.xml.XmlPath]" title="Permalink">
+      <a href="../../scales/xml/index.html#iterate(path:List[scales.xml.QName],xml:Iterator[scales.xml.PullType])(implicitqe:scalaz.Equal[scales.xml.QName]):scales.utils.collection.FlatMapIterator[scales.xml.XmlPath]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1183,14 +1215,14 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">iterate</span><span class="params">(<span name="path">path: <span class="extype" name="scala.List">List</span>[<span class="extype" name="scales.xml.QName">QName</span>]</span>, <span name="xml">xml: <span class="extype" name="scala.Iterator">Iterator</span>[<a href="#PullType=Either[scales.xml.XmlEvent,scales.xml.EndElem]" class="extmbr" name="scales.xml.PullType">PullType</a>]</span>)</span><span class="result">: <span class="extype" name="scales.utils.collection.FlatMapIterator">FlatMapIterator</span>[<a href="#XmlPath=scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,XmlTypes.this.XCC]" class="extmbr" name="scales.xml.XmlPath">XmlPath</a>]</span>
+        <span class="name">iterate</span><span class="params">(<span name="path">path: <span class="extype" name="scala.List">List</span>[<span class="extype" name="scales.xml.QName">QName</span>]</span>, <span name="xml">xml: <span class="extype" name="scala.Iterator">Iterator</span>[<a href="#PullType=Either[scales.xml.XmlEvent,scales.xml.EndElem]" class="extmbr" name="scales.xml.PullType">PullType</a>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="qe">qe: <span class="extype" name="scalaz.Equal">Equal</span>[<span class="extype" name="scales.xml.QName">QName</span>]</span>)</span><span class="result">: <span class="extype" name="scales.utils.collection.FlatMapIterator">FlatMapIterator</span>[<a href="#XmlPath=scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,XmlTypes.this.XCC]" class="extmbr" name="scales.xml.XmlPath">XmlPath</a>]</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>PullIteratees</dd></dl></div>
     </li><li name="scales.xml.parser.pull.PullIteratees#iterate" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="iterate(path:List[scales.xml.QName],xml:scales.xml.parser.pull.XmlPull):scales.utils.collection.FlatMapIterator[scales.xml.XmlPath]"></a><a id="iterate(List[QName],xml.parser.pull.XmlPull):FlatMapIterator[XmlPath]"></a>
+      <a id="iterate(path:List[scales.xml.QName],xml:scales.xml.parser.pull.XmlPull)(implicitqe:scalaz.Equal[scales.xml.QName]):scales.utils.collection.FlatMapIterator[scales.xml.XmlPath]"></a><a id="iterate(List[QName],xml.parser.pull.XmlPull)(Equal[QName]):FlatMapIterator[XmlPath]"></a>
       <span class="permalink">
-      <a href="../../scales/xml/index.html#iterate(path:List[scales.xml.QName],xml:scales.xml.parser.pull.XmlPull):scales.utils.collection.FlatMapIterator[scales.xml.XmlPath]" title="Permalink">
+      <a href="../../scales/xml/index.html#iterate(path:List[scales.xml.QName],xml:scales.xml.parser.pull.XmlPull)(implicitqe:scalaz.Equal[scales.xml.QName]):scales.utils.collection.FlatMapIterator[scales.xml.XmlPath]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1199,7 +1231,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">iterate</span><span class="params">(<span name="path">path: <span class="extype" name="scala.List">List</span>[<span class="extype" name="scales.xml.QName">QName</span>]</span>, <span name="xml">xml: <span class="extype" name="scales.xml.parser.pull.XmlPull">xml.parser.pull.XmlPull</span></span>)</span><span class="result">: <span class="extype" name="scales.utils.collection.FlatMapIterator">FlatMapIterator</span>[<a href="#XmlPath=scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,XmlTypes.this.XCC]" class="extmbr" name="scales.xml.XmlPath">XmlPath</a>]</span>
+        <span class="name">iterate</span><span class="params">(<span name="path">path: <span class="extype" name="scala.List">List</span>[<span class="extype" name="scales.xml.QName">QName</span>]</span>, <span name="xml">xml: <span class="extype" name="scales.xml.parser.pull.XmlPull">xml.parser.pull.XmlPull</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="qe">qe: <span class="extype" name="scalaz.Equal">Equal</span>[<span class="extype" name="scales.xml.QName">QName</span>]</span>)</span><span class="result">: <span class="extype" name="scales.utils.collection.FlatMapIterator">FlatMapIterator</span>[<a href="#XmlPath=scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,XmlTypes.this.XCC]" class="extmbr" name="scales.xml.XmlPath">XmlPath</a>]</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>PullIteratees</dd></dl></div>
@@ -1508,9 +1540,9 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Whitespace</dd></dl></div>
     </li><li name="scales.xml.parser.pull.PullIteratees#onQNames" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="onQNames(qnames:List[scales.xml.QName]):scales.utils.ResumableIter[scales.xml.PullType,PullIteratees.this.QNamesMatch]"></a><a id="onQNames(List[QName]):utils.ResumableIter[PullType,QNamesMatch]"></a>
+      <a id="onQNames[F[_]](qnames:List[scales.xml.QName])(implicitevidence$1:scalaz.Monad[F]):scales.utils.iteratee.functions.ResumableIter[scales.xml.PullType,F,PullIteratees.this.QNamesMatch]"></a><a id="onQNames[F[_]](List[QName])(Monad[F]):ResumableIter[PullType,F,QNamesMatch]"></a>
       <span class="permalink">
-      <a href="../../scales/xml/index.html#onQNames(qnames:List[scales.xml.QName]):scales.utils.ResumableIter[scales.xml.PullType,PullIteratees.this.QNamesMatch]" title="Permalink">
+      <a href="../../scales/xml/index.html#onQNames[F[_]](qnames:List[scales.xml.QName])(implicitevidence$1:scalaz.Monad[F]):scales.utils.iteratee.functions.ResumableIter[scales.xml.PullType,F,PullIteratees.this.QNamesMatch]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1519,7 +1551,23 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">onQNames</span><span class="params">(<span name="qnames">qnames: <span class="extype" name="scala.List">List</span>[<span class="extype" name="scales.xml.QName">QName</span>]</span>)</span><span class="result">: <a href="../utils/index.html#ResumableIter[E,A]=scalaz.iteratee.Iteratee[E,(A,scalaz.iteratee.Iteratee[E,_])]" class="extmbr" name="scales.utils.ResumableIter">utils.ResumableIter</a>[<a href="#PullType=Either[scales.xml.XmlEvent,scales.xml.EndElem]" class="extmbr" name="scales.xml.PullType">PullType</a>, <a href="#QNamesMatch=(List[scales.xml.QName],Option[scales.xml.XmlPath])" class="extmbr" name="scales.xml.QNamesMatch">QNamesMatch</a>]</span>
+        <span class="name">onQNames</span><span class="tparams">[<span name="F">F<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="params">(<span name="qnames">qnames: <span class="extype" name="scala.List">List</span>[<span class="extype" name="scales.xml.QName">QName</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scales.xml.parser.pull.PullIteratees.onQNames.F">F</span>]</span>)</span><span class="result">: <span class="extype" name="scales.utils.iteratee.functions.ResumableIter">ResumableIter</span>[<a href="#PullType=Either[scales.xml.XmlEvent,scales.xml.EndElem]" class="extmbr" name="scales.xml.PullType">PullType</a>, <span class="extype" name="scales.xml.parser.pull.PullIteratees.onQNames.F">F</span>, <a href="#QNamesMatch=(List[scales.xml.QName],Option[scales.xml.XmlPath])" class="extmbr" name="scales.xml.QNamesMatch">QNamesMatch</a>]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>PullIteratees</dd></dl></div>
+    </li><li name="scales.xml.parser.pull.PullIteratees#onQNamesI" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="onQNamesI[F[_]](qnames:List[scales.xml.QName])(implicitqe:scalaz.Equal[scales.xml.QName],implicitF:scalaz.Monad[F]):scales.utils.iteratee.functions.ResumableIter[scales.xml.PullType,F,PullIteratees.this.QNamesMatch]"></a><a id="onQNamesI[F[_]](List[QName])(Equal[QName],Monad[F]):ResumableIter[PullType,F,QNamesMatch]"></a>
+      <span class="permalink">
+      <a href="../../scales/xml/index.html#onQNamesI[F[_]](qnames:List[scales.xml.QName])(implicitqe:scalaz.Equal[scales.xml.QName],implicitF:scalaz.Monad[F]):scales.utils.iteratee.functions.ResumableIter[scales.xml.PullType,F,PullIteratees.this.QNamesMatch]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">onQNamesI</span><span class="tparams">[<span name="F">F<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="params">(<span name="qnames">qnames: <span class="extype" name="scala.List">List</span>[<span class="extype" name="scales.xml.QName">QName</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="qe">qe: <span class="extype" name="scalaz.Equal">Equal</span>[<span class="extype" name="scales.xml.QName">QName</span>]</span>, <span name="F">F: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scales.xml.parser.pull.PullIteratees.onQNamesI.F">F</span>]</span>)</span><span class="result">: <span class="extype" name="scales.utils.iteratee.functions.ResumableIter">ResumableIter</span>[<a href="#PullType=Either[scales.xml.XmlEvent,scales.xml.EndElem]" class="extmbr" name="scales.xml.PullType">PullType</a>, <span class="extype" name="scales.xml.parser.pull.PullIteratees.onQNamesI.F">F</span>, <a href="#QNamesMatch=(List[scales.xml.QName],Option[scales.xml.XmlPath])" class="extmbr" name="scales.xml.QNamesMatch">QNamesMatch</a>]</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>PullIteratees</dd></dl></div>
@@ -1603,6 +1651,22 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>XmlPrinter</dd></dl></div>
+    </li><li name="scales.xml.parser.pull.PullIteratees#pullIterateesOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="pullIterateesOf[F[_]](implicitF:scalaz.Monad[F]):scales.xml.parser.pull.PullIterateeFunctions[F]"></a><a id="pullIterateesOf[F[_]](Monad[F]):PullIterateeFunctions[F]"></a>
+      <span class="permalink">
+      <a href="../../scales/xml/index.html#pullIterateesOf[F[_]](implicitF:scalaz.Monad[F]):scales.xml.parser.pull.PullIterateeFunctions[F]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">pullIterateesOf</span><span class="tparams">[<span name="F">F<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="params">(<span class="implicit">implicit </span><span name="F">F: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scales.xml.parser.pull.PullIteratees.pullIterateesOf.F">F</span>]</span>)</span><span class="result">: <span class="extype" name="scales.xml.parser.pull.PullIterateeFunctions">PullIterateeFunctions</span>[<span class="extype" name="scales.xml.parser.pull.PullIteratees.pullIterateesOf.F">F</span>]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>PullIteratees</dd></dl></div>
     </li><li name="scales.xml.parser.pull.XmlPulls#pullXml" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="pullXml[RToken&lt;:scales.xml.parser.strategies.OptimisationToken](source:org.xml.sax.InputSource,optimisationStrategy:scales.xml.parser.strategies.MemoryOptimisationStrategy[RToken],parserFactoryPool:scales.utils.resources.Pool[javax.xml.stream.XMLInputFactory],closeAfterUse:Boolean,strictPath:List[scales.xml.QName]):scales.xml.parser.pull.XmlPullwithjava.io.Closeablewithscales.utils.resources.IsClosed"></a><a id="pullXml[RToken&lt;:OptimisationToken](InputSource,MemoryOptimisationStrategy[RToken],Pool[XMLInputFactory],Boolean,List[QName]):xml.parser.pull.XmlPullwithCloseablewithIsClosed"></a>
       <span class="permalink">
@@ -1668,9 +1732,9 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>XmlPulls</dd></dl></div>
     </li><li name="scales.xml.serializers.SerializingIter#pushXmlIter" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="pushXmlIter(out:java.io.Writer,doc:scales.xml.DocLike,version:Option[scales.xml.XmlVersion],encoding:Option[java.nio.charset.Charset])(implicitserializerFI:scales.xml.serializers.SerializerFactory):(scales.utils.resources.CloseOnNeed,SerializingIter.this.SerialIterT)"></a><a id="pushXmlIter(Writer,DocLike,Option[XmlVersion],Option[Charset])(SerializerFactory):(CloseOnNeed,SerialIterT)"></a>
+      <a id="pushXmlIter[F[_]](out:java.io.Writer,doc:scales.xml.DocLike,version:Option[scales.xml.XmlVersion],encoding:Option[java.nio.charset.Charset])(implicitserializerFI:scales.xml.serializers.SerializerFactory,implicitF:scalaz.Monad[F]):(scales.utils.resources.CloseOnNeed,SerializingIter.this.SerialIterT[F])"></a><a id="pushXmlIter[F[_]](Writer,DocLike,Option[XmlVersion],Option[Charset])(SerializerFactory,Monad[F]):(CloseOnNeed,SerialIterT[F])"></a>
       <span class="permalink">
-      <a href="../../scales/xml/index.html#pushXmlIter(out:java.io.Writer,doc:scales.xml.DocLike,version:Option[scales.xml.XmlVersion],encoding:Option[java.nio.charset.Charset])(implicitserializerFI:scales.xml.serializers.SerializerFactory):(scales.utils.resources.CloseOnNeed,SerializingIter.this.SerialIterT)" title="Permalink">
+      <a href="../../scales/xml/index.html#pushXmlIter[F[_]](out:java.io.Writer,doc:scales.xml.DocLike,version:Option[scales.xml.XmlVersion],encoding:Option[java.nio.charset.Charset])(implicitserializerFI:scales.xml.serializers.SerializerFactory,implicitF:scalaz.Monad[F]):(scales.utils.resources.CloseOnNeed,SerializingIter.this.SerialIterT[F])" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1679,7 +1743,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">pushXmlIter</span><span class="params">(<span name="out">out: <span class="extype" name="java.io.Writer">Writer</span></span>, <span name="doc">doc: <span class="extype" name="scales.xml.DocLike">DocLike</span></span>, <span name="version">version: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scales.xml.XmlVersion">XmlVersion</span>]</span>, <span name="encoding">encoding: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="java.nio.charset.Charset">Charset</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="serializerFI">serializerFI: <span class="extype" name="scales.xml.serializers.SerializerFactory">SerializerFactory</span></span>)</span><span class="result">: (<span class="extype" name="scales.utils.resources.CloseOnNeed">CloseOnNeed</span>, <a href="#SerialIterT=scalaz.iteratee.Iteratee[scales.xml.PullType,(scales.xml.serializers.XmlOutput,Option[Throwable])]" class="extmbr" name="scales.xml.SerialIterT">SerialIterT</a>)</span>
+        <span class="name">pushXmlIter</span><span class="tparams">[<span name="F">F<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="params">(<span name="out">out: <span class="extype" name="java.io.Writer">Writer</span></span>, <span name="doc">doc: <span class="extype" name="scales.xml.DocLike">DocLike</span></span>, <span name="version">version: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scales.xml.XmlVersion">XmlVersion</span>]</span>, <span name="encoding">encoding: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="java.nio.charset.Charset">Charset</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="serializerFI">serializerFI: <span class="extype" name="scales.xml.serializers.SerializerFactory">SerializerFactory</span></span>, <span name="F">F: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scales.xml.serializers.SerializingIter.pushXmlIter.F">F</span>]</span>)</span><span class="result">: (<span class="extype" name="scales.utils.resources.CloseOnNeed">CloseOnNeed</span>, <a href="#SerialIterT[F[_]]=scalaz.iteratee.IterateeT[scales.xml.PullType,F,(scales.xml.serializers.XmlOutput,Option[Throwable])]" class="extmbr" name="scales.xml.SerialIterT">SerialIterT</a>[<span class="extype" name="scales.xml.serializers.SerializingIter.pushXmlIter.F">F</span>])</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SerializingIter</dd></dl></div>
@@ -1844,9 +1908,9 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>XmlPrinter</dd></dl></div>
     </li><li name="scales.xml.serializers.SerializingIter#serializeIter" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="serializeIter(output:scales.xml.serializers.XmlOutput,serializer:scales.xml.serializers.Serializer,closer:()=&gt;Unit,doc:scales.xml.DocLike):SerializingIter.this.SerialIterT"></a><a id="serializeIter(XmlOutput,Serializer,()⇒Unit,DocLike):SerialIterT"></a>
+      <a id="serializeIter[F[_]](output:scales.xml.serializers.XmlOutput,serializer:scales.xml.serializers.Serializer,closer:()=&gt;Unit,doc:scales.xml.DocLike)(implicitF:scalaz.Monad[F]):SerializingIter.this.SerialIterT[F]"></a><a id="serializeIter[F[_]](XmlOutput,Serializer,()⇒Unit,DocLike)(Monad[F]):SerialIterT[F]"></a>
       <span class="permalink">
-      <a href="../../scales/xml/index.html#serializeIter(output:scales.xml.serializers.XmlOutput,serializer:scales.xml.serializers.Serializer,closer:()=&gt;Unit,doc:scales.xml.DocLike):SerializingIter.this.SerialIterT" title="Permalink">
+      <a href="../../scales/xml/index.html#serializeIter[F[_]](output:scales.xml.serializers.XmlOutput,serializer:scales.xml.serializers.Serializer,closer:()=&gt;Unit,doc:scales.xml.DocLike)(implicitF:scalaz.Monad[F]):SerializingIter.this.SerialIterT[F]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1855,7 +1919,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">serializeIter</span><span class="params">(<span name="output">output: <span class="extype" name="scales.xml.serializers.XmlOutput">XmlOutput</span></span>, <span name="serializer">serializer: <span class="extype" name="scales.xml.serializers.Serializer">Serializer</span></span>, <span name="closer">closer: () ⇒ <span class="extype" name="scala.Unit">Unit</span></span>, <span name="doc">doc: <span class="extype" name="scales.xml.DocLike">DocLike</span></span>)</span><span class="result">: <a href="#SerialIterT=scalaz.iteratee.Iteratee[scales.xml.PullType,(scales.xml.serializers.XmlOutput,Option[Throwable])]" class="extmbr" name="scales.xml.SerialIterT">SerialIterT</a></span>
+        <span class="name">serializeIter</span><span class="tparams">[<span name="F">F<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="params">(<span name="output">output: <span class="extype" name="scales.xml.serializers.XmlOutput">XmlOutput</span></span>, <span name="serializer">serializer: <span class="extype" name="scales.xml.serializers.Serializer">Serializer</span></span>, <span name="closer">closer: () ⇒ <span class="extype" name="scala.Unit">Unit</span></span>, <span name="doc">doc: <span class="extype" name="scales.xml.DocLike">DocLike</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="F">F: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scales.xml.serializers.SerializingIter.serializeIter.F">F</span>]</span>)</span><span class="result">: <a href="#SerialIterT[F[_]]=scalaz.iteratee.IterateeT[scales.xml.PullType,F,(scales.xml.serializers.XmlOutput,Option[Throwable])]" class="extmbr" name="scales.xml.SerialIterT">SerialIterT</a>[<span class="extype" name="scales.xml.serializers.SerializingIter.serializeIter.F">F</span>]</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SerializingIter</dd></dl></div>
@@ -1876,9 +1940,9 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>XmlPrinter</dd></dl></div>
     </li><li name="scales.xml.parser.pull.PullIteratees#skip" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="skip(downTo:=&gt;List[Int]):scalaz.iteratee.Iteratee[scales.xml.PullType,PullIteratees.this.PeekMatch]"></a><a id="skip(⇒List[Int]):Iteratee[PullType,PeekMatch]"></a>
+      <a id="skip[F[_]](downTo:=&gt;List[Int])(implicitF:scalaz.Monad[F]):scalaz.iteratee.IterateeT[scales.xml.PullType,F,PullIteratees.this.PeekMatch]"></a><a id="skip[F[_]](⇒List[Int])(Monad[F]):IterateeT[PullType,F,PeekMatch]"></a>
       <span class="permalink">
-      <a href="../../scales/xml/index.html#skip(downTo:=&gt;List[Int]):scalaz.iteratee.Iteratee[scales.xml.PullType,PullIteratees.this.PeekMatch]" title="Permalink">
+      <a href="../../scales/xml/index.html#skip[F[_]](downTo:=&gt;List[Int])(implicitF:scalaz.Monad[F]):scalaz.iteratee.IterateeT[scales.xml.PullType,F,PullIteratees.this.PeekMatch]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1887,14 +1951,14 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">skip</span><span class="params">(<span name="downTo">downTo: ⇒ <span class="extype" name="scala.List">List</span>[<span class="extype" name="scala.Int">Int</span>]</span>)</span><span class="result">: <span class="extype" name="scalaz.iteratee.Iteratee">Iteratee</span>[<a href="#PullType=Either[scales.xml.XmlEvent,scales.xml.EndElem]" class="extmbr" name="scales.xml.PullType">PullType</a>, <a href="#PeekMatch=Option[scales.xml.XmlPath]" class="extmbr" name="scales.xml.PeekMatch">PeekMatch</a>]</span>
+        <span class="name">skip</span><span class="tparams">[<span name="F">F<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="params">(<span name="downTo">downTo: ⇒ <span class="extype" name="scala.List">List</span>[<span class="extype" name="scala.Int">Int</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="F">F: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scales.xml.parser.pull.PullIteratees.skip.F">F</span>]</span>)</span><span class="result">: <span class="extype" name="scalaz.iteratee.IterateeT">IterateeT</span>[<a href="#PullType=Either[scales.xml.XmlEvent,scales.xml.EndElem]" class="extmbr" name="scales.xml.PullType">PullType</a>, <span class="extype" name="scales.xml.parser.pull.PullIteratees.skip.F">F</span>, <a href="#PeekMatch=Option[scales.xml.XmlPath]" class="extmbr" name="scales.xml.PeekMatch">PeekMatch</a>]</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>PullIteratees</dd></dl></div>
     </li><li name="scales.xml.parser.pull.PullIteratees#skipv" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="skipv(downTo:Int*):scalaz.iteratee.Iteratee[scales.xml.PullType,PullIteratees.this.PeekMatch]"></a><a id="skipv(Int*):Iteratee[PullType,PeekMatch]"></a>
+      <a id="skipv[F[_]](downTo:Int*)(implicitF:scalaz.Monad[F]):scalaz.iteratee.IterateeT[scales.xml.PullType,F,PullIteratees.this.PeekMatch]"></a><a id="skipv[F[_]](Int*)(Monad[F]):IterateeT[PullType,F,PeekMatch]"></a>
       <span class="permalink">
-      <a href="../../scales/xml/index.html#skipv(downTo:Int*):scalaz.iteratee.Iteratee[scales.xml.PullType,PullIteratees.this.PeekMatch]" title="Permalink">
+      <a href="../../scales/xml/index.html#skipv[F[_]](downTo:Int*)(implicitF:scalaz.Monad[F]):scalaz.iteratee.IterateeT[scales.xml.PullType,F,PullIteratees.this.PeekMatch]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1903,7 +1967,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">skipv</span><span class="params">(<span name="downTo">downTo: <span class="extype" name="scala.Int">Int</span>*</span>)</span><span class="result">: <span class="extype" name="scalaz.iteratee.Iteratee">Iteratee</span>[<a href="#PullType=Either[scales.xml.XmlEvent,scales.xml.EndElem]" class="extmbr" name="scales.xml.PullType">PullType</a>, <a href="#PeekMatch=Option[scales.xml.XmlPath]" class="extmbr" name="scales.xml.PeekMatch">PeekMatch</a>]</span>
+        <span class="name">skipv</span><span class="tparams">[<span name="F">F<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="params">(<span name="downTo">downTo: <span class="extype" name="scala.Int">Int</span>*</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="F">F: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scales.xml.parser.pull.PullIteratees.skipv.F">F</span>]</span>)</span><span class="result">: <span class="extype" name="scalaz.iteratee.IterateeT">IterateeT</span>[<a href="#PullType=Either[scales.xml.XmlEvent,scales.xml.EndElem]" class="extmbr" name="scales.xml.PullType">PullType</a>, <span class="extype" name="scales.xml.parser.pull.PullIteratees.skipv.F">F</span>, <a href="#PeekMatch=Option[scales.xml.XmlPath]" class="extmbr" name="scales.xml.PeekMatch">PeekMatch</a>]</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>PullIteratees</dd></dl></div>
@@ -2051,6 +2115,22 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>XmlPulls</dd></dl></div>
+    </li><li name="scales.xml.parser.pull.PullIteratees#trampolinePullIteratees" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="trampolinePullIteratees:scales.xml.parser.pull.PullIterateeFunctions[scalaz.Free.Trampoline]"></a><a id="trampolinePullIteratees:PullIterateeFunctions[Trampoline]"></a>
+      <span class="permalink">
+      <a href="../../scales/xml/index.html#trampolinePullIteratees:scales.xml.parser.pull.PullIterateeFunctions[scalaz.Free.Trampoline]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">trampolinePullIteratees</span><span class="result">: <span class="extype" name="scales.xml.parser.pull.PullIterateeFunctions">PullIterateeFunctions</span>[<span class="extype" name="scalaz.Free.Trampoline">Trampoline</span>]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>PullIteratees</dd></dl></div>
     </li><li name="scales.xml.xpath.TextFunctions#value" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="value[T](t:T)(implicitvalue:scales.xml.xpath.TextValue[T]):String"></a><a id="value[T](T)(TextValue[T]):String"></a>
       <span class="permalink">

@@ -121,20 +121,32 @@
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="scales.utils">utils</a></dd></dl></div>
     </li><li class="current-entities indented3">
                         <span class="separator"></span>
+                        <a class="object" href="EphemeralStreamEnum$.html" title=""></a>
+                        <a href="EphemeralStreamEnum$.html" title="">EphemeralStreamEnum</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
                         <a class="trait" href="" title="Evals once, the developer must check its Done, equivalent to a .run but doesn't lose the continuation - no &quot;Diverging Iteratee&quot;"></a>
                         <a href="" title="Evals once, the developer must check its Done, equivalent to a .run but doesn't lose the continuation - no &quot;Diverging Iteratee&quot;">Eval</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="class" href="IterateeFunctions.html" title=""></a>
+                        <a href="IterateeFunctions.html" title="">IterateeFunctions</a>
                       </li><li class="current-entities indented3">
                         <span class="separator"></span>
                         <a class="trait" href="IterateeImplicits.html" title=""></a>
                         <a href="IterateeImplicits.html" title="">IterateeImplicits</a>
                       </li><li class="current-entities indented3">
                         <span class="separator"></span>
-                        <a class="trait" href="Iteratees.html" title="Collection of iterateees"></a>
-                        <a href="Iteratees.html" title="Collection of iterateees">Iteratees</a>
+                        <a class="trait" href="Iteratees.html" title=""></a>
+                        <a href="Iteratees.html" title="">Iteratees</a>
                       </li><li class="current-entities indented3">
                         <span class="separator"></span>
-                        <a class="class" href="ResumableIterIterator.html" title="Iterates for every Done from a given resumable iteratee"></a>
-                        <a href="ResumableIterIterator.html" title="Iterates for every Done from a given resumable iteratee">ResumableIterIterator</a>
+                        <a class="object" href="functions$.html" title="Collection of iterateees"></a>
+                        <a href="functions$.html" title="Collection of iterateees">functions</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="object" href="monadHelpers$.html" title=""></a>
+                        <a href="monadHelpers$.html" title="">monadHelpers</a>
                       </li>
               </ul>
             </div>
@@ -158,7 +170,7 @@
         <span class="kind">trait</span>
       </span>
       <span class="symbol">
-        <span class="name">Eval</span><span class="tparams">[<span name="WHAT">WHAT</span>, <span name="RETURN">RETURN</span>]</span><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+        <span class="name">Eval</span><span class="tparams">[<span name="WHAT">WHAT</span>, <span name="F">F<span class="tparams">[<span name="_">_</span>]</span></span>, <span name="RETURN">RETURN</span>]</span><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
       </span>
       </h4>
 
@@ -174,7 +186,7 @@ doesn't lose the continuation - no &quot;Diverging Iteratee&quot;
                 <span class="toggle diagram-link">
                   Type Hierarchy
                 </span>
-                <div class="diagram" id="inheritance-diagram"><svg class="class-diagram" id="graph1" width="184pt" height="118pt" viewBox="0.00 0.00 184.00 118.00" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><g id="page0,1_graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 114)"><polygon fill="white" stroke="transparent" points="-4,4 -4,-114 180,-114 180,4 -4,4"></polygon><g id="clust1" class="cluster"></g><g id="clust2" class="cluster"></g><!-- node0 --><g class="node this trait" id="graph1_0"><g id="a_this trait|graph1_0"><a xlink:href="#inheritance-diagram" xlink:title="scales.utils.iteratee.Eval (this trait)"><path fill="#2e6d82" stroke="#2e6d82" d="M143.17,-49C143.17,-49 32.83,-49 32.83,-49 28.67,-49 24.5,-44.83 24.5,-40.67 24.5,-40.67 24.5,-32.33 24.5,-32.33 24.5,-28.17 28.67,-24 32.83,-24 32.83,-24 143.17,-24 143.17,-24 147.33,-24 151.5,-28.17 151.5,-32.33 151.5,-32.33 151.5,-40.67 151.5,-40.67 151.5,-44.83 147.33,-49 143.17,-49"></path><image xlink:href="../../../lib/trait_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="35" y="-43.5"></image><text text-anchor="start" x="56" y="-34.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">Eval[WHAT, RETURN]</text></a></g></g><!-- node1 --><g class="node class" id="graph1_1"><g id="a_class|graph1_1"><a xlink:title="scala.AnyRef"><path fill="#418565" stroke="#418565" d="M116.17,-110C116.17,-110 59.83,-110 59.83,-110 55.67,-110 51.5,-105.83 51.5,-101.67 51.5,-101.67 51.5,-93.33 51.5,-93.33 51.5,-89.17 55.67,-85 59.83,-85 59.83,-85 116.17,-85 116.17,-85 120.33,-85 124.5,-89.17 124.5,-93.33 124.5,-93.33 124.5,-101.67 124.5,-101.67 124.5,-105.83 120.33,-110 116.17,-110"></path><image xlink:href="../../../lib/class_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="62" y="-104.5"></image><text text-anchor="start" x="83" y="-95.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">AnyRef</text></a></g></g><!-- node1&#45;&gt;node0 --><g class="edge inheritance" id="graph1_1_0"><g id="a_inheritance|graph1_1_0"><a xlink:title="Eval[WHAT, RETURN] is a subtype of AnyRef"><path fill="none" stroke="#d4d4d4" d="M88,-77.76C88,-68.37 88,-57.29 88,-49.13"></path><polygon fill="none" stroke="#d4d4d4" points="85.55,-77.84 88,-84.84 90.45,-77.84 85.55,-77.84"></polygon></a></g></g></g></svg></div>
+                <div class="diagram" id="inheritance-diagram"><svg class="class-diagram" id="graph1" width="198pt" height="118pt" viewBox="0.00 0.00 198.00 118.00" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><g id="page0,1_graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 114)"><polygon fill="white" stroke="transparent" points="-4,4 -4,-114 194,-114 194,4 -4,4"></polygon><g id="clust1" class="cluster"></g><g id="clust2" class="cluster"></g><!-- node0 --><g class="node this trait" id="graph1_0"><g id="a_this trait|graph1_0"><a xlink:href="#inheritance-diagram" xlink:title="scales.utils.iteratee.Eval (this trait)"><path fill="#2e6d82" stroke="#2e6d82" d="M157.17,-49C157.17,-49 32.83,-49 32.83,-49 28.67,-49 24.5,-44.83 24.5,-40.67 24.5,-40.67 24.5,-32.33 24.5,-32.33 24.5,-28.17 28.67,-24 32.83,-24 32.83,-24 157.17,-24 157.17,-24 161.33,-24 165.5,-28.17 165.5,-32.33 165.5,-32.33 165.5,-40.67 165.5,-40.67 165.5,-44.83 161.33,-49 157.17,-49"></path><image xlink:href="../../../lib/trait_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="35" y="-43.5"></image><text text-anchor="start" x="56" y="-34.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">Eval[WHAT, F, RETURN]</text></a></g></g><!-- node1 --><g class="node class" id="graph1_1"><g id="a_class|graph1_1"><a xlink:title="scala.AnyRef"><path fill="#418565" stroke="#418565" d="M123.17,-110C123.17,-110 66.83,-110 66.83,-110 62.67,-110 58.5,-105.83 58.5,-101.67 58.5,-101.67 58.5,-93.33 58.5,-93.33 58.5,-89.17 62.67,-85 66.83,-85 66.83,-85 123.17,-85 123.17,-85 127.33,-85 131.5,-89.17 131.5,-93.33 131.5,-93.33 131.5,-101.67 131.5,-101.67 131.5,-105.83 127.33,-110 123.17,-110"></path><image xlink:href="../../../lib/class_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="69" y="-104.5"></image><text text-anchor="start" x="90" y="-95.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">AnyRef</text></a></g></g><!-- node1&#45;&gt;node0 --><g class="edge inheritance" id="graph1_1_0"><g id="a_inheritance|graph1_1_0"><a xlink:title="Eval[WHAT, F, RETURN] is a subtype of AnyRef"><path fill="none" stroke="#d4d4d4" d="M95,-77.76C95,-68.37 95,-57.29 95,-49.13"></path><polygon fill="none" stroke="#d4d4d4" points="92.55,-77.84 95,-84.84 97.45,-77.84 92.55,-77.84"></polygon></a></g></g></g></svg></div>
                 <div id="diagram-controls" class="hiddenContent">
                   <button id="diagram-zoom-out" class="diagram-btn"><i class="material-icons"></i></button>
                   <button id="diagram-zoom-in" class="diagram-btn"><i class="material-icons"></i></button>
@@ -230,9 +242,9 @@ doesn't lose the continuation - no &quot;Diverging Iteratee&quot;
         <div class="values members">
               <h3>Abstract Value Members</h3>
               <ol><li name="scales.utils.iteratee.Eval#orig" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="orig:scalaz.iteratee.Iteratee[WHAT,RETURN]"></a><a id="orig:Iteratee[WHAT,RETURN]"></a>
+      <a id="orig:scalaz.iteratee.IterateeT[WHAT,F,RETURN]"></a><a id="orig:IterateeT[WHAT,F,RETURN]"></a>
       <span class="permalink">
-      <a href="../../../scales/utils/iteratee/Eval.html#orig:scalaz.iteratee.Iteratee[WHAT,RETURN]" title="Permalink">
+      <a href="../../../scales/utils/iteratee/Eval.html#orig:scalaz.iteratee.IterateeT[WHAT,F,RETURN]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -241,7 +253,7 @@ doesn't lose the continuation - no &quot;Diverging Iteratee&quot;
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">orig</span><span class="result">: <span class="extype" name="scalaz.iteratee.Iteratee">Iteratee</span>[<span class="extype" name="scales.utils.iteratee.Eval.WHAT">WHAT</span>, <span class="extype" name="scales.utils.iteratee.Eval.RETURN">RETURN</span>]</span>
+        <span class="name">orig</span><span class="result">: <span class="extype" name="scalaz.iteratee.IterateeT">IterateeT</span>[<span class="extype" name="scales.utils.iteratee.Eval.WHAT">WHAT</span>, <span class="extype" name="scales.utils.iteratee.Eval.F">F</span>, <span class="extype" name="scales.utils.iteratee.Eval.RETURN">RETURN</span>]</span>
       </span>
       
       
@@ -372,9 +384,9 @@ doesn't lose the continuation - no &quot;Diverging Iteratee&quot;
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="scales.utils.iteratee.Eval#eval" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="eval:scalaz.iteratee.Iteratee[WHAT,RETURN]"></a><a id="eval:Iteratee[WHAT,RETURN]"></a>
+      <a id="eval(implicitF:scalaz.Monad[F]):scalaz.iteratee.IterateeT[WHAT,F,RETURN]"></a><a id="eval(Monad[F]):IterateeT[WHAT,F,RETURN]"></a>
       <span class="permalink">
-      <a href="../../../scales/utils/iteratee/Eval.html#eval:scalaz.iteratee.Iteratee[WHAT,RETURN]" title="Permalink">
+      <a href="../../../scales/utils/iteratee/Eval.html#eval(implicitF:scalaz.Monad[F]):scalaz.iteratee.IterateeT[WHAT,F,RETURN]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -383,10 +395,26 @@ doesn't lose the continuation - no &quot;Diverging Iteratee&quot;
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">eval</span><span class="result">: <span class="extype" name="scalaz.iteratee.Iteratee">Iteratee</span>[<span class="extype" name="scales.utils.iteratee.Eval.WHAT">WHAT</span>, <span class="extype" name="scales.utils.iteratee.Eval.RETURN">RETURN</span>]</span>
+        <span class="name">eval</span><span class="params">(<span class="implicit">implicit </span><span name="F">F: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scales.utils.iteratee.Eval.F">F</span>]</span>)</span><span class="result">: <span class="extype" name="scalaz.iteratee.IterateeT">IterateeT</span>[<span class="extype" name="scales.utils.iteratee.Eval.WHAT">WHAT</span>, <span class="extype" name="scales.utils.iteratee.Eval.F">F</span>, <span class="extype" name="scales.utils.iteratee.Eval.RETURN">RETURN</span>]</span>
       </span>
       
+      <p class="shortcomment cmt">Enumerates over Empty, evaluates fully until the iteratee returns Done with a value (Sending Eof)</p>
+    </li><li name="scales.utils.iteratee.Eval#evalAcceptEmpty" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="evalAcceptEmpty(implicitF:scalaz.Monad[F]):scalaz.iteratee.IterateeT[WHAT,F,RETURN]"></a><a id="evalAcceptEmpty(Monad[F]):IterateeT[WHAT,F,RETURN]"></a>
+      <span class="permalink">
+      <a href="../../../scales/utils/iteratee/Eval.html#evalAcceptEmpty(implicitF:scalaz.Monad[F]):scalaz.iteratee.IterateeT[WHAT,F,RETURN]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">evalAcceptEmpty</span><span class="params">(<span class="implicit">implicit </span><span name="F">F: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scales.utils.iteratee.Eval.F">F</span>]</span>)</span><span class="result">: <span class="extype" name="scalaz.iteratee.IterateeT">IterateeT</span>[<span class="extype" name="scales.utils.iteratee.Eval.WHAT">WHAT</span>, <span class="extype" name="scales.utils.iteratee.Eval.F">F</span>, <span class="extype" name="scales.utils.iteratee.Eval.RETURN">RETURN</span>]</span>
+      </span>
       
+      <p class="shortcomment cmt">Enumerates over Empty, Evaluates partially accepting a lack of progress (Sending Empty).</p>
     </li><li name="scala.AnyRef#finalize" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <span class="permalink">

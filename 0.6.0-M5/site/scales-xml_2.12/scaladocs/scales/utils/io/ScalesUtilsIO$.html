@@ -129,8 +129,8 @@
                         <a href="ByteArrayPool.html" title="Pools byte arrays">ByteArrayPool</a>
                       </li><li class="current-entities indented3">
                         <span class="separator"></span>
-                        <a class="class" href="Chunk.html" title="A section of a Byte array"></a>
-                        <a href="Chunk.html" title="A section of a Byte array">Chunk</a>
+                        <a class="object" href="Chunk$.html" title="A section of a Byte array."></a>
+                        <a href="Chunk$.html" title="A section of a Byte array.">Chunk</a>
                       </li><li class="current-entities indented3">
                         <span class="separator"></span>
                         <a class="trait" href="DataChunk.html" title="Represents a chunk of data to feed into an async parser."></a>
@@ -280,7 +280,7 @@
         <div id="types" class="types members">
               <h3>Type Members</h3>
               <ol><li name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="AsyncDataChunkerEnumerator[E]extendsEnumerator[E]"></a><a id="AsyncDataChunkerEnumerator[E]:AsyncDataChunkerEnumerator[E]"></a>
+      <a id="AsyncDataChunkerEnumerator[E,F[_]]extendsEnumeratorT[E,F]"></a><a id="AsyncDataChunkerEnumerator[E,F[_]]:AsyncDataChunkerEnumerator[E,F]"></a>
       <span class="permalink">
       <a href="../../../scales/utils/io/ReadableByteChannelWrapperImplicits$AsyncDataChunkerEnumerator.html" title="Permalink">
         <i class="material-icons"></i>
@@ -291,7 +291,7 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a title="Creates an Enumerator with a given count for Empty -&gt; Cont applications." href="ReadableByteChannelWrapperImplicits$AsyncDataChunkerEnumerator.html"><span class="name">AsyncDataChunkerEnumerator</span></a><span class="tparams">[<span name="E">E</span>]</span><span class="result"> extends <span class="extype" name="scalaz.iteratee.Enumerator">Enumerator</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>]</span>
+        <a title="Creates an Enumerator with a given count for Empty -&gt; Cont applications." href="ReadableByteChannelWrapperImplicits$AsyncDataChunkerEnumerator.html"><span class="name">AsyncDataChunkerEnumerator</span></a><span class="tparams">[<span name="E">E</span>, <span name="F">F<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="result"> extends <span class="extype" name="scalaz.iteratee.EnumeratorT">EnumeratorT</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.E">E</span>, <span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F">F</span>]</span>
       </span>
       
       <p class="shortcomment cmt">Creates an Enumerator with a given count for Empty -&gt; Cont applications.</p><div class="fullcomment"><div class="comment cmt"><p>Creates an Enumerator with a given count for Empty -&gt; Cont applications.</p><p>When the count is met it returns the Cont for the next Enumeration step.</p><p>Note: Call via eval only.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ReadableByteChannelWrapperImplicits.html" class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits">ReadableByteChannelWrapperImplicits</a></dd></dl></div>
@@ -410,9 +410,9 @@
               
         </dd></dl></div>
     </li><li name="scales.utils.io.ReadableByteChannelWrapperImplicits#dataChunkerEnumerator" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="dataChunkerEnumerator[E](chunker:scales.utils.io.DataChunker[E]):scalaz.iteratee.Enumerator[E]"></a><a id="dataChunkerEnumerator[E](DataChunker[E]):Enumerator[E]"></a>
+      <a id="dataChunkerEnumerator[E,F[_]](chunker:scales.utils.io.DataChunker[E])(implicitevidence$1:scalaz.Monad[F]):scalaz.iteratee.EnumeratorT[E,F]"></a><a id="dataChunkerEnumerator[E,F[_]](DataChunker[E])(Monad[F]):EnumeratorT[E,F]"></a>
       <span class="permalink">
-      <a href="../../../scales/utils/io/ScalesUtilsIO$.html#dataChunkerEnumerator[E](chunker:scales.utils.io.DataChunker[E]):scalaz.iteratee.Enumerator[E]" title="Permalink">
+      <a href="../../../scales/utils/io/ScalesUtilsIO$.html#dataChunkerEnumerator[E,F[_]](chunker:scales.utils.io.DataChunker[E])(implicitevidence$1:scalaz.Monad[F]):scalaz.iteratee.EnumeratorT[E,F]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -421,7 +421,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">dataChunkerEnumerator</span><span class="tparams">[<span name="E">E</span>]</span><span class="params">(<span name="chunker">chunker: <a href="DataChunker.html" class="extype" name="scales.utils.io.DataChunker">DataChunker</a>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.dataChunkerEnumerator.E">E</span>]</span>)</span><span class="result">: <span class="extype" name="scalaz.iteratee.Enumerator">Enumerator</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.dataChunkerEnumerator.E">E</span>]</span>
+        <span class="name">dataChunkerEnumerator</span><span class="tparams">[<span name="E">E</span>, <span name="F">F<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="params">(<span name="chunker">chunker: <a href="DataChunker.html" class="extype" name="scales.utils.io.DataChunker">DataChunker</a>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.dataChunkerEnumerator.E">E</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scalaz.Monad">Monad</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.dataChunkerEnumerator.F">F</span>]</span>)</span><span class="result">: <span class="extype" name="scalaz.iteratee.EnumeratorT">EnumeratorT</span>[<span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.dataChunkerEnumerator.E">E</span>, <span class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits.dataChunkerEnumerator.F">F</span>]</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ReadableByteChannelWrapperImplicits.html" class="extype" name="scales.utils.io.ReadableByteChannelWrapperImplicits">ReadableByteChannelWrapperImplicits</a></dd></dl></div>

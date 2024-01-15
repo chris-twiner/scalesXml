@@ -171,20 +171,32 @@
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="scales.utils">utils</a></dd></dl></div>
     </li><li class="current-entities indented3">
                         <span class="separator"></span>
+                        <a class="object" href="EphemeralStreamEnum$.html" title=""></a>
+                        <a href="EphemeralStreamEnum$.html" title="">EphemeralStreamEnum</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
                         <a class="trait" href="Eval.html" title="Evals once, the developer must check its Done, equivalent to a .run but doesn't lose the continuation - no &quot;Diverging Iteratee&quot;"></a>
                         <a href="Eval.html" title="Evals once, the developer must check its Done, equivalent to a .run but doesn't lose the continuation - no &quot;Diverging Iteratee&quot;">Eval</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="class" href="IterateeFunctions.html" title=""></a>
+                        <a href="IterateeFunctions.html" title="">IterateeFunctions</a>
                       </li><li class="current-entities indented3">
                         <span class="separator"></span>
                         <a class="trait" href="IterateeImplicits.html" title=""></a>
                         <a href="IterateeImplicits.html" title="">IterateeImplicits</a>
                       </li><li class="current-entities indented3">
                         <span class="separator"></span>
-                        <a class="trait" href="Iteratees.html" title="Collection of iterateees"></a>
-                        <a href="Iteratees.html" title="Collection of iterateees">Iteratees</a>
+                        <a class="trait" href="Iteratees.html" title=""></a>
+                        <a href="Iteratees.html" title="">Iteratees</a>
                       </li><li class="current-entities indented3">
                         <span class="separator"></span>
-                        <a class="class" href="ResumableIterIterator.html" title="Iterates for every Done from a given resumable iteratee"></a>
-                        <a href="ResumableIterIterator.html" title="Iterates for every Done from a given resumable iteratee">ResumableIterIterator</a>
+                        <a class="object" href="functions$.html" title="Collection of iterateees"></a>
+                        <a href="functions$.html" title="Collection of iterateees">functions</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="object" href="monadHelpers$.html" title=""></a>
+                        <a href="monadHelpers$.html" title="">monadHelpers</a>
                       </li><li name="scales.utils.resources" visbl="pub" class="indented3 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="resources"></a><a id="resources:resources"></a>
       <span class="permalink">
@@ -232,7 +244,31 @@
           <div id="comment" class="fullcommenttop"></div>
         
 
-      
+      <div id="mbrsel">
+        <div class="toggle"></div>
+        <div id="memberfilter">
+          <i class="material-icons arrow"></i>
+          <span class="input">
+            <input id="mbrsel-input" placeholder="Filter all members" type="text" accesskey="/" />
+          </span>
+          <i class="clear material-icons"></i>
+        </div>
+        <div id="filterby">
+          <div id="order">
+            <span class="filtertype">Ordering</span>
+            <ol>
+              
+              <li class="alpha in"><span>Alphabetic</span></li>
+              
+            </ol>
+          </div>
+          
+          <div id="visbl">
+              <span class="filtertype">Visibility</span>
+              <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+            </div>
+        </div>
+      </div>
 
       <div id="template">
         <div id="allMembers">
@@ -241,7 +277,7 @@
         <div id="types" class="types members">
               <h3>Type Members</h3>
               <ol><li name="scales.utils.iteratee.Eval" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="Eval[WHAT,RETURN]extendsAnyRef"></a><a id="Eval[WHAT,RETURN]:Eval[WHAT,RETURN]"></a>
+      <a id="Eval[WHAT,F[_],RETURN]extendsAnyRef"></a><a id="Eval[WHAT,F[_],RETURN]:Eval[WHAT,F,RETURN]"></a>
       <span class="permalink">
       <a href="../../../scales/utils/iteratee/Eval.html" title="Permalink">
         <i class="material-icons"></i>
@@ -252,12 +288,28 @@
         <span class="kind">trait</span>
       </span>
       <span class="symbol">
-        <a title="Evals once, the developer must check its Done, equivalent to a .run but doesn't lose the continuation - no &quot;Diverging Iteratee&quot;" href="Eval.html"><span class="name">Eval</span></a><span class="tparams">[<span name="WHAT">WHAT</span>, <span name="RETURN">RETURN</span>]</span><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+        <a title="Evals once, the developer must check its Done, equivalent to a .run but doesn't lose the continuation - no &quot;Diverging Iteratee&quot;" href="Eval.html"><span class="name">Eval</span></a><span class="tparams">[<span name="WHAT">WHAT</span>, <span name="F">F<span class="tparams">[<span name="_">_</span>]</span></span>, <span name="RETURN">RETURN</span>]</span><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
       </span>
       
       <p class="shortcomment cmt">Evals once, the developer must check its Done, equivalent to a .run but
 doesn't lose the continuation - no &quot;Diverging Iteratee&quot;
 </p>
+    </li><li name="scales.utils.iteratee.IterateeFunctions" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="IterateeFunctions[F[_]]extendsAnyRef"></a><a id="IterateeFunctions[F[_]]:IterateeFunctions[F]"></a>
+      <span class="permalink">
+      <a href="../../../scales/utils/iteratee/IterateeFunctions.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="IterateeFunctions.html"><span class="name">IterateeFunctions</span></a><span class="tparams">[<span name="F">F<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      
+      
     </li><li name="scales.utils.iteratee.IterateeImplicits" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="IterateeImplicitsextendsAnyRef"></a><a id="IterateeImplicits:IterateeImplicits"></a>
       <span class="permalink">
@@ -286,34 +338,70 @@ doesn't lose the continuation - no &quot;Diverging Iteratee&quot;
         <span class="kind">trait</span>
       </span>
       <span class="symbol">
-        <a title="Collection of iterateees" href="Iteratees.html"><span class="name">Iteratees</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+        <a title="" href="Iteratees.html"><span class="name">Iteratees</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
       </span>
       
-      <p class="shortcomment cmt">Collection of iterateees
-</p>
-    </li><li name="scales.utils.iteratee.ResumableIterIterator" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="ResumableIterIterator[E,A]extendsIterator[A]"></a><a id="ResumableIterIterator[E,A]:ResumableIterIterator[E,A]"></a>
-      <span class="permalink">
-      <a href="../../../scales/utils/iteratee/ResumableIterIterator.html" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a title="Iterates for every Done from a given resumable iteratee" href="ResumableIterIterator.html"><span class="name">ResumableIterIterator</span></a><span class="tparams">[<span name="E">E</span>, <span name="A">A</span>]</span><span class="result"> extends <span class="extype" name="scala.Iterator">Iterator</span>[<span class="extype" name="scales.utils.iteratee.ResumableIterIterator.A">A</span>]</span>
-      </span>
       
-      <p class="shortcomment cmt">Iterates for every Done from a given resumable iteratee
-</p>
     </li></ol>
             </div>
 
         
 
-        
+        <div class="values members">
+              <h3>Value Members</h3>
+              <ol>
+                <li name="scales.utils.iteratee.EphemeralStreamEnum" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="EphemeralStreamEnum"></a><a id="EphemeralStreamEnum:EphemeralStreamEnum"></a>
+      <span class="permalink">
+      <a href="../../../scales/utils/iteratee/EphemeralStreamEnum$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="EphemeralStreamEnum$.html"><span class="name">EphemeralStreamEnum</span></a>
+      </span>
+      
+      
+    </li><li name="scales.utils.iteratee.functions" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="functions"></a><a id="functions:functions"></a>
+      <span class="permalink">
+      <a href="../../../scales/utils/iteratee/functions$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Collection of iterateees" href="functions$.html"><span class="name">functions</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Collection of iterateees
+</p>
+    </li><li name="scales.utils.iteratee.monadHelpers" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="monadHelpers"></a><a id="monadHelpers:monadHelpers"></a>
+      <span class="permalink">
+      <a href="../../../scales/utils/iteratee/monadHelpers$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="monadHelpers$.html"><span class="name">monadHelpers</span></a>
+      </span>
+      
+      
+    </li>
+              </ol>
+            </div>
 
         
 

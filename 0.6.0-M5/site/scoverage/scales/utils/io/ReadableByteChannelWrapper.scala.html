@@ -26,252 +26,266 @@
 </span>2 <span style=''>
 </span>3 <span style=''>import scales.utils._
 </span>4 <span style=''>import resources._
-</span>5 <span style=''>import scalaz.Id
+</span>5 <span style=''>import scalaz.{Id, Monad}
 </span>6 <span style=''>import scalaz.iteratee.Input.{Element, Empty, Eof}
-</span>7 <span style=''>import scalaz.iteratee.Iteratee.iteratee
+</span>7 <span style=''>import scalaz.iteratee.Iteratee.{iteratee, iterateeT}
 </span>8 <span style=''>import scalaz.iteratee.StepT.{Cont, Done}
-</span>9 <span style=''>import scalaz.iteratee.{Enumerator, Input, Iteratee, IterateeT, StepT}
+</span>9 <span style=''>import scalaz.iteratee.{Enumerator, EnumeratorT, Input, Iteratee, IterateeT, StepT}
 </span>10 <span style=''>
-</span>11 <span style=''>import java.io._
-</span>12 <span style=''>import java.nio.channels._
-</span>13 <span style=''>import java.nio.ByteBuffer
-</span>14 <span style=''>
-</span>15 <span style=''>sealed trait DataChunkEvidence[T]
+</span>11 <span style=''>import scales.utils.iteratee.functions.isDoneS
+</span>12 <span style=''>
+</span>13 <span style=''>import java.io._
+</span>14 <span style=''>import java.nio.channels._
+</span>15 <span style=''>import java.nio.ByteBuffer
 </span>16 <span style=''>
-</span>17 <span style=''>object DataChunkEvidence {
-</span>18 <span style=''>  implicit val justDataChunk: DataChunkEvidence[DataChunk] = 
-</span>19 <span style=''>    </span><span style='background: #F0ADAD'>new</span><span style=''> DataChunkEvidence[DataChunk]{}
-</span>20 <span style=''>}
-</span>21 <span style=''>
-</span>22 <span style=''>object ReadableByteChannelWrapper {
-</span>23 <span style=''>  val emptyBytes = </span><span style='background: #F0ADAD'>Array.ofDim[ Byte ](0)</span><span style=''>
-</span>24 <span style=''>}
-</span>25 <span style=''>
-</span>26 <span style=''>/**
-</span>27 <span style=''> * An abstraction over a stream that provides DataChunks
-</span>28 <span style=''> */
-</span>29 <span style=''>trait DataChunker[T] extends CloseOnNeed {
-</span>30 <span style=''>
-</span>31 <span style=''>  /**
-</span>32 <span style=''>   * Is the underlying resource closed - if true the dataChunkEnumerator will
-</span>33 <span style=''>   * return the Iteratee passed to it, stopping evaluation
-</span>34 <span style=''>   */ 
-</span>35 <span style=''>  def underlyingClosed = </span><span style='background: #F0ADAD'>false</span><span style=''>
-</span>36 <span style=''>
-</span>37 <span style=''>  protected implicit val ev: DataChunkEvidence[T]
+</span>17 <span style=''>sealed trait DataChunkEvidence[T]
+</span>18 <span style=''>
+</span>19 <span style=''>object DataChunkEvidence {
+</span>20 <span style=''>  implicit val justDataChunk: DataChunkEvidence[DataChunk] = 
+</span>21 <span style=''>    </span><span style='background: #F0ADAD'>new</span><span style=''> DataChunkEvidence[DataChunk]{}
+</span>22 <span style=''>}
+</span>23 <span style=''>
+</span>24 <span style=''>object ReadableByteChannelWrapper {
+</span>25 <span style=''>  val emptyBytes = </span><span style='background: #F0ADAD'>Array.ofDim[ Byte ](0)</span><span style=''>
+</span>26 <span style=''>}
+</span>27 <span style=''>
+</span>28 <span style=''>/**
+</span>29 <span style=''> * An abstraction over a stream that provides DataChunks
+</span>30 <span style=''> */
+</span>31 <span style=''>trait DataChunker[T] extends CloseOnNeed {
+</span>32 <span style=''>
+</span>33 <span style=''>  /**
+</span>34 <span style=''>   * Is the underlying resource closed - if true the dataChunkEnumerator will
+</span>35 <span style=''>   * return the Iteratee passed to it, stopping evaluation
+</span>36 <span style=''>   */ 
+</span>37 <span style=''>  def underlyingClosed = </span><span style='background: #F0ADAD'>false</span><span style=''>
 </span>38 <span style=''>
-</span>39 <span style=''>  /**
-</span>40 <span style=''>   * Receives the next chunk from the underlying 
-</span>41 <span style=''>   */ 
-</span>42 <span style=''>  def nextChunk: DataChunk
-</span>43 <span style=''>}
-</span>44 <span style=''>
-</span>45 <span style=''>
-</span>46 <span style=''>/**
-</span>47 <span style=''> * Wraps a ReadableByteChannel to provide DataChunks, optionally closes the channel (defaults to closing).
-</span>48 <span style=''> *
-</span>49 <span style=''> * This base implementation should only be used against already provided buffers, prefer using ReadableByteChannelWrapper directly instead.
+</span>39 <span style=''>  protected implicit val ev: DataChunkEvidence[T]
+</span>40 <span style=''>
+</span>41 <span style=''>  /**
+</span>42 <span style=''>   * Receives the next chunk from the underlying 
+</span>43 <span style=''>   */ 
+</span>44 <span style=''>  def nextChunk: DataChunk
+</span>45 <span style=''>}
+</span>46 <span style=''>
+</span>47 <span style=''>
+</span>48 <span style=''>/**
+</span>49 <span style=''> * Wraps a ReadableByteChannel to provide DataChunks, optionally closes the channel (defaults to closing).
 </span>50 <span style=''> *
-</span>51 <span style=''> * @constructor Direct buffers also require a backing array to be specified.
-</span>52 <span style=''> */ 
-</span>53 <span style=''>class ReadableByteChannelWrapperBase[T](val channel: ReadableByteChannel, protected val buffer: ByteBuffer, val closeChannel: Boolean = true, protected val backingArray: Array[Byte] = ReadableByteChannelWrapper.emptyBytes )(implicit val ev: DataChunkEvidence[T]) extends DataChunker[T] with CloseOnNeed {
-</span>54 <span style=''>
-</span>55 <span style=''>  if (</span><span style='background: #F0ADAD'>!buffer.hasArray</span><span style=''>) {
-</span>56 <span style=''>    </span><span style='background: #F0ADAD'>require(
-</span>57 <span style=''></span><span style='background: #F0ADAD'>      backingArray.length &gt; 0,
-</span>58 <span style=''></span><span style='background: #F0ADAD'>      &quot;A ReadableByteChannelWrapper with a Direct buffer must be created with a non empty backingArray&quot;)</span><span style=''>
-</span>59 <span style=''>  }
-</span>60 <span style=''>
-</span>61 <span style=''>  override def underlyingClosed = </span><span style='background: #F0ADAD'>!channel.isOpen</span><span style=''>
-</span>62 <span style=''>      
-</span>63 <span style=''>  /**
-</span>64 <span style=''>   * Closes the channel when closeChannel is true - ensure to call from derived classes
-</span>65 <span style=''>   */ 
-</span>66 <span style=''>  protected def doClose = {
-</span>67 <span style=''>    if (</span><span style='background: #F0ADAD'>closeChannel</span><span style=''>) {
-</span>68 <span style=''>      </span><span style='background: #F0ADAD'>channel.close()</span><span style=''>
-</span>69 <span style=''>    }
-</span>70 <span style=''>  }
-</span>71 <span style=''>
-</span>72 <span style=''>  /**
-</span>73 <span style=''>   * Called when processing array backed buffers
-</span>74 <span style=''>   */ 
-</span>75 <span style=''>  protected def jbytes() : DataChunk = {
-</span>76 <span style=''>    </span><span style='background: #F0ADAD'>buffer.clear()</span><span style=''>
-</span>77 <span style=''>    val read = </span><span style='background: #F0ADAD'>channel.read(buffer)</span><span style=''>
-</span>78 <span style=''>    read match {
-</span>79 <span style=''>      case -1 =&gt; </span><span style='background: #F0ADAD'>{
-</span>80 <span style=''></span><span style='background: #F0ADAD'>	closeResource
-</span>81 <span style=''></span><span style='background: #F0ADAD'>	EOFData
-</span>82 <span style=''></span><span style='background: #F0ADAD'>      }</span><span style=''>
-</span>83 <span style=''>      case 0 =&gt; </span><span style='background: #F0ADAD'>EmptyData</span><span style=''>
-</span>84 <span style=''>      case _ =&gt; </span><span style='background: #F0ADAD'>Chunk(buffer.array, 0, read)</span><span style=''>
-</span>85 <span style=''>    }
-</span>86 <span style=''>  }
-</span>87 <span style=''>
-</span>88 <span style=''>  private var leftInBuffer = </span><span style='background: #F0ADAD'>0</span><span style=''>
-</span>89 <span style=''>  
-</span>90 <span style=''>  /**
-</span>91 <span style=''>   * Called when processing via Direct Buffers
-</span>92 <span style=''>   */ 
-</span>93 <span style=''>  protected def direct() : DataChunk = {
-</span>94 <span style=''>    // limit is rem when its not read anything
-</span>95 <span style=''>    if (</span><span style='background: #F0ADAD'>leftInBuffer &gt; 0</span><span style=''>) </span><span style='background: #F0ADAD'>{
-</span>96 <span style=''></span><span style='background: #F0ADAD'>      // println(&quot;remains &quot;+leftInBuffer)
-</span>97 <span style=''></span><span style='background: #F0ADAD'>      val used = math.min(leftInBuffer, backingArray.length)
-</span>98 <span style=''></span><span style='background: #F0ADAD'>      if (leftInBuffer &gt;= used) {
-</span>99 <span style=''></span><span style='background: #F0ADAD'>	// still got some left to push
-</span>100 <span style=''></span><span style='background: #F0ADAD'>	leftInBuffer = leftInBuffer - used
-</span>101 <span style=''></span><span style='background: #F0ADAD'>      } else {
-</span>102 <span style=''></span><span style='background: #F0ADAD'>	leftInBuffer = 0
-</span>103 <span style=''></span><span style='background: #F0ADAD'>      }
-</span>104 <span style=''></span><span style='background: #F0ADAD'>      // if there is still data read it out in a chunk
-</span>105 <span style=''></span><span style='background: #F0ADAD'>      buffer.get(backingArray, 0, used)
-</span>106 <span style=''></span><span style='background: #F0ADAD'>      Chunk(backingArray, 0, used)
-</span>107 <span style=''></span><span style='background: #F0ADAD'>    }</span><span style=''> else </span><span style='background: #F0ADAD'>{
-</span>108 <span style=''></span><span style='background: #F0ADAD'>
-</span>109 <span style=''></span><span style='background: #F0ADAD'>      buffer.clear()
-</span>110 <span style=''></span><span style='background: #F0ADAD'>      
-</span>111 <span style=''></span><span style='background: #F0ADAD'>      val read = channel.read(buffer)
-</span>112 <span style=''></span><span style='background: #F0ADAD'>      // println(&quot;read this &quot;+read)
-</span>113 <span style=''></span><span style='background: #F0ADAD'>      val rem = buffer.remaining
-</span>114 <span style=''></span><span style='background: #F0ADAD'>      read match {
-</span>115 <span style=''></span><span style='background: #F0ADAD'>	case -1 =&gt; 
-</span>116 <span style=''></span><span style='background: #F0ADAD'>	  closeResource
-</span>117 <span style=''></span><span style='background: #F0ADAD'>	EOFData
-</span>118 <span style=''></span><span style='background: #F0ADAD'>	
-</span>119 <span style=''></span><span style='background: #F0ADAD'>	case 0 =&gt; EmptyData
-</span>120 <span style=''></span><span style='background: #F0ADAD'>	
-</span>121 <span style=''></span><span style='background: #F0ADAD'>	case _ =&gt; 
+</span>51 <span style=''> * This base implementation should only be used against already provided buffers, prefer using ReadableByteChannelWrapper directly instead.
+</span>52 <span style=''> *
+</span>53 <span style=''> * @constructor Direct buffers also require a backing array to be specified.
+</span>54 <span style=''> */ 
+</span>55 <span style=''>class ReadableByteChannelWrapperBase[T](val channel: ReadableByteChannel, protected val buffer: ByteBuffer, val closeChannel: Boolean = true, protected val backingArray: Array[Byte] = ReadableByteChannelWrapper.emptyBytes )(implicit val ev: DataChunkEvidence[T]) extends DataChunker[T] with CloseOnNeed {
+</span>56 <span style=''>
+</span>57 <span style=''>  if (</span><span style='background: #F0ADAD'>!buffer.hasArray</span><span style=''>) {
+</span>58 <span style=''>    </span><span style='background: #F0ADAD'>require(
+</span>59 <span style=''></span><span style='background: #F0ADAD'>      backingArray.length &gt; 0,
+</span>60 <span style=''></span><span style='background: #F0ADAD'>      &quot;A ReadableByteChannelWrapper with a Direct buffer must be created with a non empty backingArray&quot;)</span><span style=''>
+</span>61 <span style=''>  }
+</span>62 <span style=''>
+</span>63 <span style=''>  override def underlyingClosed = </span><span style='background: #F0ADAD'>!channel.isOpen</span><span style=''>
+</span>64 <span style=''>      
+</span>65 <span style=''>  /**
+</span>66 <span style=''>   * Closes the channel when closeChannel is true - ensure to call from derived classes
+</span>67 <span style=''>   */ 
+</span>68 <span style=''>  protected def doClose = {
+</span>69 <span style=''>    if (</span><span style='background: #F0ADAD'>closeChannel</span><span style=''>) {
+</span>70 <span style=''>      </span><span style='background: #F0ADAD'>channel.close()</span><span style=''>
+</span>71 <span style=''>    }
+</span>72 <span style=''>  }
+</span>73 <span style=''>
+</span>74 <span style=''>  /**
+</span>75 <span style=''>   * Called when processing array backed buffers
+</span>76 <span style=''>   */ 
+</span>77 <span style=''>  protected def jbytes() : DataChunk = {
+</span>78 <span style=''>    </span><span style='background: #F0ADAD'>buffer.clear()</span><span style=''>
+</span>79 <span style=''>    val read = </span><span style='background: #F0ADAD'>channel.read(buffer)</span><span style=''>
+</span>80 <span style=''>    read match {
+</span>81 <span style=''>      case -1 =&gt; </span><span style='background: #F0ADAD'>{
+</span>82 <span style=''></span><span style='background: #F0ADAD'>        closeResource
+</span>83 <span style=''></span><span style='background: #F0ADAD'>        EOFData
+</span>84 <span style=''></span><span style='background: #F0ADAD'>      }</span><span style=''>
+</span>85 <span style=''>      case 0 =&gt; </span><span style='background: #F0ADAD'>EmptyData</span><span style=''>
+</span>86 <span style=''>      case _ =&gt; </span><span style='background: #F0ADAD'>Chunk(buffer.array, 0, read)</span><span style=''>
+</span>87 <span style=''>    }
+</span>88 <span style=''>  }
+</span>89 <span style=''>
+</span>90 <span style=''>  private var leftInBuffer = </span><span style='background: #F0ADAD'>0</span><span style=''>
+</span>91 <span style=''>  
+</span>92 <span style=''>  /**
+</span>93 <span style=''>   * Called when processing via Direct Buffers
+</span>94 <span style=''>   */ 
+</span>95 <span style=''>  protected def direct() : DataChunk = {
+</span>96 <span style=''>    // limit is rem when its not read anything
+</span>97 <span style=''>    if (</span><span style='background: #F0ADAD'>leftInBuffer &gt; 0</span><span style=''>) </span><span style='background: #F0ADAD'>{
+</span>98 <span style=''></span><span style='background: #F0ADAD'>      // println(&quot;remains &quot;+leftInBuffer)
+</span>99 <span style=''></span><span style='background: #F0ADAD'>      val used = math.min(leftInBuffer, backingArray.length)
+</span>100 <span style=''></span><span style='background: #F0ADAD'>      if (leftInBuffer &gt;= used) {
+</span>101 <span style=''></span><span style='background: #F0ADAD'>        // still got some left to push
+</span>102 <span style=''></span><span style='background: #F0ADAD'>        leftInBuffer = leftInBuffer - used
+</span>103 <span style=''></span><span style='background: #F0ADAD'>      } else {
+</span>104 <span style=''></span><span style='background: #F0ADAD'>        leftInBuffer = 0
+</span>105 <span style=''></span><span style='background: #F0ADAD'>      }
+</span>106 <span style=''></span><span style='background: #F0ADAD'>      // if there is still data read it out in a chunk
+</span>107 <span style=''></span><span style='background: #F0ADAD'>      buffer.get(backingArray, 0, used)
+</span>108 <span style=''></span><span style='background: #F0ADAD'>      Chunk(backingArray, 0, used)
+</span>109 <span style=''></span><span style='background: #F0ADAD'>    }</span><span style=''> else </span><span style='background: #F0ADAD'>{
+</span>110 <span style=''></span><span style='background: #F0ADAD'>
+</span>111 <span style=''></span><span style='background: #F0ADAD'>      buffer.clear()
+</span>112 <span style=''></span><span style='background: #F0ADAD'>      
+</span>113 <span style=''></span><span style='background: #F0ADAD'>      val read = channel.read(buffer)
+</span>114 <span style=''></span><span style='background: #F0ADAD'>      // println(&quot;read this &quot;+read)
+</span>115 <span style=''></span><span style='background: #F0ADAD'>      val rem = buffer.remaining
+</span>116 <span style=''></span><span style='background: #F0ADAD'>      read match {
+</span>117 <span style=''></span><span style='background: #F0ADAD'>        case -1 =&gt;
+</span>118 <span style=''></span><span style='background: #F0ADAD'>          closeResource
+</span>119 <span style=''></span><span style='background: #F0ADAD'>          EOFData
+</span>120 <span style=''></span><span style='background: #F0ADAD'>
+</span>121 <span style=''></span><span style='background: #F0ADAD'>        case 0 =&gt; EmptyData
 </span>122 <span style=''></span><span style='background: #F0ADAD'>
-</span>123 <span style=''></span><span style='background: #F0ADAD'>	  val used = math.min(math.min(rem, read), backingArray.length)
-</span>124 <span style=''></span><span style='background: #F0ADAD'>	  if (read &gt; used) {
-</span>125 <span style=''></span><span style='background: #F0ADAD'>	    leftInBuffer = read - used
-</span>126 <span style=''></span><span style='background: #F0ADAD'>	  }
-</span>127 <span style=''></span><span style='background: #F0ADAD'>
-</span>128 <span style=''></span><span style='background: #F0ADAD'>	  buffer.rewind()
-</span>129 <span style=''></span><span style='background: #F0ADAD'>	  // println(&quot;calling get with &quot;+used)
-</span>130 <span style=''></span><span style='background: #F0ADAD'>	  //try{
-</span>131 <span style=''></span><span style='background: #F0ADAD'>	    buffer.get(backingArray, 0, used)
-</span>132 <span style=''></span><span style='background: #F0ADAD'>	    //println(&quot;read &quot;+ new String(to, 0, used, &quot;UTF-8&quot;))
-</span>133 <span style=''></span><span style='background: #F0ADAD'>	  //} catch {
-</span>134 <span style=''></span><span style='background: #F0ADAD'>	  //  case t: Throwable =&gt; 
-</span>135 <span style=''></span><span style='background: #F0ADAD'>	      // println(&quot;threw &quot;+t.getMessage)
-</span>136 <span style=''></span><span style='background: #F0ADAD'>	  //    t.printStackTrace
-</span>137 <span style=''></span><span style='background: #F0ADAD'>	  //    throw t
-</span>138 <span style=''></span><span style='background: #F0ADAD'>	  //}
-</span>139 <span style=''></span><span style='background: #F0ADAD'>	  Chunk(backingArray, 0, used)
-</span>140 <span style=''></span><span style='background: #F0ADAD'>      }
-</span>141 <span style=''></span><span style='background: #F0ADAD'>    }</span><span style=''>
-</span>142 <span style=''>  }
-</span>143 <span style=''>
-</span>144 <span style=''>  /**
-</span>145 <span style=''>   * Receives the next chunk from the underlying 
-</span>146 <span style=''>   */ 
-</span>147 <span style=''>  final def nextChunk: DataChunk = 
-</span>148 <span style=''>    if (</span><span style='background: #F0ADAD'>buffer.hasArray</span><span style=''>)
-</span>149 <span style=''>      </span><span style='background: #F0ADAD'>jbytes()</span><span style=''>
-</span>150 <span style=''>    else
-</span>151 <span style=''>      </span><span style='background: #F0ADAD'>direct()</span><span style=''>
-</span>152 <span style=''>
-</span>153 <span style=''>}
+</span>123 <span style=''></span><span style='background: #F0ADAD'>        case _ =&gt;
+</span>124 <span style=''></span><span style='background: #F0ADAD'>
+</span>125 <span style=''></span><span style='background: #F0ADAD'>          val used = math.min(math.min(rem, read), backingArray.length)
+</span>126 <span style=''></span><span style='background: #F0ADAD'>          if (read &gt; used) {
+</span>127 <span style=''></span><span style='background: #F0ADAD'>            leftInBuffer = read - used
+</span>128 <span style=''></span><span style='background: #F0ADAD'>          }
+</span>129 <span style=''></span><span style='background: #F0ADAD'>
+</span>130 <span style=''></span><span style='background: #F0ADAD'>          buffer.rewind()
+</span>131 <span style=''></span><span style='background: #F0ADAD'>          // println(&quot;calling get with &quot;+used)
+</span>132 <span style=''></span><span style='background: #F0ADAD'>          //try{
+</span>133 <span style=''></span><span style='background: #F0ADAD'>            buffer.get(backingArray, 0, used)
+</span>134 <span style=''></span><span style='background: #F0ADAD'>            //println(&quot;read &quot;+ new String(to, 0, used, &quot;UTF-8&quot;))
+</span>135 <span style=''></span><span style='background: #F0ADAD'>          //} catch {
+</span>136 <span style=''></span><span style='background: #F0ADAD'>          //  case t: Throwable =&gt;
+</span>137 <span style=''></span><span style='background: #F0ADAD'>              // println(&quot;threw &quot;+t.getMessage)
+</span>138 <span style=''></span><span style='background: #F0ADAD'>          //    t.printStackTrace
+</span>139 <span style=''></span><span style='background: #F0ADAD'>          //    throw t
+</span>140 <span style=''></span><span style='background: #F0ADAD'>          //}
+</span>141 <span style=''></span><span style='background: #F0ADAD'>          Chunk(backingArray, 0, used)
+</span>142 <span style=''></span><span style='background: #F0ADAD'>      }
+</span>143 <span style=''></span><span style='background: #F0ADAD'>    }</span><span style=''>
+</span>144 <span style=''>  }
+</span>145 <span style=''>
+</span>146 <span style=''>  /**
+</span>147 <span style=''>   * Receives the next chunk from the underlying 
+</span>148 <span style=''>   */ 
+</span>149 <span style=''>  final def nextChunk: DataChunk = 
+</span>150 <span style=''>    if (</span><span style='background: #F0ADAD'>buffer.hasArray</span><span style=''>)
+</span>151 <span style=''>      </span><span style='background: #F0ADAD'>jbytes()</span><span style=''>
+</span>152 <span style=''>    else
+</span>153 <span style=''>      </span><span style='background: #F0ADAD'>direct()</span><span style=''>
 </span>154 <span style=''>
-</span>155 <span style=''>/**
-</span>156 <span style=''> * Wraps a ReadableByteChannel to provide DataChunks, optionally closes the channel (defaults to closing).
-</span>157 <span style=''> *
-</span>158 <span style=''> * Can work with either direct or heap based buffers and uses pools to re-use the allocated buffers.
-</span>159 <span style=''> * 
-</span>160 <span style=''> * @param directBufferArrayPool is used when there is a direct ByteBuffer only.
-</span>161 <span style=''> */ 
-</span>162 <span style=''>class ReadableByteChannelWrapper[T](channel: ReadableByteChannel, closeChannel: Boolean = true, private val bytePool: Pool[ByteBuffer] = DefaultBufferPool, private val directBufferArrayPool: Pool[Array[Byte]] = DefaultByteArrayPool )(implicit ev: DataChunkEvidence[T]) extends {
-</span>163 <span style=''>
-</span>164 <span style=''>  override protected val buffer: ByteBuffer = bytePool.grab
+</span>155 <span style=''>}
+</span>156 <span style=''>
+</span>157 <span style=''>/**
+</span>158 <span style=''> * Wraps a ReadableByteChannel to provide DataChunks, optionally closes the channel (defaults to closing).
+</span>159 <span style=''> *
+</span>160 <span style=''> * Can work with either direct or heap based buffers and uses pools to re-use the allocated buffers.
+</span>161 <span style=''> * 
+</span>162 <span style=''> * @param directBufferArrayPool is used when there is a direct ByteBuffer only.
+</span>163 <span style=''> */ 
+</span>164 <span style=''>class ReadableByteChannelWrapper[T](channel: ReadableByteChannel, closeChannel: Boolean = true, private val bytePool: Pool[ByteBuffer] = DefaultBufferPool, private val directBufferArrayPool: Pool[Array[Byte]] = DefaultByteArrayPool )(implicit ev: DataChunkEvidence[T]) extends {
 </span>165 <span style=''>
-</span>166 <span style=''>  override protected val backingArray: Array[Byte] =
-</span>167 <span style=''>    if (buffer.hasArray)
-</span>168 <span style=''>      ReadableByteChannelWrapper.emptyBytes
-</span>169 <span style=''>    else
-</span>170 <span style=''>      directBufferArrayPool.grab
-</span>171 <span style=''>
-</span>172 <span style=''>} with 
-</span>173 <span style=''>  ReadableByteChannelWrapperBase[T](
-</span>174 <span style=''>    channel, buffer, closeChannel, backingArray ) {
-</span>175 <span style=''>   
-</span>176 <span style=''>  override protected def doClose = {
-</span>177 <span style=''>    if (</span><span style='background: #F0ADAD'>!buffer.hasArray</span><span style=''>) {
-</span>178 <span style=''>      </span><span style='background: #F0ADAD'>directBufferArrayPool.giveBack(backingArray)</span><span style=''>
-</span>179 <span style=''>    }
-</span>180 <span style=''>    </span><span style='background: #F0ADAD'>bytePool.giveBack(buffer)</span><span style=''>
-</span>181 <span style=''>    </span><span style='background: #F0ADAD'>super.doClose</span><span style=''>
-</span>182 <span style=''>  }
-</span>183 <span style=''>
-</span>184 <span style=''>}
+</span>166 <span style=''>  override protected val buffer: ByteBuffer = bytePool.grab
+</span>167 <span style=''>
+</span>168 <span style=''>  override protected val backingArray: Array[Byte] =
+</span>169 <span style=''>    if (buffer.hasArray)
+</span>170 <span style=''>      ReadableByteChannelWrapper.emptyBytes
+</span>171 <span style=''>    else
+</span>172 <span style=''>      directBufferArrayPool.grab
+</span>173 <span style=''>
+</span>174 <span style=''>} with 
+</span>175 <span style=''>  ReadableByteChannelWrapperBase[T](
+</span>176 <span style=''>    channel, buffer, closeChannel, backingArray ) {
+</span>177 <span style=''>   
+</span>178 <span style=''>  override protected def doClose = {
+</span>179 <span style=''>    if (</span><span style='background: #F0ADAD'>!buffer.hasArray</span><span style=''>) {
+</span>180 <span style=''>      </span><span style='background: #F0ADAD'>directBufferArrayPool.giveBack(backingArray)</span><span style=''>
+</span>181 <span style=''>    }
+</span>182 <span style=''>    </span><span style='background: #F0ADAD'>bytePool.giveBack(buffer)</span><span style=''>
+</span>183 <span style=''>    </span><span style='background: #F0ADAD'>super.doClose</span><span style=''>
+</span>184 <span style=''>  }
 </span>185 <span style=''>
-</span>186 <span style=''>/**
-</span>187 <span style=''> * Convenience function for wrapping a channel
-</span>188 <span style=''> */ 
-</span>189 <span style=''>class RBCImplicitWrapper(channel: ReadableByteChannel)(implicit ev: DataChunkEvidence[DataChunk]){
-</span>190 <span style=''>  def wrapped: DataChunker[DataChunk] = </span><span style='background: #F0ADAD'>new ReadableByteChannelWrapper(channel)</span><span style=''>
-</span>191 <span style=''>}
-</span>192 <span style=''>
-</span>193 <span style=''>trait ReadableByteChannelWrapperImplicits {
+</span>186 <span style=''>}
+</span>187 <span style=''>
+</span>188 <span style=''>/**
+</span>189 <span style=''> * Convenience function for wrapping a channel
+</span>190 <span style=''> */ 
+</span>191 <span style=''>class RBCImplicitWrapper(channel: ReadableByteChannel)(implicit ev: DataChunkEvidence[DataChunk]){
+</span>192 <span style=''>  def wrapped: DataChunker[DataChunk] = </span><span style='background: #F0ADAD'>new ReadableByteChannelWrapper(channel)</span><span style=''>
+</span>193 <span style=''>}
 </span>194 <span style=''>
-</span>195 <span style=''>  implicit def toRBCWrapper(channel: ReadableByteChannel)(implicit ev: DataChunkEvidence[DataChunk]): RBCImplicitWrapper = </span><span style='background: #F0ADAD'>new RBCImplicitWrapper(channel)</span><span style=''>
+</span>195 <span style=''>trait ReadableByteChannelWrapperImplicits {
 </span>196 <span style=''>
-</span>197 <span style=''>  implicit def dataChunkerEnumerator[E](chunker: DataChunker[E]): Enumerator[E] =
-</span>198 <span style=''>    </span><span style='background: #F0ADAD'>new AsyncDataChunkerEnumerator[E](chunker)</span><span style=''>
-</span>199 <span style=''>
-</span>200 <span style=''>  /**
-</span>201 <span style=''>   * Use in a call to asyncReadableByteChannelEnumerator to turn it into a synchronous enumerator (constantly trying to get new chunks of data)
-</span>202 <span style=''>   */
-</span>203 <span style=''>  val INFINITE_RETRIES = </span><span style='background: #F0ADAD'>-1</span><span style=''>
-</span>204 <span style=''>
-</span>205 <span style=''>  /**
-</span>206 <span style=''>   * Creates an Enumerator with a given count for Empty -&gt; Cont applications.
-</span>207 <span style=''>   *
-</span>208 <span style=''>   * When the count is met it returns the Cont for the next Enumeration step.
+</span>197 <span style=''>  implicit def toRBCWrapper(channel: ReadableByteChannel)(implicit ev: DataChunkEvidence[DataChunk]): RBCImplicitWrapper = </span><span style='background: #F0ADAD'>new RBCImplicitWrapper(channel)</span><span style=''>
+</span>198 <span style=''>
+</span>199 <span style=''>  implicit def dataChunkerEnumerator[E, F[_]: Monad](chunker: DataChunker[E]): EnumeratorT[E, F] =
+</span>200 <span style=''>    </span><span style='background: #F0ADAD'>new AsyncDataChunkerEnumerator[E, F](chunker)</span><span style=''>
+</span>201 <span style=''>
+</span>202 <span style=''>  /**
+</span>203 <span style=''>   * Use in a call to asyncReadableByteChannelEnumerator to turn it into a synchronous enumerator (constantly trying to get new chunks of data)
+</span>204 <span style=''>   */
+</span>205 <span style=''>  val INFINITE_RETRIES = </span><span style='background: #F0ADAD'>-1</span><span style=''>
+</span>206 <span style=''>
+</span>207 <span style=''>  /**
+</span>208 <span style=''>   * Creates an Enumerator with a given count for Empty -&gt; Cont applications.
 </span>209 <span style=''>   *
-</span>210 <span style=''>   * Note: Call via eval only.
-</span>211 <span style=''>   * @param contOnCont INFINITE_RETRIES (-1) for keep on trying, the default is 5 (as exposed by the implicit enumerator readableByteChannelEnumerator)
-</span>212 <span style=''>   */
-</span>213 <span style=''>  class AsyncDataChunkerEnumerator[E]( chunker: DataChunker[E], contOnCont: Int = 5 ) extends Enumerator[E] {
-</span>214 <span style=''>
-</span>215 <span style=''>    override def apply[A]: StepT[E, Id.Id, A] =&gt; IterateeT[E, Id.Id, A] = i =&gt; {
-</span>216 <span style=''>
-</span>217 <span style=''>      def apply(stepT: StepT[E, Id.Id, A], count: Int): IterateeT[E, Id.Id, A] = stepT match {
-</span>218 <span style=''>        case i if </span><span style='background: #F0ADAD'>chunker.underlyingClosed || chunker.isClosed</span><span style=''> =&gt; </span><span style='background: #F0ADAD'>iteratee(i)</span><span style=''>
-</span>219 <span style=''>        case i@Done(acc, input) =&gt; </span><span style='background: #F0ADAD'>iteratee(i)</span><span style=''>
-</span>220 <span style=''>        case Cont(k) </span><span style='background: #F0ADAD'>=&gt;
-</span>221 <span style=''></span><span style='background: #F0ADAD'>          val realChunk = chunker.nextChunk
-</span>222 <span style=''></span><span style='background: #F0ADAD'>          val nextChunk = realChunk.asInstanceOf[E]
-</span>223 <span style=''></span><span style='background: #F0ADAD'>          val nextI =
-</span>224 <span style=''></span><span style='background: #F0ADAD'>            if (realChunk.isEOF)
-</span>225 <span style=''></span><span style='background: #F0ADAD'>              // println(&quot;actual data was EOF !!!&quot;)
-</span>226 <span style=''></span><span style='background: #F0ADAD'>              k(Eof[E])
-</span>227 <span style=''></span><span style='background: #F0ADAD'>            else
-</span>228 <span style=''></span><span style='background: #F0ADAD'>              if (realChunk.isEmpty)
-</span>229 <span style=''></span><span style='background: #F0ADAD'>                k(Empty[E])
-</span>230 <span style=''></span><span style='background: #F0ADAD'>              else
-</span>231 <span style=''></span><span style='background: #F0ADAD'>                k(Element(nextChunk))
-</span>232 <span style=''></span><span style='background: #F0ADAD'>
-</span>233 <span style=''></span><span style='background: #F0ADAD'>          val nc =
-</span>234 <span style=''></span><span style='background: #F0ADAD'>            if (realChunk.isEmpty &amp;&amp; !isDone(nextI))
-</span>235 <span style=''></span><span style='background: #F0ADAD'>              count + 1
-</span>236 <span style=''></span><span style='background: #F0ADAD'>            else
-</span>237 <span style=''></span><span style='background: #F0ADAD'>              0
+</span>210 <span style=''>   * When the count is met it returns the Cont for the next Enumeration step.
+</span>211 <span style=''>   *
+</span>212 <span style=''>   * Note: Call via eval only.
+</span>213 <span style=''>   * @param contOnCont INFINITE_RETRIES (-1) for keep on trying, the default is 5 (as exposed by the implicit enumerator readableByteChannelEnumerator)
+</span>214 <span style=''>   */
+</span>215 <span style=''>  class AsyncDataChunkerEnumerator[E, F[_]]( chunker: DataChunker[E], contOnCont: Int = 5 )(implicit F: Monad[F]) extends EnumeratorT[E, F] {
+</span>216 <span style=''>    import scalaz.Scalaz._
+</span>217 <span style=''>    override def apply[A]: StepT[E, F, A] =&gt; IterateeT[E, F, A] = i =&gt; {
+</span>218 <span style=''>
+</span>219 <span style=''>      def apply(stepT: StepT[E, F, A], count: Int): IterateeT[E, F, A] = stepT match {
+</span>220 <span style=''>        case i if </span><span style='background: #F0ADAD'>chunker.underlyingClosed || chunker.isClosed</span><span style=''> =&gt; </span><span style='background: #F0ADAD'>iterateeT(F.point(i))</span><span style=''>
+</span>221 <span style=''>        case i@Done(acc, input) </span><span style='background: #F0ADAD'>=&gt;
+</span>222 <span style=''></span><span style='background: #F0ADAD'>          val c = acc
+</span>223 <span style=''></span><span style='background: #F0ADAD'>          val in = input
+</span>224 <span style=''></span><span style='background: #F0ADAD'>          iterateeT(F.point(i))</span><span style=''>
+</span>225 <span style=''>        case Cont(k) </span><span style='background: #F0ADAD'>=&gt;
+</span>226 <span style=''></span><span style='background: #F0ADAD'>          val realChunk = chunker.nextChunk
+</span>227 <span style=''></span><span style='background: #F0ADAD'>
+</span>228 <span style=''></span><span style='background: #F0ADAD'>          val nextChunk = realChunk.asInstanceOf[E]
+</span>229 <span style=''></span><span style='background: #F0ADAD'>          val nextI =
+</span>230 <span style=''></span><span style='background: #F0ADAD'>            if (realChunk.isEOF)
+</span>231 <span style=''></span><span style='background: #F0ADAD'>              // println(&quot;actual data was EOF !!!&quot;)
+</span>232 <span style=''></span><span style='background: #F0ADAD'>              k(Eof[E])
+</span>233 <span style=''></span><span style='background: #F0ADAD'>            else
+</span>234 <span style=''></span><span style='background: #F0ADAD'>              if (realChunk.isEmpty)
+</span>235 <span style=''></span><span style='background: #F0ADAD'>                k(Empty[E])
+</span>236 <span style=''></span><span style='background: #F0ADAD'>              else
+</span>237 <span style=''></span><span style='background: #F0ADAD'>                k(Element(nextChunk))
 </span>238 <span style=''></span><span style='background: #F0ADAD'>
-</span>239 <span style=''></span><span style='background: #F0ADAD'>          if ((contOnCont != INFINITE_RETRIES) &amp;&amp; (nc &gt; contOnCont))
-</span>240 <span style=''></span><span style='background: #F0ADAD'>            //println(&quot;had cont on cont count, returning&quot;)
-</span>241 <span style=''></span><span style='background: #F0ADAD'>            nextI
-</span>242 <span style=''></span><span style='background: #F0ADAD'>          else
-</span>243 <span style=''></span><span style='background: #F0ADAD'>            apply(nextI.value, nc)</span><span style=''>
-</span>244 <span style=''>      }
-</span>245 <span style=''>
-</span>246 <span style=''>      </span><span style='background: #F0ADAD'>apply(i, 0)</span><span style=''>
-</span>247 <span style=''>    }
-</span>248 <span style=''>  }
-</span>249 <span style=''>
-</span>250 <span style=''>}
+</span>239 <span style=''></span><span style='background: #F0ADAD'>          iterateeT(
+</span>240 <span style=''></span><span style='background: #F0ADAD'>          nextI.value &gt;&gt;= { nextIStep =&gt;
+</span>241 <span style=''></span><span style='background: #F0ADAD'>
+</span>242 <span style=''></span><span style='background: #F0ADAD'>            val res = {
+</span>243 <span style=''></span><span style='background: #F0ADAD'>              val nc =
+</span>244 <span style=''></span><span style='background: #F0ADAD'>                if (realChunk.isEmpty &amp;&amp; !isDoneS(nextIStep))
+</span>245 <span style=''></span><span style='background: #F0ADAD'>                  count + 1
+</span>246 <span style=''></span><span style='background: #F0ADAD'>                else
+</span>247 <span style=''></span><span style='background: #F0ADAD'>                  0
+</span>248 <span style=''></span><span style='background: #F0ADAD'>
+</span>249 <span style=''></span><span style='background: #F0ADAD'>              if ((contOnCont != INFINITE_RETRIES) &amp;&amp; (nc &gt; contOnCont))
+</span>250 <span style=''></span><span style='background: #F0ADAD'>                //println(&quot;had cont on cont count, returning&quot;)
+</span>251 <span style=''></span><span style='background: #F0ADAD'>                nextI
+</span>252 <span style=''></span><span style='background: #F0ADAD'>              else
+</span>253 <span style=''></span><span style='background: #F0ADAD'>                apply(nextIStep, nc)
+</span>254 <span style=''></span><span style='background: #F0ADAD'>            }
+</span>255 <span style=''></span><span style='background: #F0ADAD'>            res.value
+</span>256 <span style=''></span><span style='background: #F0ADAD'>          })</span><span style=''>
+</span>257 <span style=''>
+</span>258 <span style=''>      }
+</span>259 <span style=''>
+</span>260 <span style=''>      </span><span style='background: #F0ADAD'>apply(i, 0)</span><span style=''>
+</span>261 <span style=''>    }
+</span>262 <span style=''>  }
+</span>263 <span style=''>
+</span>264 <span style=''>}
 </span></pre>
           </div>
           <div class="tab-pane" id="statementlist">
@@ -286,15 +300,15 @@
         <th>Code</th>
       </tr><tr>
         <td>
-          19
+          21
         </td>
         <td>
-          1276
+          1279
         </td>
         <td>
-          489
+          572
           -
-          492
+          575
         </td>
         <td>
           Apply
@@ -310,15 +324,15 @@
         </td>
       </tr><tr>
         <td>
-          23
+          25
         </td>
         <td>
-          1277
+          1280
         </td>
         <td>
-          602
+          685
           -
-          603
+          686
         </td>
         <td>
           Literal
@@ -334,15 +348,15 @@
         </td>
       </tr><tr>
         <td>
-          23
+          25
         </td>
         <td>
-          1278
+          1281
         </td>
         <td>
-          582
+          665
           -
-          604
+          687
         </td>
         <td>
           ApplyToImplicitArgs
@@ -358,15 +372,15 @@
         </td>
       </tr><tr>
         <td>
-          35
+          37
         </td>
         <td>
-          1279
+          1282
         </td>
         <td>
-          892
+          975
           -
-          897
+          980
         </td>
         <td>
           Literal
@@ -382,15 +396,15 @@
         </td>
       </tr><tr>
         <td>
-          55
+          57
         </td>
         <td>
-          1280
+          1283
         </td>
         <td>
-          1695
+          1778
           -
-          1711
+          1794
         </td>
         <td>
           Select
@@ -406,15 +420,15 @@
         </td>
       </tr><tr>
         <td>
-          55
+          57
         </td>
         <td>
-          1285
+          1288
         </td>
         <td>
-          1691
+          1774
           -
-          1691
+          1774
         </td>
         <td>
           Literal
@@ -430,15 +444,15 @@
         </td>
       </tr><tr>
         <td>
-          55
+          57
         </td>
         <td>
-          1286
+          1289
         </td>
         <td>
-          1691
+          1774
           -
-          1691
+          1774
         </td>
         <td>
           Block
@@ -454,15 +468,15 @@
         </td>
       </tr><tr>
         <td>
-          56
+          58
         </td>
         <td>
-          1283
+          1286
         </td>
         <td>
-          1719
+          1802
           -
-          1863
+          1946
         </td>
         <td>
           Apply
@@ -478,15 +492,15 @@
         </td>
       </tr><tr>
         <td>
-          56
+          58
         </td>
         <td>
-          1284
+          1287
         </td>
         <td>
-          1719
+          1802
           -
-          1863
+          1946
         </td>
         <td>
           Block
@@ -502,15 +516,15 @@
         </td>
       </tr><tr>
         <td>
-          57
+          59
         </td>
         <td>
-          1281
+          1284
         </td>
         <td>
-          1734
+          1817
           -
-          1757
+          1840
         </td>
         <td>
           Apply
@@ -526,15 +540,15 @@
         </td>
       </tr><tr>
         <td>
-          58
+          60
         </td>
         <td>
-          1282
+          1285
         </td>
         <td>
-          1765
+          1848
           -
-          1862
+          1945
         </td>
         <td>
           Literal
@@ -550,15 +564,15 @@
         </td>
       </tr><tr>
         <td>
-          61
+          63
         </td>
         <td>
-          1287
+          1290
         </td>
         <td>
-          1903
+          1986
           -
-          1918
+          2001
         </td>
         <td>
           Select
@@ -574,15 +588,15 @@
         </td>
       </tr><tr>
         <td>
-          67
+          69
         </td>
         <td>
-          1288
+          1291
         </td>
         <td>
-          2063
+          2146
           -
-          2075
+          2158
         </td>
         <td>
           Select
@@ -598,15 +612,15 @@
         </td>
       </tr><tr>
         <td>
-          67
+          69
         </td>
         <td>
-          1291
+          1294
         </td>
         <td>
-          2059
+          2142
           -
-          2059
+          2142
         </td>
         <td>
           Literal
@@ -622,15 +636,15 @@
         </td>
       </tr><tr>
         <td>
-          67
+          69
         </td>
         <td>
-          1292
+          1295
         </td>
         <td>
-          2059
+          2142
           -
-          2059
+          2142
         </td>
         <td>
           Block
@@ -646,15 +660,15 @@
         </td>
       </tr><tr>
         <td>
-          68
+          70
         </td>
         <td>
-          1289
+          1292
         </td>
         <td>
-          2085
+          2168
           -
-          2100
+          2183
         </td>
         <td>
           Apply
@@ -670,15 +684,15 @@
         </td>
       </tr><tr>
         <td>
-          68
+          70
         </td>
         <td>
-          1290
+          1293
         </td>
         <td>
-          2085
+          2168
           -
-          2100
+          2183
         </td>
         <td>
           Block
@@ -694,15 +708,15 @@
         </td>
       </tr><tr>
         <td>
-          76
+          78
         </td>
         <td>
-          1293
+          1296
         </td>
         <td>
-          2219
+          2302
           -
-          2233
+          2316
         </td>
         <td>
           Apply
@@ -718,15 +732,15 @@
         </td>
       </tr><tr>
         <td>
-          77
+          79
         </td>
         <td>
-          1294
+          1297
         </td>
         <td>
-          2262
+          2345
           -
-          2268
+          2351
         </td>
         <td>
           Select
@@ -742,15 +756,15 @@
         </td>
       </tr><tr>
         <td>
-          77
+          79
         </td>
         <td>
-          1295
+          1298
         </td>
         <td>
-          2249
+          2332
           -
-          2269
+          2352
         </td>
         <td>
           Apply
@@ -766,15 +780,15 @@
         </td>
       </tr><tr>
         <td>
-          79
+          81
         </td>
         <td>
-          1297
+          1300
         </td>
         <td>
-          2304
+          2387
           -
-          2337
+          2434
         </td>
         <td>
           Block
@@ -793,15 +807,15 @@
         </td>
       </tr><tr>
         <td>
-          80
+          82
         </td>
         <td>
-          1296
+          1299
         </td>
         <td>
-          2307
+          2397
           -
-          2320
+          2410
         </td>
         <td>
           Select
@@ -817,15 +831,15 @@
         </td>
       </tr><tr>
         <td>
-          83
+          85
         </td>
         <td>
-          1298
+          1301
         </td>
         <td>
-          2354
+          2451
           -
-          2363
+          2460
         </td>
         <td>
           Ident
@@ -841,15 +855,15 @@
         </td>
       </tr><tr>
         <td>
-          84
+          86
         </td>
         <td>
-          1299
+          1302
         </td>
         <td>
-          2386
+          2483
           -
-          2398
+          2495
         </td>
         <td>
           Apply
@@ -865,15 +879,15 @@
         </td>
       </tr><tr>
         <td>
-          84
+          86
         </td>
         <td>
-          1300
+          1303
         </td>
         <td>
-          2400
+          2497
           -
-          2401
+          2498
         </td>
         <td>
           Literal
@@ -889,15 +903,15 @@
         </td>
       </tr><tr>
         <td>
-          84
+          86
         </td>
         <td>
-          1301
+          1304
         </td>
         <td>
-          2380
+          2477
           -
-          2408
+          2505
         </td>
         <td>
           Apply
@@ -913,15 +927,15 @@
         </td>
       </tr><tr>
         <td>
-          84
+          86
         </td>
         <td>
-          1302
+          1305
         </td>
         <td>
-          2380
+          2477
           -
-          2408
+          2505
         </td>
         <td>
           Block
@@ -937,15 +951,15 @@
         </td>
       </tr><tr>
         <td>
-          88
+          90
         </td>
         <td>
-          1303
+          1306
         </td>
         <td>
-          2449
+          2546
           -
-          2450
+          2547
         </td>
         <td>
           Literal
@@ -961,15 +975,15 @@
         </td>
       </tr><tr>
         <td>
-          95
+          97
         </td>
         <td>
-          1304
+          1307
         </td>
         <td>
-          2610
+          2707
           -
-          2626
+          2723
         </td>
         <td>
           Apply
@@ -985,15 +999,15 @@
         </td>
       </tr><tr>
         <td>
-          95
+          97
         </td>
         <td>
-          1320
+          1323
         </td>
         <td>
-          2628
+          2725
           -
-          3011
+          3129
         </td>
         <td>
           Block
@@ -1017,15 +1031,15 @@
         </td>
       </tr><tr>
         <td>
-          97
+          99
         </td>
         <td>
-          1305
+          1308
         </td>
         <td>
-          2698
+          2795
           -
-          2710
+          2807
         </td>
         <td>
           Select
@@ -1041,15 +1055,15 @@
         </td>
       </tr><tr>
         <td>
-          97
+          99
         </td>
         <td>
-          1306
+          1309
         </td>
         <td>
-          2712
+          2809
           -
-          2731
+          2828
         </td>
         <td>
           Select
@@ -1065,15 +1079,15 @@
         </td>
       </tr><tr>
         <td>
-          97
+          99
         </td>
         <td>
-          1307
+          1310
         </td>
         <td>
-          2689
+          2786
           -
-          2732
+          2829
         </td>
         <td>
           Apply
@@ -1089,15 +1103,15 @@
         </td>
       </tr><tr>
         <td>
-          98
+          100
         </td>
         <td>
-          1308
+          1311
         </td>
         <td>
-          2743
+          2840
           -
-          2763
+          2860
         </td>
         <td>
           Apply
@@ -1113,15 +1127,15 @@
         </td>
       </tr><tr>
         <td>
-          100
+          102
         </td>
         <td>
-          1309
+          1312
         </td>
         <td>
-          2815
+          2926
           -
-          2834
+          2945
         </td>
         <td>
           Apply
@@ -1137,87 +1151,87 @@
         </td>
       </tr><tr>
         <td>
-          100
-        </td>
-        <td>
-          1310
-        </td>
-        <td>
-          2800
-          -
-          2834
-        </td>
-        <td>
-          Apply
-        </td>
-        <td>
-          scales.utils.io.ReadableByteChannelWrapperBase.leftInBuffer_=
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #F0ADAD">
-          ReadableByteChannelWrapperBase.this.leftInBuffer_=(ReadableByteChannelWrapperBase.this.leftInBuffer.-(used))
-        </td>
-      </tr><tr>
-        <td>
-          100
-        </td>
-        <td>
-          1311
-        </td>
-        <td>
-          2800
-          -
-          2834
-        </td>
-        <td>
-          Block
-        </td>
-        <td>
-          scales.utils.io.ReadableByteChannelWrapperBase.leftInBuffer_=
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #F0ADAD">
-          ReadableByteChannelWrapperBase.this.leftInBuffer_=(ReadableByteChannelWrapperBase.this.leftInBuffer.-(used))
-        </td>
-      </tr><tr>
-        <td>
-          102
-        </td>
-        <td>
-          1312
-        </td>
-        <td>
-          2851
-          -
-          2867
-        </td>
-        <td>
-          Apply
-        </td>
-        <td>
-          scales.utils.io.ReadableByteChannelWrapperBase.leftInBuffer_=
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #F0ADAD">
-          ReadableByteChannelWrapperBase.this.leftInBuffer_=(0)
-        </td>
-      </tr><tr>
-        <td>
           102
         </td>
         <td>
           1313
         </td>
         <td>
-          2851
+          2911
           -
-          2867
+          2945
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapperBase.leftInBuffer_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.leftInBuffer_=(ReadableByteChannelWrapperBase.this.leftInBuffer.-(used))
+        </td>
+      </tr><tr>
+        <td>
+          102
+        </td>
+        <td>
+          1314
+        </td>
+        <td>
+          2911
+          -
+          2945
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapperBase.leftInBuffer_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.leftInBuffer_=(ReadableByteChannelWrapperBase.this.leftInBuffer.-(used))
+        </td>
+      </tr><tr>
+        <td>
+          104
+        </td>
+        <td>
+          1315
+        </td>
+        <td>
+          2969
+          -
+          2985
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapperBase.leftInBuffer_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.leftInBuffer_=(0)
+        </td>
+      </tr><tr>
+        <td>
+          104
+        </td>
+        <td>
+          1316
+        </td>
+        <td>
+          2969
+          -
+          2985
         </td>
         <td>
           Block
@@ -1233,15 +1247,15 @@
         </td>
       </tr><tr>
         <td>
-          105
+          107
         </td>
         <td>
-          1314
+          1317
         </td>
         <td>
-          2948
+          3066
           -
-          2960
+          3078
         </td>
         <td>
           Select
@@ -1257,15 +1271,15 @@
         </td>
       </tr><tr>
         <td>
-          105
+          107
         </td>
         <td>
-          1315
+          1318
         </td>
         <td>
-          2962
+          3080
           -
-          2963
+          3081
         </td>
         <td>
           Literal
@@ -1281,15 +1295,15 @@
         </td>
       </tr><tr>
         <td>
-          105
+          107
         </td>
         <td>
-          1316
+          1319
         </td>
         <td>
-          2937
+          3055
           -
-          2970
+          3088
         </td>
         <td>
           Apply
@@ -1305,15 +1319,15 @@
         </td>
       </tr><tr>
         <td>
-          106
+          108
         </td>
         <td>
-          1317
+          1320
         </td>
         <td>
-          2983
+          3101
           -
-          2995
+          3113
         </td>
         <td>
           Select
@@ -1329,15 +1343,15 @@
         </td>
       </tr><tr>
         <td>
-          106
+          108
         </td>
         <td>
-          1318
+          1321
         </td>
         <td>
-          2997
+          3115
           -
-          2998
+          3116
         </td>
         <td>
           Literal
@@ -1353,15 +1367,15 @@
         </td>
       </tr><tr>
         <td>
-          106
+          108
         </td>
         <td>
-          1319
+          1322
         </td>
         <td>
-          2977
+          3095
           -
-          3005
+          3123
         </td>
         <td>
           Apply
@@ -1377,15 +1391,15 @@
         </td>
       </tr><tr>
         <td>
-          107
+          109
         </td>
         <td>
-          1345
+          1348
         </td>
         <td>
-          3017
+          3135
           -
-          3723
+          3985
         </td>
         <td>
           Block
@@ -1422,15 +1436,15 @@
         </td>
       </tr><tr>
         <td>
-          109
+          111
         </td>
         <td>
-          1321
+          1324
         </td>
         <td>
-          3026
+          3144
           -
-          3040
+          3158
         </td>
         <td>
           Apply
@@ -1446,15 +1460,15 @@
         </td>
       </tr><tr>
         <td>
-          111
+          113
         </td>
         <td>
-          1322
+          1325
         </td>
         <td>
-          3078
+          3196
           -
-          3084
+          3202
         </td>
         <td>
           Select
@@ -1470,15 +1484,15 @@
         </td>
       </tr><tr>
         <td>
-          111
+          113
         </td>
         <td>
-          1323
+          1326
         </td>
         <td>
-          3065
+          3183
           -
-          3085
+          3203
         </td>
         <td>
           Apply
@@ -1494,15 +1508,15 @@
         </td>
       </tr><tr>
         <td>
-          113
+          115
         </td>
         <td>
-          1324
+          1327
         </td>
         <td>
-          3138
+          3256
           -
-          3154
+          3272
         </td>
         <td>
           Apply
@@ -1518,15 +1532,15 @@
         </td>
       </tr><tr>
         <td>
-          115
+          117
         </td>
         <td>
-          1326
+          1329
         </td>
         <td>
-          3183
+          3308
           -
-          3212
+          3352
         </td>
         <td>
           Block
@@ -1545,15 +1559,15 @@
         </td>
       </tr><tr>
         <td>
-          116
+          118
         </td>
         <td>
-          1325
+          1328
         </td>
         <td>
-          3190
+          3321
           -
-          3203
+          3334
         </td>
         <td>
           Select
@@ -1569,15 +1583,15 @@
         </td>
       </tr><tr>
         <td>
-          119
+          121
         </td>
         <td>
-          1327
+          1330
         </td>
         <td>
-          3226
+          3372
           -
-          3235
+          3381
         </td>
         <td>
           Ident
@@ -1593,15 +1607,15 @@
         </td>
       </tr><tr>
         <td>
-          121
+          123
         </td>
         <td>
-          1344
+          1347
         </td>
         <td>
-          3246
+          3398
           -
-          3709
+          3971
         </td>
         <td>
           Block
@@ -1626,15 +1640,15 @@
         </td>
       </tr><tr>
         <td>
-          123
+          125
         </td>
         <td>
-          1328
+          1331
         </td>
         <td>
-          3274
+          3432
           -
-          3293
+          3451
         </td>
         <td>
           Apply
@@ -1650,15 +1664,15 @@
         </td>
       </tr><tr>
         <td>
-          123
+          125
         </td>
         <td>
-          1329
+          1332
         </td>
         <td>
-          3295
+          3453
           -
-          3314
+          3472
         </td>
         <td>
           Select
@@ -1674,15 +1688,15 @@
         </td>
       </tr><tr>
         <td>
-          123
+          125
         </td>
         <td>
-          1330
+          1333
         </td>
         <td>
-          3265
+          3423
           -
-          3315
+          3473
         </td>
         <td>
           Apply
@@ -1698,15 +1712,15 @@
         </td>
       </tr><tr>
         <td>
-          124
+          126
         </td>
         <td>
-          1331
+          1334
         </td>
         <td>
-          3323
+          3488
           -
-          3334
+          3499
         </td>
         <td>
           Apply
@@ -1722,15 +1736,15 @@
         </td>
       </tr><tr>
         <td>
-          124
+          126
         </td>
         <td>
-          1335
+          1338
         </td>
         <td>
-          3319
+          3484
           -
-          3319
+          3484
         </td>
         <td>
           Literal
@@ -1746,15 +1760,15 @@
         </td>
       </tr><tr>
         <td>
-          124
+          126
         </td>
         <td>
-          1336
+          1339
         </td>
         <td>
-          3319
+          3484
           -
-          3319
+          3484
         </td>
         <td>
           Block
@@ -1770,15 +1784,15 @@
         </td>
       </tr><tr>
         <td>
-          125
+          127
         </td>
         <td>
-          1332
+          1335
         </td>
         <td>
-          3358
+          3530
           -
-          3369
+          3541
         </td>
         <td>
           Apply
@@ -1794,15 +1808,15 @@
         </td>
       </tr><tr>
         <td>
-          125
+          127
         </td>
         <td>
-          1333
+          1336
         </td>
         <td>
-          3343
+          3515
           -
-          3369
+          3541
         </td>
         <td>
           Apply
@@ -1818,15 +1832,15 @@
         </td>
       </tr><tr>
         <td>
-          125
+          127
         </td>
         <td>
-          1334
+          1337
         </td>
         <td>
-          3343
+          3515
           -
-          3369
+          3541
         </td>
         <td>
           Block
@@ -1842,15 +1856,15 @@
         </td>
       </tr><tr>
         <td>
-          128
+          130
         </td>
         <td>
-          1337
+          1340
         </td>
         <td>
-          3379
+          3565
           -
-          3394
+          3580
         </td>
         <td>
           Apply
@@ -1866,15 +1880,15 @@
         </td>
       </tr><tr>
         <td>
-          131
+          133
         </td>
         <td>
-          1338
+          1341
         </td>
         <td>
-          3461
+          3668
           -
-          3473
+          3680
         </td>
         <td>
           Select
@@ -1890,15 +1904,15 @@
         </td>
       </tr><tr>
         <td>
-          131
+          133
         </td>
         <td>
-          1339
+          1342
         </td>
         <td>
-          3475
+          3682
           -
-          3476
+          3683
         </td>
         <td>
           Literal
@@ -1914,15 +1928,15 @@
         </td>
       </tr><tr>
         <td>
-          131
+          133
         </td>
         <td>
-          1340
+          1343
         </td>
         <td>
-          3450
+          3657
           -
-          3483
+          3690
         </td>
         <td>
           Apply
@@ -1938,15 +1952,15 @@
         </td>
       </tr><tr>
         <td>
-          139
+          141
         </td>
         <td>
-          1341
+          1344
         </td>
         <td>
-          3687
+          3949
           -
-          3699
+          3961
         </td>
         <td>
           Select
@@ -1962,15 +1976,15 @@
         </td>
       </tr><tr>
         <td>
-          139
+          141
         </td>
         <td>
-          1342
+          1345
         </td>
         <td>
-          3701
+          3963
           -
-          3702
+          3964
         </td>
         <td>
           Literal
@@ -1986,15 +2000,15 @@
         </td>
       </tr><tr>
         <td>
-          139
+          141
         </td>
         <td>
-          1343
+          1346
         </td>
         <td>
-          3681
+          3943
           -
-          3709
+          3971
         </td>
         <td>
           Apply
@@ -2010,15 +2024,15 @@
         </td>
       </tr><tr>
         <td>
-          148
+          150
         </td>
         <td>
-          1346
+          1349
         </td>
         <td>
-          3836
+          4098
           -
-          3851
+          4113
         </td>
         <td>
           Apply
@@ -2034,87 +2048,87 @@
         </td>
       </tr><tr>
         <td>
-          149
-        </td>
-        <td>
-          1347
-        </td>
-        <td>
-          3859
-          -
-          3867
-        </td>
-        <td>
-          Apply
-        </td>
-        <td>
-          scales.utils.io.ReadableByteChannelWrapperBase.jbytes
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #F0ADAD">
-          ReadableByteChannelWrapperBase.this.jbytes()
-        </td>
-      </tr><tr>
-        <td>
-          149
-        </td>
-        <td>
-          1348
-        </td>
-        <td>
-          3859
-          -
-          3867
-        </td>
-        <td>
-          Block
-        </td>
-        <td>
-          scales.utils.io.ReadableByteChannelWrapperBase.jbytes
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #F0ADAD">
-          ReadableByteChannelWrapperBase.this.jbytes()
-        </td>
-      </tr><tr>
-        <td>
-          151
-        </td>
-        <td>
-          1349
-        </td>
-        <td>
-          3883
-          -
-          3891
-        </td>
-        <td>
-          Apply
-        </td>
-        <td>
-          scales.utils.io.ReadableByteChannelWrapperBase.direct
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #F0ADAD">
-          ReadableByteChannelWrapperBase.this.direct()
-        </td>
-      </tr><tr>
-        <td>
           151
         </td>
         <td>
           1350
         </td>
         <td>
-          3883
+          4121
           -
-          3891
+          4129
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapperBase.jbytes
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.jbytes()
+        </td>
+      </tr><tr>
+        <td>
+          151
+        </td>
+        <td>
+          1351
+        </td>
+        <td>
+          4121
+          -
+          4129
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapperBase.jbytes
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.jbytes()
+        </td>
+      </tr><tr>
+        <td>
+          153
+        </td>
+        <td>
+          1352
+        </td>
+        <td>
+          4145
+          -
+          4153
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapperBase.direct
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.direct()
+        </td>
+      </tr><tr>
+        <td>
+          153
+        </td>
+        <td>
+          1353
+        </td>
+        <td>
+          4145
+          -
+          4153
         </td>
         <td>
           Block
@@ -2130,15 +2144,15 @@
         </td>
       </tr><tr>
         <td>
-          177
+          179
         </td>
         <td>
-          1351
+          1354
         </td>
         <td>
-          4852
+          5114
           -
-          4868
+          5130
         </td>
         <td>
           Select
@@ -2154,15 +2168,15 @@
         </td>
       </tr><tr>
         <td>
-          177
+          179
         </td>
         <td>
-          1355
+          1358
         </td>
         <td>
-          4848
+          5110
           -
-          4848
+          5110
         </td>
         <td>
           Literal
@@ -2178,15 +2192,15 @@
         </td>
       </tr><tr>
         <td>
-          177
+          179
         </td>
         <td>
-          1356
+          1359
         </td>
         <td>
-          4848
+          5110
           -
-          4848
+          5110
         </td>
         <td>
           Block
@@ -2202,15 +2216,15 @@
         </td>
       </tr><tr>
         <td>
-          178
+          180
         </td>
         <td>
-          1352
+          1355
         </td>
         <td>
-          4909
+          5171
           -
-          4921
+          5183
         </td>
         <td>
           Select
@@ -2226,42 +2240,18 @@
         </td>
       </tr><tr>
         <td>
-          178
+          180
         </td>
         <td>
-          1353
+          1356
         </td>
         <td>
-          4878
+          5140
           -
-          4922
+          5184
         </td>
         <td>
           Apply
-        </td>
-        <td>
-          scales.utils.resources.Pool.giveBack
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #F0ADAD">
-          ReadableByteChannelWrapper.this.directBufferArrayPool.giveBack(ReadableByteChannelWrapper.this.backingArray)
-        </td>
-      </tr><tr>
-        <td>
-          178
-        </td>
-        <td>
-          1354
-        </td>
-        <td>
-          4878
-          -
-          4922
-        </td>
-        <td>
-          Block
         </td>
         <td>
           scales.utils.resources.Pool.giveBack
@@ -2280,9 +2270,33 @@
           1357
         </td>
         <td>
-          4951
+          5140
           -
-          4957
+          5184
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.resources.Pool.giveBack
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapper.this.directBufferArrayPool.giveBack(ReadableByteChannelWrapper.this.backingArray)
+        </td>
+      </tr><tr>
+        <td>
+          182
+        </td>
+        <td>
+          1360
+        </td>
+        <td>
+          5213
+          -
+          5219
         </td>
         <td>
           Select
@@ -2298,15 +2312,15 @@
         </td>
       </tr><tr>
         <td>
-          180
+          182
         </td>
         <td>
-          1358
+          1361
         </td>
         <td>
-          4933
+          5195
           -
-          4958
+          5220
         </td>
         <td>
           Apply
@@ -2322,15 +2336,15 @@
         </td>
       </tr><tr>
         <td>
-          181
+          183
         </td>
         <td>
-          1359
+          1362
         </td>
         <td>
-          4963
+          5225
           -
-          4976
+          5238
         </td>
         <td>
           Select
@@ -2346,15 +2360,15 @@
         </td>
       </tr><tr>
         <td>
-          190
+          192
         </td>
         <td>
-          1360
+          1363
         </td>
         <td>
-          5211
+          5473
           -
-          5218
+          5480
         </td>
         <td>
           Select
@@ -2370,15 +2384,15 @@
         </td>
       </tr><tr>
         <td>
-          190
+          192
         </td>
         <td>
-          1361
+          1364
         </td>
         <td>
-          5180
+          5442
           -
-          5180
+          5442
         </td>
         <td>
           TypeApply
@@ -2394,15 +2408,15 @@
         </td>
       </tr><tr>
         <td>
-          190
+          192
         </td>
         <td>
-          1362
+          1365
         </td>
         <td>
-          5180
+          5442
           -
-          5180
+          5442
         </td>
         <td>
           TypeApply
@@ -2418,15 +2432,15 @@
         </td>
       </tr><tr>
         <td>
-          190
+          192
         </td>
         <td>
-          1363
+          1366
         </td>
         <td>
-          5180
+          5442
           -
-          5180
+          5442
         </td>
         <td>
           TypeApply
@@ -2442,15 +2456,15 @@
         </td>
       </tr><tr>
         <td>
-          190
+          192
         </td>
         <td>
-          1364
+          1367
         </td>
         <td>
-          5180
+          5442
           -
-          5180
+          5442
         </td>
         <td>
           Select
@@ -2466,15 +2480,15 @@
         </td>
       </tr><tr>
         <td>
-          190
+          192
         </td>
         <td>
-          1365
+          1368
         </td>
         <td>
-          5180
+          5442
           -
-          5219
+          5481
         </td>
         <td>
           ApplyToImplicitArgs
@@ -2490,15 +2504,15 @@
         </td>
       </tr><tr>
         <td>
-          195
+          197
         </td>
         <td>
-          1366
+          1369
         </td>
         <td>
-          5391
+          5653
           -
-          5422
+          5684
         </td>
         <td>
           ApplyToImplicitArgs
@@ -2514,42 +2528,18 @@
         </td>
       </tr><tr>
         <td>
-          198
+          200
         </td>
         <td>
-          1367
+          1370
         </td>
         <td>
-          5510
+          5789
           -
-          5510
+          5834
         </td>
         <td>
-          TypeApply
-        </td>
-        <td>
-          scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.&lt;init&gt;$default$2
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #F0ADAD">
-          ReadableByteChannelWrapperImplicits.this.AsyncDataChunkerEnumerator.&lt;init&gt;$default$2[E]
-        </td>
-      </tr><tr>
-        <td>
-          198
-        </td>
-        <td>
-          1368
-        </td>
-        <td>
-          5510
-          -
-          5552
-        </td>
-        <td>
-          Apply
+          ApplyToImplicitArgs
         </td>
         <td>
           scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.&lt;init&gt;
@@ -2558,19 +2548,19 @@
           
         </td>
         <td style="background: #F0ADAD">
-          new ReadableByteChannelWrapperImplicits.this.AsyncDataChunkerEnumerator[E](chunker, ReadableByteChannelWrapperImplicits.this.AsyncDataChunkerEnumerator.&lt;init&gt;$default$2[E])
+          new ReadableByteChannelWrapperImplicits.this.AsyncDataChunkerEnumerator[E,F](chunker, ReadableByteChannelWrapperImplicits.this.AsyncDataChunkerEnumerator.&lt;init&gt;$default$2[E, F])(evidence$1)
         </td>
       </tr><tr>
         <td>
-          203
+          205
         </td>
         <td>
-          1369
+          1371
         </td>
         <td>
-          5735
+          6017
           -
-          5737
+          6019
         </td>
         <td>
           Literal
@@ -2586,15 +2576,15 @@
         </td>
       </tr><tr>
         <td>
-          218
+          220
         </td>
         <td>
-          1370
+          1372
         </td>
         <td>
-          6434
+          6758
           -
-          6450
+          6774
         </td>
         <td>
           Select
@@ -2610,15 +2600,15 @@
         </td>
       </tr><tr>
         <td>
-          218
+          220
         </td>
         <td>
-          1371
+          1373
         </td>
         <td>
-          6406
+          6730
           -
-          6450
+          6774
         </td>
         <td>
           Apply
@@ -2634,111 +2624,163 @@
         </td>
       </tr><tr>
         <td>
-          218
-        </td>
-        <td>
-          1372
-        </td>
-        <td>
-          6454
-          -
-          6465
-        </td>
-        <td>
-          Apply
-        </td>
-        <td>
-          scalaz.iteratee.IterateeFunctions.iteratee
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #F0ADAD">
-          scalaz.iteratee.Iteratee.iteratee[E, A](i)
-        </td>
-      </tr><tr>
-        <td>
-          218
-        </td>
-        <td>
-          1373
-        </td>
-        <td>
-          6454
-          -
-          6465
-        </td>
-        <td>
-          Block
-        </td>
-        <td>
-          scalaz.iteratee.IterateeFunctions.iteratee
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #F0ADAD">
-          scalaz.iteratee.Iteratee.iteratee[E, A](i)
-        </td>
-      </tr><tr>
-        <td>
-          219
+          220
         </td>
         <td>
           1374
         </td>
         <td>
-          6501
+          6788
           -
-          6512
+          6798
         </td>
         <td>
           Apply
         </td>
         <td>
-          scalaz.iteratee.IterateeFunctions.iteratee
+          scalaz.Applicative.point
         </td>
         <td>
           
         </td>
         <td style="background: #F0ADAD">
-          scalaz.iteratee.Iteratee.iteratee[E, A](i)
-        </td>
-      </tr><tr>
-        <td>
-          219
-        </td>
-        <td>
-          1375
-        </td>
-        <td>
-          6501
-          -
-          6512
-        </td>
-        <td>
-          Block
-        </td>
-        <td>
-          scalaz.iteratee.IterateeFunctions.iteratee
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #F0ADAD">
-          scalaz.iteratee.Iteratee.iteratee[E, A](i)
+          AsyncDataChunkerEnumerator.this.F.point[scalaz.iteratee.StepT[E,F,A]](i)
         </td>
       </tr><tr>
         <td>
           220
         </td>
         <td>
-          1404
+          1375
         </td>
         <td>
-          6534
+          6778
           -
-          7229
+          6799
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.IterateeTFunctions.iterateeT
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scalaz.iteratee.Iteratee.iterateeT[E, F, A](AsyncDataChunkerEnumerator.this.F.point[scalaz.iteratee.StepT[E,F,A]](i))
+        </td>
+      </tr><tr>
+        <td>
+          220
+        </td>
+        <td>
+          1376
+        </td>
+        <td>
+          6778
+          -
+          6799
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scalaz.iteratee.IterateeTFunctions.iterateeT
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scalaz.iteratee.Iteratee.iterateeT[E, F, A](AsyncDataChunkerEnumerator.this.F.point[scalaz.iteratee.StepT[E,F,A]](i))
+        </td>
+      </tr><tr>
+        <td>
+          221
+        </td>
+        <td>
+          1379
+        </td>
+        <td>
+          6832
+          -
+          6913
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          {
+  val c: A = acc;
+  val in: scalaz.iteratee.Input[E] = input;
+  scalaz.iteratee.Iteratee.iterateeT[E, F, A](AsyncDataChunkerEnumerator.this.F.point[scalaz.iteratee.StepT[E,F,A]](i))
+}
+        </td>
+      </tr><tr>
+        <td>
+          224
+        </td>
+        <td>
+          1377
+        </td>
+        <td>
+          6902
+          -
+          6912
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.Applicative.point
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          AsyncDataChunkerEnumerator.this.F.point[scalaz.iteratee.StepT[E,F,A]](i)
+        </td>
+      </tr><tr>
+        <td>
+          224
+        </td>
+        <td>
+          1378
+        </td>
+        <td>
+          6892
+          -
+          6913
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.IterateeTFunctions.iterateeT
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scalaz.iteratee.Iteratee.iterateeT[E, F, A](AsyncDataChunkerEnumerator.this.F.point[scalaz.iteratee.StepT[E,F,A]](i))
+        </td>
+      </tr><tr>
+        <td>
+          225
+        </td>
+        <td>
+          1413
+        </td>
+        <td>
+          6935
+          -
+          7810
         </td>
         <td>
           Block
@@ -2753,34 +2795,39 @@
           {
   val realChunk: scales.utils.io.DataChunk = AsyncDataChunkerEnumerator.this.chunker.nextChunk;
   val nextChunk: E = realChunk.asInstanceOf[E];
-  val nextI: scalaz.iteratee.IterateeT[E,scalaz.Id.Id,A] = if (realChunk.isEOF)
+  val nextI: scalaz.iteratee.IterateeT[E,F,A] = if (realChunk.isEOF)
     k.apply(scalaz.iteratee.Input.Eof.apply[E])
   else
     if (realChunk.isEmpty)
       k.apply(scalaz.iteratee.Input.Empty.apply[E])
     else
       k.apply(scalaz.iteratee.Input.Element.apply[E](nextChunk));
-  val nc: Int = if (realChunk.isEmpty.&amp;&amp;(scales.utils.`package`.isDone[E, A](nextI).unary_!))
-    count.+(1)
-  else
-    0;
-  if (AsyncDataChunkerEnumerator.this.contOnCont.!=(ReadableByteChannelWrapperImplicits.this.INFINITE_RETRIES).&amp;&amp;(nc.&gt;(AsyncDataChunkerEnumerator.this.contOnCont)))
-    nextI
-  else
-    apply(nextI.value, nc)
+  scalaz.iteratee.Iteratee.iterateeT[E, F, A](scalaz.Scalaz.ToBindOps[F, scalaz.iteratee.StepT[E,F,A]](nextI.value)(AsyncDataChunkerEnumerator.this.F).&gt;&gt;=[scalaz.iteratee.StepT[E,F,A]](((nextIStep: scalaz.iteratee.StepT[E,F,A]) =&gt; {
+    val res: scalaz.iteratee.IterateeT[E,F,A] = {
+      val nc: Int = if (realChunk.isEmpty.&amp;&amp;(scales.utils.iteratee.functions.isDoneS[E, F, A](nextIStep)(AsyncDataChunkerEnumerator.this.F).unary_!))
+        count.+(1)
+      else
+        0;
+      if (AsyncDataChunkerEnumerator.this.contOnCont.!=(ReadableByteChannelWrapperImplicits.this.INFINITE_RETRIES).&amp;&amp;(nc.&gt;(AsyncDataChunkerEnumerator.this.contOnCont)))
+        nextI
+      else
+        apply(nextIStep, nc)
+    };
+    res.value
+  })))
 }
         </td>
       </tr><tr>
         <td>
-          221
+          226
         </td>
         <td>
-          1376
+          1380
         </td>
         <td>
-          6563
+          6964
           -
-          6580
+          6981
         </td>
         <td>
           Select
@@ -2796,15 +2843,15 @@
         </td>
       </tr><tr>
         <td>
-          222
+          228
         </td>
         <td>
-          1377
+          1381
         </td>
         <td>
-          6607
+          7009
           -
-          6632
+          7034
         </td>
         <td>
           TypeApply
@@ -2820,15 +2867,15 @@
         </td>
       </tr><tr>
         <td>
-          224
+          230
         </td>
         <td>
-          1378
+          1382
         </td>
         <td>
-          6671
+          7073
           -
-          6686
+          7088
         </td>
         <td>
           Select
@@ -2844,15 +2891,15 @@
         </td>
       </tr><tr>
         <td>
-          226
+          232
         </td>
         <td>
-          1379
+          1383
         </td>
         <td>
-          6756
+          7158
           -
-          6762
+          7164
         </td>
         <td>
           TypeApply
@@ -2868,15 +2915,15 @@
         </td>
       </tr><tr>
         <td>
-          226
+          232
         </td>
         <td>
-          1380
+          1384
         </td>
         <td>
-          6754
+          7156
           -
-          6763
+          7165
         </td>
         <td>
           Apply
@@ -2892,15 +2939,15 @@
         </td>
       </tr><tr>
         <td>
-          226
+          232
         </td>
         <td>
-          1381
+          1385
         </td>
         <td>
-          6754
+          7156
           -
-          6763
+          7165
         </td>
         <td>
           Block
@@ -2916,15 +2963,15 @@
         </td>
       </tr><tr>
         <td>
-          228
+          234
         </td>
         <td>
-          1382
+          1386
         </td>
         <td>
-          6799
+          7201
           -
-          6816
+          7218
         </td>
         <td>
           Select
@@ -2940,15 +2987,15 @@
         </td>
       </tr><tr>
         <td>
-          228
+          234
         </td>
         <td>
-          1389
+          1393
         </td>
         <td>
-          6795
+          7197
           -
-          6902
+          7304
         </td>
         <td>
           If
@@ -2967,15 +3014,15 @@ else
         </td>
       </tr><tr>
         <td>
-          229
+          235
         </td>
         <td>
-          1383
+          1387
         </td>
         <td>
-          6836
+          7238
           -
-          6844
+          7246
         </td>
         <td>
           TypeApply
@@ -2991,15 +3038,15 @@ else
         </td>
       </tr><tr>
         <td>
-          229
+          235
         </td>
         <td>
-          1384
+          1388
         </td>
         <td>
-          6834
+          7236
           -
-          6845
+          7247
         </td>
         <td>
           Apply
@@ -3015,15 +3062,15 @@ else
         </td>
       </tr><tr>
         <td>
-          229
+          235
         </td>
         <td>
-          1385
+          1389
         </td>
         <td>
-          6834
+          7236
           -
-          6845
+          7247
         </td>
         <td>
           Block
@@ -3039,15 +3086,15 @@ else
         </td>
       </tr><tr>
         <td>
-          231
+          237
         </td>
         <td>
-          1386
+          1390
         </td>
         <td>
-          6883
+          7285
           -
-          6901
+          7303
         </td>
         <td>
           Apply
@@ -3063,327 +3110,99 @@ else
         </td>
       </tr><tr>
         <td>
-          231
-        </td>
-        <td>
-          1387
-        </td>
-        <td>
-          6881
-          -
-          6902
-        </td>
-        <td>
-          Apply
-        </td>
-        <td>
-          scala.Function1.apply
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #F0ADAD">
-          k.apply(scalaz.iteratee.Input.Element.apply[E](nextChunk))
-        </td>
-      </tr><tr>
-        <td>
-          231
-        </td>
-        <td>
-          1388
-        </td>
-        <td>
-          6881
-          -
-          6902
-        </td>
-        <td>
-          Block
-        </td>
-        <td>
-          scala.Function1.apply
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #F0ADAD">
-          k.apply(scalaz.iteratee.Input.Element.apply[E](nextChunk))
-        </td>
-      </tr><tr>
-        <td>
-          234
-        </td>
-        <td>
-          1390
-        </td>
-        <td>
-          6960
-          -
-          6974
-        </td>
-        <td>
-          Select
-        </td>
-        <td>
-          scala.Boolean.unary_!
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #F0ADAD">
-          scales.utils.`package`.isDone[E, A](nextI).unary_!
-        </td>
-      </tr><tr>
-        <td>
-          234
+          237
         </td>
         <td>
           1391
         </td>
         <td>
-          6939
+          7283
           -
-          6974
+          7304
         </td>
         <td>
           Apply
         </td>
         <td>
-          scala.Boolean.&amp;&amp;
+          scala.Function1.apply
         </td>
         <td>
           
         </td>
         <td style="background: #F0ADAD">
-          realChunk.isEmpty.&amp;&amp;(scales.utils.`package`.isDone[E, A](nextI).unary_!)
+          k.apply(scalaz.iteratee.Input.Element.apply[E](nextChunk))
         </td>
       </tr><tr>
         <td>
-          235
+          237
         </td>
         <td>
           1392
         </td>
         <td>
-          6990
+          7283
           -
-          6999
-        </td>
-        <td>
-          Apply
-        </td>
-        <td>
-          scala.Int.+
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #F0ADAD">
-          count.+(1)
-        </td>
-      </tr><tr>
-        <td>
-          235
-        </td>
-        <td>
-          1393
-        </td>
-        <td>
-          6990
-          -
-          6999
+          7304
         </td>
         <td>
           Block
         </td>
         <td>
-          scala.Int.+
+          scala.Function1.apply
         </td>
         <td>
           
         </td>
         <td style="background: #F0ADAD">
-          count.+(1)
+          k.apply(scalaz.iteratee.Input.Element.apply[E](nextChunk))
         </td>
       </tr><tr>
         <td>
-          237
+          239
+        </td>
+        <td>
+          1412
+        </td>
+        <td>
+          7316
+          -
+          7810
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.IterateeTFunctions.iterateeT
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scalaz.iteratee.Iteratee.iterateeT[E, F, A](scalaz.Scalaz.ToBindOps[F, scalaz.iteratee.StepT[E,F,A]](nextI.value)(AsyncDataChunkerEnumerator.this.F).&gt;&gt;=[scalaz.iteratee.StepT[E,F,A]](((nextIStep: scalaz.iteratee.StepT[E,F,A]) =&gt; {
+  val res: scalaz.iteratee.IterateeT[E,F,A] = {
+    val nc: Int = if (realChunk.isEmpty.&amp;&amp;(scales.utils.iteratee.functions.isDoneS[E, F, A](nextIStep)(AsyncDataChunkerEnumerator.this.F).unary_!))
+      count.+(1)
+    else
+      0;
+    if (AsyncDataChunkerEnumerator.this.contOnCont.!=(ReadableByteChannelWrapperImplicits.this.INFINITE_RETRIES).&amp;&amp;(nc.&gt;(AsyncDataChunkerEnumerator.this.contOnCont)))
+      nextI
+    else
+      apply(nextIStep, nc)
+  };
+  res.value
+})))
+        </td>
+      </tr><tr>
+        <td>
+          240
         </td>
         <td>
           1394
         </td>
         <td>
-          7031
+          7337
           -
-          7032
-        </td>
-        <td>
-          Literal
-        </td>
-        <td>
-          &lt;nosymbol&gt;
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #F0ADAD">
-          0
-        </td>
-      </tr><tr>
-        <td>
-          237
-        </td>
-        <td>
-          1395
-        </td>
-        <td>
-          7031
-          -
-          7032
-        </td>
-        <td>
-          Block
-        </td>
-        <td>
-          &lt;nosymbol&gt;
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #F0ADAD">
-          0
-        </td>
-      </tr><tr>
-        <td>
-          239
-        </td>
-        <td>
-          1396
-        </td>
-        <td>
-          7063
-          -
-          7079
-        </td>
-        <td>
-          Select
-        </td>
-        <td>
-          scales.utils.io.ReadableByteChannelWrapperImplicits.INFINITE_RETRIES
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #F0ADAD">
-          ReadableByteChannelWrapperImplicits.this.INFINITE_RETRIES
-        </td>
-      </tr><tr>
-        <td>
-          239
-        </td>
-        <td>
-          1397
-        </td>
-        <td>
-          7090
-          -
-          7100
-        </td>
-        <td>
-          Select
-        </td>
-        <td>
-          scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.contOnCont
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #F0ADAD">
-          AsyncDataChunkerEnumerator.this.contOnCont
-        </td>
-      </tr><tr>
-        <td>
-          239
-        </td>
-        <td>
-          1398
-        </td>
-        <td>
-          7085
-          -
-          7100
-        </td>
-        <td>
-          Apply
-        </td>
-        <td>
-          scala.Int.&gt;
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #F0ADAD">
-          nc.&gt;(AsyncDataChunkerEnumerator.this.contOnCont)
-        </td>
-      </tr><tr>
-        <td>
-          239
-        </td>
-        <td>
-          1399
-        </td>
-        <td>
-          7048
-          -
-          7101
-        </td>
-        <td>
-          Apply
-        </td>
-        <td>
-          scala.Boolean.&amp;&amp;
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #F0ADAD">
-          AsyncDataChunkerEnumerator.this.contOnCont.!=(ReadableByteChannelWrapperImplicits.this.INFINITE_RETRIES).&amp;&amp;(nc.&gt;(AsyncDataChunkerEnumerator.this.contOnCont))
-        </td>
-      </tr><tr>
-        <td>
-          241
-        </td>
-        <td>
-          1400
-        </td>
-        <td>
-          7174
-          -
-          7179
-        </td>
-        <td>
-          Ident
-        </td>
-        <td>
-          scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.nextI
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #F0ADAD">
-          nextI
-        </td>
-      </tr><tr>
-        <td>
-          243
-        </td>
-        <td>
-          1401
-        </td>
-        <td>
-          7213
-          -
-          7224
+          7348
         </td>
         <td>
           Select
@@ -3399,15 +3218,363 @@ else
         </td>
       </tr><tr>
         <td>
-          243
+          240
+        </td>
+        <td>
+          1395
+        </td>
+        <td>
+          7343
+          -
+          7343
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          AsyncDataChunkerEnumerator.this.F
+        </td>
+      </tr><tr>
+        <td>
+          240
+        </td>
+        <td>
+          1411
+        </td>
+        <td>
+          7337
+          -
+          7809
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.syntax.BindOps.&gt;&gt;=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scalaz.Scalaz.ToBindOps[F, scalaz.iteratee.StepT[E,F,A]](nextI.value)(AsyncDataChunkerEnumerator.this.F).&gt;&gt;=[scalaz.iteratee.StepT[E,F,A]](((nextIStep: scalaz.iteratee.StepT[E,F,A]) =&gt; {
+  val res: scalaz.iteratee.IterateeT[E,F,A] = {
+    val nc: Int = if (realChunk.isEmpty.&amp;&amp;(scales.utils.iteratee.functions.isDoneS[E, F, A](nextIStep)(AsyncDataChunkerEnumerator.this.F).unary_!))
+      count.+(1)
+    else
+      0;
+    if (AsyncDataChunkerEnumerator.this.contOnCont.!=(ReadableByteChannelWrapperImplicits.this.INFINITE_RETRIES).&amp;&amp;(nc.&gt;(AsyncDataChunkerEnumerator.this.contOnCont)))
+      nextI
+    else
+      apply(nextIStep, nc)
+  };
+  res.value
+}))
+        </td>
+      </tr><tr>
+        <td>
+          244
+        </td>
+        <td>
+          1396
+        </td>
+        <td>
+          7465
+          -
+          7465
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          AsyncDataChunkerEnumerator.this.F
+        </td>
+      </tr><tr>
+        <td>
+          244
+        </td>
+        <td>
+          1397
+        </td>
+        <td>
+          7457
+          -
+          7476
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.utils.iteratee.functions.isDoneS[E, F, A](nextIStep)(AsyncDataChunkerEnumerator.this.F).unary_!
+        </td>
+      </tr><tr>
+        <td>
+          244
+        </td>
+        <td>
+          1398
+        </td>
+        <td>
+          7436
+          -
+          7476
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          realChunk.isEmpty.&amp;&amp;(scales.utils.iteratee.functions.isDoneS[E, F, A](nextIStep)(AsyncDataChunkerEnumerator.this.F).unary_!)
+        </td>
+      </tr><tr>
+        <td>
+          245
+        </td>
+        <td>
+          1399
+        </td>
+        <td>
+          7496
+          -
+          7505
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          count.+(1)
+        </td>
+      </tr><tr>
+        <td>
+          245
+        </td>
+        <td>
+          1400
+        </td>
+        <td>
+          7496
+          -
+          7505
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          count.+(1)
+        </td>
+      </tr><tr>
+        <td>
+          247
+        </td>
+        <td>
+          1401
+        </td>
+        <td>
+          7545
+          -
+          7546
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          247
         </td>
         <td>
           1402
         </td>
         <td>
-          7207
+          7545
           -
-          7229
+          7546
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          249
+        </td>
+        <td>
+          1403
+        </td>
+        <td>
+          7581
+          -
+          7597
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapperImplicits.INFINITE_RETRIES
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperImplicits.this.INFINITE_RETRIES
+        </td>
+      </tr><tr>
+        <td>
+          249
+        </td>
+        <td>
+          1404
+        </td>
+        <td>
+          7608
+          -
+          7618
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.contOnCont
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          AsyncDataChunkerEnumerator.this.contOnCont
+        </td>
+      </tr><tr>
+        <td>
+          249
+        </td>
+        <td>
+          1405
+        </td>
+        <td>
+          7603
+          -
+          7618
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          nc.&gt;(AsyncDataChunkerEnumerator.this.contOnCont)
+        </td>
+      </tr><tr>
+        <td>
+          249
+        </td>
+        <td>
+          1406
+        </td>
+        <td>
+          7566
+          -
+          7619
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          AsyncDataChunkerEnumerator.this.contOnCont.!=(ReadableByteChannelWrapperImplicits.this.INFINITE_RETRIES).&amp;&amp;(nc.&gt;(AsyncDataChunkerEnumerator.this.contOnCont))
+        </td>
+      </tr><tr>
+        <td>
+          251
+        </td>
+        <td>
+          1407
+        </td>
+        <td>
+          7700
+          -
+          7705
+        </td>
+        <td>
+          Ident
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.nextI
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          nextI
+        </td>
+      </tr><tr>
+        <td>
+          253
+        </td>
+        <td>
+          1408
+        </td>
+        <td>
+          7741
+          -
+          7761
         </td>
         <td>
           Apply
@@ -3419,19 +3586,19 @@ else
           
         </td>
         <td style="background: #F0ADAD">
-          apply(nextI.value, nc)
+          apply(nextIStep, nc)
         </td>
       </tr><tr>
         <td>
-          243
+          253
         </td>
         <td>
-          1403
+          1409
         </td>
         <td>
-          7207
+          7741
           -
-          7229
+          7761
         </td>
         <td>
           Block
@@ -3443,19 +3610,43 @@ else
           
         </td>
         <td style="background: #F0ADAD">
-          apply(nextI.value, nc)
+          apply(nextIStep, nc)
         </td>
       </tr><tr>
         <td>
-          246
+          255
         </td>
         <td>
-          1405
+          1410
         </td>
         <td>
-          7245
+          7788
           -
-          7256
+          7797
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scalaz.iteratee.IterateeT.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          res.value
+        </td>
+      </tr><tr>
+        <td>
+          260
+        </td>
+        <td>
+          1414
+        </td>
+        <td>
+          7827
+          -
+          7838
         </td>
         <td>
           Apply
