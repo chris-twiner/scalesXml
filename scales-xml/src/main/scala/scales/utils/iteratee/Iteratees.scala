@@ -1012,7 +1012,7 @@ object monadHelpers {
     }
 
     implicit val ioCanPerform: CanRunIt[IO] = new CanRunIt[IO] {
-      override def runIt[A](param: IO[A])(implicit F: Monad[IO]): A = param unsafePerformIO()
+      override def runIt[A](param: IO[A])(implicit F: Monad[IO]): A = param.unsafePerformIO()
     }
   }
 
