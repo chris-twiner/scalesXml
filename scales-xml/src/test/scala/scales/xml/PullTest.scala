@@ -476,43 +476,7 @@ on both the qname matching (3 of them) and then the above combos
             cont = _ => fail("was not done " + i + " was " + res)
           )
         }
-/* Id works, shows the functionality is correct
-      val starter = (ionDone &= iteratorEnumerator(iter)).eval
-      isDone(1, starter)
 
-      val res = (extractCont(starter) &= iteratorEnumerator(iter)).eval
-      isDone(1 + 1, res)
-      val r = (foldM[Int, TheF, ResumableIterList[PullType, TheF, QNamesMatch]](res) { (itr, i) =>
-
-            val n1 = (extractCont(itr) &= iteratorEnumerator(iter)).eval
-            Monad[TheF].bind(
-              Monad[TheF].map(n1.value){
-                _ =>
-                  isDone(i, n1)
-                  n1
-              }
-            ){ n1 =>
-              val n2 = (extractCont(n1) &= iteratorEnumerator(iter)).eval
-              Monad[TheF].map(n1.value){
-                _ =>
-                  isDone(i + 1, n2)
-                  at += 1
-                  n2
-              }
-            }
-          } &= iteratorEnumerator((2 to (ourMax - 1)).iterator)) run
-
-      val lastres = (extractCont(r) &= iteratorEnumerator(iter)).eval
-      val step = lastres.value
-      step(
-        done = (x,y) => (x,y) match {
-          case ((Nil,cont), y) =>
-            assertTrue("should have been EOL", y.isEof)
-        },
-        cont = _ => fail("was not done with empty")
-      )
-*/
-      /* trampoline does not, it's not EOF and not Nil */
       val starter = (ionDone &= enum(iter)).eval
       val p =
         for {
@@ -525,6 +489,17 @@ on both the qname matching (3 of them) and then the above combos
 
           r <- (foldM[Int, TheF, ResumableIterList[PullType, TheF, QNamesMatch]](res) { (itr, i) =>
 
+            for{
+              _ <- itr.value // get in the monad
+              n1 = (extractCont(itr) &= enum(iter)).eval
+              _ <- isDone(i, n1)
+              n2 = (extractCont(n1) &= enum(iter)).eval
+              _ <- isDone(i + 1, n2)
+            } yield {
+              at += 1
+              n2
+            }
+            /*
             val n1 = (extractCont(itr) &= enum(iter)).eval
             Monad[TheF].bind(
               Monad[TheF].map(n1.value){
@@ -540,7 +515,7 @@ on both the qname matching (3 of them) and then the above combos
                   at += 1
                   n2
               }
-            }
+            }*/
           } &= iteratorEnumerator((2 to (ourMax - 1)).iterator)) run
 
           lastres = (extractCont(r) &= enum(iter)).eval
@@ -548,8 +523,7 @@ on both the qname matching (3 of them) and then the above combos
         } yield {
           step(
             done = (x,y) => (x,y) match {
-              case ((list,cont), y) =>
-                val l = list
+              case ((Nil,cont), y) =>
                 assertTrue("should have been EOF", y.isEof)
             },
             cont = _ => fail("was not done with empty")
