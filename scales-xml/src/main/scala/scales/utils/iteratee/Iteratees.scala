@@ -881,13 +881,13 @@ object functions {
 
       if (Eof.unapply(y) && !internalEOF) {
         // signal the end here to toMany, don't care about result, tested by testSimpleLoad and testRandomAmounts in AsyncPullTest
-        iterateeT(F.map(returnThis.value) { v =>
-          toMany.foldT(done = (a1, y1) => F.point(false),
+        iterateeT(F.bind(returnThis.value) { v =>
+          toMany.foldT(done = (a1, y1) => returnThis.value,
             cont = k => {
-              k(Eof[E]);
-              F.point(false)
+              F.map(k(Eof[E]).value){
+                _ => v
+              }
             })
-          v
         })
       } else
         returnThis
@@ -934,6 +934,51 @@ object functions {
 
     through(itr)
   }
+
+
+  /**
+   * Drives an iteratee only calling Done when the Done(Element) is not the same reference (element ne prev_element),
+   * allows iteratee's to be side effect free even when trampolining restarts.
+   *
+   * This iteratee _does_ however use state you cannot copy an interim value and re-use it safely.
+   *
+   * When EOF is reached the last used E will be returned (or null should there never have been one)
+   *
+   * @tparam E
+   * @tparam F
+   * @return
+
+  commented as, although it works, it doesn't solve the problem of restarting iteratees sending duplicate state in trampolines
+
+  def referenceDedup[E, F[_]](implicit F: Monad[F]): IterateeT[E, F, E] = {
+    var prev: Option[E] = None
+
+    def usePrev(nextE: E): Option[E] = prev.fold{
+      prev = Some(nextE)
+      prev
+    } {prevI =>
+      if (System.identityHashCode(nextE) != System.identityHashCode(prevI)) {
+        prev = Some(nextE)
+        prev
+      } else None
+    }
+
+    def step(input: Input[E]): IterateeT[E, F, E] =
+      iterateeT(F.point(input(
+        el = e => {
+          val r = usePrev(e)
+          r.fold{
+            Cont(step)
+          }{ e =>
+            Done(e, Empty[E])
+          }
+        },
+        empty = Cont(step),
+        eof = Done(prev.get, Eof[E])
+      )))
+
+    iterateeT(F.point(Cont(step)))
+  } */
 }
 
 trait Iteratees {

@@ -8,6 +8,7 @@ import scalaz.iteratee.StepT.Done
 import scalaz._
 import Scalaz._
 import junit.framework.Assert.assertTrue
+import scales.utils.iteratee.functions.referenceDedup
 import scales.utils.trampolineIteratees._
 
 class AsyncPullTest extends junit.framework.TestCase {
@@ -346,8 +347,6 @@ class AsyncPullTest extends junit.framework.TestCase {
         r <- itr
         // stopped on EOF for the cont - but never pushes the eof to the parser
         ((cont, _, count), remainingCont) = r
-        // for side effect of closing
-        res <- (cont &= dataChunkerEnumerator(wrapped)).run
         //step <- c.value
         step <- cont.value
       } yield {

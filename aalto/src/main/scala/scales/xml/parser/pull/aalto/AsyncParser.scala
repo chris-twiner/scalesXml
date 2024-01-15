@@ -277,7 +277,6 @@ object AsyncParser {
         // Duplicates happen when restarting the processing in the face of trampolines.  Using run without asynchronous empties does not suffer this issue
         None
 
-
     def EOF: ResumableStep[DataChunk, F, EphemeralStream[PullType]] = {
       parser.closeResource
 
@@ -297,20 +296,21 @@ object AsyncParser {
             //println("Did get a large chunk " + new String(e.array, e.offset, e.length, "UTF-8") + " e " + System.identityHashCode(e) + " r " + System.identityHashCode(r))
 
             r(el = es => {
-              // println("got " + es.toList)
-              //println("got el with es " + es.isEmpty + " feeder " + parser.feeder.needMoreInput)
-              Done((es,
-                iterateeT(Monad[F].point(Cont(
-                  step
-                )))), Input.Empty[DataChunk])
-            },
+                // println("got " + es.toList)
+                //println("got el with es " + es.isEmpty + " feeder " + parser.feeder.needMoreInput)
+                Done((es,
+                  iterateeT(Monad[F].point(Cont(
+                    step
+                  )))), Input.Empty[DataChunk])
+              },
               empty =
               //println("empty from input")
               //emptyness
                 Cont(step)
               ,
-              eof =
+              eof = {
                 EOF
+              }
             )
           }
         },
@@ -320,8 +320,9 @@ object AsyncParser {
             //Done((EphemeralStream.empty, Cont(step)), IterV.Empty[DataChunk]) // nothing that can be done on empty
             Cont(step)
           },
-          eof =
+          eof = {
             EOF
+          }
         )
       ))
 
