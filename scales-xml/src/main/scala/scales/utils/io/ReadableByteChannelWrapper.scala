@@ -214,6 +214,12 @@ trait ReadableByteChannelWrapperImplicits {
    */
   class AsyncDataChunkerEnumerator[E, F[_]]( chunker: DataChunker[E], contOnCont: Int = 5 )(implicit F: Monad[F]) extends EnumeratorT[E, F] {
     import scalaz.Scalaz._
+
+    def paired[E,F[_],P](f: F[E], p: P)(implicit F: Monad[F]): F[(E,P)] =
+      F.map(f){
+        (_,p)
+      }
+
     override def apply[A]: StepT[E, F, A] => IterateeT[E, F, A] = i => {
 
       def apply(stepT: StepT[E, F, A], count: Int): IterateeT[E, F, A] = stepT match {
@@ -223,37 +229,49 @@ trait ReadableByteChannelWrapperImplicits {
           val in = input
           iterateeT(F.point(i))
         case Cont(k) =>
-          val realChunk = chunker.nextChunk
+          val realChunk = F.point( chunker.nextChunk )
 
-          val nextChunk = realChunk.asInstanceOf[E]
-          val nextI =
-            if (realChunk.isEOF)
-              // println("actual data was EOF !!!")
-              k(Eof[E])
-            else
-              if (realChunk.isEmpty)
-                k(Empty[E])
-              else
-                k(Element(nextChunk))
+          val nextIPair =
+            F.bind(realChunk) { realChunk =>
+              val nextChunk = realChunk.asInstanceOf[E]
+
+              if (realChunk.isEOF)
+                // println("actual data was EOF !!!")
+                paired(k(Eof[E]).value, realChunk)
+              else if (realChunk.isEmpty) {
+                println("calling k with empty")
+                paired(k(Empty[E]).value, realChunk)
+              } else
+                paired(k(Element(nextChunk)).value, realChunk)
+            }
 
           iterateeT(
-          nextI.value >>= { nextIStep =>
+            nextIPair >>= { nextIStepPair =>
+              val (nextIStep, realChunk) = nextIStepPair
 
-            val res = {
-              val nc =
-                if (realChunk.isEmpty && !isDoneS(nextIStep))
-                  count + 1
-                else
-                  0
+              val res = {
+                val nc =
+                  if (realChunk.isEmpty && !isDoneS(nextIStep))
+                    count + 1
+                  else
+                    0
 
-              if ((contOnCont != INFINITE_RETRIES) && (nc > contOnCont))
-                //println("had cont on cont count, returning")
-                nextI
-              else
-                apply(nextIStep, nc)
+                if ((contOnCont != INFINITE_RETRIES) && (nc > contOnCont)) {
+                  println("had cont on cont count, returning")
+                  // 2 falses then restarts - nextIPair >>= { _ => F.point( nextIStep )}
+                  // 1 false F.point( nextIStep )
+                  // fails every time in io nextIPair.map( _ => nextIStep)
+                  // when it progresses at all we see 2 falses
+                  //nextIPair.map( _ => nextIStep)
+                  //F.point(nextIStep) // 1 false as per trampoline
+                  apply(nextIStep, 0).value
+
+                } else
+                  apply(nextIStep, nc).value
+              }
+              res
             }
-            res.value
-          })
+          )
 
       }
 

@@ -11,7 +11,7 @@ import AsyncXMLStreamReader.EVENT_INCOMPLETE
 import javax.xml.stream.XMLStreamConstants.END_DOCUMENT
 import scales.xml.parser.pull.PullUtils
 import scalaz.{EphemeralStream, Monad}
-import scalaz.iteratee.{Enumerator, Input, Iteratee}
+import scalaz.iteratee.{Enumerator, Input, Iteratee, IterateeT}
 import EphemeralStream.emptyEphemeralStream
 import scalaz.iteratee.Input.{Element, Eof}
 import scalaz.iteratee.Iteratee.{iteratee, iterateeT}
@@ -245,7 +245,6 @@ abstract class AsyncParser(implicit xmlVersion : XmlVersion) extends CloseOnNeed
           Input.Empty[EphemeralStream[PullType]]
         } else // it may have empty after the call
           Element[EphemeralStream[PullType]](res)
-
     }
   }
 
@@ -266,17 +265,6 @@ object AsyncParser {
    */
   def parse[F[_]: Monad](parser: AsyncParser): ResumableIter[DataChunk, F, EphemeralStream[PullType]] = {
 
-    var lastInput: DataChunk = null
-
-    // should we pump?
-    def nextInput(e: DataChunk): Option[DataChunk] =
-      if (lastInput ne e) {
-        lastInput = e
-        Some(e)
-      } else
-        // Duplicates happen when restarting the processing in the face of trampolines.  Using run without asynchronous empties does not suffer this issue
-        None
-
     def EOF: ResumableStep[DataChunk, F, EphemeralStream[PullType]] = {
       parser.closeResource
 
@@ -288,43 +276,42 @@ object AsyncParser {
     }
 
     def step(s: Input[DataChunk]): ResumableIter[DataChunk, F, EphemeralStream[PullType]] =
-      iterateeT(Monad[F].point(
+      iterateeT(
         s(el = e => {
-          val toPump = nextInput(e)
-          toPump.fold(Cont(step)) { e =>
+            //print(new String(e.array, e.offset, e.length, "UTF-8"))
+
             val r = parser.nextInput(e)
             //println("Did get a large chunk " + new String(e.array, e.offset, e.length, "UTF-8") + " e " + System.identityHashCode(e) + " r " + System.identityHashCode(r))
 
-            r(el = es => {
-                // println("got " + es.toList)
-                //println("got el with es " + es.isEmpty + " feeder " + parser.feeder.needMoreInput)
-                Done((es,
-                  iterateeT(Monad[F].point(Cont(
-                    step
-                  )))), Input.Empty[DataChunk])
-              },
-              empty =
-              //println("empty from input")
-              //emptyness
-                Cont(step)
-              ,
-              eof = {
-                EOF
-              }
+            Monad[F].point(
+              r(el = es => {
+                  // println("got " + es.toList)
+                  //println("got el with es " + es.isEmpty + " feeder " + parser.feeder.needMoreInput)
+                  Done((es,
+                    iterateeT(Monad[F].point( Cont( step )))), Input.Empty[DataChunk])
+                },
+                empty =
+                //println("empty from input")
+                //emptyness
+                  Cont(step)
+                ,
+                eof = {
+                  EOF
+                }
+              )
             )
-          }
-        },
+          },
           empty = {
             //println("empty input")
             //emptyness
             //Done((EphemeralStream.empty, Cont(step)), IterV.Empty[DataChunk]) // nothing that can be done on empty
-            Cont(step)
+            Monad[F].point( Cont(step) )
           },
           eof = {
-            EOF
+            Monad[F].point(EOF)
           }
         )
-      ))
+      )
 
     iterateeT( Monad[F].point( Cont(step) ))
   }

@@ -16,7 +16,7 @@ import scales.utilsTest.IterateeTests.{enumWeakStreamF, isDoneT, maxIterations}
 import scales.utils.iteratee.Eval
 import scales.utils._
 import scala.annotation.tailrec
-
+import scales.utils.iteratee.functions.ResumableIterOps
 object StreamHelpers {
 
   def lTo(lower: Long, upper: Long): EphemeralStream[Long] =
@@ -150,7 +150,7 @@ class IterateeTest extends junit.framework.TestCase {
       iterateeT( F.point( Cont(step(i)) ))
     }
 
-    val enum = (i: Int) => enumToMany(sum[Int])(f(i))
+    val enum = (i: Int) => enumToMany(sum[Int].toResumableIter)(f(i))
 
     val p =
       for {
@@ -187,7 +187,7 @@ class IterateeTest extends junit.framework.TestCase {
 
     val p =
       for {
-        r <- (enumToMany(sum[Int])( mapTo[Int, Int]( (i: Int) => Element(iTo(1, i)) ) ) &= iteratorEnumerator(i)).run
+        r <- (enumToMany(sum[Int].toResumableIter)( mapTo[Int, Int]( (i: Int) => Element(iTo(1, i)) ).toResumableIter ) &= iteratorEnumerator(i)).run
         (res, cont: ResumableIter[Int, EphemeralStream[Int]]) = r
         done <- isDone(cont)
       } yield {
@@ -204,7 +204,7 @@ class IterateeTest extends junit.framework.TestCase {
 
     val p =
       for {
-        r <- (enumToMany(sum[Int])( mapTo[Int, Int]( (i: Int) => Eof[EphemeralStream[Int]] ) ) &= iteratorEnumerator(i)).run
+        r <- (enumToMany(sum[Int].toResumableIter)( mapTo[Int, Int]( (i: Int) => Eof[EphemeralStream[Int]] ).toResumableIter ) &= iteratorEnumerator(i)).run
         (res, cont: ResumableIter[Int, EphemeralStream[Int]]) = r
         done <- isDone(cont)
       } yield {
@@ -228,7 +228,7 @@ class IterateeTest extends junit.framework.TestCase {
 
     val p =
       for {
-        r <- (enumToMany(sum[Long])(mapTo[Long, Long]((_: Long) => Element(lTo(1L, 100L)))) &= iteratorEnumerator(i)).run
+        r <- (enumToMany(sum[Long].toResumableIter)(mapTo[Long, Long]((_: Long) => Element(lTo(1L, 100L))).toResumableIter) &= iteratorEnumerator(i)).run
         (res, cont: ResumableIter[Long, Long]) = r
         done <- isDone(cont)
       } yield {
@@ -263,7 +263,7 @@ class IterateeTest extends junit.framework.TestCase {
 
     val p =
       for {
-        r <- (enumToMany(sum) (mapTo[Long, Long]((_: Long) => Element(lTo(1L, 100000L)))) &= iteratorEnumerator (i)).run
+        r <- (enumToMany(sum) (mapTo[Long, Long]((_: Long) => Element(lTo(1L, 100000L))).toResumableIter) &= iteratorEnumerator (i)).run
         (res, cont: ResumableIter[Long, Long]) = r
         r2 <- cont.run
         (res2, cont2: ResumableIter[Long, Long]) = r2
@@ -307,7 +307,7 @@ class IterateeTest extends junit.framework.TestCase {
     val oitr = enumToMany(echo)(mapTo[Long, Long] {
           (x: Long) =>
             Element(lTo(x, x + 2L))
-        }) &= iteratorEnumerator(source)
+        }.toResumableIter) &= iteratorEnumerator(source)
 
     val p =
       for {
@@ -526,7 +526,7 @@ class IterateeTest extends junit.framework.TestCase {
 
     type ITER = ResumableIter[Int, Option[Int]]
 
-    val itrOdd : ITER  = find[Int]( (x : Int) => x % 2 == 1 )
+    val itrOdd : ITER  = find[Int]( (x : Int) => x % 2 == 1 ).toResumableIter
 
     def isDone( i : Int, res : ITER) =
       isDoneT(i, res){ x =>

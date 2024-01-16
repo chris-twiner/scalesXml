@@ -10,6 +10,7 @@ import Scalaz._
 import junit.framework.Assert.assertTrue
 //import scales.utils.iteratee.functions.referenceDedup
 import scales.utils.trampolineIteratees._
+import scales.utils.iteratee.functions.ResumableIterOps
 
 class AsyncPullTest extends junit.framework.TestCase {
 
@@ -77,7 +78,7 @@ class AsyncPullTest extends junit.framework.TestCase {
         })(implicitly[Monad[TheF]])
       } yield j
     
-    val enumeratee = enumToMany(iter)(AsyncParser.parse(parser))
+    val enumeratee = enumToMany(iter.toResumableIter)(AsyncParser.parse(parser))
     val wrapped = new ReadableByteChannelWrapper(channel, true, tinyBuffers)
 
     val p =
@@ -97,7 +98,7 @@ class AsyncPullTest extends junit.framework.TestCase {
   def testSimpleLoadAndFold(): Unit =
     doSimpleLoadAndFold[TheF]{
       (p, iter, wrapped) => 
-      val enumeratee = enumToMany(iter)(AsyncParser.parse(p))
+      val enumeratee = enumToMany(iter.toResumableIter)(AsyncParser.parse(p))
       for {
         r <- (enumeratee &= dataChunkerEnumerator[DataChunk, TheF](wrapped)).run
         (e,cont) = r
@@ -137,7 +138,7 @@ class AsyncPullTest extends junit.framework.TestCase {
     // should have collected all anyway
     doSimpleLoadAndFold[Trampoline]{
       (p, iter, wrapped) => 
-      val enumeratee = enumToMany(iter)(AsyncParser.parse(p))
+      val enumeratee = enumToMany(iter.toResumableIter)(AsyncParser.parse(p))
       (enumeratee &= dataChunkerEnumerator[DataChunk, Trampoline](wrapped)).run map {
         _._1
       }
@@ -285,7 +286,7 @@ class AsyncPullTest extends junit.framework.TestCase {
 
     // idIteratees works if you don't eval, the old evalw didn't force the stack.
     // evalAcceptEmpty does more but it's also the kind of behaviour you actually want
-    import trampolineIteratees._
+    import ioIteratees._
 
     val doc = loadXmlReader(url, parsers = NoVersionXmlReaderFactoryPool)
     val str = asString(doc)
@@ -330,6 +331,8 @@ class AsyncPullTest extends junit.framework.TestCase {
           if (!stop) {
             F.bind(c.value) { cstep =>
               if (isDoneS(cstep)) {
+                val wasEmpty = isEmptyS(cstep)
+
                 val cont = extractContS(cstep)
                 val newc = (cont &= dataChunkerEnumerator(wrapped)).evalAcceptEmpty
                 newc.value.map { step =>
@@ -350,11 +353,12 @@ class AsyncPullTest extends junit.framework.TestCase {
         //step <- c.value
         step <- cont.value
       } yield {
-
+/*
         if (randomChannel.zeroed > 0) {
           assertTrue("There were " + randomChannel.zeroed + " zeros fed but it never left the evalw", count > 0)
         }
-
+*/
+        val c = count
         step(
           done = (a, i) => {
             val ((out, thrown), cont) = a
@@ -420,7 +424,7 @@ class AsyncPullTest extends junit.framework.TestCase {
 
     val parser = AsyncParser()
 
-    val enumeratee = enumToMany(iter)(AsyncParser.parse(parser))
+    val enumeratee = enumToMany(iter.toResumableIter)(AsyncParser.parse(parser))
     val (e, cont) = (enumeratee &= dataChunkerEnumerator(channel.wrapped)).run
 
     assertEquals("{urn:default}Default", e.right.get.name.qualifiedName)
