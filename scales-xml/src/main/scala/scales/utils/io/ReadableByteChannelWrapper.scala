@@ -4,11 +4,10 @@ import scales.utils._
 import resources._
 import scalaz.{Id, Monad}
 import scalaz.iteratee.Input.{Element, Empty, Eof}
-import scalaz.iteratee.Iteratee.{iteratee, iterateeT}
+import scalaz.iteratee.Iteratee.{enumEofT, enumOne, iteratee, iterateeT}
 import scalaz.iteratee.StepT.{Cont, Done}
 import scalaz.iteratee.{Enumerator, EnumeratorT, Input, Iteratee, IterateeT, StepT}
-
-import scales.utils.iteratee.functions.isDoneS
+import scales.utils.iteratee.functions.{ResumableIter, isDoneS}
 
 import java.io._
 import java.nio.channels._
@@ -222,8 +221,9 @@ trait ReadableByteChannelWrapperImplicits {
 
     override def apply[A]: StepT[E, F, A] => IterateeT[E, F, A] = i => {
 
-      def apply(stepT: StepT[E, F, A], count: Int): IterateeT[E, F, A] = stepT match {
-        case i if chunker.underlyingClosed || chunker.isClosed => iterateeT(F.point(i))
+      def apply(count: Int)(stepT: StepT[E, F, A]): IterateeT[E, F, A] = stepT match {
+        case i if chunker.underlyingClosed || chunker.isClosed =>
+          iterateeT(F.point(i))
         case i@Done(acc, input) =>
           val c = acc
           val in = input
@@ -238,10 +238,9 @@ trait ReadableByteChannelWrapperImplicits {
               if (realChunk.isEOF)
                 // println("actual data was EOF !!!")
                 paired(k(Eof[E]).value, realChunk)
-              else if (realChunk.isEmpty) {
-                println("calling k with empty")
+              else if (realChunk.isEmpty)
                 paired(k(Empty[E]).value, realChunk)
-              } else
+              else
                 paired(k(Element(nextChunk)).value, realChunk)
             }
 
@@ -257,25 +256,27 @@ trait ReadableByteChannelWrapperImplicits {
                     0
 
                 if ((contOnCont != INFINITE_RETRIES) && (nc > contOnCont)) {
-                  println("had cont on cont count, returning")
-                  // 2 falses then restarts - nextIPair >>= { _ => F.point( nextIStep )}
-                  // 1 false F.point( nextIStep )
-                  // fails every time in io nextIPair.map( _ => nextIStep)
-                  // when it progresses at all we see 2 falses
-                  //nextIPair.map( _ => nextIStep)
-                  //F.point(nextIStep) // 1 false as per trampoline
-                  apply(nextIStep, 0).value
+                  nextIStep(done = (x, y) => {
+                      val thex = x
+                      val they = y
+                      nextIStep.pointI
+                    },
+                    cont = k => {
+                      println("attempt to trigger done + cont restart state")
 
+                      (k(Empty[E]) >>== apply(nc))
+                    }
+                  )
                 } else
-                  apply(nextIStep, nc).value
+                  apply(nc)(nextIStep)
               }
-              res
+              res.value
             }
           )
-
       }
 
-      apply(i, 0)
+      //println("i's ident " + System.identityHashCode(i))
+      apply(0)(i)
     }
   }
 

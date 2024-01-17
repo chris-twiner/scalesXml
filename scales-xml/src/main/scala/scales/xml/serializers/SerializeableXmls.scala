@@ -57,7 +57,7 @@ object StreamSerializer {
           status.copy(output.copy(currentMappings = output.currentMappings.tail,
               path = output.path.tail),
               serializer.endElement(endElem.name, output.path), false, Some(currentEvent))
-        case (Some(Right(endElem)), Left(i: XmlItem)) if status.isEmpty => // it's already closed
+        case (Some(Right(endElem)), Left(_)) if status.isEmpty => // it's already closed
           status.copy(prev = Some(currentEvent))
         case (Some(Right(endElem)), Left(x: Elem)) if !status.isEmpty => // unrelated elements
           status.copy(output.copy(currentMappings = output.currentMappings.tail,

@@ -16,8 +16,8 @@ import scales.utils.iteratee.functions.{ResumableIter, ResumableStep}
  */ 
 trait SerializingIter {
 
-  type SerialIterT[F[_]] = ResumableIter[PullType, F, (XmlOutput, Option[Throwable])]
-  type SerialStepT[F[_]] = ResumableStep[PullType, F, (XmlOutput, Option[Throwable])]
+  type SerialIterT[F[_]] = IterateeT[PullType, F, (XmlOutput, Option[Throwable])]
+  type SerialStepT[F[_]] = StepT[PullType, F, (XmlOutput, Option[Throwable])]
 
   import java.nio.charset.Charset
 
@@ -104,11 +104,11 @@ trait SerializingIter {
 
     var empties = 0
 
-    def done(status: StreamStatus, cont: SerialIterT[F]): F[SerialStepT[F]] = {
+    def done(status: StreamStatus): F[SerialStepT[F]] = {
       // give it back
       closer()
       //println("empties was "+empties)
-      F.point(Done(((status.output, status.thrown), cont), Eof[PullType]))
+      F.point(Done((status.output, status.thrown), Eof[PullType]))
     }
 
     var theStatus: StreamStatus = null
@@ -116,7 +116,7 @@ trait SerializingIter {
     def go(fromStart: Boolean, status: StreamStatus)(s: Input[PullType]): SerialIterT[F] =
       iterateeT(
         s(el = e => {
-            if (status.thrown.isDefined) done(status, iterateeT(F.point(Cont(go(false, status)))))
+            if (status.thrown.isDefined) done(status)
             else {
               val r = F.point{
                 val r = StreamSerializer.pump(e, status, serializer)
@@ -126,27 +126,26 @@ trait SerializingIter {
 
               F.map(r) {r=>
                 theStatus = r
-                val f = go(false, r)_
-                Cont(f)
+                Cont(go(false, r))
               }
             }
           },
           empty = {
             empties += 1
-            val nstatus = if (theStatus eq null) status else theStatus
-            println("outitr empty " +nstatus.prev + " from start " + fromStart )
-            val f = go(false, nstatus) _
-            F.point(Cont(f))
+            //val nstatus = if (theStatus eq null) status else theStatus
+            println("outitr empty " +status.prev + " from start " + fromStart )
+            //println("outitr empty " +nstatus.prev + " from start " + fromStart )
+            F.point(Cont(go(false, status)))
           },
           eof = {
-            if (status.thrown.isDefined) done(status, iterateeT(F.point(Cont(go(false, status)))))
+            if (status.thrown.isDefined) done(status)
             else {
               val r = StreamSerializer.pump(StreamSerializer.EOF, status, serializer)
               val opt = serializeMisc(r.output, doc.end.misc, serializer)._2
 
               val lastStatus = r.copy(thrown = opt)
 
-              done(lastStatus, iterateeT(F.point(Cont(go(false, lastStatus)))))
+              done(lastStatus)
             }
           }
         )

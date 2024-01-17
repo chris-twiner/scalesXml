@@ -53,6 +53,24 @@ class AsyncPullTest extends junit.framework.TestCase {
   import resources._
 
   /**
+   * returns the cont and drops the input parameter or returns Done
+   */
+  trait EvalW[WHAT, F[_],RETURN] {
+
+    val orig : IterateeT[WHAT, F, RETURN]
+
+    def evalw(implicit F: Monad[F]) : IterateeT[WHAT, F, RETURN] =
+      iterateeT(
+        F.bind(orig.value){s => s(done = (x, y) => F.point( Done(x,y)),
+        cont = k => orig.value)}
+      )
+  }
+
+  implicit def toEvalw[WHAT, F[_], RETURN]( i : IterateeT[WHAT, F, RETURN] ) = new EvalW[WHAT, F, RETURN] {
+    lazy val orig = i
+  }
+
+  /**
    * ensure that the enumerator doesn't break basic assumptions when it can get
    * all the data
    */
@@ -285,7 +303,6 @@ class AsyncPullTest extends junit.framework.TestCase {
     val url = sresource(this, "/data/BaseXmlTest.xml")
 
     // idIteratees works if you don't eval, the old evalw didn't force the stack.
-    // evalAcceptEmpty does more but it's also the kind of behaviour you actually want
     import ioIteratees._
 
     val doc = loadXmlReader(url, parsers = NoVersionXmlReaderFactoryPool)
@@ -300,7 +317,9 @@ class AsyncPullTest extends junit.framework.TestCase {
     val strout = new java.io.StringWriter()
     val (closer, iter) = pushXmlIter[TheF]( strout , doc )
 
-    val enumeratee = enumToMany(iter)(AsyncParser.parse(parser))
+    val magicPull = FullChunk(Array.ofDim[Byte](0))
+
+    val enumeratee = enumToMany(iter.toResumableIter)(AsyncParser.parse(parser))
     val wrapped = new ReadableByteChannelWrapper(randomChannel, true, tinyBuffers)
 
     /*
@@ -309,7 +328,7 @@ class AsyncPullTest extends junit.framework.TestCase {
      */
     val readableByteChannelEnumerator = new AsyncDataChunkerEnumerator[DataChunk, TheF](wrapped, 6 )
 
-    val cstable = (enumeratee &= readableByteChannelEnumerator).evalAcceptEmpty
+    val cstable = (enumeratee &= readableByteChannelEnumerator).evalw
 
     var c = cstable
 
@@ -330,16 +349,13 @@ class AsyncPullTest extends junit.framework.TestCase {
           val (c, stop, count) = triple
           if (!stop) {
             F.bind(c.value) { cstep =>
-              if (isDoneS(cstep)) {
-                val wasEmpty = isEmptyS(cstep)
+              val wasEmpty = isEmptyS(cstep)
 
-                val cont = extractContS(cstep)
-                val newc = (cont &= dataChunkerEnumerator(wrapped)).evalAcceptEmpty
-                newc.value.map { step =>
-                  (newc, isEOFS(step), count)
-                }
-              } else
-                F.point(triple.copy(_3 = count + 1))
+              val cont = if (isDoneS(cstep)) extractContS(cstep) else c
+              val newc = (cont &= dataChunkerEnumerator(wrapped)).evalw
+              newc.value.map { step =>
+                (newc, isEOFS(step), if (isDoneS(cstep)) count else count + 1)
+              }
             }
           } else
             F.point(triple)
@@ -353,12 +369,11 @@ class AsyncPullTest extends junit.framework.TestCase {
         //step <- c.value
         step <- cont.value
       } yield {
-/*
-        if (randomChannel.zeroed > 0) {
+
+/*        if (randomChannel.zeroed > 0) {
           assertTrue("There were " + randomChannel.zeroed + " zeros fed but it never left the evalw", count > 0)
         }
 */
-        val c = count
         step(
           done = (a, i) => {
             val ((out, thrown), cont) = a
@@ -398,7 +413,7 @@ class AsyncPullTest extends junit.framework.TestCase {
     val strout = new java.io.StringWriter()
     val (closer, iter) = pushXmlIter[Id]( strout , doc )
 
-    val enumeratee = enumToMany(iter)(AsyncParser.parse(parser))
+    val enumeratee = enumToMany(iter.toResumableIter)(AsyncParser.parse(parser))
     val ((out, thrown), cont) = (enumeratee &= dataChunkerEnumerator(channel)).runEval
 
     // we can swallow the lot, but endmiscs don't know there is more until the main loop, which needs evaling
@@ -450,7 +465,7 @@ class AsyncPullTest extends junit.framework.TestCase {
     val strout = new java.io.StringWriter()
     val (closer, iter) = pushXmlIter[Id]( strout , doc )
 
-    val enumeratee = enumToMany(iter)(parser.iteratee)
+    val enumeratee = enumToMany(iter.toResumableIter)(parser.iteratee)
     val ((out, thrown), cont) = (enumeratee &= dataChunkerEnumerator(channel)).run
 
     // we can swallow the lot

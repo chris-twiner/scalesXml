@@ -74,7 +74,7 @@ object EphemeralStreamEnum {
  */
 trait Eval[WHAT, F[_],RETURN] {
 
-  val orig : IterateeT[WHAT, F, RETURN]
+  def orig : IterateeT[WHAT, F, RETURN]
 
   /**
    * Enumerates over Empty, evaluates fully until the iteratee returns Done with a value (Sending Eof)
@@ -88,22 +88,11 @@ trait Eval[WHAT, F[_],RETURN] {
         , done = (a, i) => F.point(Done(a, i))
       )))
 
-  /**
-   * Enumerates over Empty, Evaluates partially accepting a lack of progress (Sending Empty).
-   * @param F
-   * @return
-   */
-  def evalAcceptEmpty(implicit F: Monad[F]) : IterateeT[WHAT, F, RETURN] =
-    iterateeT(
-      F.bind((orig &= empty[WHAT,F]).value)((s: StepT[WHAT, F, RETURN]) => s.fold(
-        cont = k => k(Empty[WHAT]).value
-        , done = (a, i) => F.point(Done(a, i))
-      )))
 }
 
 trait IterateeImplicits {
-  implicit def toEval[WHAT, F[_], RETURN]( i : IterateeT[WHAT, F, RETURN] ) = new Eval[WHAT, F, RETURN] {
-    lazy val orig = i
+  implicit def toEval[WHAT, F[_], RETURN]( i : => IterateeT[WHAT, F, RETURN] ) = new Eval[WHAT, F, RETURN] {
+    def orig = i
   }
 
 }
@@ -322,6 +311,7 @@ object functions {
      */
     @inline def toResumableIter(implicit F: Monad[F]): ResumableIter[E,F,A] =
       scales.utils.iteratee.functions.toResumableIter[E,F,A](oiter)
+
   }
 
   /**
@@ -336,17 +326,14 @@ object functions {
     def step(iter: IterateeT[E, F, A])(s: Input[E]): ResumableIter[E, F, A] = {
       val next = iter.foldT[ResumableStep[E, F, A]]( // need to evaluate s in the case of done....
         done = (x, y) => {
-          val si = F.point {
+          val si = {
             (s: Input[E]) =>
-            step(iter)(s).value
+              step(iter)(s).value
           }
 
-          val fstep = F.map(si) {
-            si => Cont( (i: Input[E]) => iterateeT( si(i)) )
-          }
-          F.map(fstep) {
-            step =>
-              Done((x, iterateeT(fstep)), y)
+          F.point {
+            val fstep = F.point(Cont((i: Input[E]) => iterateeT(si(i))))
+            Done((x, iterateeT(fstep)), y)
           }
         },
         cont = k => {
@@ -879,9 +866,11 @@ object functions {
             },
             empty = {println("contk - empty nexti")
               val r = k(Empty[A])
+              nextI(r, empty, toMany)
+              /*
               iterateeT(F.bind(r.value) { rstep =>
                 nextI(r, empty, toMany).value
-              })},
+              })*/},
             eof = nextI(k(Eof[A]), empty, toMany)
           )
         )))
