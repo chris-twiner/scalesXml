@@ -2,12 +2,13 @@ package scales.xml.parser.pull.aalto
 
 import scalaz.Free.Trampoline
 import scalaz.iteratee.Input.{Element, Empty, Eof}
-import scalaz.iteratee.{Iteratee, IterateeT, StepT}
-import scalaz.iteratee.Iteratee.{iterateeT, peek}
-import scalaz.iteratee.StepT.Done
+import scalaz.iteratee.{EnumeratorT, Input, Iteratee, IterateeT, StepT}
+import scalaz.iteratee.Iteratee.{emptyInput, eofInput, iterateeT, peek}
+import scalaz.iteratee.StepT.{Cont, Done}
 import scalaz._
 import Scalaz._
 import junit.framework.Assert.assertTrue
+import scales.utils.iteratee.monadHelpers.Performer
 //import scales.utils.iteratee.functions.referenceDedup
 import scales.utils.trampolineIteratees._
 import scales.utils.iteratee.functions.ResumableIterOps
@@ -58,12 +59,20 @@ class AsyncPullTest extends junit.framework.TestCase {
   trait EvalW[WHAT, F[_],RETURN] {
 
     val orig : IterateeT[WHAT, F, RETURN]
-
+/*
     def evalw(implicit F: Monad[F]) : IterateeT[WHAT, F, RETURN] =
       iterateeT(
         F.bind(orig.value){s => s(done = (x, y) => F.point( Done(x,y)),
-        cont = k => orig.value)}
-      )
+        ///cont = k => orig.value)}
+          cont = k => F.point(scalaz.iteratee.StepT.Cont(k)))}
+      )*/
+
+    def evalw(implicit F: Monad[F]) : IterateeT[WHAT, F, RETURN] =
+      iterateeT(
+        F.bind((orig &= empty[WHAT,F]).value)((s: StepT[WHAT, F, RETURN]) => s.fold(
+          cont = k => k(Empty[WHAT]).value
+          , done = (a, i) => F.point(Done(a, i))
+        )))
   }
 
   implicit def toEvalw[WHAT, F[_], RETURN]( i : IterateeT[WHAT, F, RETURN] ) = new EvalW[WHAT, F, RETURN] {
@@ -294,12 +303,487 @@ class AsyncPullTest extends junit.framework.TestCase {
   }
 
 
+  var timesWeStarted = 0
+
+  def definitelyNotFold[E, F[_], A](init: A)(f: (A, E) => F[A])(implicit F: Monad[F]): IterateeT[E, F, A] = {
+    def step(acc: A, fromStart: Boolean): Input[E] => IterateeT[E, F, A] = s =>
+      s(el = e => {
+        val r = f(acc, e)
+        iterateeT(F.bind(r) { r =>
+          cont(step(r, false)).value
+        })
+      },
+        empty = {
+          if (fromStart) {
+            timesWeStarted += 1
+          }
+          println("conted with "+acc + " from start "+fromStart)
+          cont(step(acc, false))
+        },
+        eof = done(acc, eofInput[E]))
+    cont(step(init, true))
+  }
+
+  def enumOddsOnly[F[_]: Monad](i: Int) = new EnumeratorT[Int, F]{
+    def apply[A] = {
+      /* both without the >>== and with the >>== it fails */
+      def go(acc: Int): StepT[Int, F, A] => IterateeT[Int,F, A] =
+        step => step.mapCont { k =>
+          if (acc < 5) {
+            if (i % 2 == 0)
+              k(elInput(i)) >>== go(acc + 1)
+            else
+              // signal the empty
+              k(emptyInput[Int])
+            //step.pointI
+
+          } else
+            k(elInput(i))
+        }
+
+      go(0)
+    }
+  }
+
+
+  def testEnumeratorPausing_foldM(): Unit = {
+    import scalaz._
+    import iteratee.Iteratee.{fold => ifold, foldM => ifoldM, length, enumOne, eofInput, emptyInput, cont, done}
+    import iteratee.{EnumeratorT, Input, StepT}
+    import StepT.{scont,sdone}
+
+    import Scalaz._
+
+    import ioIteratees._
+    val F = implicitly[Monad[TheF]]
+
+    val len = 20
+
+    timesWeStarted = 0
+ // will restart 21 times
+    val r =
+      (ifoldM[Int, TheF, (IterateeT[Int, TheF, Int], Boolean, Int)]((definitelyNotFold[Int, TheF, Int](0) { (a, b) => F.point(a + b) }, false, 1)) {
+        (triple, i) =>
+          val (c, eof, count) = triple
+          val newc = F.point((c &= enumOddsOnly(count)))
+          newc.flatMap { newc =>
+            val isEof = isEOF(newc)
+            isEof.map { isEof =>
+              (newc, isEof, count + 1)
+            }
+          }
+      } &= scalaz.iteratee.Iteratee.enumStream[Int, TheF](0 to len toStream)).run
+
+    val p =
+      for {
+        resIterF <- r
+        (resIter, eof, count) = resIterF
+        //((cont, _, count), contR) = extrresIter
+        res <- extract(resIter.toResumableIter)
+      } yield {
+
+        if (timesWeStarted > 1){  // one for a starting empty, 0 for starting value, for some reason using this within assert doesn't actually fail
+          fail(s"we restarted $timesWeStarted times if")
+        }
+        assert(s"res was $res", res.get == 110)
+      }
+
+    p.runIt
+
+
+  }
+
+
+  def testEnumeratorPausing_foldMPlay(): Unit = {
+    import scalaz._
+    import iteratee.Iteratee.{fold => ifold, foldM => ifoldM, length, enumOne, eofInput, emptyInput, cont, done}
+    import iteratee.{EnumeratorT, Input, StepT}
+    import StepT.{scont,sdone}
+
+    import Scalaz._
+
+    import ioIteratees._
+    val F = implicitly[Monad[TheF]]
+
+    val len = 20
+
+    timesWeStarted = 0
+
+    val itr = definitelyNotFold[Int, TheF, Int](0) { (a, b) => F.point(a + b) }
+
+    val r =
+      (ifoldM[Int, TheF, (IterateeT[Int, TheF, Int], Boolean, Int)]((itr, false, 0)) {
+        (triple, i) =>
+          val (c, eof, count) = triple
+          F.bind(c.value) { cstep =>
+            val newc = iterateeT(F.point(cstep)) &= enumOddsOnly(count)
+            F.map(newc.value) { newcStep =>
+              val isEof = isEOFS(newcStep)
+              (newc, isEof, count + 1)
+            }
+          }
+/* only has two restarts
+          F.bind(c.value) { cstep =>
+            val newc = iterateeT(F.point(cstep)) &= enumOddsOnly(count)
+            F.map(newc.value) { newcStep =>
+              val isEof = isEOFS(newcStep)
+              (newc, isEof, count + 1)
+            }
+          }*/
+      } &= scalaz.iteratee.Iteratee.enumStream[Int, TheF](0 to len toStream)).run
+
+    val p =
+      for {
+        resIterF <- r
+        (resIter, eof, count) = resIterF
+        //((cont, _, count), contR) = extrresIter
+        res <- extract(resIter.toResumableIter)
+      } yield {
+
+        if (timesWeStarted > 1){  // one for a starting empty, 0 for starting value, for some reason using this within assert doesn't actually fail
+          fail(s"we restarted $timesWeStarted times if")
+        }
+        assert(s"res was $res", res.get == 110)
+      }
+
+    p.runIt
+
+
+  }
+
+  def testEnumeratorPausing_foldIM(): Unit = {
+    import scalaz._
+    import iteratee.Iteratee.{fold => ifold, foldM => ifoldM, length, enumOne, eofInput, emptyInput, cont, done}
+    import iteratee.{EnumeratorT, Input, StepT}
+    import StepT.{scont,sdone}
+
+    import Scalaz._
+
+    import ioIteratees._
+    val F = implicitly[Monad[TheF]]
+
+    val len = 20
+    timesWeStarted = 0
+
+    def foldIM[E, F[_], A](f: (E, A) => F[A])(init: A, stopOn: A => Boolean = (_: A) => true)(implicit F: Monad[F]): IterateeT[E, F, A] = {
+      def step(current: A, fromStart: Boolean): Input[E] => IterateeT[E, F, A] = s =>
+        s(
+          el = e =>
+            IterateeT.IterateeTMonadTrans[E].liftM(f(e, current)) flatMap { i =>
+                cont(step(i, false))
+
+            },
+          empty = {
+            println("got a foldIM empty " + fromStart)
+            cont(step(current, false))
+          },
+          eof = done(current, Eof[E])
+        )
+
+      cont(step(init, true))
+    }
+
+
+    def foldM[E, F[_], A](init: A)(f: (A, E) => F[A])(implicit m: Monad[F]): IterateeT[E, F, A] = {
+      def step(acc: A): Input[E] => IterateeT[E, F, A] = s =>
+        s(el = e => IterateeT.IterateeTMonadTrans[E].liftM(f(acc, e)) flatMap (a => cont(step(a))),
+          empty = cont(step(acc)),
+          eof = done(acc, eofInput[E]))
+      cont(step(init))
+    }
+
+    // fold works, repeatUntil works - repeatUntilIM does not when bind is used and the evaluation is not inside point
+    val r =
+      // fails
+      (foldM[Int, TheF, (IterateeT[Int, TheF, Int], Boolean, Int)]((definitelyNotFold[Int, TheF, Int](0){ (a,b) => F.point(a + b)}, false, 1)) {
+        (triple, p) =>
+          val (c, stop, count) = triple
+          val newc = F.point( (c &= enumOddsOnly(p)) )
+          newc.flatMap { newc =>
+            val isEof = isEOF(newc)
+            isEof.map { isEof =>
+              val thep = p
+              println("we done looped")
+              (newc, isEof, count + 1)
+            }
+          }
+      } &= scalaz.iteratee.Iteratee.enumStream[Int, TheF](0 to len toStream)).run
+
+    // repeat
+    val p =
+      for {
+        resIter <- r
+        //((cont, _, count), contR) = resIter
+        (cont, _, count) = resIter
+        _ = println("before res extract")
+        res <- extract(cont.toResumableIter)
+      } yield {
+
+        if (timesWeStarted > 1){  // one for a starting empty, 0 for starting value, for some reason using this within assert doesn't actually fail
+          fail(s"we restarted $timesWeStarted times if")
+        }
+
+        assert(s"count was $count", count == 21)
+        assert(s"res was $res", res == 660)
+      }
+
+    p.runIt
+  }
+
+
+  def testEnumeratorPausingPlay(): Unit = {
+    import scalaz._
+    import iteratee.Iteratee.{fold => ifold, foldM => ifoldM, length, enumOne, eofInput, emptyInput, cont, done}
+    import iteratee.{EnumeratorT, Input, StepT}
+    import StepT.{scont,sdone}
+
+    import Scalaz._
+
+    import ioIteratees._
+    val F = implicitly[Monad[TheF]]
+
+    val len = 20
+
+    var timesWeStarted = 0
+
+    def definitelyNotFold[E, F[_], A](init: A)(f: (A, E) => F[A])(implicit F: Monad[F]): IterateeT[E, F, A] = {
+      def step(acc: A, fromStart: Boolean): Input[E] => IterateeT[E, F, A] = s =>
+        s(el = e => {
+            val r = f(acc, e)
+            iterateeT(F.bind(r) { r =>
+              cont(step(r, false)).value
+            })
+          },
+          empty = {
+            if (fromStart) {
+              timesWeStarted += 1
+            }
+            cont(step(acc, false))
+          },
+          eof = done(acc, eofInput[E]))
+      cont(step(init, true))
+    }
+
+    def enumOddsOnly(i: Int) = new EnumeratorT[Int, TheF]{
+      def apply[A] = {
+/*
+        def go(acc: Int): StepT[Int, TheF, A] => IterateeT[Int,TheF, A] = {
+          case step if (acc < 5) =>
+            step.mapCont { k =>
+              if (i % 2 == 0)
+                k(elInput(i)) >>== go(acc + 1)
+              else
+                // signal the empty
+                step.pointI
+                //k(emptyInput[Int])
+            }
+          case step => step.mapCont { k =>
+            k(elInput(i))
+          }
+        }*/
+/* works
+        def go(acc: Int): StepT[Int, TheF, A] => IterateeT[Int,TheF, A] = {
+          case step => step.mapCont { k =>
+            if (acc < 5) {
+              if (i % 2 == 0)
+                k(elInput(i)) >>== go(acc + 1)
+              else {
+                // signal the empty
+                step.pointI//
+              }
+
+            } else
+              k(elInput(i))
+          }
+        }
+*/
+        /* both without the >>== and with the >>== it fails */
+        def go(acc: Int): StepT[Int, TheF, A] => IterateeT[Int,TheF, A] =
+          step => step.mapCont { k =>
+            if (acc < 5) {
+              if (i % 2 == 0)
+                k(elInput(i)) >>== go(acc + 1)
+              else
+                // signal the empty
+                k(emptyInput[Int])
+                //step.pointI
+
+            } else
+              k(elInput(i))
+          }
+
+        go(0)
+      }
+    }
+
+    // fold works, repeatUntil works - repeatUntilIM does not when bind is used and the evaluation is not inside point
+    val r =
+  /*  works
+      (ifoldM[Int, TheF, IterateeT[Int, TheF, Int]](definitelyNotFold[Int, TheF, Int](0) { (a, b) => F.point(a + b) }) {
+        (c, i) =>
+          val newc = F.point((c &= enumOddsOnly(i)))
+          newc.flatMap { newc =>
+            val isEof = isEOF(newc)
+            isEof.map { isEof =>
+              newc
+            }
+          }
+      } &= scalaz.iteratee.Iteratee.enumStream[Int, TheF](0 to len toStream)).run
+*/
+  /*    (ifoldM[Int, TheF, IterateeT[Int, TheF, Int]](definitelyNotFold[Int, TheF, Int](0) { (a, b) => F.point(a + b) }) {
+        (c, i) =>
+          val newcF = F.point( (c &= enumOddsOnly(i)) )
+
+          F.map(newcF) { newc =>
+            iterateeT(
+              F.map(newc.value) {
+                step =>
+                  step
+              }
+            )
+          }
+      } &= scalaz.iteratee.Iteratee.enumStream[Int, TheF](0 to len toStream)).run
+*/
+    /* works
+      (ifoldM[Int, TheF, (IterateeT[Int, TheF, Int], Int)]((definitelyNotFold[Int, TheF, Int](0) { (a, b) => F.point(a + b) }, 0)) {
+        (pair, i) =>
+          val (c, count) = pair
+          val newc = (c &= enumOddsOnly(i)).evalw
+          val isF = isDone(newc)
+          F.map(isF) { is =>
+            (newc, if (!is) count + 1 else count)
+          }
+      } &= scalaz.iteratee.Iteratee.enumStream[Int, TheF](0 to len toStream)).run
+*/
+/*      (ifold[Int, TheF, IterateeT[Int, TheF, Int]]( definitelyNotFold[Int, TheF, Int](0){ (a,b) => F.point(a + b)} ){
+        (iter, i) =>
+          iter &= enumOddsOnly(i)
+      } &= scalaz.iteratee.Iteratee.enumStream[Int, TheF](0 to len toStream)).run*/
+      /*repeatUntil((definitelyNotFold[Int, TheF, Int](0) { (a, b) => F.point(a + b) }, false, 1)) {
+        triple =>
+          val (c, stop, count) = triple
+          val newc = (c &= enumOddsOnly(count))
+          (newc, false, count + 1)
+      }(_._3 == 21) */
+/*
+      repeatUntilM((definitelyNotFold[Int, TheF, Int](0){ (a,b) => F.point(a + b)}, false, 1)) {
+        triple =>
+          val (c, stop, count) = triple
+          /* works */
+          val newcF = F.point( (c &= enumOddsOnly(count)) )
+          newcF.map { newc =>
+            (newc, false, count + 1)
+          }
+
+          /* fails
+          val newc = (c &= enumOddsOnly(count))
+          val isF = isEOF(newc)
+          isF.map { is =>
+            (newc, is, count + 1)
+          }*/
+
+          /* fails
+          if (!stop) {
+            F.bind(c.value) { cstep =>
+              val wasEmpty = isEmptyS(cstep)
+
+              //val cont = if (isDoneS(cstep)) extractContS(cstep) else c
+              val newc = (c &= enumOddsOnly(count))//.evalw
+              newc.value.map { step =>
+                (newc, isEOFS(step), count + 1)
+              }
+            }
+          } else
+            F.point(triple)*/
+      }(_._3 == 21)
+*/
+    // fails
+      (foldIM[Int, (IterateeT[Int, TheF, Int], Boolean, Int)] {
+        (p, triple) =>
+          val (c, stop, count) = triple
+          val newc = F.point( (c &= enumOddsOnly(count)) )
+          newc.flatMap { newc =>
+            val isEof = isEOF(newc)
+            isEof.map { isEof =>
+              val thep = p
+              (newc, isEof, count + 1)
+            }
+          }
+      }(init = (definitelyNotFold[Int, TheF, Int](0){ (a,b) => F.point(a + b)}, false, 1), stopOn = s => s._3 == 21) &=
+        scalaz.iteratee.Iteratee.enumStream[Int, TheF](0 to len toStream)).run
+
+    // repeat
+    val p =
+      for {
+        resIter <- r
+        ((cont, _, count), contR) = resIter
+        res <- extract(cont.toResumableIter)
+      } yield {
+
+        if (timesWeStarted > 1){  // one for a starting empty, 0 for starting value, for some reason using this within assert doesn't actually fail
+          fail(s"we restarted $timesWeStarted times if")
+        }
+
+        assert(s"count was $count", count == 21)
+        assert(s"res was $res", res == 660)
+      }
+
+    p.runIt
+/*
+  // fold with empty count
+  val p =
+    for {
+      resF <- r
+      (resIter, count) = resF
+      //((cont, _, count), contR) = extrresIter
+      res <- extract(resIter.toResumableIter)
+    } yield {
+
+      if (count == 0) {
+        fail(s"we didn't break on empties ")
+      }
+
+      if (timesWeStarted > 1){  // one for a starting empty, 0 for starting value, for some reason using this within assert doesn't actually fail
+        fail(s"we restarted $timesWeStarted times if")
+      }
+      assert(s"res was $res", res.get == 110)
+    }
+
+    p.runIt */
+/* fold
+    val p =
+      for {
+        resIter <- r
+        //((cont, _, count), contR) = extrresIter
+        res <- extract(resIter.toResumableIter)
+      } yield {
+
+        if (timesWeStarted > 1){  // one for a starting empty, 0 for starting value, for some reason using this within assert doesn't actually fail
+          fail(s"we restarted $timesWeStarted times if")
+        }
+        assert(s"res was $res", res.get == 110)
+      }
+
+    p.runIt
+*/
+    /*
+    id
+    val p =
+      for {
+        res <- r
+      } yield {
+        assert(res == 660)
+      }
+*/
+
+  }
+
   /**
    * Hideously spams with various sizes of data, and more than a few 0 lengths.
    *
-   * The aim is to test the proverbial out of the async code.  It should be able to handle being called with a single byte repeatedly.
+   * unlike testRandomAmounts this is aimed to prove if processing #54 is due to enumToMany or not
    */
-  def testRandomAmounts = {
+  def testRandomAmountsNonEnumToMany = {
     val url = sresource(this, "/data/BaseXmlTest.xml")
 
     // idIteratees works if you don't eval, the old evalw didn't force the stack.
@@ -314,10 +798,140 @@ class AsyncPullTest extends junit.framework.TestCase {
 
     val parser = AsyncParser()
 
+    val enumeratee = AsyncParser.parse[TheF](parser)
+    val wrapped = new ReadableByteChannelWrapper(randomChannel, true, tinyBuffers)
+
+    /*
+     * the random channel does every 10, every 6 forces it back but allows
+     * a fair chunk of Empty -> Conts followed by data
+     */
+    val readableByteChannelEnumerator = new AsyncDataChunkerEnumerator[DataChunk, TheF](wrapped, 6 )
+
+    val cstable = (enumeratee &= readableByteChannelEnumerator)
+
+    var c = cstable
+
+    import scales.utils.iteratee.monadHelpers._
+    var count = 0
+    /*
+        do {
+          c = (c &= dataChunkerEnumerator(wrapped)).evalw
+          count += 1
+          done = (for {
+            r <- isDone(c)
+          } yield r).runIt
+        } while (!done) */
+
+    val itr =
+      repeatUntilM((cstable &= empty[DataChunk, TheF], false, 0)) {
+        triple =>
+          val (c, stop, count) = triple
+          if (!stop) {
+
+            val newc = extractContFromDoneOrCont(c)
+            F.bind(newc.value) { cstep =>
+              val isDone = isDoneS(cstep)
+              val isEmpty = isEmptyS(cstep)
+              if (isDone) {
+                // we need to drain it
+                val Some(e) = extractS(cstep)
+                println(e.toList)
+              }
+              val newc = (iterateeT(F.point(cstep)) &= dataChunkerEnumerator(wrapped)).evalw
+              F.map(newc.value) { newcStep =>
+                val isEof = isEOFS(newcStep)
+                (newc, isEof, count + 1)
+              }
+            }
+          /*if (!stop) {
+
+            val newcF = F.point( (c &= dataChunkerEnumerator(wrapped)).evalw )
+            F.map(newcF) { newc =>
+              (newc, wrapped.isClosed, count + 1)
+            }
+          } else
+            F.point(triple)*/
+/*
+        if (!stop) {
+          F.bind(c.value) { cstep =>
+            val isDone = isEmptyS(cstep)
+            val isEmpty = isEmptyS(cstep)
+            val isEof = isEOFS(cstep)
+            if (isDone) {
+              // we need to drain it
+              val Some(e) = extractS(cstep)
+              println(e.toList)
+            }
+
+            if (!isEof) {
+              val cont =
+                if (isDoneS(cstep))
+                  extractContS(cstep)
+                else
+                  c
+              val newc = (cont &= dataChunkerEnumerator(wrapped)).evalw
+              newc.value.map { step =>
+                (newc, isEOFS(step), if (isDoneS(cstep)) count else count + 1)
+              }
+            } else
+              F.point( (c, true, count) )
+          }*/
+        } else
+          F.point(triple)
+      }(_._2)
+
+    val p =
+      for {
+        r <- itr
+        // stopped on EOF for the cont - but never pushes the eof to the parser
+        ((cont, _, count), remainingCont) = r
+        //step <- c.value
+        step <- cont.value
+      } yield {
+
+        if (randomChannel.zeroed > 0) {
+          assertTrue("There were " + randomChannel.zeroed + " zeros fed but it never left the evalw", count > 0)
+        }
+
+        step(
+          done = (a, i) => {
+            //val (stream, _) = a  evaluating a will trigger the cont to be evaluated and AsyncParser will throw
+            // the output stream is closed, the input stream and parser is closed
+            assertTrue("should have been EOF", i.isEof)
+          },
+          cont = f => fail("Should have been done")
+        )
+      }
+
+    p.runIt
+
+    assertTrue("Parser should have been closed ", parser.isClosed)
+    assertTrue("Wrapper should have been closed ", wrapped.isClosed)
+  }
+
+
+  /**
+   * Hideously spams with various sizes of data, and more than a few 0 lengths.
+   *
+   * The aim is to test the proverbial out of the async code.  It should be able to handle being called with a single byte repeatedly.
+   */
+  def testRandomAmounts = {
+    val url = sresource(this, "/data/BaseXmlTest.xml")
+
+    // idIteratees works if you don't eval, evalw doesn't force the stack.
+    import ioIteratees._
+
+    val doc = loadXmlReader(url, parsers = NoVersionXmlReaderFactoryPool)
+    val str = asString(doc)
+
+    val stream = url.openStream()
+
+    val randomChannel = new RandomChannelStreamWrapper(stream, smallBufSize)
+
+    val parser = AsyncParser()
+
     val strout = new java.io.StringWriter()
     val (closer, iter) = pushXmlIter[TheF]( strout , doc )
-
-    val magicPull = FullChunk(Array.ofDim[Byte](0))
 
     val enumeratee = enumToMany(iter.toResumableIter)(AsyncParser.parse(parser))
     val wrapped = new ReadableByteChannelWrapper(randomChannel, true, tinyBuffers)
@@ -351,8 +965,8 @@ class AsyncPullTest extends junit.framework.TestCase {
             F.bind(c.value) { cstep =>
               val wasEmpty = isEmptyS(cstep)
 
-              val cont = if (isDoneS(cstep)) extractContS(cstep) else c
-              val newc = (cont &= dataChunkerEnumerator(wrapped)).evalw
+              //val cont = if (isDoneS(cstep)) extractContS(cstep) else c
+              val newc = (c &= dataChunkerEnumerator(wrapped)).evalw
               newc.value.map { step =>
                 (newc, isEOFS(step), if (isDoneS(cstep)) count else count + 1)
               }
@@ -370,10 +984,10 @@ class AsyncPullTest extends junit.framework.TestCase {
         step <- cont.value
       } yield {
 
-/*        if (randomChannel.zeroed > 0) {
+        if (randomChannel.zeroed > 0) {
           assertTrue("There were " + randomChannel.zeroed + " zeros fed but it never left the evalw", count > 0)
         }
-*/
+
         step(
           done = (a, i) => {
             val ((out, thrown), cont) = a

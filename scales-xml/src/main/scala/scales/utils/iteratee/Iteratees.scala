@@ -4,7 +4,7 @@ import scalaz.Free.Trampoline
 import scalaz.Id.Id
 import scalaz.effect.IO
 import scalaz.{Applicative, Bind, EphemeralStream, Free, Monad}
-import scalaz.iteratee.Input.{Element, Empty, Eof}
+import scalaz.iteratee.Input.{Element, Empty, Eof, emptyInput}
 import scalaz.iteratee.Iteratee.{cont, done, elInput, empty, enumEofT, foldM, iterateeT, repeat}
 import scalaz.iteratee.StepT.{Cont, Done}
 import scalaz.iteratee.{EnumeratorT, Input, IterateeT, StepT}
@@ -124,12 +124,11 @@ object functions {
       def apply[A] = {
         def go(xs: Iterator[E])(s: StepT[E, F, A]): IterateeT[E, F, A] =
           if (xs.isEmpty) s.pointI
-          else {
+          else
             s mapCont { k =>
               val next = xs.next()
               k(elInput(next)) >>== go(xs)
             }
-          }
 
         go(iter)
       }
@@ -217,6 +216,16 @@ object functions {
       cont = k => false
       , done = (a, i) => a._2 == null && i.isEof
     )
+
+  /**
+   * Extract the continuation from a Done, or the continuation itself
+   */
+  def extractContFromDoneOrCont[E, F[_], A](iter: ResumableIter[E, F, A])(implicit F: Monad[F]): ResumableIter[E, F, A] =
+    iterateeT(
+      F.bind(iter.value)(s => s.fold(
+        cont = k => cont(k).value
+        , done = (x, i) => x._2.asInstanceOf[ResumableIter[E, F, A]].value
+      )))
 
   /**
    * Extract the continuation from a Done
@@ -332,20 +341,29 @@ object functions {
           }
 
           F.point {
+            println("calling point on point in resumable done (x,el, eof, empty) "+ (x,y.isEl,y.isEof,y.isEmpty))
             val fstep = F.point(Cont((i: Input[E]) => iterateeT(si(i))))
             Done((x, iterateeT(fstep)), y)
           }
         },
         cont = k => {
-          k(s).foldT(
+          val n = k(s)
+          n.foldT(
             done = (x, y) => {
               val fstep = F.point(Cont(step(iter)))
               F.map(fstep) {
                 step =>
+                  println("calling point on point in resumable done - from cont - (x,el, eof, empty) "+ (x,y.isEl,y.isEof,y.isEmpty))
                   Done((x, iterateeT(fstep)), y)
               }
             },
-            cont = i => F.point(Cont(step(iterateeT(F.point(Cont(i))))))
+            cont = k => cont(k).value.asInstanceOf[F[ResumableStep[E,F,A]]]/*i => {
+              F.map(iter.value) { _ =>
+                println("calling point on cont - from cont  ")
+
+                Cont(step(iterateeT(F.point(Cont(i)))))
+              }*/
+
           )
         }
       )
@@ -365,20 +383,23 @@ object functions {
    * Stepwise fold but the result of f is bound to F
    */
   def foldIM[E, F[_], A](f: (E, A) => F[A])(init: A, stopOn: A => Boolean = (_: A) => true)(implicit F: Monad[F]): ResumableIter[E, F, A] = {
-    def step(current: A)(s: Input[E]): IterateeT[E, F, (A, IterateeT[E, F, _])] =
+    def step(current: A, fromStart: Boolean): Input[E] => IterateeT[E, F, (A, IterateeT[E, F, _])] = s =>
       s(
         el = e =>
           IterateeT.IterateeTMonadTrans[E].liftM(f(e, current)) flatMap { i =>
             if (!stopOn(i))
-              cont(step(i))
+              cont(step(i, false))
             else
-              done[E, F, (A, IterateeT[E, F, _])]((i, iterateeT(F.point(Cont(step(i))))), Empty[E])
+              done[E, F, (A, IterateeT[E, F, _])]((i, cont(step(i, false))), Empty[E])
           },
-        empty = cont(step(current)),
-        eof = done((current, iterateeT(F.point(Cont(step(init))))), Eof[E])
+        empty = {
+          println("got a foldIM empty " + fromStart)
+          cont(step(current, false))
+        },
+        eof = done((current, iterateeT(F.point(Cont(step(current, false))))), Eof[E])
       )
 
-    iterateeT(F.point(Cont(step(init))))
+    cont(step(init, true))
   }
 
   /**
@@ -395,7 +416,7 @@ object functions {
    * @return
    */
   def repeatUntil[E, F[_], A](init: A)(f: A => A)(stopOn: A => Boolean)(implicit F: Monad[F]): F[(A, ResumableIter[A, F, A])] =
-    repeatUntilM[E, F, A](init)(a => F.point(a))(stopOn)
+    repeatUntilM[E, F, A](init)(a => F.point(f(a)))(stopOn)
 
   /**
    * Repeating fold on done, calling f with the result to accumulate with side effects, stopping when stopOn is true and
@@ -867,10 +888,7 @@ object functions {
             empty = {println("contk - empty nexti")
               val r = k(Empty[A])
               nextI(r, empty, toMany)
-              /*
-              iterateeT(F.bind(r.value) { rstep =>
-                nextI(r, empty, toMany).value
-              })*/},
+            },
             eof = nextI(k(Eof[A]), empty, toMany)
           )
         )))
@@ -926,7 +944,9 @@ object functions {
       if (Eof.unapply(y) && !internalEOF) {
         // signal the end here to toMany, don't care about result, tested by testSimpleLoad and testRandomAmounts in AsyncPullTest
         iterateeT(F.bind(returnThis.value) { v =>
-          toMany.foldT(done = (a1, y1) => returnThis.value,
+          toMany.foldT(done = (a1, y1) =>
+              returnThis.value
+            ,
             cont = k => {
               F.map(k(Eof[E]).value){
                 _ => v
@@ -1198,6 +1218,11 @@ class IterateeFunctions[F[_]](val F: Monad[F]) {
     scales.utils.iteratee.functions.extractCont[E,F,A](iter)
 
   /**
+   * Extract the continuation from a Done or the cont itself
+   */
+  @inline def extractContFromDoneOrCont[E, A]( iter : ResumableIter[E,A] )(implicit F: Monad[F]): ResumableIter[E, A] =
+    scales.utils.iteratee.functions.extractContFromDoneOrCont[E,F,A](iter)
+  /**
    * Extract the continuation from a Done
    */
   @inline def extractContS[E, A]( s : ResumableStep[E, A] )(implicit F: Monad[F]): ResumableIter[E, A] =
@@ -1274,7 +1299,7 @@ class IterateeFunctions[F[_]](val F: Monad[F]) {
    * @return
    */
   def repeatUntil[E,A](init: A)(f : A => A)(stopOn: A => Boolean)(implicit F: Monad[F]): F[(A,ResumableIter[A,A])] =
-    scales.utils.iteratee.functions.repeatUntilM[E,F,A](init)(a => F.point(a))(stopOn)
+    scales.utils.iteratee.functions.repeatUntil[E,F,A](init)(f)(stopOn)
 
   /**
    * Repeating fold on done, calling f with the result to accumulate with side effects, stopping when stopOn is true and

@@ -14,7 +14,7 @@ import scalaz.{EphemeralStream, Monad}
 import scalaz.iteratee.{Enumerator, Input, Iteratee, IterateeT}
 import EphemeralStream.emptyEphemeralStream
 import scalaz.iteratee.Input.{Element, Eof}
-import scalaz.iteratee.Iteratee.{iteratee, iterateeT}
+import scalaz.iteratee.Iteratee.{cont, done, iteratee, iterateeT}
 import scalaz.iteratee.StepT.{Cont, Done}
 import scales.xml.parser.strategies.{MemoryOptimisationStrategy, OptimisationToken}
 
@@ -265,55 +265,52 @@ object AsyncParser {
    */
   def parse[F[_]: Monad](parser: AsyncParser): ResumableIter[DataChunk, F, EphemeralStream[PullType]] = {
 
-    def EOF: ResumableStep[DataChunk, F, EphemeralStream[PullType]] = {
+    def EOF: ResumableIter[DataChunk, F, EphemeralStream[PullType]] = {
       parser.closeResource
 
       //println("closing against EOF from parse")
-      Done((emptyEphemeralStream,
+      done((emptyEphemeralStream,
         iterateeT(Monad[F].point(Cont[DataChunk, F, EphemeralStream[PullType]](
           error("Called the continuation on a closed parser")
         )))), Eof[DataChunk])
     }
 
-    def step(s: Input[DataChunk]): ResumableIter[DataChunk, F, EphemeralStream[PullType]] =
-      iterateeT(
-        s(el = e => {
-            //print(new String(e.array, e.offset, e.length, "UTF-8"))
+    def step(fromStart: Boolean): Input[DataChunk] => ResumableIter[DataChunk, F, EphemeralStream[PullType]] = s =>
+      s(el = e => {
+          //print(new String(e.array, e.offset, e.length, "UTF-8"))
 
-            val r = parser.nextInput(e)
-            //println("Did get a large chunk " + new String(e.array, e.offset, e.length, "UTF-8") + " e " + System.identityHashCode(e) + " r " + System.identityHashCode(r))
+          val r = parser.nextInput(e)
+          //println("Did get a large chunk " + new String(e.array, e.offset, e.length, "UTF-8") + " e " + System.identityHashCode(e) + " r " + System.identityHashCode(r))
 
-            Monad[F].point(
-              r(el = es => {
-                  // println("got " + es.toList)
-                  //println("got el with es " + es.isEmpty + " feeder " + parser.feeder.needMoreInput)
-                  Done((es,
-                    iterateeT(Monad[F].point( Cont( step )))), Input.Empty[DataChunk])
-                },
-                empty =
-                //println("empty from input")
-                //emptyness
-                  Cont(step)
-                ,
-                eof = {
-                  EOF
-                }
-              )
-            )
-          },
-          empty = {
-            //println("empty input")
-            //emptyness
-            //Done((EphemeralStream.empty, Cont(step)), IterV.Empty[DataChunk]) // nothing that can be done on empty
-            Monad[F].point( Cont(step) )
-          },
-          eof = {
-            Monad[F].point(EOF)
-          }
-        )
+          r(el = es => {
+              // println("got " + es.toList)
+              //println("got el with es " + es.isEmpty + " feeder " + parser.feeder.needMoreInput)
+              done((es,
+                cont(step(false)))
+                , Input.Empty[DataChunk])
+            },
+            empty = {
+              println("empty from input")
+              //emptyness
+              cont(step(false))
+            },
+            eof = {
+              EOF
+            }
+          )
+        },
+        empty = {
+          println("empty parser input fromStart - "+fromStart)
+          //emptyness
+          //Done((EphemeralStream.empty, Cont(step)), IterV.Empty[DataChunk]) // nothing that can be done on empty
+          cont(step(false))
+        },
+        eof = {
+          EOF
+        }
       )
 
-    iterateeT( Monad[F].point( Cont(step) ))
+    cont(step(true))
   }
 
 

@@ -8,6 +8,7 @@ import scalaz.iteratee.Iteratee.{enumEofT, enumOne, iteratee, iterateeT}
 import scalaz.iteratee.StepT.{Cont, Done}
 import scalaz.iteratee.{Enumerator, EnumeratorT, Input, Iteratee, IterateeT, StepT}
 import scales.utils.iteratee.functions.{ResumableIter, isDoneS}
+import scales.utils.iteratee.monadHelpers.{CanRunIt, Performer}
 
 import java.io._
 import java.nio.channels._
@@ -195,8 +196,8 @@ trait ReadableByteChannelWrapperImplicits {
 
   implicit def toRBCWrapper(channel: ReadableByteChannel)(implicit ev: DataChunkEvidence[DataChunk]): RBCImplicitWrapper = new RBCImplicitWrapper(channel)
 
-  implicit def dataChunkerEnumerator[E, F[_]: Monad](chunker: DataChunker[E]): EnumeratorT[E, F] =
-    new AsyncDataChunkerEnumerator[E, F](chunker)
+  implicit def dataChunkerEnumerator[T, F[_]: Monad](chunker: DataChunker[T]): EnumeratorT[DataChunk, F] =
+    new AsyncDataChunkerEnumerator[T, F](chunker)
 
   /**
    * Use in a call to asyncReadableByteChannelEnumerator to turn it into a synchronous enumerator (constantly trying to get new chunks of data)
@@ -211,72 +212,58 @@ trait ReadableByteChannelWrapperImplicits {
    * Note: Call via eval only.
    * @param contOnCont INFINITE_RETRIES (-1) for keep on trying, the default is 5 (as exposed by the implicit enumerator readableByteChannelEnumerator)
    */
-  class AsyncDataChunkerEnumerator[E, F[_]]( chunker: DataChunker[E], contOnCont: Int = 5 )(implicit F: Monad[F]) extends EnumeratorT[E, F] {
+  class AsyncDataChunkerEnumerator[T, F[_]]( chunker: DataChunker[T], contOnCont: Int = 5 )(implicit F: Monad[F]) extends EnumeratorT[DataChunk, F] {
     import scalaz.Scalaz._
 
-    def paired[E,F[_],P](f: F[E], p: P)(implicit F: Monad[F]): F[(E,P)] =
-      F.map(f){
-        (_,p)
-      }
+    override def apply[A]: StepT[DataChunk, F, A] => IterateeT[DataChunk, F, A] = {
 
-    override def apply[A]: StepT[E, F, A] => IterateeT[E, F, A] = i => {
-
-      def apply(count: Int)(stepT: StepT[E, F, A]): IterateeT[E, F, A] = stepT match {
+      def apply(count: Int): StepT[DataChunk, F, A] => IterateeT[DataChunk, F, A] = {
         case i if chunker.underlyingClosed || chunker.isClosed =>
           iterateeT(F.point(i))
         case i@Done(acc, input) =>
           val c = acc
           val in = input
           iterateeT(F.point(i))
-        case Cont(k) =>
-          val realChunk = F.point( chunker.nextChunk )
+        case i =>
+          i mapCont { k =>
+            val realChunk = chunker.nextChunk
 
-          val nextIPair =
-            F.bind(realChunk) { realChunk =>
-              val nextChunk = realChunk.asInstanceOf[E]
-
+            val nextIStep =
               if (realChunk.isEOF)
-                // println("actual data was EOF !!!")
-                paired(k(Eof[E]).value, realChunk)
+                k(Eof[DataChunk])
               else if (realChunk.isEmpty)
-                paired(k(Empty[E]).value, realChunk)
+                i.pointI // choose later how to process this
               else
-                paired(k(Element(nextChunk)).value, realChunk)
-            }
+                k(Element(realChunk))
 
-          iterateeT(
-            nextIPair >>= { nextIStepPair =>
-              val (nextIStep, realChunk) = nextIStepPair
+            if (!realChunk.isEmpty) {
+              println("stepping to the next apply")
+              nextIStep >>== apply(0)
+            } else
+              iterateeT(
+                F.bind(nextIStep.value) { step =>
+                  val nc =
+                    if (realChunk.isEmpty)
+                      count + 1
+                    else
+                      0
 
-              val res = {
-                val nc =
-                  if (realChunk.isEmpty && !isDoneS(nextIStep))
-                    count + 1
-                  else
-                    0
-
-                if ((contOnCont != INFINITE_RETRIES) && (nc > contOnCont)) {
-                  nextIStep(done = (x, y) => {
-                      val thex = x
-                      val they = y
-                      nextIStep.pointI
-                    },
-                    cont = k => {
-                      println("attempt to trigger done + cont restart state")
-
-                      (k(Empty[E]) >>== apply(nc))
-                    }
-                  )
-                } else
-                  apply(nc)(nextIStep)
-              }
-              res.value
-            }
-          )
+                  if ((contOnCont != INFINITE_RETRIES) && (nc > contOnCont)) {
+                    println("attempting to pause")
+                    F.point(step)
+                  } else {
+                    if (realChunk.isEmpty)  // // we haven't sent k
+                      (k(Empty[DataChunk]) >>== apply(nc)).value
+                    else
+                      (nextIStep >>== apply(nc)).value
+                  }
+                }
+              )
+          }
       }
 
       //println("i's ident " + System.identityHashCode(i))
-      apply(0)(i)
+      apply(0)
     }
   }
 
