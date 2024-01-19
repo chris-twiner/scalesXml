@@ -7,7 +7,7 @@ import scalaz.iteratee.Input.{Element, Empty, Eof}
 import scalaz.iteratee.Iteratee.{enumEofT, enumOne, iteratee, iterateeT}
 import scalaz.iteratee.StepT.{Cont, Done}
 import scalaz.iteratee.{Enumerator, EnumeratorT, Input, Iteratee, IterateeT, StepT}
-import scales.utils.iteratee.functions.{ResumableIter, isDoneS}
+import scales.utils.iteratee.functions.{ResumableIter, isDoneS, isEOFS}
 import scales.utils.iteratee.monadHelpers.{CanRunIt, Performer}
 
 import java.io._
@@ -219,46 +219,49 @@ trait ReadableByteChannelWrapperImplicits {
 
       def apply(count: Int): StepT[DataChunk, F, A] => IterateeT[DataChunk, F, A] = {
         case i if chunker.underlyingClosed || chunker.isClosed =>
-          iterateeT(F.point(i))
+          i.pointI
         case i@Done(acc, input) =>
           val c = acc
           val in = input
-          iterateeT(F.point(i))
+          i.pointI
         case i =>
           i mapCont { k =>
+            //val realChunkF = F.point( chunker.nextChunk )
             val realChunk = chunker.nextChunk
+            iterateeT {
+              //F.bind(realChunkF) { realChunk =>
+              println("calling k with " + realChunk)
+              val nextIStep =
+                if (realChunk.isEOF)
+                  k(Eof[DataChunk])
+                else if (realChunk.isEmpty)
+                  k(Empty[DataChunk]) // choose later how to process this
+                else
+                  k(Element(realChunk))
 
-            val nextIStep =
-              if (realChunk.isEOF)
-                k(Eof[DataChunk])
-              else if (realChunk.isEmpty)
-                i.pointI // choose later how to process this
-              else
-                k(Element(realChunk))
+              println("called k with " + realChunk)
 
-            if (!realChunk.isEmpty) {
-              println("stepping to the next apply")
-              nextIStep >>== apply(0)
-            } else
-              iterateeT(
-                F.bind(nextIStep.value) { step =>
-                  val nc =
-                    if (realChunk.isEmpty)
-                      count + 1
-                    else
-                      0
+              F.bind(nextIStep.value) { step =>
+                val nc =
+                  if (realChunk.isEmpty && !isDoneS(step))
+                    count + 1
+                  else
+                    0
 
-                  if ((contOnCont != INFINITE_RETRIES) && (nc > contOnCont)) {
-                    println("attempting to pause")
-                    F.point(step)
-                  } else {
-                    if (realChunk.isEmpty)  // // we haven't sent k
-                      (k(Empty[DataChunk]) >>== apply(nc)).value
-                    else
-                      (nextIStep >>== apply(nc)).value
-                  }
+                if (isEOFS(step))
+                  F.point(step)
+                else
+                if (((contOnCont != INFINITE_RETRIES) && (nc > contOnCont))) {
+                  println("attempting to pause")
+                  apply(nc)(step).value //nextIStep.value
+                } else {
+                  println("moving forward")
+                  //(nextIStep >>== apply(nc)).value
+                  apply(nc)(step).value
                 }
-              )
+              }
+              // }
+            }
           }
       }
 

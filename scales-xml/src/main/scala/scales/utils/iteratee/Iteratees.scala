@@ -330,7 +330,7 @@ object functions {
    * and when its Done starting again
    * with the original iter.  This is close to restarting the iter on
    * a new "stream", otherwise all attempts to keep the Cont will be made.
-   */
+   *//*
   def toResumableIter[E, F[_], A](oiter: IterateeT[E, F, A])(implicit F: Monad[F]): ResumableIter[E, F, A] = {
     def step(iter: IterateeT[E, F, A])(s: Input[E]): ResumableIter[E, F, A] = {
       val next = iter.foldT[ResumableStep[E, F, A]]( // need to evaluate s in the case of done....
@@ -372,7 +372,23 @@ object functions {
 
     iterateeT(F.point(Cont(step(oiter))))
   }
+*/
+  def toResumableIter[E, F[_], A](oiter: IterateeT[E, F, A])(implicit F: Monad[F]): ResumableIter[E, F, A] = {
+    def step(iter: IterateeT[E, F, A])(s: Input[E]): ResumableIter[E, F, A] = {
+      val next = iter.foldT[ResumableStep[E, F, A]]( // need to evaluate s in the case of done....
+        done = (x, y) => F.point(Done((x, iterateeT(F.point(Cont(step(oiter))))), y)),
+        cont = k => {
+          k(s).foldT(
+            done = (x, y) => F.point(Done((x, iterateeT(F.point(Cont(step(oiter))))), y)),
+            cont = i => F.point(Cont(step(iterateeT(F.point(Cont(i))))))
+          )
+        }
+      )
+      iterateeT(next)
+    }
 
+    iterateeT(F.point(Cont(step(oiter))))
+  }
   /**
    * Stepwise fold, each element is evaluated but each one is returned as a result+resumable iter.
    */
@@ -944,9 +960,7 @@ object functions {
       if (Eof.unapply(y) && !internalEOF) {
         // signal the end here to toMany, don't care about result, tested by testSimpleLoad and testRandomAmounts in AsyncPullTest
         iterateeT(F.bind(returnThis.value) { v =>
-          toMany.foldT(done = (a1, y1) =>
-              returnThis.value
-            ,
+          toMany.foldT(done = (a1, y1) => returnThis.value,
             cont = k => {
               F.map(k(Eof[E]).value){
                 _ => v

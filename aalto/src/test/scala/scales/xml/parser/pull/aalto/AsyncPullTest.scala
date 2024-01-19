@@ -942,7 +942,7 @@ class AsyncPullTest extends junit.framework.TestCase {
      */
     val readableByteChannelEnumerator = new AsyncDataChunkerEnumerator[DataChunk, TheF](wrapped, 6 )
 
-    val cstable = (enumeratee &= readableByteChannelEnumerator).evalw
+    val cstable = enumeratee/// (enumeratee &= readableByteChannelEnumerator)//.evalw
 
     var c = cstable
 
@@ -962,13 +962,14 @@ class AsyncPullTest extends junit.framework.TestCase {
         triple =>
           val (c, stop, count) = triple
           if (!stop) {
-            F.bind(c.value) { cstep =>
-              val wasEmpty = isEmptyS(cstep)
+            F.bind(c.value) {
+              cstep => // to let us know if we have stopped
+                // feed more data
 
-              //val cont = if (isDoneS(cstep)) extractContS(cstep) else c
-              val newc = (c &= dataChunkerEnumerator(wrapped)).evalw
-              newc.value.map { step =>
-                (newc, isEOFS(step), if (isDoneS(cstep)) count else count + 1)
+              val newc = (c &= dataChunkerEnumerator(wrapped)).eval//.evalw
+              F.map(newc.value) { newcStep =>
+                val isEof = isEOFS(newcStep)
+                (newc, isEof, if (isDoneS(cstep)) count else count + 1)
               }
             }
           } else
@@ -981,12 +982,15 @@ class AsyncPullTest extends junit.framework.TestCase {
         // stopped on EOF for the cont - but never pushes the eof to the parser
         ((cont, _, count), remainingCont) = r
         //step <- c.value
+        remain <- remainingCont.value
         step <- cont.value
       } yield {
 
         if (randomChannel.zeroed > 0) {
           assertTrue("There were " + randomChannel.zeroed + " zeros fed but it never left the evalw", count > 0)
         }
+
+        val r = remain
 
         step(
           done = (a, i) => {
