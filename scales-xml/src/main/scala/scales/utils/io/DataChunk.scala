@@ -36,6 +36,17 @@ object EmptyData extends DataChunk {
 }
 
 /**
+ * Represents a data stream that has had too many empty reads (pretty much only aalto parsing)
+ */
+object SuspendData extends DataChunk {
+  val array = Array.empty[Byte]
+  val offset = -23
+  val length = 0
+
+  override val isEmpty = true
+}
+
+/**
  * Represents the full array
  */ 
 final case class FullChunk( array: Array[Byte] ) extends DataChunk {

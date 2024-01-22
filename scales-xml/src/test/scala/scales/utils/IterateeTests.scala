@@ -15,8 +15,10 @@ import scalaz.effect.IO
 import scales.utilsTest.IterateeTests.{enumWeakStreamF, isDoneT, maxIterations}
 import scales.utils.iteratee.Eval
 import scales.utils._
+
 import scala.annotation.tailrec
-import scales.utils.iteratee.functions.ResumableIterOps
+import scales.utils.iteratee.functions.IterOps
+import scales.utils.iteratee.monadHelpers.Performer
 object StreamHelpers {
 
   def lTo(lower: Long, upper: Long): EphemeralStream[Long] =
@@ -521,36 +523,46 @@ class IterateeTest extends junit.framework.TestCase {
   }
 
 
-  def testResumableIterConversion = {
+  def testResumableIterConversion():Unit = {
+    //import idIteratees._
+    import scalaz._
+    import Scalaz._
+
     val liter = (1 to maxIterations).iterator
 
     type ITER = ResumableIter[Int, Option[Int]]
+    type ITER_STEP = ResumableStep[Int, Option[Int]]
 
     val itrOdd : ITER  = find[Int]( (x : Int) => x % 2 == 1 ).toResumableIter
 
-    def isDone( i : Int, res : ITER) =
-      isDoneT(i, res){ x =>
+    def isDone( i : Int, res : ITER_STEP) = {
+      val ires = iterateeT(F.point(res))
+      isDoneT(i, ires){ x =>
         assertTrue("is defined " + i, x.isDefined)
         assertEquals(i, x.get)
       }
+    }
 
+    println("1st eval")
     val starter = (itrOdd &= iteratorEnumerator(liter)).eval
 
     val p =
       for {
-        _ <- isDone(1, starter)
-
+        first <- starter.value
+        _ <- isDone(1, first)
+        starterV <- starter.value
         // check it does not blow up the stack and/or mem
-        r <- (foldM[Int, Trampoline, ITER](starter){ (itr, i) =>
-          val nitr = (extractCont(itr) &= iteratorEnumerator(liter)).eval
-          Monad[Trampoline].map(nitr.value){
-            _ =>
-              isDone(i, nitr)
-              nitr
+        r <- (foldM[Int, TheF, ITER_STEP](starterV){ (itr, i) =>
+          println("evaling")
+          val nitr = (extractContS(itr) &= iteratorEnumerator(liter)).eval
+          Monad[TheF].map(nitr.value){
+            nitrstep =>
+              isDone(i, nitrstep)
+              nitrstep
           }
         } &= iteratorEnumerator((2 to maxIterations).iterator.filter(_ % 2 == 1)) ) run
 
-        res = (extractCont(r) &= iteratorEnumerator(liter)).eval
+        res = (extractContS(r) &= iteratorEnumerator(liter)).eval
         step <- res.value
       } yield {
         step(
@@ -564,6 +576,6 @@ class IterateeTest extends junit.framework.TestCase {
         )
       }
 
-    p run
+    p.runIt
   }
 }

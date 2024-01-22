@@ -5,7 +5,7 @@ import resources._
 import scalaz.Id.Id
 import scalaz.Monad
 import scalaz.iteratee.Input.Eof
-import scalaz.iteratee.Iteratee.{iteratee, iterateeT}
+import scalaz.iteratee.Iteratee.{cont, iteratee, iterateeT}
 import scalaz.iteratee.StepT.{Cont, Done}
 import scales.xml._
 import scalaz.iteratee.{Enumerator, Input, Iteratee, IterateeT, StepT}
@@ -16,8 +16,8 @@ import scales.utils.iteratee.functions.{ResumableIter, ResumableStep}
  */ 
 trait SerializingIter {
 
-  type SerialIterT[F[_]] = IterateeT[PullType, F, (XmlOutput, Option[Throwable])]
-  type SerialStepT[F[_]] = StepT[PullType, F, (XmlOutput, Option[Throwable])]
+  type SerialIterT[F[_]] = ResumableIter[PullType, F, (XmlOutput, Option[Throwable])]
+  type SerialStepT[F[_]] = ResumableStep[PullType, F, (XmlOutput, Option[Throwable])]
 
   import java.nio.charset.Charset
 
@@ -31,14 +31,14 @@ trait SerializingIter {
 
     var empties = 0
 
+    var theStatus: StreamStatus = null
+
     def done(status: StreamStatus): F[SerialStepT[F]] = {
       // give it back
       closer()
       //println("empties was "+empties)
-      F.point(Done((status.output, status.thrown), Eof[PullType]))
+      F.point(Done(((status.output, status.thrown), cont(go(false, status))), Eof[PullType]))
     }
-
-    var theStatus: StreamStatus = null
 
     def go(fromStart: Boolean, status: StreamStatus)(s: Input[PullType]): SerialIterT[F] =
       iterateeT(

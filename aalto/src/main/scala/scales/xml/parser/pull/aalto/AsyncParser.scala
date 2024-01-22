@@ -278,26 +278,30 @@ object AsyncParser {
     def step(fromStart: Boolean): Input[DataChunk] => ResumableIter[DataChunk, F, EphemeralStream[PullType]] = s =>
       s(el = e => {
           //print(new String(e.array, e.offset, e.length, "UTF-8"))
+          if (e eq SuspendData) {
+            done((emptyEphemeralStream, cont(step(false))), Input.Empty[DataChunk])
+          } else {
 
-          val r = parser.nextInput(e)
-          //println("Did get a large chunk " + new String(e.array, e.offset, e.length, "UTF-8") + " e " + System.identityHashCode(e) + " r " + System.identityHashCode(r))
+            val r = parser.nextInput(e)
+            //println("Did get a large chunk " + new String(e.array, e.offset, e.length, "UTF-8") + " e " + System.identityHashCode(e) + " r " + System.identityHashCode(r))
 
-          r(el = es => {
+            r(el = es => {
               // println("got " + es.toList)
               //println("got el with es " + es.isEmpty + " feeder " + parser.feeder.needMoreInput)
               done((es,
                 cont(step(false)))
                 , Input.Empty[DataChunk])
             },
-            empty = {
-              println("empty from input")
-              //emptyness
-              cont(step(false))
-            },
-            eof = {
-              EOF
-            }
-          )
+              empty = {
+                println("empty from input")
+                //emptyness
+                cont(step(false))
+              },
+              eof = {
+                EOF
+              }
+            )
+          }
         },
         empty = {
           println("empty parser input fromStart - "+fromStart)

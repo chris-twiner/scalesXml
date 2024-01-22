@@ -229,38 +229,51 @@ trait ReadableByteChannelWrapperImplicits {
             //val realChunkF = F.point( chunker.nextChunk )
             val realChunk = chunker.nextChunk
             iterateeT {
-              //F.bind(realChunkF) { realChunk =>
-              println("calling k with " + realChunk)
-              val nextIStep =
-                if (realChunk.isEOF)
-                  k(Eof[DataChunk])
-                else if (realChunk.isEmpty)
-                  k(Empty[DataChunk]) // choose later how to process this
-                else
-                  k(Element(realChunk))
-
-              println("called k with " + realChunk)
-
-              F.bind(nextIStep.value) { step =>
+            //  F.bind(realChunkF) { realChunk =>
                 val nc =
-                  if (realChunk.isEmpty && !isDoneS(step))
+                  if (realChunk.isEmpty)
                     count + 1
                   else
                     0
 
-                if (isEOFS(step))
-                  F.point(step)
-                else
-                if (((contOnCont != INFINITE_RETRIES) && (nc > contOnCont))) {
-                  println("attempting to pause")
-                  apply(nc)(step).value //nextIStep.value
-                } else {
-                  println("moving forward")
-                  //(nextIStep >>== apply(nc)).value
-                  apply(nc)(step).value
-                }
+                val shouldPause =
+                  if (((contOnCont != INFINITE_RETRIES) && (nc > contOnCont)))
+                    true
+                  else
+                    false
+
+                //F.bind(realChunkF) { realChunk =>
+                println("calling k with " + realChunk)
+                val nextIStep =
+                  if (realChunk.isEOF)
+                    k(Eof[DataChunk])
+                  else if (realChunk.isEmpty) {
+                    if (shouldPause)
+                      k(Element(SuspendData))
+                    else
+                      k(Empty[DataChunk])
+                  } else
+                    k(Element(realChunk))
+                SuspendData
+                println("called k with " + realChunk)
+
+                F.bind(nextIStep.value) { step =>
+
+                  if (isEOFS(step))
+                    nextIStep.value
+                    //F.point(step)
+                  else if (shouldPause && !isDoneS(step)) {
+                    println("attempting to pause")
+                    //apply(nc)(step).value //nextIStep.value
+                    nextIStep.value
+                    //F.point(step)
+                  } else {
+                    println("moving forward")
+                    //(nextIStep >>== apply(nc)).value
+                    apply(nc)(step).value
+                  }
+              //  }
               }
-              // }
             }
           }
       }

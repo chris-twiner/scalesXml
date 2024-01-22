@@ -83,10 +83,10 @@ trait Eval[WHAT, F[_],RETURN] {
    */
   def eval(implicit F: Monad[F]) : IterateeT[WHAT, F, RETURN] =
     iterateeT(
-      F.bind((orig &= empty[WHAT,F]).value)((s: StepT[WHAT, F, RETURN]) => s.fold(
+      orig.foldT(
         cont = k => k(Eof[WHAT]).value
         , done = (a, i) => F.point(Done(a, i))
-      )))
+      ))
 
 }
 
@@ -308,7 +308,7 @@ object functions {
 
 
 
-  implicit class ResumableIterOps[E, F[_],A](val oiter: IterateeT[E,F,A]) extends AnyVal {
+  implicit class IterOps[E, F[_],A](val oiter: IterateeT[E,F,A]) extends AnyVal {
 
     /**
      * Converts a normal IterV[E,A] to a ResumableIter.
@@ -785,7 +785,7 @@ object functions {
 
       def step(theStep: ResumableStep[A, F, R], cs: EphemeralStream[A]): F[(ResumableStep[A, F, R], EphemeralStream[A])] =
         theStep(
-            done = (a, y) => scales.utils.error("Should not get here"), // send it back, shouldn't be possible to get here anyway due to while test
+            done = (a, y) => F.point((theStep, cs)),
             cont =
               k => if (!cs.isEmpty) {
                 // println("got cont")

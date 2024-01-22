@@ -537,20 +537,22 @@ on both the qname matching (3 of them) and then the above combos
   }
 
   def testOnQNamesManyElementsBelow = {
-    import scales.xml.trampolinePullIteratees._
+    import scales.xml.idPullIteratees._
+    import idIteratees._
+    import scalaz.Scalaz._
 
     val ourMax = maxIterations / 10 // full takes too long but does work in constant space
 
     var iter = events(ourMax)
     val func = (e: WeakStream[PullType]) => {iter = e}
 
-    def enum(e: WeakStream[PullType]) = enumWeakStreamF[PullType, Trampoline](func)(e)
+    def enum(e: WeakStream[PullType]) = enumWeakStreamF[PullType, TheF](func)(e)
 
     val QNames = List("root"l, "child"l)
     val ionDone = onDone(List(onQNames(QNames)))
 
-    def isDone( i : Int, res : ResumableIterList[PullType, Trampoline, QNamesMatch]) =
-      Monad[Trampoline].map(res.value){_( done = (x,y) => (x,y) match {
+    def isDone( i : Int, res : ResumableIterList[PullType, QNamesMatch]) =
+      Monad[TheF].map(res.value){_( done = (x,y) => (x,y) match {
         case (((QNames, Some(x)) :: Nil,cont), y)  =>
           // we want to see both sub text nodes
           assertEquals( "interesting content "+ i +"interesting content "+ (i + 1)
@@ -574,12 +576,12 @@ on both the qname matching (3 of them) and then the above combos
         _ <- isDone(1, starter)
         // check it does not blow up the stack and/or mem
 
-        r <- (foldM[Int, Trampoline, ResumableIterList[PullType, Trampoline, QNamesMatch]](starter){ (itr, i) =>
+        r = (foldM[Int, TheF, ResumableIterList[PullType, QNamesMatch]](starter){ (itr, i) =>
             val res = (extractCont(itr) &= enum (iter)).eval
-            Monad[Trampoline].bind(res.value) {
+            Monad[TheF].bind(res.value) {
               _ =>
                 val rc = isDone(i, res)
-                Monad[Trampoline].map(rc) { _ =>
+                Monad[TheF].map(rc) { _ =>
                   res
                 }
             }
@@ -595,7 +597,7 @@ on both the qname matching (3 of them) and then the above combos
         }, cont = _ => fail("was not done with empty"))
       }
 
-    p run
+    p.runIt
   }
 
   def testOnQNamesRepeatedQNames(): Unit = {
