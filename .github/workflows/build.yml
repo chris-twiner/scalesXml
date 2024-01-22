@@ -3,9 +3,9 @@ name: Default CI
 
 on:
   push:
-    branches: [ "main", "temp/*" ]
+    branches: [ "main", "temp/*", "release/*", "master"]
   pull_request:
-    branches: [ "main", "temp/*" ]
+    branches: [ "main", "temp/*", "release/*", "master" ]
 
 env:
   MAVEN_CLI_OPTS: "--batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true"
