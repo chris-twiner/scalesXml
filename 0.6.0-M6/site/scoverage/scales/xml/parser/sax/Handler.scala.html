@@ -1,0 +1,2791 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/xml/parser/sax/Handler.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.xml.parser.sax
+</span>2 <span style=''>
+</span>3 <span style=''>import org.xml.sax.Locator
+</span>4 <span style=''>import org.xml.sax.ext.Locator2
+</span>5 <span style=''>
+</span>6 <span style=''>import scales.xml._
+</span>7 <span style=''>import parser._
+</span>8 <span style=''>import scales.xml.parser.strategies.{PathOptimisationStrategy, OptimisationToken}
+</span>9 <span style=''>
+</span>10 <span style=''>import scales.xml.impl.{NotFromParser, IsFromParser, FromParser}
+</span>11 <span style=''>
+</span>12 <span style=''>import impl.{NameCreators, TreeProxies}
+</span>13 <span style=''>
+</span>14 <span style=''>class Handler[Token &lt;: OptimisationToken](strategy : PathOptimisationStrategy[Token])(implicit val defaultVersion : XmlVersion) extends org.xml.sax.ext.DefaultHandler2 {
+</span>15 <span style=''>
+</span>16 <span style=''>  import org.xml.sax._
+</span>17 <span style=''>
+</span>18 <span style=''>  import NameCreators._
+</span>19 <span style=''>  
+</span>20 <span style=''>  //    import ScalesXml.toQName // Note we aren't validating the names here anyway so we don't need to use the correct xml version, future version may double check perhaps?
+</span>21 <span style=''>
+</span>22 <span style=''>  private[this] implicit val weAreInAParser : FromParser = </span><span style='background: #AEF1AE'>IsFromParser</span><span style=''>
+</span>23 <span style=''>
+</span>24 <span style=''>  private[this] val token : Token = </span><span style='background: #AEF1AE'>strategy.createToken</span><span style=''>
+</span>25 <span style=''>
+</span>26 <span style=''>  // only trees have kids, and we only need to keep the parent
+</span>27 <span style=''>  private[this] val buf = </span><span style='background: #AEF1AE'>new TreeProxies()</span><span style=''>
+</span>28 <span style=''>  def getBuf = </span><span style='background: #AEF1AE'>buf</span><span style=''>
+</span>29 <span style=''>
+</span>30 <span style=''>  private[this] var isCData = </span><span style='background: #AEF1AE'>false</span><span style=''>
+</span>31 <span style=''>
+</span>32 <span style=''>  // declarations on this element
+</span>33 <span style=''>  private[this] var nsDeclarations = </span><span style='background: #AEF1AE'>emptyNamespaces</span><span style=''>
+</span>34 <span style=''>
+</span>35 <span style=''>  private[this] var prolog = </span><span style='background: #AEF1AE'>Prolog()</span><span style=''>
+</span>36 <span style=''>  private[this] var end = </span><span style='background: #AEF1AE'>EndMisc()</span><span style=''>
+</span>37 <span style=''>
+</span>38 <span style=''>  def getProlog = </span><span style='background: #AEF1AE'>prolog</span><span style=''>
+</span>39 <span style=''>  def getEnd = </span><span style='background: #AEF1AE'>end</span><span style=''>
+</span>40 <span style=''>
+</span>41 <span style=''>  private[this] var locator : Locator = _
+</span>42 <span style=''>  
+</span>43 <span style=''>  // used for judging PI or Comments
+</span>44 <span style=''>  private[this] var inprolog = </span><span style='background: #AEF1AE'>true</span><span style=''>
+</span>45 <span style=''>
+</span>46 <span style=''>  def checkit(what: String) </span><span style='background: #F0ADAD'>{
+</span>47 <span style=''></span><span style='background: #F0ADAD'>  }</span><span style=''>
+</span>48 <span style=''>
+</span>49 <span style=''>  override def startDTD(name : String, publicId : String, systemId : String) {
+</span>50 <span style=''>    prolog = </span><span style='background: #F0ADAD'>prolog.copy(dtd = Some(DTD(name, publicId, systemId)))</span><span style=''>
+</span>51 <span style=''>  }
+</span>52 <span style=''>
+</span>53 <span style=''>  override def processingInstruction(target : String, data : String) {
+</span>54 <span style=''>    val pi = </span><span style='background: #AEF1AE'>PI(target, data)</span><span style=''>
+</span>55 <span style=''>    </span><span style='background: #AEF1AE'>addMisc(Right(pi))</span><span style=''>
+</span>56 <span style=''>  } 
+</span>57 <span style=''>
+</span>58 <span style=''>  override def startPrefixMapping(prefix: String, uri: String) {
+</span>59 <span style=''>    </span><span style='background: #AEF1AE'>nsDeclarations += (prefix -&gt; uri)</span><span style=''>
+</span>60 <span style=''>  }
+</span>61 <span style=''>
+</span>62 <span style=''>  override def setDocumentLocator( loc : Locator ) {
+</span>63 <span style=''>    locator = loc
+</span>64 <span style=''>  }
+</span>65 <span style=''>
+</span>66 <span style=''>  override def startElement(uri: String,
+</span>67 <span style=''>			    localName: String,
+</span>68 <span style=''>			    qName: String,
+</span>69 <span style=''>			    attributes: org.xml.sax.Attributes) {
+</span>70 <span style=''>
+</span>71 <span style=''>    if (</span><span style='background: #AEF1AE'>inprolog</span><span style=''>) {
+</span>72 <span style=''>      </span><span style='background: #AEF1AE'>if (locator.isInstanceOf[Locator2]) {
+</span>73 <span style=''></span><span style='background: #AEF1AE'>	val loc2 = locator.asInstanceOf[Locator2]
+</span>74 <span style=''></span><span style='background: #AEF1AE'>	prolog = prolog.copy( decl = prolog.decl.copy(encoding = (
+</span>75 <span style=''></span><span style='background: #AEF1AE'>	  if (loc2.getEncoding ne null) {
+</span>76 <span style=''></span><span style='background: #AEF1AE'>	    java.nio.charset.Charset.forName(loc2.getEncoding)
+</span>77 <span style=''></span><span style='background: #AEF1AE'>	  } else scales.utils.defaultCharset
+</span>78 <span style=''></span><span style='background: #AEF1AE'>	)))	  
+</span>79 <span style=''></span><span style='background: #AEF1AE'>      }</span><span style=''>
+</span>80 <span style=''>    }
+</span>81 <span style=''>
+</span>82 <span style=''>    inprolog = </span><span style='background: #AEF1AE'>false</span><span style=''>
+</span>83 <span style=''>
+</span>84 <span style=''>    var i = </span><span style='background: #AEF1AE'>0</span><span style=''>
+</span>85 <span style=''>    val length = </span><span style='background: #AEF1AE'>attributes.getLength</span><span style=''>
+</span>86 <span style=''>    var attribs = </span><span style='background: #AEF1AE'>emptyAttributes</span><span style=''>
+</span>87 <span style=''>
+</span>88 <span style=''>    while (</span><span style='background: #AEF1AE'>i &lt; length</span><span style=''>) </span><span style='background: #AEF1AE'>{
+</span>89 <span style=''></span><span style='background: #AEF1AE'>      val qname = aqn(attributes.getURI(i), attributes.getLocalName(i), attributes.getQName(i), strategy, token)
+</span>90 <span style=''></span><span style='background: #AEF1AE'>      attribs = attribs unsafePlus 
+</span>91 <span style=''></span><span style='background: #AEF1AE'>      strategy.attribute(qname, 
+</span>92 <span style=''></span><span style='background: #AEF1AE'>			 attributes.getValue(i), 
+</span>93 <span style=''></span><span style='background: #AEF1AE'>			 token)
+</span>94 <span style=''></span><span style='background: #AEF1AE'>
+</span>95 <span style=''></span><span style='background: #AEF1AE'>      i += 1
+</span>96 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>97 <span style=''>    
+</span>98 <span style=''>    // use the current nsMap
+</span>99 <span style=''>    val elem = </span><span style='background: #AEF1AE'>strategy.elem(
+</span>100 <span style=''></span><span style='background: #AEF1AE'>      eqn(uri, localName, qName, strategy, token)
+</span>101 <span style=''></span><span style='background: #AEF1AE'>      , attribs, nsDeclarations, token)</span><span style=''>
+</span>102 <span style=''>
+</span>103 <span style=''>    // reset the map
+</span>104 <span style=''>    nsDeclarations = </span><span style='background: #AEF1AE'>emptyNamespaces</span><span style=''>
+</span>105 <span style=''>
+</span>106 <span style=''>    // give it a fake mutable default to work with
+</span>107 <span style=''>    </span><span style='background: #AEF1AE'>strategy.beginSubTree(buf, elem, token)</span><span style=''>
+</span>108 <span style=''>  }
+</span>109 <span style=''>
+</span>110 <span style=''>  override def endElement(uri: String,
+</span>111 <span style=''>			  localName: String,
+</span>112 <span style=''>			  qName: String) {
+</span>113 <span style=''>
+</span>114 <span style=''>    // pop it and we are now with the correct parent
+</span>115 <span style=''>    // let the strategy decide what actually happens
+</span>116 <span style=''>    </span><span style='background: #AEF1AE'>strategy.elementEnd(buf, token)</span><span style=''>
+</span>117 <span style=''>  }
+</span>118 <span style=''>
+</span>119 <span style=''>  override def comment(ch: Array[Char], offset: Int, length: Int): Unit = {
+</span>120 <span style=''>    val text = </span><span style='background: #AEF1AE'>new String(ch, offset, length)</span><span style=''>
+</span>121 <span style=''>
+</span>122 <span style=''>    </span><span style='background: #AEF1AE'>addMisc( Left(Comment(text)) )</span><span style=''>      
+</span>123 <span style=''>  }
+</span>124 <span style=''>
+</span>125 <span style=''>  def addMisc( miscItem : Misc ) {
+</span>126 <span style=''>    if (</span><span style='background: #AEF1AE'>inprolog</span><span style=''>) 
+</span>127 <span style=''>      </span><span style='background: #AEF1AE'>prolog = prolog.copy(misc = prolog.misc :+ miscItem)</span><span style=''>
+</span>128 <span style=''>    else {
+</span>129 <span style=''>      // need to tell if its finished the root elem or not
+</span>130 <span style=''>      </span><span style='background: #AEF1AE'>if (buf.depth == -1)
+</span>131 <span style=''></span><span style='background: #AEF1AE'>	end = end.copy( misc = end.misc :+ miscItem)
+</span>132 <span style=''></span><span style='background: #AEF1AE'>      else
+</span>133 <span style=''></span><span style='background: #AEF1AE'>	// add it like a normal child
+</span>134 <span style=''></span><span style='background: #AEF1AE'>	buf.addChild( miscItem.fold[XmlItem](x=&gt;x, y=&gt;y))</span><span style=''> 
+</span>135 <span style=''>    }
+</span>136 <span style=''>  }
+</span>137 <span style=''>
+</span>138 <span style=''>  override def characters(ch: Array[Char], offset: Int, length: Int): Unit = {
+</span>139 <span style=''>    val text = </span><span style='background: #AEF1AE'>new String(ch, offset, length)</span><span style=''>
+</span>140 <span style=''>
+</span>141 <span style=''>    val child: XmlItem = if (</span><span style='background: #AEF1AE'>isCData</span><span style=''>) </span><span style='background: #AEF1AE'>CData(text)</span><span style=''> else </span><span style='background: #AEF1AE'>Text(text)</span><span style=''>
+</span>142 <span style=''>
+</span>143 <span style=''>    // append as child
+</span>144 <span style=''>    </span><span style='background: #AEF1AE'>buf.addChild(child)</span><span style=''>
+</span>145 <span style=''>  }
+</span>146 <span style=''>
+</span>147 <span style=''>  override def startCDATA() { isCData = </span><span style='background: #AEF1AE'>true</span><span style=''>; }
+</span>148 <span style=''>  override def endCDATA() { isCData = </span><span style='background: #AEF1AE'>false</span><span style=''>; }
+</span>149 <span style=''>
+</span>150 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          4539
+        </td>
+        <td>
+          773
+          -
+          785
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.IsFromParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.impl.IsFromParser
+        </td>
+      </tr><tr>
+        <td>
+          24
+        </td>
+        <td>
+          4540
+        </td>
+        <td>
+          832
+          -
+          832
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.sax.Handler.defaultVersion
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.defaultVersion
+        </td>
+      </tr><tr>
+        <td>
+          24
+        </td>
+        <td>
+          4541
+        </td>
+        <td>
+          832
+          -
+          832
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.sax.Handler.weAreInAParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.weAreInAParser
+        </td>
+      </tr><tr>
+        <td>
+          24
+        </td>
+        <td>
+          4542
+        </td>
+        <td>
+          823
+          -
+          843
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.parser.strategies.MemoryOptimisationStrategy.createToken
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.strategy.createToken(Handler.this.defaultVersion, Handler.this.weAreInAParser)
+        </td>
+      </tr><tr>
+        <td>
+          27
+        </td>
+        <td>
+          4543
+        </td>
+        <td>
+          934
+          -
+          951
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.TreeProxies.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new scales.xml.impl.TreeProxies()
+        </td>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          4544
+        </td>
+        <td>
+          967
+          -
+          970
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.sax.Handler.buf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.buf
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          4545
+        </td>
+        <td>
+          1002
+          -
+          1007
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          4546
+        </td>
+        <td>
+          1080
+          -
+          1095
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.XmlTypes.emptyNamespaces
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.`package`.emptyNamespaces
+        </td>
+      </tr><tr>
+        <td>
+          35
+        </td>
+        <td>
+          4547
+        </td>
+        <td>
+          1126
+          -
+          1134
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Prolog.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Prolog.apply(scales.xml.Prolog.apply$default$1, scales.xml.Prolog.apply$default$2, scales.xml.Prolog.apply$default$3)
+        </td>
+      </tr><tr>
+        <td>
+          36
+        </td>
+        <td>
+          4548
+        </td>
+        <td>
+          1161
+          -
+          1170
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.EndMisc.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.EndMisc.apply(scales.xml.EndMisc.apply$default$1)
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          4549
+        </td>
+        <td>
+          1190
+          -
+          1196
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.sax.Handler.prolog
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.prolog
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          4550
+        </td>
+        <td>
+          1212
+          -
+          1215
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.sax.Handler.end
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.end
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          4551
+        </td>
+        <td>
+          1330
+          -
+          1334
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          4552
+        </td>
+        <td>
+          1364
+          -
+          1369
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          4553
+        </td>
+        <td>
+          1463
+          -
+          1469
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.sax.Handler.prolog
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Handler.this.prolog
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          4554
+        </td>
+        <td>
+          1486
+          -
+          1515
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.DTD.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.xml.DTD.apply(name, publicId, systemId)
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          4555
+        </td>
+        <td>
+          1481
+          -
+          1516
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Some.apply[scales.xml.DTD](scales.xml.DTD.apply(name, publicId, systemId))
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          4556
+        </td>
+        <td>
+          1463
+          -
+          1517
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Prolog.copy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          qual$1.copy(x$2, x$3, x$1)
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          4557
+        </td>
+        <td>
+          1609
+          -
+          1609
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.sax.Handler.weAreInAParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.weAreInAParser
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          4558
+        </td>
+        <td>
+          1607
+          -
+          1623
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.PI.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.PI.apply(target, data)(Handler.this.weAreInAParser)
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          4559
+        </td>
+        <td>
+          1636
+          -
+          1645
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Right.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Right.apply[Nothing, scales.xml.PI](pi)
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          4560
+        </td>
+        <td>
+          1628
+          -
+          1646
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.sax.Handler.addMisc
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.addMisc(scala.`package`.Right.apply[Nothing, scales.xml.PI](pi))
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          4561
+        </td>
+        <td>
+          1741
+          -
+          1754
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.ArrowAssoc.-&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.ArrowAssoc[String](prefix).-&gt;[String](uri)
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          4562
+        </td>
+        <td>
+          1722
+          -
+          1755
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.Map.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.nsDeclarations.+[String](scala.Predef.ArrowAssoc[String](prefix).-&gt;[String](uri))
+        </td>
+      </tr><tr>
+        <td>
+          71
+        </td>
+        <td>
+          4563
+        </td>
+        <td>
+          1980
+          -
+          1988
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.sax.Handler.inprolog
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.inprolog
+        </td>
+      </tr><tr>
+        <td>
+          71
+        </td>
+        <td>
+          4580
+        </td>
+        <td>
+          1976
+          -
+          1976
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          71
+        </td>
+        <td>
+          4581
+        </td>
+        <td>
+          1976
+          -
+          1976
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          72
+        </td>
+        <td>
+          4564
+        </td>
+        <td>
+          2002
+          -
+          2032
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.isInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.locator.isInstanceOf[org.xml.sax.ext.Locator2]
+        </td>
+      </tr><tr>
+        <td>
+          72
+        </td>
+        <td>
+          4576
+        </td>
+        <td>
+          2034
+          -
+          2283
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val loc2: org.xml.sax.ext.Locator2 = Handler.this.locator.asInstanceOf[org.xml.sax.ext.Locator2];
+  Handler.this.prolog = {
+    &lt;artifact&gt; val qual$1: scales.xml.Prolog = Handler.this.prolog;
+    &lt;artifact&gt; val x$4: scales.xml.Declaration = {
+      &lt;artifact&gt; val qual$2: scales.xml.Declaration = Handler.this.prolog.decl;
+      &lt;artifact&gt; val x$1: java.nio.charset.Charset = if (loc2.getEncoding().ne(null))
+        java.nio.charset.Charset.forName(loc2.getEncoding())
+      else
+        scales.utils.`package`.defaultCharset;
+      &lt;artifact&gt; val x$2: scales.xml.XmlVersion = qual$2.copy$default$1;
+      &lt;artifact&gt; val x$3: Boolean = qual$2.copy$default$3;
+      qual$2.copy(x$2, x$1, x$3)
+    };
+    &lt;artifact&gt; val x$5: scales.xml.Miscs = qual$1.copy$default$2;
+    &lt;artifact&gt; val x$6: Option[scales.xml.DTD] = qual$1.copy$default$3;
+    qual$1.copy(x$4, x$5, x$6)
+  }
+}
+        </td>
+      </tr><tr>
+        <td>
+          72
+        </td>
+        <td>
+          4577
+        </td>
+        <td>
+          1998
+          -
+          1998
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          72
+        </td>
+        <td>
+          4578
+        </td>
+        <td>
+          1998
+          -
+          1998
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          72
+        </td>
+        <td>
+          4579
+        </td>
+        <td>
+          1998
+          -
+          2283
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (Handler.this.locator.isInstanceOf[org.xml.sax.ext.Locator2])
+  {
+    val loc2: org.xml.sax.ext.Locator2 = Handler.this.locator.asInstanceOf[org.xml.sax.ext.Locator2];
+    Handler.this.prolog = {
+      &lt;artifact&gt; val qual$1: scales.xml.Prolog = Handler.this.prolog;
+      &lt;artifact&gt; val x$4: scales.xml.Declaration = {
+        &lt;artifact&gt; val qual$2: scales.xml.Declaration = Handler.this.prolog.decl;
+        &lt;artifact&gt; val x$1: java.nio.charset.Charset = if (loc2.getEncoding().ne(null))
+          java.nio.charset.Charset.forName(loc2.getEncoding())
+        else
+          scales.utils.`package`.defaultCharset;
+        &lt;artifact&gt; val x$2: scales.xml.XmlVersion = qual$2.copy$default$1;
+        &lt;artifact&gt; val x$3: Boolean = qual$2.copy$default$3;
+        qual$2.copy(x$2, x$1, x$3)
+      };
+      &lt;artifact&gt; val x$5: scales.xml.Miscs = qual$1.copy$default$2;
+      &lt;artifact&gt; val x$6: Option[scales.xml.DTD] = qual$1.copy$default$3;
+      qual$1.copy(x$4, x$5, x$6)
+    }
+  }
+else
+  ()
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          4565
+        </td>
+        <td>
+          2048
+          -
+          2078
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.locator.asInstanceOf[org.xml.sax.ext.Locator2]
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          4566
+        </td>
+        <td>
+          2089
+          -
+          2095
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.sax.Handler.prolog
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.prolog
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          4567
+        </td>
+        <td>
+          2109
+          -
+          2120
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Prolog.decl
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.prolog.decl
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          4574
+        </td>
+        <td>
+          2109
+          -
+          2271
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Declaration.copy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          qual$2.copy(x$2, x$1, x$3)
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          4575
+        </td>
+        <td>
+          2089
+          -
+          2272
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Prolog.copy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          qual$1.copy(x$4, x$5, x$6)
+        </td>
+      </tr><tr>
+        <td>
+          75
+        </td>
+        <td>
+          4568
+        </td>
+        <td>
+          2146
+          -
+          2170
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.ne
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          loc2.getEncoding().ne(null)
+        </td>
+      </tr><tr>
+        <td>
+          76
+        </td>
+        <td>
+          4569
+        </td>
+        <td>
+          2212
+          -
+          2228
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.xml.sax.ext.Locator2.getEncoding
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          loc2.getEncoding()
+        </td>
+      </tr><tr>
+        <td>
+          76
+        </td>
+        <td>
+          4570
+        </td>
+        <td>
+          2179
+          -
+          2229
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.nio.charset.Charset.forName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          java.nio.charset.Charset.forName(loc2.getEncoding())
+        </td>
+      </tr><tr>
+        <td>
+          76
+        </td>
+        <td>
+          4571
+        </td>
+        <td>
+          2179
+          -
+          2229
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          java.nio.charset.Charset.forName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          java.nio.charset.Charset.forName(loc2.getEncoding())
+        </td>
+      </tr><tr>
+        <td>
+          77
+        </td>
+        <td>
+          4572
+        </td>
+        <td>
+          2240
+          -
+          2267
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.defaultCharset
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.defaultCharset
+        </td>
+      </tr><tr>
+        <td>
+          77
+        </td>
+        <td>
+          4573
+        </td>
+        <td>
+          2240
+          -
+          2267
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.defaultCharset
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.defaultCharset
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          4582
+        </td>
+        <td>
+          2306
+          -
+          2311
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          84
+        </td>
+        <td>
+          4583
+        </td>
+        <td>
+          2325
+          -
+          2326
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          85
+        </td>
+        <td>
+          4584
+        </td>
+        <td>
+          2344
+          -
+          2364
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.xml.sax.Attributes.getLength
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          attributes.getLength()
+        </td>
+      </tr><tr>
+        <td>
+          86
+        </td>
+        <td>
+          4585
+        </td>
+        <td>
+          2383
+          -
+          2398
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.XmlTypes.emptyAttributes
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.`package`.emptyAttributes
+        </td>
+      </tr><tr>
+        <td>
+          88
+        </td>
+        <td>
+          4586
+        </td>
+        <td>
+          2411
+          -
+          2421
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&lt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          i.&lt;(length)
+        </td>
+      </tr><tr>
+        <td>
+          88
+        </td>
+        <td>
+          4598
+        </td>
+        <td>
+          2423
+          -
+          2423
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.sax.Handler.while$1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          while$1()
+        </td>
+      </tr><tr>
+        <td>
+          88
+        </td>
+        <td>
+          4599
+        </td>
+        <td>
+          2423
+          -
+          2666
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  {
+    val qname: scales.xml.AttributeQName = scales.xml.impl.NameCreators.aqn[Token](attributes.getURI(i), attributes.getLocalName(i), attributes.getQName(i), Handler.this.strategy, Handler.this.token);
+    attribs = attribs.unsafePlus(Handler.this.strategy.attribute(qname, attributes.getValue(i), Handler.this.token));
+    i = i.+(1)
+  };
+  while$1()
+}
+        </td>
+      </tr><tr>
+        <td>
+          88
+        </td>
+        <td>
+          4600
+        </td>
+        <td>
+          2404
+          -
+          2404
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          88
+        </td>
+        <td>
+          4601
+        </td>
+        <td>
+          2404
+          -
+          2404
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          4587
+        </td>
+        <td>
+          2447
+          -
+          2467
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.xml.sax.Attributes.getURI
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          attributes.getURI(i)
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          4588
+        </td>
+        <td>
+          2469
+          -
+          2495
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.xml.sax.Attributes.getLocalName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          attributes.getLocalName(i)
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          4589
+        </td>
+        <td>
+          2497
+          -
+          2519
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.xml.sax.Attributes.getQName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          attributes.getQName(i)
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          4590
+        </td>
+        <td>
+          2521
+          -
+          2529
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.sax.Handler.strategy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.strategy
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          4591
+        </td>
+        <td>
+          2531
+          -
+          2536
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.sax.Handler.token
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.token
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          4592
+        </td>
+        <td>
+          2443
+          -
+          2537
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.NameCreators.aqn
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.impl.NameCreators.aqn[Token](attributes.getURI(i), attributes.getLocalName(i), attributes.getQName(i), Handler.this.strategy, Handler.this.token)
+        </td>
+      </tr><tr>
+        <td>
+          90
+        </td>
+        <td>
+          4596
+        </td>
+        <td>
+          2554
+          -
+          2646
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.ListSet.unsafePlus
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          attribs.unsafePlus(Handler.this.strategy.attribute(qname, attributes.getValue(i), Handler.this.token))
+        </td>
+      </tr><tr>
+        <td>
+          91
+        </td>
+        <td>
+          4595
+        </td>
+        <td>
+          2580
+          -
+          2646
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.strategies.MemoryOptimisationStrategy.attribute
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.strategy.attribute(qname, attributes.getValue(i), Handler.this.token)
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          4593
+        </td>
+        <td>
+          2611
+          -
+          2633
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.xml.sax.Attributes.getValue
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          attributes.getValue(i)
+        </td>
+      </tr><tr>
+        <td>
+          93
+        </td>
+        <td>
+          4594
+        </td>
+        <td>
+          2640
+          -
+          2645
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.sax.Handler.token
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.token
+        </td>
+      </tr><tr>
+        <td>
+          95
+        </td>
+        <td>
+          4597
+        </td>
+        <td>
+          2654
+          -
+          2660
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          i.+(1)
+        </td>
+      </tr><tr>
+        <td>
+          99
+        </td>
+        <td>
+          4607
+        </td>
+        <td>
+          2716
+          -
+          2820
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.strategies.MemoryOptimisationStrategy.elem
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.strategy.elem(scales.xml.impl.NameCreators.eqn[Token](uri, localName, qName, Handler.this.strategy, Handler.this.token), attribs, Handler.this.nsDeclarations, Handler.this.token)
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          4602
+        </td>
+        <td>
+          2764
+          -
+          2772
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.sax.Handler.strategy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.strategy
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          4603
+        </td>
+        <td>
+          2774
+          -
+          2779
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.sax.Handler.token
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.token
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          4604
+        </td>
+        <td>
+          2737
+          -
+          2780
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.NameCreators.eqn
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.impl.NameCreators.eqn[Token](uri, localName, qName, Handler.this.strategy, Handler.this.token)
+        </td>
+      </tr><tr>
+        <td>
+          101
+        </td>
+        <td>
+          4605
+        </td>
+        <td>
+          2798
+          -
+          2812
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.sax.Handler.nsDeclarations
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.nsDeclarations
+        </td>
+      </tr><tr>
+        <td>
+          101
+        </td>
+        <td>
+          4606
+        </td>
+        <td>
+          2814
+          -
+          2819
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.sax.Handler.token
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.token
+        </td>
+      </tr><tr>
+        <td>
+          104
+        </td>
+        <td>
+          4608
+        </td>
+        <td>
+          2864
+          -
+          2879
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.XmlTypes.emptyNamespaces
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.`package`.emptyNamespaces
+        </td>
+      </tr><tr>
+        <td>
+          107
+        </td>
+        <td>
+          4609
+        </td>
+        <td>
+          2958
+          -
+          2961
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.sax.Handler.buf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.buf
+        </td>
+      </tr><tr>
+        <td>
+          107
+        </td>
+        <td>
+          4610
+        </td>
+        <td>
+          2969
+          -
+          2974
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.sax.Handler.token
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.token
+        </td>
+      </tr><tr>
+        <td>
+          107
+        </td>
+        <td>
+          4611
+        </td>
+        <td>
+          2936
+          -
+          2975
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.strategies.PathOptimisationStrategy.beginSubTree
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.strategy.beginSubTree(Handler.this.buf, elem, Handler.this.token)
+        </td>
+      </tr><tr>
+        <td>
+          116
+        </td>
+        <td>
+          4612
+        </td>
+        <td>
+          3197
+          -
+          3200
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.sax.Handler.buf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.buf
+        </td>
+      </tr><tr>
+        <td>
+          116
+        </td>
+        <td>
+          4613
+        </td>
+        <td>
+          3202
+          -
+          3207
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.sax.Handler.token
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.token
+        </td>
+      </tr><tr>
+        <td>
+          116
+        </td>
+        <td>
+          4614
+        </td>
+        <td>
+          3177
+          -
+          3208
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.strategies.PathOptimisationStrategy.elementEnd
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.strategy.elementEnd(Handler.this.buf, Handler.this.token)
+        </td>
+      </tr><tr>
+        <td>
+          120
+        </td>
+        <td>
+          4615
+        </td>
+        <td>
+          3305
+          -
+          3335
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new scala.Predef.String(ch, offset, length)
+        </td>
+      </tr><tr>
+        <td>
+          122
+        </td>
+        <td>
+          4616
+        </td>
+        <td>
+          3362
+          -
+          3362
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.sax.Handler.weAreInAParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.weAreInAParser
+        </td>
+      </tr><tr>
+        <td>
+          122
+        </td>
+        <td>
+          4617
+        </td>
+        <td>
+          3355
+          -
+          3368
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.Comment.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Comment.apply(text)(Handler.this.weAreInAParser)
+        </td>
+      </tr><tr>
+        <td>
+          122
+        </td>
+        <td>
+          4618
+        </td>
+        <td>
+          3350
+          -
+          3369
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Left.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Left.apply[scales.xml.Comment, Nothing](scales.xml.Comment.apply(text)(Handler.this.weAreInAParser))
+        </td>
+      </tr><tr>
+        <td>
+          122
+        </td>
+        <td>
+          4619
+        </td>
+        <td>
+          3341
+          -
+          3371
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.sax.Handler.addMisc
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.addMisc(scala.`package`.Left.apply[scales.xml.Comment, Nothing](scales.xml.Comment.apply(text)(Handler.this.weAreInAParser)))
+        </td>
+      </tr><tr>
+        <td>
+          126
+        </td>
+        <td>
+          4620
+        </td>
+        <td>
+          3426
+          -
+          3434
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.sax.Handler.inprolog
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.inprolog
+        </td>
+      </tr><tr>
+        <td>
+          127
+        </td>
+        <td>
+          4621
+        </td>
+        <td>
+          3452
+          -
+          3458
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.sax.Handler.prolog
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.prolog
+        </td>
+      </tr><tr>
+        <td>
+          127
+        </td>
+        <td>
+          4622
+        </td>
+        <td>
+          3483
+          -
+          3483
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.Seq.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.Seq.canBuildFrom[scales.xml.Misc]
+        </td>
+      </tr><tr>
+        <td>
+          127
+        </td>
+        <td>
+          4623
+        </td>
+        <td>
+          3471
+          -
+          3494
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.SeqLike.:+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.prolog.misc.:+[scales.xml.Misc, scales.xml.Miscs](miscItem)(collection.this.Seq.canBuildFrom[scales.xml.Misc])
+        </td>
+      </tr><tr>
+        <td>
+          127
+        </td>
+        <td>
+          4624
+        </td>
+        <td>
+          3452
+          -
+          3495
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Prolog.copy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          qual$1.copy(x$2, x$1, x$3)
+        </td>
+      </tr><tr>
+        <td>
+          127
+        </td>
+        <td>
+          4625
+        </td>
+        <td>
+          3443
+          -
+          3495
+        </td>
+        <td>
+          Assign
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.prolog = {
+  &lt;artifact&gt; val qual$1: scales.xml.Prolog = Handler.this.prolog;
+  &lt;artifact&gt; val x$1: scales.xml.Miscs = Handler.this.prolog.misc.:+[scales.xml.Misc, scales.xml.Miscs](miscItem)(collection.this.Seq.canBuildFrom[scales.xml.Misc]);
+  &lt;artifact&gt; val x$2: scales.xml.Declaration = qual$1.copy$default$1;
+  &lt;artifact&gt; val x$3: Option[scales.xml.DTD] = qual$1.copy$default$3;
+  qual$1.copy(x$2, x$1, x$3)
+}
+        </td>
+      </tr><tr>
+        <td>
+          130
+        </td>
+        <td>
+          4626
+        </td>
+        <td>
+          3576
+          -
+          3591
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.buf.depth.==(-1)
+        </td>
+      </tr><tr>
+        <td>
+          130
+        </td>
+        <td>
+          4634
+        </td>
+        <td>
+          3572
+          -
+          3731
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (Handler.this.buf.depth.==(-1))
+  Handler.this.end = Handler.this.end.copy(Handler.this.end.misc.:+[scales.xml.Misc, scales.xml.Miscs](miscItem)(collection.this.Seq.canBuildFrom[scales.xml.Misc]))
+else
+  Handler.this.buf.addChild(miscItem.fold[scales.xml.XmlItem](((x: scales.xml.Comment) =&gt; x), ((y: scales.xml.PI) =&gt; y)))
+        </td>
+      </tr><tr>
+        <td>
+          131
+        </td>
+        <td>
+          4627
+        </td>
+        <td>
+          3626
+          -
+          3626
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.Seq.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.Seq.canBuildFrom[scales.xml.Misc]
+        </td>
+      </tr><tr>
+        <td>
+          131
+        </td>
+        <td>
+          4628
+        </td>
+        <td>
+          3617
+          -
+          3637
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.SeqLike.:+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.end.misc.:+[scales.xml.Misc, scales.xml.Miscs](miscItem)(collection.this.Seq.canBuildFrom[scales.xml.Misc])
+        </td>
+      </tr><tr>
+        <td>
+          131
+        </td>
+        <td>
+          4629
+        </td>
+        <td>
+          3600
+          -
+          3638
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.EndMisc.copy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.end.copy(Handler.this.end.misc.:+[scales.xml.Misc, scales.xml.Miscs](miscItem)(collection.this.Seq.canBuildFrom[scales.xml.Misc]))
+        </td>
+      </tr><tr>
+        <td>
+          131
+        </td>
+        <td>
+          4630
+        </td>
+        <td>
+          3594
+          -
+          3638
+        </td>
+        <td>
+          Assign
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.end = Handler.this.end.copy(Handler.this.end.misc.:+[scales.xml.Misc, scales.xml.Miscs](miscItem)(collection.this.Seq.canBuildFrom[scales.xml.Misc]))
+        </td>
+      </tr><tr>
+        <td>
+          134
+        </td>
+        <td>
+          4631
+        </td>
+        <td>
+          3696
+          -
+          3730
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Either.fold
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          miscItem.fold[scales.xml.XmlItem](((x: scales.xml.Comment) =&gt; x), ((y: scales.xml.PI) =&gt; y))
+        </td>
+      </tr><tr>
+        <td>
+          134
+        </td>
+        <td>
+          4632
+        </td>
+        <td>
+          3682
+          -
+          3731
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.TreeProxies.addChild
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.buf.addChild(miscItem.fold[scales.xml.XmlItem](((x: scales.xml.Comment) =&gt; x), ((y: scales.xml.PI) =&gt; y)))
+        </td>
+      </tr><tr>
+        <td>
+          134
+        </td>
+        <td>
+          4633
+        </td>
+        <td>
+          3682
+          -
+          3731
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.impl.TreeProxies.addChild
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.buf.addChild(miscItem.fold[scales.xml.XmlItem](((x: scales.xml.Comment) =&gt; x), ((y: scales.xml.PI) =&gt; y)))
+        </td>
+      </tr><tr>
+        <td>
+          139
+        </td>
+        <td>
+          4635
+        </td>
+        <td>
+          3838
+          -
+          3868
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new scala.Predef.String(ch, offset, length)
+        </td>
+      </tr><tr>
+        <td>
+          141
+        </td>
+        <td>
+          4636
+        </td>
+        <td>
+          3899
+          -
+          3906
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.sax.Handler.isCData
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.isCData
+        </td>
+      </tr><tr>
+        <td>
+          141
+        </td>
+        <td>
+          4637
+        </td>
+        <td>
+          3913
+          -
+          3913
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.sax.Handler.weAreInAParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.weAreInAParser
+        </td>
+      </tr><tr>
+        <td>
+          141
+        </td>
+        <td>
+          4638
+        </td>
+        <td>
+          3908
+          -
+          3919
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.CData.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.CData.apply(text)(Handler.this.weAreInAParser)
+        </td>
+      </tr><tr>
+        <td>
+          141
+        </td>
+        <td>
+          4639
+        </td>
+        <td>
+          3908
+          -
+          3919
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.CData.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.CData.apply(text)(Handler.this.weAreInAParser)
+        </td>
+      </tr><tr>
+        <td>
+          141
+        </td>
+        <td>
+          4640
+        </td>
+        <td>
+          3925
+          -
+          3935
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Text.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Text.apply(text)
+        </td>
+      </tr><tr>
+        <td>
+          141
+        </td>
+        <td>
+          4641
+        </td>
+        <td>
+          3925
+          -
+          3935
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.Text.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Text.apply(text)
+        </td>
+      </tr><tr>
+        <td>
+          144
+        </td>
+        <td>
+          4642
+        </td>
+        <td>
+          3964
+          -
+          3983
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.TreeProxies.addChild
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Handler.this.buf.addChild(child)
+        </td>
+      </tr><tr>
+        <td>
+          147
+        </td>
+        <td>
+          4643
+        </td>
+        <td>
+          4029
+          -
+          4033
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          148
+        </td>
+        <td>
+          4644
+        </td>
+        <td>
+          4075
+          -
+          4080
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

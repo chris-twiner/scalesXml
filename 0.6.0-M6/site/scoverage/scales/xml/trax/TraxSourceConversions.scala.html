@@ -1,0 +1,276 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/xml/trax/TraxSourceConversions.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.xml.trax
+</span>2 <span style=''>
+</span>3 <span style=''>import scales.xml._
+</span>4 <span style=''>
+</span>5 <span style=''>import scales.utils.top
+</span>6 <span style=''>import scales.utils.collection.path.AbstractPathIterator
+</span>7 <span style=''>
+</span>8 <span style=''>class TreeIterable( tree : XmlTree ) extends AbstractPathIterator[XmlItem, Elem, XCC, PullType] {
+</span>9 <span style=''>  lazy val initialPath = top(tree)
+</span>10 <span style=''>
+</span>11 <span style=''>  def event : PullType = </span><span style='background: #AEF1AE'>path.node.focus.fold(x=&gt;x,y=&gt;y.section)</span><span style=''>
+</span>12 <span style=''>
+</span>13 <span style=''>  def end = {
+</span>14 <span style=''>    val el = </span><span style='background: #AEF1AE'>path.tree.section</span><span style=''>
+</span>15 <span style=''>    </span><span style='background: #AEF1AE'>EndElem(el.name, el.namespaces)</span><span style=''> : PullType
+</span>16 <span style=''>  }
+</span>17 <span style=''> 
+</span>18 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          11
+        </td>
+        <td>
+          5815
+        </td>
+        <td>
+          311
+          -
+          312
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPulls.toLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.`package`.toLeft(x)
+        </td>
+      </tr><tr>
+        <td>
+          11
+        </td>
+        <td>
+          5816
+        </td>
+        <td>
+          316
+          -
+          325
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.Tree.section
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          y.section
+        </td>
+      </tr><tr>
+        <td>
+          11
+        </td>
+        <td>
+          5817
+        </td>
+        <td>
+          316
+          -
+          325
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPulls.toLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.`package`.toLeft(y.section)
+        </td>
+      </tr><tr>
+        <td>
+          11
+        </td>
+        <td>
+          5818
+        </td>
+        <td>
+          287
+          -
+          326
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.EitherLike.fold
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          TreeIterable.this.path.node.focus.fold[scala.util.Left[scales.xml.XmlEvent,Nothing]](((x: scales.xml.XmlItem) =&gt; scales.xml.`package`.toLeft(x)), ((y: scales.utils.collection.Tree[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]) =&gt; scales.xml.`package`.toLeft(y.section)))
+        </td>
+      </tr><tr>
+        <td>
+          14
+        </td>
+        <td>
+          5819
+        </td>
+        <td>
+          355
+          -
+          372
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.Tree.section
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          TreeIterable.this.path.tree().section
+        </td>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          5820
+        </td>
+        <td>
+          385
+          -
+          392
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Elem.name
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          el.name
+        </td>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          5821
+        </td>
+        <td>
+          394
+          -
+          407
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Elem.namespaces
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          el.namespaces
+        </td>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          5822
+        </td>
+        <td>
+          377
+          -
+          408
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.EndElem.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.EndElem.apply(el.name, el.namespaces)
+        </td>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          5823
+        </td>
+        <td>
+          377
+          -
+          408
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPulls.toRight
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.`package`.toRight(scales.xml.EndElem.apply(el.name, el.namespaces))
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

@@ -1,0 +1,3814 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/utils/io/ReadableByteChannelWrapper.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.utils.io
+</span>2 <span style=''>
+</span>3 <span style=''>import scales.utils._
+</span>4 <span style=''>import resources._
+</span>5 <span style=''>import scalaz.{Id, Monad}
+</span>6 <span style=''>import scalaz.iteratee.Input.{Element, Empty, Eof}
+</span>7 <span style=''>import scalaz.iteratee.Iteratee.{enumEofT, enumOne, iteratee, iterateeT}
+</span>8 <span style=''>import scalaz.iteratee.StepT.{Cont, Done}
+</span>9 <span style=''>import scalaz.iteratee.{Enumerator, EnumeratorT, Input, Iteratee, IterateeT, StepT}
+</span>10 <span style=''>import scales.utils.iteratee.functions.{ResumableIter, isDoneS, isEOFS}
+</span>11 <span style=''>import scales.utils.iteratee.monadHelpers.{CanRunIt, Performer}
+</span>12 <span style=''>
+</span>13 <span style=''>import java.io._
+</span>14 <span style=''>import java.nio.channels._
+</span>15 <span style=''>import java.nio.ByteBuffer
+</span>16 <span style=''>
+</span>17 <span style=''>sealed trait DataChunkEvidence[T]
+</span>18 <span style=''>
+</span>19 <span style=''>object DataChunkEvidence {
+</span>20 <span style=''>  implicit val justDataChunk: DataChunkEvidence[DataChunk] = 
+</span>21 <span style=''>    </span><span style='background: #F0ADAD'>new</span><span style=''> DataChunkEvidence[DataChunk]{}
+</span>22 <span style=''>}
+</span>23 <span style=''>
+</span>24 <span style=''>object ReadableByteChannelWrapper {
+</span>25 <span style=''>  val emptyBytes = </span><span style='background: #F0ADAD'>Array.ofDim[ Byte ](0)</span><span style=''>
+</span>26 <span style=''>}
+</span>27 <span style=''>
+</span>28 <span style=''>/**
+</span>29 <span style=''> * An abstraction over a stream that provides DataChunks
+</span>30 <span style=''> */
+</span>31 <span style=''>trait DataChunker[T] extends CloseOnNeed {
+</span>32 <span style=''>
+</span>33 <span style=''>  /**
+</span>34 <span style=''>   * Is the underlying resource closed - if true the dataChunkEnumerator will
+</span>35 <span style=''>   * return the Iteratee passed to it, stopping evaluation
+</span>36 <span style=''>   */ 
+</span>37 <span style=''>  def underlyingClosed = </span><span style='background: #F0ADAD'>false</span><span style=''>
+</span>38 <span style=''>
+</span>39 <span style=''>  protected implicit val ev: DataChunkEvidence[T]
+</span>40 <span style=''>
+</span>41 <span style=''>  /**
+</span>42 <span style=''>   * Receives the next chunk from the underlying 
+</span>43 <span style=''>   */ 
+</span>44 <span style=''>  def nextChunk: DataChunk
+</span>45 <span style=''>}
+</span>46 <span style=''>
+</span>47 <span style=''>
+</span>48 <span style=''>/**
+</span>49 <span style=''> * Wraps a ReadableByteChannel to provide DataChunks, optionally closes the channel (defaults to closing).
+</span>50 <span style=''> *
+</span>51 <span style=''> * This base implementation should only be used against already provided buffers, prefer using ReadableByteChannelWrapper directly instead.
+</span>52 <span style=''> *
+</span>53 <span style=''> * @constructor Direct buffers also require a backing array to be specified.
+</span>54 <span style=''> */ 
+</span>55 <span style=''>class ReadableByteChannelWrapperBase[T](val channel: ReadableByteChannel, protected val buffer: ByteBuffer, val closeChannel: Boolean = true, protected val backingArray: Array[Byte] = ReadableByteChannelWrapper.emptyBytes )(implicit val ev: DataChunkEvidence[T]) extends DataChunker[T] with CloseOnNeed {
+</span>56 <span style=''>
+</span>57 <span style=''>  if (</span><span style='background: #F0ADAD'>!buffer.hasArray</span><span style=''>) {
+</span>58 <span style=''>    </span><span style='background: #F0ADAD'>require(
+</span>59 <span style=''></span><span style='background: #F0ADAD'>      backingArray.length &gt; 0,
+</span>60 <span style=''></span><span style='background: #F0ADAD'>      &quot;A ReadableByteChannelWrapper with a Direct buffer must be created with a non empty backingArray&quot;)</span><span style=''>
+</span>61 <span style=''>  }
+</span>62 <span style=''>
+</span>63 <span style=''>  override def underlyingClosed = </span><span style='background: #F0ADAD'>!channel.isOpen</span><span style=''>
+</span>64 <span style=''>      
+</span>65 <span style=''>  /**
+</span>66 <span style=''>   * Closes the channel when closeChannel is true - ensure to call from derived classes
+</span>67 <span style=''>   */ 
+</span>68 <span style=''>  protected def doClose = {
+</span>69 <span style=''>    if (</span><span style='background: #F0ADAD'>closeChannel</span><span style=''>) {
+</span>70 <span style=''>      </span><span style='background: #F0ADAD'>channel.close()</span><span style=''>
+</span>71 <span style=''>    }
+</span>72 <span style=''>  }
+</span>73 <span style=''>
+</span>74 <span style=''>  /**
+</span>75 <span style=''>   * Called when processing array backed buffers
+</span>76 <span style=''>   */ 
+</span>77 <span style=''>  protected def jbytes() : DataChunk = {
+</span>78 <span style=''>    </span><span style='background: #F0ADAD'>buffer.clear()</span><span style=''>
+</span>79 <span style=''>    val read = </span><span style='background: #F0ADAD'>channel.read(buffer)</span><span style=''>
+</span>80 <span style=''>    read match {
+</span>81 <span style=''>      case -1 =&gt; </span><span style='background: #F0ADAD'>{
+</span>82 <span style=''></span><span style='background: #F0ADAD'>        closeResource
+</span>83 <span style=''></span><span style='background: #F0ADAD'>        EOFData
+</span>84 <span style=''></span><span style='background: #F0ADAD'>      }</span><span style=''>
+</span>85 <span style=''>      case 0 =&gt; </span><span style='background: #F0ADAD'>EmptyData</span><span style=''>
+</span>86 <span style=''>      case _ =&gt; </span><span style='background: #F0ADAD'>Chunk(buffer.array, 0, read)</span><span style=''>
+</span>87 <span style=''>    }
+</span>88 <span style=''>  }
+</span>89 <span style=''>
+</span>90 <span style=''>  private var leftInBuffer = </span><span style='background: #F0ADAD'>0</span><span style=''>
+</span>91 <span style=''>  
+</span>92 <span style=''>  /**
+</span>93 <span style=''>   * Called when processing via Direct Buffers
+</span>94 <span style=''>   */ 
+</span>95 <span style=''>  protected def direct() : DataChunk = {
+</span>96 <span style=''>    // limit is rem when its not read anything
+</span>97 <span style=''>    if (</span><span style='background: #F0ADAD'>leftInBuffer &gt; 0</span><span style=''>) </span><span style='background: #F0ADAD'>{
+</span>98 <span style=''></span><span style='background: #F0ADAD'>      // println(&quot;remains &quot;+leftInBuffer)
+</span>99 <span style=''></span><span style='background: #F0ADAD'>      val used = math.min(leftInBuffer, backingArray.length)
+</span>100 <span style=''></span><span style='background: #F0ADAD'>      if (leftInBuffer &gt;= used) {
+</span>101 <span style=''></span><span style='background: #F0ADAD'>        // still got some left to push
+</span>102 <span style=''></span><span style='background: #F0ADAD'>        leftInBuffer = leftInBuffer - used
+</span>103 <span style=''></span><span style='background: #F0ADAD'>      } else {
+</span>104 <span style=''></span><span style='background: #F0ADAD'>        leftInBuffer = 0
+</span>105 <span style=''></span><span style='background: #F0ADAD'>      }
+</span>106 <span style=''></span><span style='background: #F0ADAD'>      // if there is still data read it out in a chunk
+</span>107 <span style=''></span><span style='background: #F0ADAD'>      buffer.get(backingArray, 0, used)
+</span>108 <span style=''></span><span style='background: #F0ADAD'>      Chunk(backingArray, 0, used)
+</span>109 <span style=''></span><span style='background: #F0ADAD'>    }</span><span style=''> else </span><span style='background: #F0ADAD'>{
+</span>110 <span style=''></span><span style='background: #F0ADAD'>
+</span>111 <span style=''></span><span style='background: #F0ADAD'>      buffer.clear()
+</span>112 <span style=''></span><span style='background: #F0ADAD'>      
+</span>113 <span style=''></span><span style='background: #F0ADAD'>      val read = channel.read(buffer)
+</span>114 <span style=''></span><span style='background: #F0ADAD'>      // println(&quot;read this &quot;+read)
+</span>115 <span style=''></span><span style='background: #F0ADAD'>      val rem = buffer.remaining
+</span>116 <span style=''></span><span style='background: #F0ADAD'>      read match {
+</span>117 <span style=''></span><span style='background: #F0ADAD'>        case -1 =&gt;
+</span>118 <span style=''></span><span style='background: #F0ADAD'>          closeResource
+</span>119 <span style=''></span><span style='background: #F0ADAD'>          EOFData
+</span>120 <span style=''></span><span style='background: #F0ADAD'>
+</span>121 <span style=''></span><span style='background: #F0ADAD'>        case 0 =&gt; EmptyData
+</span>122 <span style=''></span><span style='background: #F0ADAD'>
+</span>123 <span style=''></span><span style='background: #F0ADAD'>        case _ =&gt;
+</span>124 <span style=''></span><span style='background: #F0ADAD'>
+</span>125 <span style=''></span><span style='background: #F0ADAD'>          val used = math.min(math.min(rem, read), backingArray.length)
+</span>126 <span style=''></span><span style='background: #F0ADAD'>          if (read &gt; used) {
+</span>127 <span style=''></span><span style='background: #F0ADAD'>            leftInBuffer = read - used
+</span>128 <span style=''></span><span style='background: #F0ADAD'>          }
+</span>129 <span style=''></span><span style='background: #F0ADAD'>
+</span>130 <span style=''></span><span style='background: #F0ADAD'>          buffer.rewind()
+</span>131 <span style=''></span><span style='background: #F0ADAD'>          // println(&quot;calling get with &quot;+used)
+</span>132 <span style=''></span><span style='background: #F0ADAD'>          //try{
+</span>133 <span style=''></span><span style='background: #F0ADAD'>            buffer.get(backingArray, 0, used)
+</span>134 <span style=''></span><span style='background: #F0ADAD'>            //println(&quot;read &quot;+ new String(to, 0, used, &quot;UTF-8&quot;))
+</span>135 <span style=''></span><span style='background: #F0ADAD'>          //} catch {
+</span>136 <span style=''></span><span style='background: #F0ADAD'>          //  case t: Throwable =&gt;
+</span>137 <span style=''></span><span style='background: #F0ADAD'>              // println(&quot;threw &quot;+t.getMessage)
+</span>138 <span style=''></span><span style='background: #F0ADAD'>          //    t.printStackTrace
+</span>139 <span style=''></span><span style='background: #F0ADAD'>          //    throw t
+</span>140 <span style=''></span><span style='background: #F0ADAD'>          //}
+</span>141 <span style=''></span><span style='background: #F0ADAD'>          Chunk(backingArray, 0, used)
+</span>142 <span style=''></span><span style='background: #F0ADAD'>      }
+</span>143 <span style=''></span><span style='background: #F0ADAD'>    }</span><span style=''>
+</span>144 <span style=''>  }
+</span>145 <span style=''>
+</span>146 <span style=''>  /**
+</span>147 <span style=''>   * Receives the next chunk from the underlying 
+</span>148 <span style=''>   */ 
+</span>149 <span style=''>  final def nextChunk: DataChunk = 
+</span>150 <span style=''>    if (</span><span style='background: #F0ADAD'>buffer.hasArray</span><span style=''>)
+</span>151 <span style=''>      </span><span style='background: #F0ADAD'>jbytes()</span><span style=''>
+</span>152 <span style=''>    else
+</span>153 <span style=''>      </span><span style='background: #F0ADAD'>direct()</span><span style=''>
+</span>154 <span style=''>
+</span>155 <span style=''>}
+</span>156 <span style=''>
+</span>157 <span style=''>/**
+</span>158 <span style=''> * Wraps a ReadableByteChannel to provide DataChunks, optionally closes the channel (defaults to closing).
+</span>159 <span style=''> *
+</span>160 <span style=''> * Can work with either direct or heap based buffers and uses pools to re-use the allocated buffers.
+</span>161 <span style=''> * 
+</span>162 <span style=''> * @param directBufferArrayPool is used when there is a direct ByteBuffer only.
+</span>163 <span style=''> */ 
+</span>164 <span style=''>class ReadableByteChannelWrapper[T](channel: ReadableByteChannel, closeChannel: Boolean = true, private val bytePool: Pool[ByteBuffer] = DefaultBufferPool, private val directBufferArrayPool: Pool[Array[Byte]] = DefaultByteArrayPool )(implicit ev: DataChunkEvidence[T]) extends {
+</span>165 <span style=''>
+</span>166 <span style=''>  override protected val buffer: ByteBuffer = bytePool.grab
+</span>167 <span style=''>
+</span>168 <span style=''>  override protected val backingArray: Array[Byte] =
+</span>169 <span style=''>    if (buffer.hasArray)
+</span>170 <span style=''>      ReadableByteChannelWrapper.emptyBytes
+</span>171 <span style=''>    else
+</span>172 <span style=''>      directBufferArrayPool.grab
+</span>173 <span style=''>
+</span>174 <span style=''>} with 
+</span>175 <span style=''>  ReadableByteChannelWrapperBase[T](
+</span>176 <span style=''>    channel, buffer, closeChannel, backingArray ) {
+</span>177 <span style=''>   
+</span>178 <span style=''>  override protected def doClose = {
+</span>179 <span style=''>    if (</span><span style='background: #F0ADAD'>!buffer.hasArray</span><span style=''>) {
+</span>180 <span style=''>      </span><span style='background: #F0ADAD'>directBufferArrayPool.giveBack(backingArray)</span><span style=''>
+</span>181 <span style=''>    }
+</span>182 <span style=''>    </span><span style='background: #F0ADAD'>bytePool.giveBack(buffer)</span><span style=''>
+</span>183 <span style=''>    </span><span style='background: #F0ADAD'>super.doClose</span><span style=''>
+</span>184 <span style=''>  }
+</span>185 <span style=''>
+</span>186 <span style=''>}
+</span>187 <span style=''>
+</span>188 <span style=''>/**
+</span>189 <span style=''> * Convenience function for wrapping a channel
+</span>190 <span style=''> */ 
+</span>191 <span style=''>class RBCImplicitWrapper(channel: ReadableByteChannel)(implicit ev: DataChunkEvidence[DataChunk]){
+</span>192 <span style=''>  def wrapped: DataChunker[DataChunk] = </span><span style='background: #F0ADAD'>new ReadableByteChannelWrapper(channel)</span><span style=''>
+</span>193 <span style=''>}
+</span>194 <span style=''>
+</span>195 <span style=''>trait ReadableByteChannelWrapperImplicits {
+</span>196 <span style=''>
+</span>197 <span style=''>  implicit def toRBCWrapper(channel: ReadableByteChannel)(implicit ev: DataChunkEvidence[DataChunk]): RBCImplicitWrapper = </span><span style='background: #F0ADAD'>new RBCImplicitWrapper(channel)</span><span style=''>
+</span>198 <span style=''>
+</span>199 <span style=''>  implicit def dataChunkerEnumerator[T, F[_]: Monad](chunker: DataChunker[T]): EnumeratorT[DataChunk, F] =
+</span>200 <span style=''>    </span><span style='background: #F0ADAD'>new AsyncDataChunkerEnumerator[T, F](chunker)</span><span style=''>
+</span>201 <span style=''>
+</span>202 <span style=''>  /**
+</span>203 <span style=''>   * Use in a call to asyncReadableByteChannelEnumerator to turn it into a synchronous enumerator (constantly trying to get new chunks of data)
+</span>204 <span style=''>   */
+</span>205 <span style=''>  val INFINITE_RETRIES = </span><span style='background: #F0ADAD'>-1</span><span style=''>
+</span>206 <span style=''>
+</span>207 <span style=''>  /**
+</span>208 <span style=''>   * Creates an Enumerator with a given count for Empty -&gt; Cont applications.
+</span>209 <span style=''>   *
+</span>210 <span style=''>   * When the count is met it returns the Cont for the next Enumeration step.
+</span>211 <span style=''>   *
+</span>212 <span style=''>   * Note: Call via eval only.
+</span>213 <span style=''>   * @param contOnCont INFINITE_RETRIES (-1) for keep on trying, the default is 5 (as exposed by the implicit enumerator readableByteChannelEnumerator)
+</span>214 <span style=''>   */
+</span>215 <span style=''>  class AsyncDataChunkerEnumerator[T, F[_]]( chunker: DataChunker[T], contOnCont: Int = 5 )(implicit F: Monad[F]) extends EnumeratorT[DataChunk, F] {
+</span>216 <span style=''>    import scalaz.Scalaz._
+</span>217 <span style=''>
+</span>218 <span style=''>    override def apply[A]: StepT[DataChunk, F, A] =&gt; IterateeT[DataChunk, F, A] = {
+</span>219 <span style=''>
+</span>220 <span style=''>      def apply(count: Int): StepT[DataChunk, F, A] =&gt; IterateeT[DataChunk, F, A] = {
+</span>221 <span style=''>        case i if </span><span style='background: #F0ADAD'>chunker.underlyingClosed || chunker.isClosed</span><span style=''> =&gt;
+</span>222 <span style=''>          </span><span style='background: #F0ADAD'>i.pointI</span><span style=''>
+</span>223 <span style=''>        case i@Done(acc, input) </span><span style='background: #F0ADAD'>=&gt;
+</span>224 <span style=''></span><span style='background: #F0ADAD'>          val c = acc
+</span>225 <span style=''></span><span style='background: #F0ADAD'>          val in = input
+</span>226 <span style=''></span><span style='background: #F0ADAD'>          i.pointI</span><span style=''>
+</span>227 <span style=''>        case i =&gt;
+</span>228 <span style=''>          </span><span style='background: #F0ADAD'>i mapCont { k =&gt;
+</span>229 <span style=''></span><span style='background: #F0ADAD'>            val realChunk = chunker.nextChunk
+</span>230 <span style=''></span><span style='background: #F0ADAD'>            iterateeT {
+</span>231 <span style=''></span><span style='background: #F0ADAD'>              val nc =
+</span>232 <span style=''></span><span style='background: #F0ADAD'>                if (realChunk.isEmpty)
+</span>233 <span style=''></span><span style='background: #F0ADAD'>                  count + 1
+</span>234 <span style=''></span><span style='background: #F0ADAD'>                else
+</span>235 <span style=''></span><span style='background: #F0ADAD'>                  0
+</span>236 <span style=''></span><span style='background: #F0ADAD'>
+</span>237 <span style=''></span><span style='background: #F0ADAD'>              val shouldPause =
+</span>238 <span style=''></span><span style='background: #F0ADAD'>                if (((contOnCont != INFINITE_RETRIES) &amp;&amp; (nc &gt; contOnCont)))
+</span>239 <span style=''></span><span style='background: #F0ADAD'>                  true
+</span>240 <span style=''></span><span style='background: #F0ADAD'>                else
+</span>241 <span style=''></span><span style='background: #F0ADAD'>                  false
+</span>242 <span style=''></span><span style='background: #F0ADAD'>
+</span>243 <span style=''></span><span style='background: #F0ADAD'>              val nextIStep =
+</span>244 <span style=''></span><span style='background: #F0ADAD'>                if (realChunk.isEOF)
+</span>245 <span style=''></span><span style='background: #F0ADAD'>                  k(Eof[DataChunk])
+</span>246 <span style=''></span><span style='background: #F0ADAD'>                else if (realChunk.isEmpty)
+</span>247 <span style=''></span><span style='background: #F0ADAD'>                  k(Empty[DataChunk])
+</span>248 <span style=''></span><span style='background: #F0ADAD'>                else
+</span>249 <span style=''></span><span style='background: #F0ADAD'>                  k(Element(realChunk))
+</span>250 <span style=''></span><span style='background: #F0ADAD'>
+</span>251 <span style=''></span><span style='background: #F0ADAD'>              F.bind(nextIStep.value) { step =&gt;
+</span>252 <span style=''></span><span style='background: #F0ADAD'>
+</span>253 <span style=''></span><span style='background: #F0ADAD'>                if (shouldPause &amp;&amp; !isDoneS(step))
+</span>254 <span style=''></span><span style='background: #F0ADAD'>                  //nextIStep.value actually calls twice as it's then bound twice
+</span>255 <span style=''></span><span style='background: #F0ADAD'>                  F.point(step)
+</span>256 <span style=''></span><span style='background: #F0ADAD'>                else
+</span>257 <span style=''></span><span style='background: #F0ADAD'>                  apply(nc)(step).value
+</span>258 <span style=''></span><span style='background: #F0ADAD'>
+</span>259 <span style=''></span><span style='background: #F0ADAD'>              }
+</span>260 <span style=''></span><span style='background: #F0ADAD'>            }
+</span>261 <span style=''></span><span style='background: #F0ADAD'>          }</span><span style=''>
+</span>262 <span style=''>      }
+</span>263 <span style=''>
+</span>264 <span style=''>      </span><span style='background: #F0ADAD'>apply(0)</span><span style=''>
+</span>265 <span style=''>    }
+</span>266 <span style=''>  }
+</span>267 <span style=''>
+</span>268 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          21
+        </td>
+        <td>
+          1277
+        </td>
+        <td>
+          679
+          -
+          682
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.io.DataChunkEvidence.$anon.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          25
+        </td>
+        <td>
+          1278
+        </td>
+        <td>
+          792
+          -
+          793
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          25
+        </td>
+        <td>
+          1279
+        </td>
+        <td>
+          772
+          -
+          794
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.Array.ofDim
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Array.ofDim[Byte](0)((ClassTag.Byte: scala.reflect.ClassTag[Byte]))
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          1280
+        </td>
+        <td>
+          1082
+          -
+          1087
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          1281
+        </td>
+        <td>
+          1885
+          -
+          1901
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.buffer.hasArray().unary_!
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          1286
+        </td>
+        <td>
+          1881
+          -
+          1881
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          1287
+        </td>
+        <td>
+          1881
+          -
+          1881
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          1284
+        </td>
+        <td>
+          1909
+          -
+          2053
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.require
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Predef.require(ReadableByteChannelWrapperBase.this.backingArray.length.&gt;(0), &quot;A ReadableByteChannelWrapper with a Direct buffer must be created with a non empty backingArray&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          1285
+        </td>
+        <td>
+          1909
+          -
+          2053
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Predef.require
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Predef.require(ReadableByteChannelWrapperBase.this.backingArray.length.&gt;(0), &quot;A ReadableByteChannelWrapper with a Direct buffer must be created with a non empty backingArray&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          1282
+        </td>
+        <td>
+          1924
+          -
+          1947
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.backingArray.length.&gt;(0)
+        </td>
+      </tr><tr>
+        <td>
+          60
+        </td>
+        <td>
+          1283
+        </td>
+        <td>
+          1955
+          -
+          2052
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;A ReadableByteChannelWrapper with a Direct buffer must be created with a non empty backingArray&quot;
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          1288
+        </td>
+        <td>
+          2093
+          -
+          2108
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.channel.isOpen().unary_!
+        </td>
+      </tr><tr>
+        <td>
+          69
+        </td>
+        <td>
+          1289
+        </td>
+        <td>
+          2253
+          -
+          2265
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapperBase.closeChannel
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.closeChannel
+        </td>
+      </tr><tr>
+        <td>
+          69
+        </td>
+        <td>
+          1292
+        </td>
+        <td>
+          2249
+          -
+          2249
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          69
+        </td>
+        <td>
+          1293
+        </td>
+        <td>
+          2249
+          -
+          2249
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          1290
+        </td>
+        <td>
+          2275
+          -
+          2290
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.nio.channels.Channel.close
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.channel.close()
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          1291
+        </td>
+        <td>
+          2275
+          -
+          2290
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          java.nio.channels.Channel.close
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.channel.close()
+        </td>
+      </tr><tr>
+        <td>
+          78
+        </td>
+        <td>
+          1294
+        </td>
+        <td>
+          2409
+          -
+          2423
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.nio.Buffer.clear
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.buffer.clear()
+        </td>
+      </tr><tr>
+        <td>
+          79
+        </td>
+        <td>
+          1295
+        </td>
+        <td>
+          2452
+          -
+          2458
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapperBase.buffer
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.buffer
+        </td>
+      </tr><tr>
+        <td>
+          79
+        </td>
+        <td>
+          1296
+        </td>
+        <td>
+          2439
+          -
+          2459
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.nio.channels.ReadableByteChannel.read
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.channel.read(ReadableByteChannelWrapperBase.this.buffer)
+        </td>
+      </tr><tr>
+        <td>
+          81
+        </td>
+        <td>
+          1298
+        </td>
+        <td>
+          2494
+          -
+          2541
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          {
+  ReadableByteChannelWrapperBase.this.closeResource;
+  EOFData
+}
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          1297
+        </td>
+        <td>
+          2504
+          -
+          2517
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.resources.CloseOnNeed.closeResource
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.closeResource
+        </td>
+      </tr><tr>
+        <td>
+          85
+        </td>
+        <td>
+          1299
+        </td>
+        <td>
+          2558
+          -
+          2567
+        </td>
+        <td>
+          Ident
+        </td>
+        <td>
+          scales.utils.io.EmptyData
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          EmptyData
+        </td>
+      </tr><tr>
+        <td>
+          86
+        </td>
+        <td>
+          1300
+        </td>
+        <td>
+          2590
+          -
+          2602
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.nio.ByteBuffer.array
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.buffer.array()
+        </td>
+      </tr><tr>
+        <td>
+          86
+        </td>
+        <td>
+          1301
+        </td>
+        <td>
+          2604
+          -
+          2605
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          86
+        </td>
+        <td>
+          1302
+        </td>
+        <td>
+          2584
+          -
+          2612
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.io.Chunk.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Chunk.apply(ReadableByteChannelWrapperBase.this.buffer.array(), 0, read)
+        </td>
+      </tr><tr>
+        <td>
+          86
+        </td>
+        <td>
+          1303
+        </td>
+        <td>
+          2584
+          -
+          2612
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.io.Chunk.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Chunk.apply(ReadableByteChannelWrapperBase.this.buffer.array(), 0, read)
+        </td>
+      </tr><tr>
+        <td>
+          90
+        </td>
+        <td>
+          1304
+        </td>
+        <td>
+          2653
+          -
+          2654
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          97
+        </td>
+        <td>
+          1305
+        </td>
+        <td>
+          2814
+          -
+          2830
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.leftInBuffer.&gt;(0)
+        </td>
+      </tr><tr>
+        <td>
+          97
+        </td>
+        <td>
+          1321
+        </td>
+        <td>
+          2832
+          -
+          3236
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          {
+  val used: Int = scala.math.`package`.min(ReadableByteChannelWrapperBase.this.leftInBuffer, ReadableByteChannelWrapperBase.this.backingArray.length);
+  if (ReadableByteChannelWrapperBase.this.leftInBuffer.&gt;=(used))
+    ReadableByteChannelWrapperBase.this.leftInBuffer_=(ReadableByteChannelWrapperBase.this.leftInBuffer.-(used))
+  else
+    ReadableByteChannelWrapperBase.this.leftInBuffer_=(0);
+  ReadableByteChannelWrapperBase.this.buffer.get(ReadableByteChannelWrapperBase.this.backingArray, 0, used);
+  Chunk.apply(ReadableByteChannelWrapperBase.this.backingArray, 0, used)
+}
+        </td>
+      </tr><tr>
+        <td>
+          99
+        </td>
+        <td>
+          1306
+        </td>
+        <td>
+          2902
+          -
+          2914
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapperBase.leftInBuffer
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.leftInBuffer
+        </td>
+      </tr><tr>
+        <td>
+          99
+        </td>
+        <td>
+          1307
+        </td>
+        <td>
+          2916
+          -
+          2935
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Array.length
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.backingArray.length
+        </td>
+      </tr><tr>
+        <td>
+          99
+        </td>
+        <td>
+          1308
+        </td>
+        <td>
+          2893
+          -
+          2936
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.math.min
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.math.`package`.min(ReadableByteChannelWrapperBase.this.leftInBuffer, ReadableByteChannelWrapperBase.this.backingArray.length)
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          1309
+        </td>
+        <td>
+          2947
+          -
+          2967
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&gt;=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.leftInBuffer.&gt;=(used)
+        </td>
+      </tr><tr>
+        <td>
+          102
+        </td>
+        <td>
+          1310
+        </td>
+        <td>
+          3033
+          -
+          3052
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.-
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.leftInBuffer.-(used)
+        </td>
+      </tr><tr>
+        <td>
+          102
+        </td>
+        <td>
+          1311
+        </td>
+        <td>
+          3018
+          -
+          3052
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapperBase.leftInBuffer_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.leftInBuffer_=(ReadableByteChannelWrapperBase.this.leftInBuffer.-(used))
+        </td>
+      </tr><tr>
+        <td>
+          102
+        </td>
+        <td>
+          1312
+        </td>
+        <td>
+          3018
+          -
+          3052
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapperBase.leftInBuffer_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.leftInBuffer_=(ReadableByteChannelWrapperBase.this.leftInBuffer.-(used))
+        </td>
+      </tr><tr>
+        <td>
+          104
+        </td>
+        <td>
+          1313
+        </td>
+        <td>
+          3076
+          -
+          3092
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapperBase.leftInBuffer_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.leftInBuffer_=(0)
+        </td>
+      </tr><tr>
+        <td>
+          104
+        </td>
+        <td>
+          1314
+        </td>
+        <td>
+          3076
+          -
+          3092
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapperBase.leftInBuffer_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.leftInBuffer_=(0)
+        </td>
+      </tr><tr>
+        <td>
+          107
+        </td>
+        <td>
+          1315
+        </td>
+        <td>
+          3173
+          -
+          3185
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapperBase.backingArray
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.backingArray
+        </td>
+      </tr><tr>
+        <td>
+          107
+        </td>
+        <td>
+          1316
+        </td>
+        <td>
+          3187
+          -
+          3188
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          107
+        </td>
+        <td>
+          1317
+        </td>
+        <td>
+          3162
+          -
+          3195
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.nio.ByteBuffer.get
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.buffer.get(ReadableByteChannelWrapperBase.this.backingArray, 0, used)
+        </td>
+      </tr><tr>
+        <td>
+          108
+        </td>
+        <td>
+          1318
+        </td>
+        <td>
+          3208
+          -
+          3220
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapperBase.backingArray
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.backingArray
+        </td>
+      </tr><tr>
+        <td>
+          108
+        </td>
+        <td>
+          1319
+        </td>
+        <td>
+          3222
+          -
+          3223
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          108
+        </td>
+        <td>
+          1320
+        </td>
+        <td>
+          3202
+          -
+          3230
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.io.Chunk.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Chunk.apply(ReadableByteChannelWrapperBase.this.backingArray, 0, used)
+        </td>
+      </tr><tr>
+        <td>
+          109
+        </td>
+        <td>
+          1346
+        </td>
+        <td>
+          3242
+          -
+          4092
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          {
+  ReadableByteChannelWrapperBase.this.buffer.clear();
+  val read: Int = ReadableByteChannelWrapperBase.this.channel.read(ReadableByteChannelWrapperBase.this.buffer);
+  val rem: Int = ReadableByteChannelWrapperBase.this.buffer.remaining();
+  read match {
+    case -1 =&gt; {
+      ReadableByteChannelWrapperBase.this.closeResource;
+      EOFData
+    }
+    case 0 =&gt; EmptyData
+    case _ =&gt; {
+      val used: Int = scala.math.`package`.min(scala.math.`package`.min(rem, read), ReadableByteChannelWrapperBase.this.backingArray.length);
+      if (read.&gt;(used))
+        ReadableByteChannelWrapperBase.this.leftInBuffer_=(read.-(used))
+      else
+        ();
+      ReadableByteChannelWrapperBase.this.buffer.rewind();
+      ReadableByteChannelWrapperBase.this.buffer.get(ReadableByteChannelWrapperBase.this.backingArray, 0, used);
+      Chunk.apply(ReadableByteChannelWrapperBase.this.backingArray, 0, used)
+    }
+  }
+}
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          1322
+        </td>
+        <td>
+          3251
+          -
+          3265
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.nio.Buffer.clear
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.buffer.clear()
+        </td>
+      </tr><tr>
+        <td>
+          113
+        </td>
+        <td>
+          1323
+        </td>
+        <td>
+          3303
+          -
+          3309
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapperBase.buffer
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.buffer
+        </td>
+      </tr><tr>
+        <td>
+          113
+        </td>
+        <td>
+          1324
+        </td>
+        <td>
+          3290
+          -
+          3310
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.nio.channels.ReadableByteChannel.read
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.channel.read(ReadableByteChannelWrapperBase.this.buffer)
+        </td>
+      </tr><tr>
+        <td>
+          115
+        </td>
+        <td>
+          1325
+        </td>
+        <td>
+          3363
+          -
+          3379
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.nio.Buffer.remaining
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.buffer.remaining()
+        </td>
+      </tr><tr>
+        <td>
+          117
+        </td>
+        <td>
+          1327
+        </td>
+        <td>
+          3415
+          -
+          3459
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          {
+  ReadableByteChannelWrapperBase.this.closeResource;
+  EOFData
+}
+        </td>
+      </tr><tr>
+        <td>
+          118
+        </td>
+        <td>
+          1326
+        </td>
+        <td>
+          3428
+          -
+          3441
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.resources.CloseOnNeed.closeResource
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.closeResource
+        </td>
+      </tr><tr>
+        <td>
+          121
+        </td>
+        <td>
+          1328
+        </td>
+        <td>
+          3479
+          -
+          3488
+        </td>
+        <td>
+          Ident
+        </td>
+        <td>
+          scales.utils.io.EmptyData
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          EmptyData
+        </td>
+      </tr><tr>
+        <td>
+          123
+        </td>
+        <td>
+          1345
+        </td>
+        <td>
+          3505
+          -
+          4078
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          {
+  val used: Int = scala.math.`package`.min(scala.math.`package`.min(rem, read), ReadableByteChannelWrapperBase.this.backingArray.length);
+  if (read.&gt;(used))
+    ReadableByteChannelWrapperBase.this.leftInBuffer_=(read.-(used))
+  else
+    ();
+  ReadableByteChannelWrapperBase.this.buffer.rewind();
+  ReadableByteChannelWrapperBase.this.buffer.get(ReadableByteChannelWrapperBase.this.backingArray, 0, used);
+  Chunk.apply(ReadableByteChannelWrapperBase.this.backingArray, 0, used)
+}
+        </td>
+      </tr><tr>
+        <td>
+          125
+        </td>
+        <td>
+          1329
+        </td>
+        <td>
+          3539
+          -
+          3558
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.math.min
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.math.`package`.min(rem, read)
+        </td>
+      </tr><tr>
+        <td>
+          125
+        </td>
+        <td>
+          1330
+        </td>
+        <td>
+          3560
+          -
+          3579
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Array.length
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.backingArray.length
+        </td>
+      </tr><tr>
+        <td>
+          125
+        </td>
+        <td>
+          1331
+        </td>
+        <td>
+          3530
+          -
+          3580
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.math.min
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.math.`package`.min(scala.math.`package`.min(rem, read), ReadableByteChannelWrapperBase.this.backingArray.length)
+        </td>
+      </tr><tr>
+        <td>
+          126
+        </td>
+        <td>
+          1332
+        </td>
+        <td>
+          3595
+          -
+          3606
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          read.&gt;(used)
+        </td>
+      </tr><tr>
+        <td>
+          126
+        </td>
+        <td>
+          1336
+        </td>
+        <td>
+          3591
+          -
+          3591
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          126
+        </td>
+        <td>
+          1337
+        </td>
+        <td>
+          3591
+          -
+          3591
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          127
+        </td>
+        <td>
+          1333
+        </td>
+        <td>
+          3637
+          -
+          3648
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.-
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          read.-(used)
+        </td>
+      </tr><tr>
+        <td>
+          127
+        </td>
+        <td>
+          1334
+        </td>
+        <td>
+          3622
+          -
+          3648
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapperBase.leftInBuffer_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.leftInBuffer_=(read.-(used))
+        </td>
+      </tr><tr>
+        <td>
+          127
+        </td>
+        <td>
+          1335
+        </td>
+        <td>
+          3622
+          -
+          3648
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapperBase.leftInBuffer_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.leftInBuffer_=(read.-(used))
+        </td>
+      </tr><tr>
+        <td>
+          130
+        </td>
+        <td>
+          1338
+        </td>
+        <td>
+          3672
+          -
+          3687
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.nio.Buffer.rewind
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.buffer.rewind()
+        </td>
+      </tr><tr>
+        <td>
+          133
+        </td>
+        <td>
+          1339
+        </td>
+        <td>
+          3775
+          -
+          3787
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapperBase.backingArray
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.backingArray
+        </td>
+      </tr><tr>
+        <td>
+          133
+        </td>
+        <td>
+          1340
+        </td>
+        <td>
+          3789
+          -
+          3790
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          133
+        </td>
+        <td>
+          1341
+        </td>
+        <td>
+          3764
+          -
+          3797
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.nio.ByteBuffer.get
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.buffer.get(ReadableByteChannelWrapperBase.this.backingArray, 0, used)
+        </td>
+      </tr><tr>
+        <td>
+          141
+        </td>
+        <td>
+          1342
+        </td>
+        <td>
+          4056
+          -
+          4068
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapperBase.backingArray
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.backingArray
+        </td>
+      </tr><tr>
+        <td>
+          141
+        </td>
+        <td>
+          1343
+        </td>
+        <td>
+          4070
+          -
+          4071
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          141
+        </td>
+        <td>
+          1344
+        </td>
+        <td>
+          4050
+          -
+          4078
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.io.Chunk.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Chunk.apply(ReadableByteChannelWrapperBase.this.backingArray, 0, used)
+        </td>
+      </tr><tr>
+        <td>
+          150
+        </td>
+        <td>
+          1347
+        </td>
+        <td>
+          4205
+          -
+          4220
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.nio.ByteBuffer.hasArray
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.buffer.hasArray()
+        </td>
+      </tr><tr>
+        <td>
+          151
+        </td>
+        <td>
+          1348
+        </td>
+        <td>
+          4228
+          -
+          4236
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapperBase.jbytes
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.jbytes()
+        </td>
+      </tr><tr>
+        <td>
+          151
+        </td>
+        <td>
+          1349
+        </td>
+        <td>
+          4228
+          -
+          4236
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapperBase.jbytes
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.jbytes()
+        </td>
+      </tr><tr>
+        <td>
+          153
+        </td>
+        <td>
+          1350
+        </td>
+        <td>
+          4252
+          -
+          4260
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapperBase.direct
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.direct()
+        </td>
+      </tr><tr>
+        <td>
+          153
+        </td>
+        <td>
+          1351
+        </td>
+        <td>
+          4252
+          -
+          4260
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapperBase.direct
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperBase.this.direct()
+        </td>
+      </tr><tr>
+        <td>
+          179
+        </td>
+        <td>
+          1352
+        </td>
+        <td>
+          5221
+          -
+          5237
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapper.this.buffer.hasArray().unary_!
+        </td>
+      </tr><tr>
+        <td>
+          179
+        </td>
+        <td>
+          1356
+        </td>
+        <td>
+          5217
+          -
+          5217
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          179
+        </td>
+        <td>
+          1357
+        </td>
+        <td>
+          5217
+          -
+          5217
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          180
+        </td>
+        <td>
+          1353
+        </td>
+        <td>
+          5278
+          -
+          5290
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapper.backingArray
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapper.this.backingArray
+        </td>
+      </tr><tr>
+        <td>
+          180
+        </td>
+        <td>
+          1354
+        </td>
+        <td>
+          5247
+          -
+          5291
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.resources.Pool.giveBack
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapper.this.directBufferArrayPool.giveBack(ReadableByteChannelWrapper.this.backingArray)
+        </td>
+      </tr><tr>
+        <td>
+          180
+        </td>
+        <td>
+          1355
+        </td>
+        <td>
+          5247
+          -
+          5291
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.resources.Pool.giveBack
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapper.this.directBufferArrayPool.giveBack(ReadableByteChannelWrapper.this.backingArray)
+        </td>
+      </tr><tr>
+        <td>
+          182
+        </td>
+        <td>
+          1358
+        </td>
+        <td>
+          5320
+          -
+          5326
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapper.buffer
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapper.this.buffer
+        </td>
+      </tr><tr>
+        <td>
+          182
+        </td>
+        <td>
+          1359
+        </td>
+        <td>
+          5302
+          -
+          5327
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.resources.Pool.giveBack
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapper.this.bytePool.giveBack(ReadableByteChannelWrapper.this.buffer)
+        </td>
+      </tr><tr>
+        <td>
+          183
+        </td>
+        <td>
+          1360
+        </td>
+        <td>
+          5332
+          -
+          5345
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapperBase.doClose
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapper.super.doClose
+        </td>
+      </tr><tr>
+        <td>
+          192
+        </td>
+        <td>
+          1361
+        </td>
+        <td>
+          5580
+          -
+          5587
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.io.RBCImplicitWrapper.channel
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          RBCImplicitWrapper.this.channel
+        </td>
+      </tr><tr>
+        <td>
+          192
+        </td>
+        <td>
+          1362
+        </td>
+        <td>
+          5549
+          -
+          5549
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapper.&lt;init&gt;$default$2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          io.this.ReadableByteChannelWrapper.&lt;init&gt;$default$2[Nothing]
+        </td>
+      </tr><tr>
+        <td>
+          192
+        </td>
+        <td>
+          1363
+        </td>
+        <td>
+          5549
+          -
+          5549
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapper.&lt;init&gt;$default$3
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          io.this.ReadableByteChannelWrapper.&lt;init&gt;$default$3[Nothing]
+        </td>
+      </tr><tr>
+        <td>
+          192
+        </td>
+        <td>
+          1364
+        </td>
+        <td>
+          5549
+          -
+          5549
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapper.&lt;init&gt;$default$4
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          io.this.ReadableByteChannelWrapper.&lt;init&gt;$default$4[Nothing]
+        </td>
+      </tr><tr>
+        <td>
+          192
+        </td>
+        <td>
+          1365
+        </td>
+        <td>
+          5549
+          -
+          5549
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.io.RBCImplicitWrapper.ev
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          RBCImplicitWrapper.this.ev
+        </td>
+      </tr><tr>
+        <td>
+          192
+        </td>
+        <td>
+          1366
+        </td>
+        <td>
+          5549
+          -
+          5588
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapper.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new scales.utils.io.ReadableByteChannelWrapper[scales.utils.io.DataChunk](RBCImplicitWrapper.this.channel, io.this.ReadableByteChannelWrapper.&lt;init&gt;$default$2[Nothing], io.this.ReadableByteChannelWrapper.&lt;init&gt;$default$3[Nothing], io.this.ReadableByteChannelWrapper.&lt;init&gt;$default$4[Nothing])(RBCImplicitWrapper.this.ev)
+        </td>
+      </tr><tr>
+        <td>
+          197
+        </td>
+        <td>
+          1367
+        </td>
+        <td>
+          5760
+          -
+          5791
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.io.RBCImplicitWrapper.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new RBCImplicitWrapper(channel)(ev)
+        </td>
+      </tr><tr>
+        <td>
+          200
+        </td>
+        <td>
+          1368
+        </td>
+        <td>
+          5904
+          -
+          5949
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new ReadableByteChannelWrapperImplicits.this.AsyncDataChunkerEnumerator[T,F](chunker, ReadableByteChannelWrapperImplicits.this.AsyncDataChunkerEnumerator.&lt;init&gt;$default$2[T, F])(evidence$1)
+        </td>
+      </tr><tr>
+        <td>
+          205
+        </td>
+        <td>
+          1369
+        </td>
+        <td>
+          6132
+          -
+          6134
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          -1
+        </td>
+      </tr><tr>
+        <td>
+          221
+        </td>
+        <td>
+          1370
+        </td>
+        <td>
+          6892
+          -
+          6908
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.resources.CloseOnNeed.isClosed
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          AsyncDataChunkerEnumerator.this.chunker.isClosed
+        </td>
+      </tr><tr>
+        <td>
+          221
+        </td>
+        <td>
+          1371
+        </td>
+        <td>
+          6864
+          -
+          6908
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.||
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          AsyncDataChunkerEnumerator.this.chunker.underlyingClosed.||(AsyncDataChunkerEnumerator.this.chunker.isClosed)
+        </td>
+      </tr><tr>
+        <td>
+          222
+        </td>
+        <td>
+          1372
+        </td>
+        <td>
+          6924
+          -
+          6924
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          AsyncDataChunkerEnumerator.this.F
+        </td>
+      </tr><tr>
+        <td>
+          222
+        </td>
+        <td>
+          1373
+        </td>
+        <td>
+          6922
+          -
+          6930
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scalaz.iteratee.StepT.pointI
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          i.pointI(AsyncDataChunkerEnumerator.this.F)
+        </td>
+      </tr><tr>
+        <td>
+          222
+        </td>
+        <td>
+          1374
+        </td>
+        <td>
+          6922
+          -
+          6930
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scalaz.iteratee.StepT.pointI
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          i.pointI(AsyncDataChunkerEnumerator.this.F)
+        </td>
+      </tr><tr>
+        <td>
+          223
+        </td>
+        <td>
+          1377
+        </td>
+        <td>
+          6963
+          -
+          7031
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          {
+  val c: A = acc;
+  val in: scalaz.iteratee.Input[scales.utils.io.DataChunk] = input;
+  i.pointI(AsyncDataChunkerEnumerator.this.F)
+}
+        </td>
+      </tr><tr>
+        <td>
+          226
+        </td>
+        <td>
+          1375
+        </td>
+        <td>
+          7025
+          -
+          7025
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          AsyncDataChunkerEnumerator.this.F
+        </td>
+      </tr><tr>
+        <td>
+          226
+        </td>
+        <td>
+          1376
+        </td>
+        <td>
+          7023
+          -
+          7031
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scalaz.iteratee.StepT.pointI
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          i.pointI(AsyncDataChunkerEnumerator.this.F)
+        </td>
+      </tr><tr>
+        <td>
+          228
+        </td>
+        <td>
+          1414
+        </td>
+        <td>
+          7062
+          -
+          7062
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          AsyncDataChunkerEnumerator.this.F
+        </td>
+      </tr><tr>
+        <td>
+          228
+        </td>
+        <td>
+          1415
+        </td>
+        <td>
+          7060
+          -
+          8021
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scalaz.iteratee.StepT.mapCont
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          i.mapCont(((k: scalaz.iteratee.Input[scales.utils.io.DataChunk] =&gt; scalaz.iteratee.IterateeT[scales.utils.io.DataChunk,F,A]) =&gt; {
+  val realChunk: scales.utils.io.DataChunk = AsyncDataChunkerEnumerator.this.chunker.nextChunk;
+  scalaz.iteratee.Iteratee.iterateeT[scales.utils.io.DataChunk, F, A]({
+    val nc: Int = if (realChunk.isEmpty)
+      count.+(1)
+    else
+      0;
+    val shouldPause: Boolean = if (AsyncDataChunkerEnumerator.this.contOnCont.!=(ReadableByteChannelWrapperImplicits.this.INFINITE_RETRIES).&amp;&amp;(nc.&gt;(AsyncDataChunkerEnumerator.this.contOnCont)))
+      true
+    else
+      false;
+    val nextIStep: scalaz.iteratee.IterateeT[scales.utils.io.DataChunk,F,A] = if (realChunk.isEOF)
+      k.apply(scalaz.iteratee.Input.Eof.apply[scales.utils.io.DataChunk])
+    else
+      if (realChunk.isEmpty)
+        k.apply(scalaz.iteratee.Input.Empty.apply[scales.utils.io.DataChunk])
+      else
+        k.apply(scalaz.iteratee.Input.Element.apply[scales.utils.io.DataChunk](realChunk));
+    AsyncDataChunkerEnumerator.this.F.bind[scalaz.iteratee.StepT[scales.utils.io.DataChunk,F,A], scalaz.iteratee.StepT[scales.utils.io.DataChunk,F,A]](nextIStep.value)(((step: scalaz.iteratee.StepT[scales.utils.io.DataChunk,F,A]) =&gt; if (shouldPause.&amp;&amp;(scales.utils.iteratee.functions.isDoneS[scales.utils.io.DataChunk, F, A](step)(AsyncDataChunkerEnumerator.this.F).unary_!))
+      AsyncDataChunkerEnumerator.this.F.point[scalaz.iteratee.StepT[scales.utils.io.DataChunk,F,A]](step)
+    else
+      apply(nc).apply(step).value))
+  })
+}))(AsyncDataChunkerEnumerator.this.F)
+        </td>
+      </tr><tr>
+        <td>
+          228
+        </td>
+        <td>
+          1416
+        </td>
+        <td>
+          7060
+          -
+          8021
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scalaz.iteratee.StepT.mapCont
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          i.mapCont(((k: scalaz.iteratee.Input[scales.utils.io.DataChunk] =&gt; scalaz.iteratee.IterateeT[scales.utils.io.DataChunk,F,A]) =&gt; {
+  val realChunk: scales.utils.io.DataChunk = AsyncDataChunkerEnumerator.this.chunker.nextChunk;
+  scalaz.iteratee.Iteratee.iterateeT[scales.utils.io.DataChunk, F, A]({
+    val nc: Int = if (realChunk.isEmpty)
+      count.+(1)
+    else
+      0;
+    val shouldPause: Boolean = if (AsyncDataChunkerEnumerator.this.contOnCont.!=(ReadableByteChannelWrapperImplicits.this.INFINITE_RETRIES).&amp;&amp;(nc.&gt;(AsyncDataChunkerEnumerator.this.contOnCont)))
+      true
+    else
+      false;
+    val nextIStep: scalaz.iteratee.IterateeT[scales.utils.io.DataChunk,F,A] = if (realChunk.isEOF)
+      k.apply(scalaz.iteratee.Input.Eof.apply[scales.utils.io.DataChunk])
+    else
+      if (realChunk.isEmpty)
+        k.apply(scalaz.iteratee.Input.Empty.apply[scales.utils.io.DataChunk])
+      else
+        k.apply(scalaz.iteratee.Input.Element.apply[scales.utils.io.DataChunk](realChunk));
+    AsyncDataChunkerEnumerator.this.F.bind[scalaz.iteratee.StepT[scales.utils.io.DataChunk,F,A], scalaz.iteratee.StepT[scales.utils.io.DataChunk,F,A]](nextIStep.value)(((step: scalaz.iteratee.StepT[scales.utils.io.DataChunk,F,A]) =&gt; if (shouldPause.&amp;&amp;(scales.utils.iteratee.functions.isDoneS[scales.utils.io.DataChunk, F, A](step)(AsyncDataChunkerEnumerator.this.F).unary_!))
+      AsyncDataChunkerEnumerator.this.F.point[scalaz.iteratee.StepT[scales.utils.io.DataChunk,F,A]](step)
+    else
+      apply(nc).apply(step).value))
+  })
+}))(AsyncDataChunkerEnumerator.this.F)
+        </td>
+      </tr><tr>
+        <td>
+          229
+        </td>
+        <td>
+          1378
+        </td>
+        <td>
+          7105
+          -
+          7122
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.io.DataChunker.nextChunk
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          AsyncDataChunkerEnumerator.this.chunker.nextChunk
+        </td>
+      </tr><tr>
+        <td>
+          230
+        </td>
+        <td>
+          1413
+        </td>
+        <td>
+          7135
+          -
+          8009
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.IterateeTFunctions.iterateeT
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scalaz.iteratee.Iteratee.iterateeT[scales.utils.io.DataChunk, F, A]({
+  val nc: Int = if (realChunk.isEmpty)
+    count.+(1)
+  else
+    0;
+  val shouldPause: Boolean = if (AsyncDataChunkerEnumerator.this.contOnCont.!=(ReadableByteChannelWrapperImplicits.this.INFINITE_RETRIES).&amp;&amp;(nc.&gt;(AsyncDataChunkerEnumerator.this.contOnCont)))
+    true
+  else
+    false;
+  val nextIStep: scalaz.iteratee.IterateeT[scales.utils.io.DataChunk,F,A] = if (realChunk.isEOF)
+    k.apply(scalaz.iteratee.Input.Eof.apply[scales.utils.io.DataChunk])
+  else
+    if (realChunk.isEmpty)
+      k.apply(scalaz.iteratee.Input.Empty.apply[scales.utils.io.DataChunk])
+    else
+      k.apply(scalaz.iteratee.Input.Element.apply[scales.utils.io.DataChunk](realChunk));
+  AsyncDataChunkerEnumerator.this.F.bind[scalaz.iteratee.StepT[scales.utils.io.DataChunk,F,A], scalaz.iteratee.StepT[scales.utils.io.DataChunk,F,A]](nextIStep.value)(((step: scalaz.iteratee.StepT[scales.utils.io.DataChunk,F,A]) =&gt; if (shouldPause.&amp;&amp;(scales.utils.iteratee.functions.isDoneS[scales.utils.io.DataChunk, F, A](step)(AsyncDataChunkerEnumerator.this.F).unary_!))
+    AsyncDataChunkerEnumerator.this.F.point[scalaz.iteratee.StepT[scales.utils.io.DataChunk,F,A]](step)
+  else
+    apply(nc).apply(step).value))
+})
+        </td>
+      </tr><tr>
+        <td>
+          232
+        </td>
+        <td>
+          1379
+        </td>
+        <td>
+          7190
+          -
+          7207
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.io.DataChunk.isEmpty
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          realChunk.isEmpty
+        </td>
+      </tr><tr>
+        <td>
+          233
+        </td>
+        <td>
+          1380
+        </td>
+        <td>
+          7227
+          -
+          7236
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          count.+(1)
+        </td>
+      </tr><tr>
+        <td>
+          233
+        </td>
+        <td>
+          1381
+        </td>
+        <td>
+          7227
+          -
+          7236
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          count.+(1)
+        </td>
+      </tr><tr>
+        <td>
+          235
+        </td>
+        <td>
+          1382
+        </td>
+        <td>
+          7276
+          -
+          7277
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          235
+        </td>
+        <td>
+          1383
+        </td>
+        <td>
+          7276
+          -
+          7277
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          238
+        </td>
+        <td>
+          1384
+        </td>
+        <td>
+          7347
+          -
+          7363
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapperImplicits.INFINITE_RETRIES
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ReadableByteChannelWrapperImplicits.this.INFINITE_RETRIES
+        </td>
+      </tr><tr>
+        <td>
+          238
+        </td>
+        <td>
+          1385
+        </td>
+        <td>
+          7374
+          -
+          7384
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.contOnCont
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          AsyncDataChunkerEnumerator.this.contOnCont
+        </td>
+      </tr><tr>
+        <td>
+          238
+        </td>
+        <td>
+          1386
+        </td>
+        <td>
+          7369
+          -
+          7384
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          nc.&gt;(AsyncDataChunkerEnumerator.this.contOnCont)
+        </td>
+      </tr><tr>
+        <td>
+          238
+        </td>
+        <td>
+          1387
+        </td>
+        <td>
+          7332
+          -
+          7385
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          AsyncDataChunkerEnumerator.this.contOnCont.!=(ReadableByteChannelWrapperImplicits.this.INFINITE_RETRIES).&amp;&amp;(nc.&gt;(AsyncDataChunkerEnumerator.this.contOnCont))
+        </td>
+      </tr><tr>
+        <td>
+          239
+        </td>
+        <td>
+          1388
+        </td>
+        <td>
+          7406
+          -
+          7410
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          239
+        </td>
+        <td>
+          1389
+        </td>
+        <td>
+          7406
+          -
+          7410
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          241
+        </td>
+        <td>
+          1390
+        </td>
+        <td>
+          7450
+          -
+          7455
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          241
+        </td>
+        <td>
+          1391
+        </td>
+        <td>
+          7450
+          -
+          7455
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          244
+        </td>
+        <td>
+          1392
+        </td>
+        <td>
+          7507
+          -
+          7522
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.io.DataChunk.isEOF
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          realChunk.isEOF
+        </td>
+      </tr><tr>
+        <td>
+          245
+        </td>
+        <td>
+          1393
+        </td>
+        <td>
+          7544
+          -
+          7558
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scalaz.iteratee.Input.Eof.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scalaz.iteratee.Input.Eof.apply[scales.utils.io.DataChunk]
+        </td>
+      </tr><tr>
+        <td>
+          245
+        </td>
+        <td>
+          1394
+        </td>
+        <td>
+          7542
+          -
+          7559
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          k.apply(scalaz.iteratee.Input.Eof.apply[scales.utils.io.DataChunk])
+        </td>
+      </tr><tr>
+        <td>
+          245
+        </td>
+        <td>
+          1395
+        </td>
+        <td>
+          7542
+          -
+          7559
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          k.apply(scalaz.iteratee.Input.Eof.apply[scales.utils.io.DataChunk])
+        </td>
+      </tr><tr>
+        <td>
+          246
+        </td>
+        <td>
+          1396
+        </td>
+        <td>
+          7585
+          -
+          7602
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.io.DataChunk.isEmpty
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          realChunk.isEmpty
+        </td>
+      </tr><tr>
+        <td>
+          246
+        </td>
+        <td>
+          1403
+        </td>
+        <td>
+          7581
+          -
+          7702
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          if (realChunk.isEmpty)
+  k.apply(scalaz.iteratee.Input.Empty.apply[scales.utils.io.DataChunk])
+else
+  k.apply(scalaz.iteratee.Input.Element.apply[scales.utils.io.DataChunk](realChunk))
+        </td>
+      </tr><tr>
+        <td>
+          247
+        </td>
+        <td>
+          1397
+        </td>
+        <td>
+          7624
+          -
+          7640
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scalaz.iteratee.Input.Empty.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scalaz.iteratee.Input.Empty.apply[scales.utils.io.DataChunk]
+        </td>
+      </tr><tr>
+        <td>
+          247
+        </td>
+        <td>
+          1398
+        </td>
+        <td>
+          7622
+          -
+          7641
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          k.apply(scalaz.iteratee.Input.Empty.apply[scales.utils.io.DataChunk])
+        </td>
+      </tr><tr>
+        <td>
+          247
+        </td>
+        <td>
+          1399
+        </td>
+        <td>
+          7622
+          -
+          7641
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          k.apply(scalaz.iteratee.Input.Empty.apply[scales.utils.io.DataChunk])
+        </td>
+      </tr><tr>
+        <td>
+          249
+        </td>
+        <td>
+          1400
+        </td>
+        <td>
+          7683
+          -
+          7701
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.Input.Element.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scalaz.iteratee.Input.Element.apply[scales.utils.io.DataChunk](realChunk)
+        </td>
+      </tr><tr>
+        <td>
+          249
+        </td>
+        <td>
+          1401
+        </td>
+        <td>
+          7681
+          -
+          7702
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          k.apply(scalaz.iteratee.Input.Element.apply[scales.utils.io.DataChunk](realChunk))
+        </td>
+      </tr><tr>
+        <td>
+          249
+        </td>
+        <td>
+          1402
+        </td>
+        <td>
+          7681
+          -
+          7702
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          k.apply(scalaz.iteratee.Input.Element.apply[scales.utils.io.DataChunk](realChunk))
+        </td>
+      </tr><tr>
+        <td>
+          251
+        </td>
+        <td>
+          1404
+        </td>
+        <td>
+          7725
+          -
+          7740
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scalaz.iteratee.IterateeT.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          nextIStep.value
+        </td>
+      </tr><tr>
+        <td>
+          251
+        </td>
+        <td>
+          1412
+        </td>
+        <td>
+          7718
+          -
+          7995
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.Bind.bind
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          AsyncDataChunkerEnumerator.this.F.bind[scalaz.iteratee.StepT[scales.utils.io.DataChunk,F,A], scalaz.iteratee.StepT[scales.utils.io.DataChunk,F,A]](nextIStep.value)(((step: scalaz.iteratee.StepT[scales.utils.io.DataChunk,F,A]) =&gt; if (shouldPause.&amp;&amp;(scales.utils.iteratee.functions.isDoneS[scales.utils.io.DataChunk, F, A](step)(AsyncDataChunkerEnumerator.this.F).unary_!))
+  AsyncDataChunkerEnumerator.this.F.point[scalaz.iteratee.StepT[scales.utils.io.DataChunk,F,A]](step)
+else
+  apply(nc).apply(step).value))
+        </td>
+      </tr><tr>
+        <td>
+          253
+        </td>
+        <td>
+          1405
+        </td>
+        <td>
+          7796
+          -
+          7796
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.F
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          AsyncDataChunkerEnumerator.this.F
+        </td>
+      </tr><tr>
+        <td>
+          253
+        </td>
+        <td>
+          1406
+        </td>
+        <td>
+          7788
+          -
+          7802
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.utils.iteratee.functions.isDoneS[scales.utils.io.DataChunk, F, A](step)(AsyncDataChunkerEnumerator.this.F).unary_!
+        </td>
+      </tr><tr>
+        <td>
+          253
+        </td>
+        <td>
+          1407
+        </td>
+        <td>
+          7773
+          -
+          7802
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          shouldPause.&amp;&amp;(scales.utils.iteratee.functions.isDoneS[scales.utils.io.DataChunk, F, A](step)(AsyncDataChunkerEnumerator.this.F).unary_!)
+        </td>
+      </tr><tr>
+        <td>
+          255
+        </td>
+        <td>
+          1408
+        </td>
+        <td>
+          7904
+          -
+          7917
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.Applicative.point
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          AsyncDataChunkerEnumerator.this.F.point[scalaz.iteratee.StepT[scales.utils.io.DataChunk,F,A]](step)
+        </td>
+      </tr><tr>
+        <td>
+          255
+        </td>
+        <td>
+          1409
+        </td>
+        <td>
+          7904
+          -
+          7917
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scalaz.Applicative.point
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          AsyncDataChunkerEnumerator.this.F.point[scalaz.iteratee.StepT[scales.utils.io.DataChunk,F,A]](step)
+        </td>
+      </tr><tr>
+        <td>
+          257
+        </td>
+        <td>
+          1410
+        </td>
+        <td>
+          7957
+          -
+          7978
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scalaz.iteratee.IterateeT.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          apply(nc).apply(step).value
+        </td>
+      </tr><tr>
+        <td>
+          257
+        </td>
+        <td>
+          1411
+        </td>
+        <td>
+          7957
+          -
+          7978
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scalaz.iteratee.IterateeT.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          apply(nc).apply(step).value
+        </td>
+      </tr><tr>
+        <td>
+          264
+        </td>
+        <td>
+          1417
+        </td>
+        <td>
+          8037
+          -
+          8045
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.io.ReadableByteChannelWrapperImplicits.AsyncDataChunkerEnumerator.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          apply(0)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

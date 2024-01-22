@@ -1,0 +1,1385 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+          <title>scales-xml 0.6.0-M6 API  - scales.xml.parser.sax.Handler</title>
+          <meta name="description" content="scales - xml 0.6.0 - M6 API - scales.xml.parser.sax.Handler" />
+          <meta name="keywords" content="scales xml 0.6.0 M6 API scales.xml.parser.sax.Handler" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      
+      <link href="../../../../lib/index.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../lib/jquery.min.js"></script>
+      <script type="text/javascript" src="../../../../lib/jquery.panzoom.min.js"></script>
+      <script type="text/javascript" src="../../../../lib/jquery.mousewheel.min.js"></script>
+      <script type="text/javascript" src="../../../../lib/index.js"></script>
+      <script type="text/javascript" src="../../../../index.js"></script>
+      <script type="text/javascript" src="../../../../lib/scheduler.js"></script>
+      <script type="text/javascript" src="../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../lib/modernizr.custom.js"></script><script type="text/javascript" src="../../../../lib/diagrams.js" id="diagrams-js"></script>
+      <script type="text/javascript">
+        /* this variable can be used by the JS to determine the path to the root document */
+        var toRoot = '../../../../';
+      </script>
+    
+        </head>
+        <body>
+      <div id="search">
+        <span id="doc-title">scales-xml 0.6.0-M6 API<span id="doc-version"></span></span>
+        <span class="close-results"><span class="left">&lt;</span> Back</span>
+        <div id="textfilter">
+          <span class="input">
+            <input autocapitalize="none" placeholder="Search" id="index-input" type="text" accesskey="/" />
+            <i class="clear material-icons"></i>
+            <i id="search-icon" class="material-icons"></i>
+          </span>
+        </div>
+    </div>
+      <div id="search-results">
+        <div id="search-progress">
+          <div id="progress-fill"></div>
+        </div>
+        <div id="results-content">
+          <div id="entity-results"></div>
+          <div id="member-results"></div>
+        </div>
+      </div>
+      <div id="content-scroll-container" style="-webkit-overflow-scrolling: touch;">
+        <div id="content-container" style="-webkit-overflow-scrolling: touch;">
+          <div id="subpackage-spacer">
+            <div id="packages">
+              <h1>Packages</h1>
+              <ul>
+                <li name="_root_.root" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="_root_"></a><a id="root:_root_"></a>
+      <span class="permalink">
+      <a href="../../../../index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="../../../../index.html"><span class="name">root</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../../index.html" class="extype" name="_root_">root</a></dd></dl></div>
+    </li><li name="_root_.scales" visbl="pub" class="indented1 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="scales"></a><a id="scales:scales"></a>
+      <span class="permalink">
+      <a href="../../../../scales/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="Scales Xml provides both a more flexible approach to XML handling and a simplified way of interacting with XML." href="../../../index.html"><span class="name">scales</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Scales Xml provides both a more flexible approach to XML handling and a simplified way of interacting with XML.</p><div class="fullcomment"><div class="comment cmt"><p>Scales Xml provides both a more flexible approach to XML handling and a simplified way of interacting with XML.</p><p>It fits nicely with the Java APIs you know, TrAX and javax.xml.validation for example, allowing you to run XSLTs and convert to and from Scales XML and other DOMs.</p><p>It also provides a far more XPath like experience than the normal Scala XML, Paths look like XPaths and work like them too (with many of the same functions and axes).
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../../index.html" class="extype" name="_root_">root</a></dd></dl></div>
+    </li><li name="scales.xml" visbl="pub" class="indented2 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="xml"></a><a id="xml:xml"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="../../index.html"><span class="name">xml</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../index.html" class="extype" name="scales">scales</a></dd></dl></div>
+    </li><li name="scales.xml.parser" visbl="pub" class="indented3 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="parser"></a><a id="parser:parser"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="../index.html"><span class="name">parser</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../index.html" class="extype" name="scales.xml">xml</a></dd></dl></div>
+    </li><li name="scales.xml.parser.sax" visbl="pub" class="indented4 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="sax"></a><a id="sax:sax"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="index.html"><span class="name">sax</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="scales.xml.parser">parser</a></dd></dl></div>
+    </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="trait" href="DefaultSaxSupport.html" title="Assumes lexical-handler and document-xml-version are supported"></a>
+                        <a href="DefaultSaxSupport.html" title="Assumes lexical-handler and document-xml-version are supported">DefaultSaxSupport</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="class" href="" title=""></a>
+                        <a href="" title="">Handler</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="trait" href="SaxSupport.html" title="Whilst Saxon, Xerces and nu.validator support certain combinations, this is an abstraction over those needed by the readXml function"></a>
+                        <a href="SaxSupport.html" title="Whilst Saxon, Xerces and nu.validator support certain combinations, this is an abstraction over those needed by the readXml function">SaxSupport</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="trait" href="XmlParser.html" title=""></a>
+                        <a href="XmlParser.html" title="">XmlParser</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="trait" href="XmlParserImplicits.html" title=""></a>
+                        <a href="XmlParserImplicits.html" title="">XmlParserImplicits</a>
+                      </li>
+              </ul>
+            </div>
+          </div>
+          <div id="content">
+            <body class="class type">
+      <div id="definition">
+        <div class="big-circle class">c</div>
+        <p id="owner"><a href="../../../index.html" class="extype" name="scales">scales</a>.<a href="../../index.html" class="extype" name="scales.xml">xml</a>.<a href="../index.html" class="extype" name="scales.xml.parser">parser</a>.<a href="index.html" class="extype" name="scales.xml.parser.sax">sax</a></p>
+        <h1>Handler<span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span></h1>
+        <h3><span class="morelinks"></span></h3>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Handler</span><span class="tparams">[<span name="Token">Token &lt;: <a href="../strategies/OptimisationToken.html" class="extype" name="scales.xml.parser.strategies.OptimisationToken">OptimisationToken</a></span>]</span><span class="result"> extends <span class="extype" name="org.xml.sax.ext.DefaultHandler2">DefaultHandler2</span></span>
+      </span>
+      </h4>
+
+      
+          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
+          <span class="toggle">
+            Linear Supertypes
+          </span>
+          <div class="superTypes hiddenContent"><span class="extype" name="org.xml.sax.ext.DefaultHandler2">DefaultHandler2</span>, <span class="extype" name="org.xml.sax.ext.EntityResolver2">EntityResolver2</span>, <span class="extype" name="org.xml.sax.ext.DeclHandler">DeclHandler</span>, <span class="extype" name="org.xml.sax.ext.LexicalHandler">LexicalHandler</span>, <span class="extype" name="org.xml.sax.helpers.DefaultHandler">DefaultHandler</span>, <span class="extype" name="org.xml.sax.ErrorHandler">ErrorHandler</span>, <span class="extype" name="org.xml.sax.ContentHandler">ContentHandler</span>, <span class="extype" name="org.xml.sax.DTDHandler">DTDHandler</span>, <span class="extype" name="org.xml.sax.EntityResolver">EntityResolver</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+        </div><div class="toggleContainer block diagram-container" id="inheritance-diagram-container">
+                <span class="toggle diagram-link">
+                  Type Hierarchy
+                </span>
+                <div class="diagram" id="inheritance-diagram"><svg class="class-diagram" id="graph1" width="166pt" height="118pt" viewBox="0.00 0.00 166.00 118.00" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><g id="page0,1_graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 114)"><polygon fill="white" stroke="transparent" points="-4,4 -4,-114 162,-114 162,4 -4,4"></polygon><g id="clust1" class="cluster"></g><g id="clust2" class="cluster"></g><!-- node0 --><g class="node this class" id="graph1_0"><g id="a_this class|graph1_0"><a xlink:href="#inheritance-diagram" xlink:title="scales.xml.parser.sax.Handler (this class)"><path fill="#418565" stroke="#418565" d="M125.17,-49C125.17,-49 32.83,-49 32.83,-49 28.67,-49 24.5,-44.83 24.5,-40.67 24.5,-40.67 24.5,-32.33 24.5,-32.33 24.5,-28.17 28.67,-24 32.83,-24 32.83,-24 125.17,-24 125.17,-24 129.33,-24 133.5,-28.17 133.5,-32.33 133.5,-32.33 133.5,-40.67 133.5,-40.67 133.5,-44.83 129.33,-49 125.17,-49"></path><image xlink:href="../../../../lib/class_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="35" y="-43.5"></image><text text-anchor="start" x="56" y="-34.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">Handler[Token]</text></a></g></g><!-- node1 --><g class="node class" id="graph1_1"><g id="a_class|graph1_1"><a xlink:title="org.xml.sax.ext.DefaultHandler2"><path fill="#418565" stroke="#418565" d="M127.67,-110C127.67,-110 30.33,-110 30.33,-110 26.17,-110 22,-105.83 22,-101.67 22,-101.67 22,-93.33 22,-93.33 22,-89.17 26.17,-85 30.33,-85 30.33,-85 127.67,-85 127.67,-85 131.83,-85 136,-89.17 136,-93.33 136,-93.33 136,-101.67 136,-101.67 136,-105.83 131.83,-110 127.67,-110"></path><image xlink:href="../../../../lib/class_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="32" y="-104.5"></image><text text-anchor="start" x="53" y="-95.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">DefaultHandler2</text></a></g></g><!-- node1&#45;&gt;node0 --><g class="edge inheritance" id="graph1_1_0"><g id="a_inheritance|graph1_1_0"><a xlink:title="Handler[Token] is a subtype of DefaultHandler2"><path fill="none" stroke="#d4d4d4" d="M79,-77.76C79,-68.37 79,-57.29 79,-49.13"></path><polygon fill="none" stroke="#d4d4d4" points="76.55,-77.84 79,-84.84 81.45,-77.84 76.55,-77.84"></polygon></a></g></g></g></svg></div>
+                <div id="diagram-controls" class="hiddenContent">
+                  <button id="diagram-zoom-out" class="diagram-btn"><i class="material-icons"></i></button>
+                  <button id="diagram-zoom-in" class="diagram-btn"><i class="material-icons"></i></button>
+                  <button title="Toggle full-screen" id="diagram-fs" class="diagram-btn to-full"><i class="material-icons"></i></button>
+                </div>
+              </div></div>
+        
+
+      <div id="mbrsel">
+        <div class="toggle"></div>
+        <div id="memberfilter">
+          <i class="material-icons arrow"></i>
+          <span class="input">
+            <input id="mbrsel-input" placeholder="Filter all members" type="text" accesskey="/" />
+          </span>
+          <i class="clear material-icons"></i>
+        </div>
+        <div id="filterby">
+          <div id="order">
+            <span class="filtertype">Ordering</span>
+            <ol>
+              
+              <li class="alpha in"><span>Alphabetic</span></li>
+              <li class="inherit out"><span>By Inheritance</span></li>
+            </ol>
+          </div>
+          <div class="ancestors">
+                  <span class="filtertype">Inherited<br />
+                  </span>
+                  <ol id="linearization">
+                    <li class="in" name="scales.xml.parser.sax.Handler"><span>Handler</span></li><li class="in" name="org.xml.sax.ext.DefaultHandler2"><span>DefaultHandler2</span></li><li class="in" name="org.xml.sax.ext.EntityResolver2"><span>EntityResolver2</span></li><li class="in" name="org.xml.sax.ext.DeclHandler"><span>DeclHandler</span></li><li class="in" name="org.xml.sax.ext.LexicalHandler"><span>LexicalHandler</span></li><li class="in" name="org.xml.sax.helpers.DefaultHandler"><span>DefaultHandler</span></li><li class="in" name="org.xml.sax.ErrorHandler"><span>ErrorHandler</span></li><li class="in" name="org.xml.sax.ContentHandler"><span>ContentHandler</span></li><li class="in" name="org.xml.sax.DTDHandler"><span>DTDHandler</span></li><li class="in" name="org.xml.sax.EntityResolver"><span>EntityResolver</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  </ol>
+                </div><div class="ancestors">
+              <span class="filtertype"></span>
+              <ol>
+                <li class="hideall out"><span>Hide All</span></li>
+                <li class="showall in"><span>Show All</span></li>
+              </ol>
+            </div>
+          <div id="visbl">
+              <span class="filtertype">Visibility</span>
+              <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+            </div>
+        </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        <div id="constructors" class="members">
+              <h3>Instance Constructors</h3>
+              <ol><li name="scales.xml.parser.sax.Handler#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;(strategy:scales.xml.parser.strategies.PathOptimisationStrategy[Token])(implicitdefaultVersion:scales.xml.XmlVersion):scales.xml.parser.sax.Handler[Token]"></a><a id="&lt;init&gt;:Handler[Token]"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#&lt;init&gt;(strategy:scales.xml.parser.strategies.PathOptimisationStrategy[Token])(implicitdefaultVersion:scales.xml.XmlVersion):scales.xml.parser.sax.Handler[Token]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">new</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Handler</span><span class="params">(<span name="strategy">strategy: <a href="../strategies/PathOptimisationStrategy.html" class="extype" name="scales.xml.parser.strategies.PathOptimisationStrategy">PathOptimisationStrategy</a>[<span class="extype" name="scales.xml.parser.sax.Handler.Token">Token</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="defaultVersion">defaultVersion: <a href="../../XmlVersion.html" class="extype" name="scales.xml.XmlVersion">XmlVersion</a></span>)</span>
+      </span>
+      
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+
+        <div class="values members">
+              <h3>Value Members</h3>
+              <ol>
+                <li name="scala.AnyRef#!=" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="!=(x$1:Any):Boolean"></a><a id="!=(Any):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#!=(x$1:Any):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef###" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="##():Int"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html###():Int" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $hash$hash" class="name">##</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#==" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="==(x$1:Any):Boolean"></a><a id="==(Any):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#==(x$1:Any):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scales.xml.parser.sax.Handler#addMisc" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="addMisc(miscItem:scales.xml.Misc):Unit"></a><a id="addMisc(xml.Misc):Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#addMisc(miscItem:scales.xml.Misc):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">addMisc</span><span class="params">(<span name="miscItem">miscItem: <a href="../../index.html#Misc=Either[scales.xml.Comment,scales.xml.PI]" class="extmbr" name="scales.xml.Misc">xml.Misc</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      
+    </li><li name="scala.Any#asInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="asInstanceOf[T0]:T0"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#asInstanceOf[T0]:T0" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Any.asInstanceOf.T0">T0</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.xml.sax.ext.DefaultHandler2#attributeDecl" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="attributeDecl(x$1:String,x$2:String,x$3:String,x$4:String,x$5:String):Unit"></a><a id="attributeDecl(String,String,String,String,String):Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#attributeDecl(x$1:String,x$2:String,x$3:String,x$4:String,x$5:String):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">attributeDecl</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.String">String</span></span>, <span name="arg1">arg1: <span class="extype" name="java.lang.String">String</span></span>, <span name="arg2">arg2: <span class="extype" name="java.lang.String">String</span></span>, <span name="arg3">arg3: <span class="extype" name="java.lang.String">String</span></span>, <span name="arg4">arg4: <span class="extype" name="java.lang.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DefaultHandler2 → DeclHandler</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[org.xml.sax.SAXException]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scales.xml.parser.sax.Handler#characters" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="characters(ch:Array[Char],offset:Int,length:Int):Unit"></a><a id="characters(Array[Char],Int,Int):Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#characters(ch:Array[Char],offset:Int,length:Int):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">characters</span><span class="params">(<span name="ch">ch: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Char">Char</span>]</span>, <span name="offset">offset: <span class="extype" name="scala.Int">Int</span></span>, <span name="length">length: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.xml.parser.sax.Handler">Handler</a> → DefaultHandler → ContentHandler</dd></dl></div>
+    </li><li name="scales.xml.parser.sax.Handler#checkit" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="checkit(what:String):Unit"></a><a id="checkit(String):Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#checkit(what:String):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">checkit</span><span class="params">(<span name="what">what: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      
+    </li><li name="scala.AnyRef#clone" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="clone():Object"></a><a id="clone():AnyRef"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#clone():Object" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<span class="extype" name="java.lang">lang</span>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.CloneNotSupportedException]">...</span>
+    </span>)</span>
+              
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="scales.xml.parser.sax.Handler#comment" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="comment(ch:Array[Char],offset:Int,length:Int):Unit"></a><a id="comment(Array[Char],Int,Int):Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#comment(ch:Array[Char],offset:Int,length:Int):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">comment</span><span class="params">(<span name="ch">ch: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Char">Char</span>]</span>, <span name="offset">offset: <span class="extype" name="scala.Int">Int</span></span>, <span name="length">length: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.xml.parser.sax.Handler">Handler</a> → DefaultHandler2 → LexicalHandler</dd></dl></div>
+    </li><li name="scales.xml.parser.sax.Handler#defaultVersion" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="defaultVersion:scales.xml.XmlVersion"></a><a id="defaultVersion:XmlVersion"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#defaultVersion:scales.xml.XmlVersion" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">defaultVersion</span><span class="result">: <a href="../../XmlVersion.html" class="extype" name="scales.xml.XmlVersion">XmlVersion</a></span>
+      </span>
+      
+      
+    </li><li name="org.xml.sax.ext.DefaultHandler2#elementDecl" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="elementDecl(x$1:String,x$2:String):Unit"></a><a id="elementDecl(String,String):Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#elementDecl(x$1:String,x$2:String):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">elementDecl</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.String">String</span></span>, <span name="arg1">arg1: <span class="extype" name="java.lang.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DefaultHandler2 → DeclHandler</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[org.xml.sax.SAXException]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scales.xml.parser.sax.Handler#endCDATA" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="endCDATA():Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#endCDATA():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">endCDATA</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.xml.parser.sax.Handler">Handler</a> → DefaultHandler2 → LexicalHandler</dd></dl></div>
+    </li><li name="org.xml.sax.ext.DefaultHandler2#endDTD" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="endDTD():Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#endDTD():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">endDTD</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DefaultHandler2 → LexicalHandler</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[org.xml.sax.SAXException]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.xml.sax.helpers.DefaultHandler#endDocument" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="endDocument():Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#endDocument():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">endDocument</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DefaultHandler → ContentHandler</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[org.xml.sax.SAXException]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scales.xml.parser.sax.Handler#endElement" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="endElement(uri:String,localName:String,qName:String):Unit"></a><a id="endElement(String,String,String):Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#endElement(uri:String,localName:String,qName:String):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">endElement</span><span class="params">(<span name="uri">uri: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="localName">localName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="qName">qName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.xml.parser.sax.Handler">Handler</a> → DefaultHandler → ContentHandler</dd></dl></div>
+    </li><li name="org.xml.sax.ext.DefaultHandler2#endEntity" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="endEntity(x$1:String):Unit"></a><a id="endEntity(String):Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#endEntity(x$1:String):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">endEntity</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DefaultHandler2 → LexicalHandler</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[org.xml.sax.SAXException]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.xml.sax.helpers.DefaultHandler#endPrefixMapping" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="endPrefixMapping(x$1:String):Unit"></a><a id="endPrefixMapping(String):Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#endPrefixMapping(x$1:String):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">endPrefixMapping</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DefaultHandler → ContentHandler</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[org.xml.sax.SAXException]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#eq" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="eq(x$1:AnyRef):Boolean"></a><a id="eq(AnyRef):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#eq(x$1:AnyRef):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#equals" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="equals(x$1:Any):Boolean"></a><a id="equals(Any):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#equals(x$1:Any):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.xml.sax.helpers.DefaultHandler#error" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="error(x$1:org.xml.sax.SAXParseException):Unit"></a><a id="error(SAXParseException):Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#error(x$1:org.xml.sax.SAXParseException):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">error</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="org.xml.sax.SAXParseException">SAXParseException</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DefaultHandler → ErrorHandler</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[org.xml.sax.SAXException]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.xml.sax.ext.DefaultHandler2#externalEntityDecl" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="externalEntityDecl(x$1:String,x$2:String,x$3:String):Unit"></a><a id="externalEntityDecl(String,String,String):Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#externalEntityDecl(x$1:String,x$2:String,x$3:String):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">externalEntityDecl</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.String">String</span></span>, <span name="arg1">arg1: <span class="extype" name="java.lang.String">String</span></span>, <span name="arg2">arg2: <span class="extype" name="java.lang.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DefaultHandler2 → DeclHandler</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[org.xml.sax.SAXException]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.xml.sax.helpers.DefaultHandler#fatalError" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="fatalError(x$1:org.xml.sax.SAXParseException):Unit"></a><a id="fatalError(SAXParseException):Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#fatalError(x$1:org.xml.sax.SAXParseException):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">fatalError</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="org.xml.sax.SAXParseException">SAXParseException</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DefaultHandler → ErrorHandler</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[org.xml.sax.SAXException]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#finalize" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="finalize():Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#finalize():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">finalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<span class="extype" name="java.lang">lang</span>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.lang.Throwable]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scales.xml.parser.sax.Handler#getBuf" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getBuf:scales.xml.impl.TreeProxies"></a><a id="getBuf:TreeProxies"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#getBuf:scales.xml.impl.TreeProxies" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getBuf</span><span class="result">: <a href="../../impl/TreeProxies.html" class="extype" name="scales.xml.impl.TreeProxies">TreeProxies</a></span>
+      </span>
+      
+      
+    </li><li name="scala.AnyRef#getClass" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getClass():Class[_]"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#getClass():Class[_]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getClass</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.Class">Class</span>[_]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd><dt>Annotations</dt><dd>
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="scales.xml.parser.sax.Handler#getEnd" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getEnd:scales.xml.EndMisc"></a><a id="getEnd:EndMisc"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#getEnd:scales.xml.EndMisc" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getEnd</span><span class="result">: <a href="../../EndMisc.html" class="extype" name="scales.xml.EndMisc">EndMisc</a></span>
+      </span>
+      
+      
+    </li><li name="org.xml.sax.ext.DefaultHandler2#getExternalSubset" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getExternalSubset(x$1:String,x$2:String):org.xml.sax.InputSource"></a><a id="getExternalSubset(String,String):InputSource"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#getExternalSubset(x$1:String,x$2:String):org.xml.sax.InputSource" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getExternalSubset</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.String">String</span></span>, <span name="arg1">arg1: <span class="extype" name="java.lang.String">String</span></span>)</span><span class="result">: <span class="extype" name="org.xml.sax.InputSource">InputSource</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DefaultHandler2 → EntityResolver2</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[org.xml.sax.SAXException]</span>
+    </span>)</span>
+              
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.io.IOException]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scales.xml.parser.sax.Handler#getProlog" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getProlog:scales.xml.Prolog"></a><a id="getProlog:Prolog"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#getProlog:scales.xml.Prolog" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getProlog</span><span class="result">: <a href="../../Prolog.html" class="extype" name="scales.xml.Prolog">Prolog</a></span>
+      </span>
+      
+      
+    </li><li name="scala.AnyRef#hashCode" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hashCode():Int"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#hashCode():Int" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd><dt>Annotations</dt><dd>
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.xml.sax.helpers.DefaultHandler#ignorableWhitespace" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ignorableWhitespace(x$1:Array[Char],x$2:Int,x$3:Int):Unit"></a><a id="ignorableWhitespace(Array[Char],Int,Int):Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#ignorableWhitespace(x$1:Array[Char],x$2:Int,x$3:Int):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ignorableWhitespace</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Char">Char</span>]</span>, <span name="arg1">arg1: <span class="extype" name="scala.Int">Int</span></span>, <span name="arg2">arg2: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DefaultHandler → ContentHandler</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[org.xml.sax.SAXException]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.xml.sax.ext.DefaultHandler2#internalEntityDecl" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="internalEntityDecl(x$1:String,x$2:String):Unit"></a><a id="internalEntityDecl(String,String):Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#internalEntityDecl(x$1:String,x$2:String):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">internalEntityDecl</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.String">String</span></span>, <span name="arg1">arg1: <span class="extype" name="java.lang.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DefaultHandler2 → DeclHandler</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[org.xml.sax.SAXException]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.Any#isInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#isInstanceOf[T0]:Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="scala.AnyRef#ne" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ne(x$1:AnyRef):Boolean"></a><a id="ne(AnyRef):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#ne(x$1:AnyRef):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.xml.sax.helpers.DefaultHandler#notationDecl" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notationDecl(x$1:String,x$2:String,x$3:String):Unit"></a><a id="notationDecl(String,String,String):Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#notationDecl(x$1:String,x$2:String,x$3:String):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notationDecl</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.String">String</span></span>, <span name="arg1">arg1: <span class="extype" name="java.lang.String">String</span></span>, <span name="arg2">arg2: <span class="extype" name="java.lang.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DefaultHandler → DTDHandler</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[org.xml.sax.SAXException]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#notify" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notify():Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#notify():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notify</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#notifyAll" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notifyAll():Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#notifyAll():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notifyAll</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="scales.xml.parser.sax.Handler#processingInstruction" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="processingInstruction(target:String,data:String):Unit"></a><a id="processingInstruction(String,String):Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#processingInstruction(target:String,data:String):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">processingInstruction</span><span class="params">(<span name="target">target: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="data">data: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.xml.parser.sax.Handler">Handler</a> → DefaultHandler → ContentHandler</dd></dl></div>
+    </li><li name="org.xml.sax.ext.DefaultHandler2#resolveEntity" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="resolveEntity(x$1:String,x$2:String):org.xml.sax.InputSource"></a><a id="resolveEntity(String,String):InputSource"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#resolveEntity(x$1:String,x$2:String):org.xml.sax.InputSource" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">resolveEntity</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.String">String</span></span>, <span name="arg1">arg1: <span class="extype" name="java.lang.String">String</span></span>)</span><span class="result">: <span class="extype" name="org.xml.sax.InputSource">InputSource</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DefaultHandler2 → DefaultHandler → EntityResolver</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[org.xml.sax.SAXException]</span>
+    </span>)</span>
+              
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.io.IOException]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.xml.sax.ext.DefaultHandler2#resolveEntity" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="resolveEntity(x$1:String,x$2:String,x$3:String,x$4:String):org.xml.sax.InputSource"></a><a id="resolveEntity(String,String,String,String):InputSource"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#resolveEntity(x$1:String,x$2:String,x$3:String,x$4:String):org.xml.sax.InputSource" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">resolveEntity</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.String">String</span></span>, <span name="arg1">arg1: <span class="extype" name="java.lang.String">String</span></span>, <span name="arg2">arg2: <span class="extype" name="java.lang.String">String</span></span>, <span name="arg3">arg3: <span class="extype" name="java.lang.String">String</span></span>)</span><span class="result">: <span class="extype" name="org.xml.sax.InputSource">InputSource</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DefaultHandler2 → EntityResolver2</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[org.xml.sax.SAXException]</span>
+    </span>)</span>
+              
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.io.IOException]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scales.xml.parser.sax.Handler#setDocumentLocator" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="setDocumentLocator(loc:org.xml.sax.Locator):Unit"></a><a id="setDocumentLocator(Locator):Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#setDocumentLocator(loc:org.xml.sax.Locator):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setDocumentLocator</span><span class="params">(<span name="loc">loc: <span class="extype" name="org.xml.sax.Locator">Locator</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.xml.parser.sax.Handler">Handler</a> → DefaultHandler → ContentHandler</dd></dl></div>
+    </li><li name="org.xml.sax.helpers.DefaultHandler#skippedEntity" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="skippedEntity(x$1:String):Unit"></a><a id="skippedEntity(String):Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#skippedEntity(x$1:String):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">skippedEntity</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DefaultHandler → ContentHandler</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[org.xml.sax.SAXException]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scales.xml.parser.sax.Handler#startCDATA" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="startCDATA():Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#startCDATA():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">startCDATA</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.xml.parser.sax.Handler">Handler</a> → DefaultHandler2 → LexicalHandler</dd></dl></div>
+    </li><li name="scales.xml.parser.sax.Handler#startDTD" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="startDTD(name:String,publicId:String,systemId:String):Unit"></a><a id="startDTD(String,String,String):Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#startDTD(name:String,publicId:String,systemId:String):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">startDTD</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="publicId">publicId: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="systemId">systemId: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.xml.parser.sax.Handler">Handler</a> → DefaultHandler2 → LexicalHandler</dd></dl></div>
+    </li><li name="org.xml.sax.helpers.DefaultHandler#startDocument" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="startDocument():Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#startDocument():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">startDocument</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DefaultHandler → ContentHandler</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[org.xml.sax.SAXException]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scales.xml.parser.sax.Handler#startElement" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="startElement(uri:String,localName:String,qName:String,attributes:org.xml.sax.Attributes):Unit"></a><a id="startElement(String,String,String,org.xml.sax.Attributes):Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#startElement(uri:String,localName:String,qName:String,attributes:org.xml.sax.Attributes):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">startElement</span><span class="params">(<span name="uri">uri: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="localName">localName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="qName">qName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="attributes">attributes: <span class="extype" name="org.xml.sax.Attributes">org.xml.sax.Attributes</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.xml.parser.sax.Handler">Handler</a> → DefaultHandler → ContentHandler</dd></dl></div>
+    </li><li name="org.xml.sax.ext.DefaultHandler2#startEntity" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="startEntity(x$1:String):Unit"></a><a id="startEntity(String):Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#startEntity(x$1:String):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">startEntity</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DefaultHandler2 → LexicalHandler</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[org.xml.sax.SAXException]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scales.xml.parser.sax.Handler#startPrefixMapping" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="startPrefixMapping(prefix:String,uri:String):Unit"></a><a id="startPrefixMapping(String,String):Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#startPrefixMapping(prefix:String,uri:String):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">startPrefixMapping</span><span class="params">(<span name="prefix">prefix: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="uri">uri: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="scales.xml.parser.sax.Handler">Handler</a> → DefaultHandler → ContentHandler</dd></dl></div>
+    </li><li name="scala.AnyRef#synchronized" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="synchronized[T0](x$1:=&gt;T0):T0"></a><a id="synchronized[T0](⇒T0):T0"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#synchronized[T0](x$1:=&gt;T0):T0" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">synchronized</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="params">(<span name="arg0">arg0: ⇒ <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>)</span><span class="result">: <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#toString" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toString():String"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#toString():String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.xml.sax.helpers.DefaultHandler#unparsedEntityDecl" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="unparsedEntityDecl(x$1:String,x$2:String,x$3:String,x$4:String):Unit"></a><a id="unparsedEntityDecl(String,String,String,String):Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#unparsedEntityDecl(x$1:String,x$2:String,x$3:String,x$4:String):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">unparsedEntityDecl</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.String">String</span></span>, <span name="arg1">arg1: <span class="extype" name="java.lang.String">String</span></span>, <span name="arg2">arg2: <span class="extype" name="java.lang.String">String</span></span>, <span name="arg3">arg3: <span class="extype" name="java.lang.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DefaultHandler → DTDHandler</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[org.xml.sax.SAXException]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait():Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#wait():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long,x$2:Int):Unit"></a><a id="wait(Long,Int):Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#wait(x$1:Long,x$2:Int):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long):Unit"></a><a id="wait(Long):Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#wait(x$1:Long):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.xml.sax.helpers.DefaultHandler#warning" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="warning(x$1:org.xml.sax.SAXParseException):Unit"></a><a id="warning(SAXParseException):Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/xml/parser/sax/Handler.html#warning(x$1:org.xml.sax.SAXParseException):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">warning</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="org.xml.sax.SAXParseException">SAXParseException</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DefaultHandler → ErrorHandler</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[org.xml.sax.SAXException]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li>
+              </ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="org.xml.sax.ext.DefaultHandler2">
+              <h3>Inherited from <span class="extype" name="org.xml.sax.ext.DefaultHandler2">DefaultHandler2</span></h3>
+            </div><div class="parent" name="org.xml.sax.ext.EntityResolver2">
+              <h3>Inherited from <span class="extype" name="org.xml.sax.ext.EntityResolver2">EntityResolver2</span></h3>
+            </div><div class="parent" name="org.xml.sax.ext.DeclHandler">
+              <h3>Inherited from <span class="extype" name="org.xml.sax.ext.DeclHandler">DeclHandler</span></h3>
+            </div><div class="parent" name="org.xml.sax.ext.LexicalHandler">
+              <h3>Inherited from <span class="extype" name="org.xml.sax.ext.LexicalHandler">LexicalHandler</span></h3>
+            </div><div class="parent" name="org.xml.sax.helpers.DefaultHandler">
+              <h3>Inherited from <span class="extype" name="org.xml.sax.helpers.DefaultHandler">DefaultHandler</span></h3>
+            </div><div class="parent" name="org.xml.sax.ErrorHandler">
+              <h3>Inherited from <span class="extype" name="org.xml.sax.ErrorHandler">ErrorHandler</span></h3>
+            </div><div class="parent" name="org.xml.sax.ContentHandler">
+              <h3>Inherited from <span class="extype" name="org.xml.sax.ContentHandler">ContentHandler</span></h3>
+            </div><div class="parent" name="org.xml.sax.DTDHandler">
+              <h3>Inherited from <span class="extype" name="org.xml.sax.DTDHandler">DTDHandler</span></h3>
+            </div><div class="parent" name="org.xml.sax.EntityResolver">
+              <h3>Inherited from <span class="extype" name="org.xml.sax.EntityResolver">EntityResolver</span></h3>
+            </div><div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+    </body>
+          </div>
+        </div>
+      </div>
+    </body>
+      </html>

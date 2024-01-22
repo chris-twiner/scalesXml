@@ -1,0 +1,6731 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/xml/trax/ScalesStreamReader.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.xml.trax
+</span>2 <span style=''>
+</span>3 <span style=''>import scales.xml._
+</span>4 <span style=''>
+</span>5 <span style=''>import javax.xml.transform.stream._
+</span>6 <span style=''>import javax.xml.stream._
+</span>7 <span style=''>
+</span>8 <span style=''>import javax.xml.namespace.{QName =&gt; JQName, NamespaceContext}
+</span>9 <span style=''>
+</span>10 <span style=''>
+</span>11 <span style=''>import ScalesXml._
+</span>12 <span style=''>
+</span>13 <span style=''>/**
+</span>14 <span style=''> * The trax support, the stream reader in particular
+</span>15 <span style=''> * is aimed at allowing xlst transformations, a further
+</span>16 <span style=''> * serialization option and conversion to other DOMs
+</span>17 <span style=''> */
+</span>18 <span style=''>
+</span>19 <span style=''>/**
+</span>20 <span style=''> * Provides a stream reader interface for StAX.
+</span>21 <span style=''> */
+</span>22 <span style=''>trait ScalesStreamReader extends XMLStreamReader {
+</span>23 <span style=''>  import XMLStreamConstants._
+</span>24 <span style=''>
+</span>25 <span style=''>  protected val itr : Iterator[PullType]
+</span>26 <span style=''>  protected var ev : PullType = _
+</span>27 <span style=''>  protected var evType : Int = </span><span style='background: #AEF1AE'>START_DOCUMENT</span><span style=''>
+</span>28 <span style=''>
+</span>29 <span style=''>  // have we fired the starting document?
+</span>30 <span style=''>  protected var startedDoc = </span><span style='background: #AEF1AE'>false</span><span style=''>
+</span>31 <span style=''>
+</span>32 <span style=''>  /**
+</span>33 <span style=''>   * Take just the prolog and end misc
+</span>34 <span style=''>   */
+</span>35 <span style=''>  protected val docLike : DocLike
+</span>36 <span style=''>
+</span>37 <span style=''>  lazy val prologItr = docLike.prolog.misc.iterator
+</span>38 <span style=''>
+</span>39 <span style=''>  lazy val endItr = docLike.end.misc.iterator
+</span>40 <span style=''>
+</span>41 <span style=''>  def setEv() {
+</span>42 <span style=''>//    println(&quot;called with ev &quot; + ev )
+</span>43 <span style=''>    </span><span style='background: #AEF1AE'>evType = ev.fold( _ match {
+</span>44 <span style=''></span><span style='background: #AEF1AE'>      case _ : Elem =&gt; START_ELEMENT
+</span>45 <span style=''></span><span style='background: #AEF1AE'>      case _ : Text =&gt; CHARACTERS
+</span>46 <span style=''></span><span style='background: #AEF1AE'>      case _ : CData =&gt; </span><span style='background: #F0ADAD'>CDATA</span><span style='background: #AEF1AE'>
+</span>47 <span style=''></span><span style='background: #AEF1AE'>      case _ : Comment =&gt; COMMENT
+</span>48 <span style=''></span><span style='background: #AEF1AE'>      case _ : PI =&gt; PROCESSING_INSTRUCTION
+</span>49 <span style=''></span><span style='background: #AEF1AE'>    } , _ =&gt; END_ELEMENT)</span><span style=''>
+</span>50 <span style=''>//    println(&quot;set evType &quot; + evType)
+</span>51 <span style=''>  }
+</span>52 <span style=''>
+</span>53 <span style=''>  var doEndDoc = </span><span style='background: #AEF1AE'>false</span><span style=''>
+</span>54 <span style=''>
+</span>55 <span style=''>  var shouldPop = </span><span style='background: #AEF1AE'>false</span><span style=''>
+</span>56 <span style=''>  var nc : TNC = EmptyNamespaceContext
+</span>57 <span style=''>
+</span>58 <span style=''>  /**
+</span>59 <span style=''>   * Only usable when its an element of course
+</span>60 <span style=''>   * We copy to an array for indexed access and keep
+</span>61 <span style=''>   * using ev for map access
+</span>62 <span style=''>   */
+</span>63 <span style=''>  protected var attribs : Array[Attribute] = _ 
+</span>64 <span style=''>
+</span>65 <span style=''>  def close() </span><span style='background: #F0ADAD'>{}</span><span style=''>
+</span>66 <span style=''>
+</span>67 <span style=''>  def getAttributeCount() : Int = </span><span style='background: #AEF1AE'>attribs.size</span><span style=''>
+</span>68 <span style=''>  def getAttributeLocalName( index : Int ) : String = </span><span style='background: #AEF1AE'>attribs(index).local</span><span style=''>
+</span>69 <span style=''>  def getAttributeName( index : Int) : JQName = {
+</span>70 <span style=''>    val att : QName = </span><span style='background: #AEF1AE'>attribs(index)</span><span style=''>
+</span>71 <span style=''>    att match {
+</span>72 <span style=''>      case l : NoNamespaceQName =&gt; </span><span style='background: #AEF1AE'>new JQName(l.local)</span><span style=''>
+</span>73 <span style=''>      case u : UnprefixedQName =&gt; </span><span style='background: #F0ADAD'>new JQName(u.namespace.uri, u.local)</span><span style=''>
+</span>74 <span style=''>      case p : PrefixedQName =&gt; </span><span style='background: #AEF1AE'>new JQName(p.namespace.uri, p.local, p.prefix.get)</span><span style=''>
+</span>75 <span style=''>    }
+</span>76 <span style=''>  }
+</span>77 <span style=''>
+</span>78 <span style=''>  def getAttributeNamespace( index : Int) : String = </span><span style='background: #AEF1AE'>attribs(index).namespace.uri</span><span style=''>
+</span>79 <span style=''>  def getAttributePrefix( index : Int) : String = </span><span style='background: #AEF1AE'>attribs(index).prefix.getOrElse(null : String)</span><span style=''>
+</span>80 <span style=''>  def getAttributeType( index : Int ) : String = </span><span style='background: #AEF1AE'>null</span><span style=''> : String
+</span>81 <span style=''>  def getAttributeValue( index : Int ) : String = </span><span style='background: #AEF1AE'>attribs(index).value</span><span style=''>
+</span>82 <span style=''>  def getAttributeValue(namespaceURI : String, localName : String) : String = 
+</span>83 <span style=''>    </span><span style='background: #F0ADAD'>ev.left.get.asInstanceOf[Elem].attributes(Namespace(namespaceURI).apply(localName)).map(_.value).getOrElse(null : String)</span><span style=''>
+</span>84 <span style=''>
+</span>85 <span style=''>  def getCharacterEncodingScheme() : String = </span><span style='background: #AEF1AE'>&quot;UTF-16&quot;</span><span style=''>
+</span>86 <span style=''>  
+</span>87 <span style=''>  def getElementText() : String = {
+</span>88 <span style=''>    if(</span><span style='background: #F0ADAD'>getEventType() != XMLStreamConstants.START_ELEMENT</span><span style=''>) {
+</span>89 <span style=''>      </span><span style='background: #F0ADAD'>throw new XMLStreamException(
+</span>90 <span style=''></span><span style='background: #F0ADAD'>	&quot;parser must be on START_ELEMENT to read next text&quot;, getLocation())</span><span style=''>;
+</span>91 <span style=''>    }
+</span>92 <span style=''>    var eventType = </span><span style='background: #F0ADAD'>next()</span><span style=''>;
+</span>93 <span style=''>    var buf = </span><span style='background: #F0ADAD'>new StringBuilder()</span><span style=''>;
+</span>94 <span style=''>    while(</span><span style='background: #F0ADAD'>eventType != XMLStreamConstants.END_ELEMENT</span><span style=''> ) </span><span style='background: #F0ADAD'>{
+</span>95 <span style=''></span><span style='background: #F0ADAD'>      if(eventType == XMLStreamConstants.CHARACTERS
+</span>96 <span style=''></span><span style='background: #F0ADAD'>	 || eventType == XMLStreamConstants.CDATA
+</span>97 <span style=''></span><span style='background: #F0ADAD'>	 || eventType == XMLStreamConstants.SPACE
+</span>98 <span style=''></span><span style='background: #F0ADAD'>	 || eventType == XMLStreamConstants.ENTITY_REFERENCE) {
+</span>99 <span style=''></span><span style='background: #F0ADAD'>	buf.append(getText());
+</span>100 <span style=''></span><span style='background: #F0ADAD'>      } else if(eventType == XMLStreamConstants.PROCESSING_INSTRUCTION
+</span>101 <span style=''></span><span style='background: #F0ADAD'>		|| eventType == XMLStreamConstants.COMMENT) {
+</span>102 <span style=''></span><span style='background: #F0ADAD'>	// skipping
+</span>103 <span style=''></span><span style='background: #F0ADAD'>      } else if(eventType == XMLStreamConstants.END_DOCUMENT) {
+</span>104 <span style=''></span><span style='background: #F0ADAD'>	throw new XMLStreamException(
+</span>105 <span style=''></span><span style='background: #F0ADAD'>	  &quot;unexpected end of document when reading element text content&quot;);
+</span>106 <span style=''></span><span style='background: #F0ADAD'>      } else if(eventType == XMLStreamConstants.START_ELEMENT) {
+</span>107 <span style=''></span><span style='background: #F0ADAD'>	throw new XMLStreamException(
+</span>108 <span style=''></span><span style='background: #F0ADAD'>	  &quot;element text content may not contain START_ELEMENT&quot;, getLocation());
+</span>109 <span style=''></span><span style='background: #F0ADAD'>      } else {
+</span>110 <span style=''></span><span style='background: #F0ADAD'>	throw new XMLStreamException(
+</span>111 <span style=''></span><span style='background: #F0ADAD'>	  &quot;Unexpected event type &quot;+eventType, getLocation());
+</span>112 <span style=''></span><span style='background: #F0ADAD'>      }
+</span>113 <span style=''></span><span style='background: #F0ADAD'>      eventType = next();
+</span>114 <span style=''></span><span style='background: #F0ADAD'>    }</span><span style=''>
+</span>115 <span style=''>    </span><span style='background: #F0ADAD'>buf.toString()</span><span style=''>; 
+</span>116 <span style=''>  }
+</span>117 <span style=''>
+</span>118 <span style=''>  def getEncoding() : String = </span><span style='background: #AEF1AE'>&quot;UTF-16&quot;</span><span style=''>
+</span>119 <span style=''>  def getEventType() : Int = </span><span style='background: #AEF1AE'>evType</span><span style=''>
+</span>120 <span style=''>  /**
+</span>121 <span style=''>   * Called for both start element and end element
+</span>122 <span style=''>   */ 
+</span>123 <span style=''>  def elemName = 
+</span>124 <span style=''>    </span><span style='background: #AEF1AE'>ev.fold(e =&gt; e.asInstanceOf[Elem].name,
+</span>125 <span style=''></span><span style='background: #AEF1AE'>	    ee =&gt; ee.name)</span><span style=''>
+</span>126 <span style=''>
+</span>127 <span style=''>  def getLocalName() : String = </span><span style='background: #AEF1AE'>elemName.local</span><span style=''>
+</span>128 <span style=''>  def getLocation() : Location = EmptyStreamLocation
+</span>129 <span style=''>  def getName() : JQName = 
+</span>130 <span style=''>    </span><span style='background: #AEF1AE'>elemName</span><span style=''> match {
+</span>131 <span style=''>      case l : NoNamespaceQName =&gt; </span><span style='background: #AEF1AE'>new JQName(l.local)</span><span style=''>
+</span>132 <span style=''>      case u : UnprefixedQName =&gt; </span><span style='background: #F0ADAD'>new JQName(u.namespace.uri, u.local)</span><span style=''>
+</span>133 <span style=''>      case p : PrefixedQName =&gt; </span><span style='background: #F0ADAD'>new JQName(p.namespace.uri, p.local, p.prefix.get)</span><span style=''>
+</span>134 <span style=''>    }
+</span>135 <span style=''>  
+</span>136 <span style=''>  def getNamespaceContext() : NamespaceContext = </span><span style='background: #AEF1AE'>nc</span><span style=''>
+</span>137 <span style=''>  def getNamespaceCount() : Int = </span><span style='background: #AEF1AE'>nc.ns.size</span><span style=''>
+</span>138 <span style=''>  def getNamespacePrefix(index : Int) : String = </span><span style='background: #AEF1AE'>nc.ns(index)._1</span><span style=''>
+</span>139 <span style=''>  def getNamespaceURI() : String = </span><span style='background: #AEF1AE'>elemName.namespace.uri</span><span style=''>
+</span>140 <span style=''>  def getNamespaceURI( index : Int ) : String = </span><span style='background: #AEF1AE'>nc.ns(index)._2</span><span style=''>
+</span>141 <span style=''>  def getNamespaceURI( prefix : String) : String = </span><span style='background: #F0ADAD'>nc.getNamespaceURI(prefix)</span><span style=''>
+</span>142 <span style=''>
+</span>143 <span style=''>  def getPIData() : String = </span><span style='background: #AEF1AE'>ev.left.get.asInstanceOf[PI].value</span><span style=''>
+</span>144 <span style=''>  def getPITarget() : String = </span><span style='background: #AEF1AE'>ev.left.get.asInstanceOf[PI].target</span><span style=''>
+</span>145 <span style=''>
+</span>146 <span style=''>  def getPrefix() : String = </span><span style='background: #AEF1AE'>elemName.prefix.getOrElse(&quot;&quot;)</span><span style=''>//null : String)
+</span>147 <span style=''>  def getProperty(name : String) : Object = </span><span style='background: #F0ADAD'>null</span><span style=''>
+</span>148 <span style=''>  def getText() : String = </span><span style='background: #AEF1AE'>ev.left.get.asInstanceOf[XmlItem].value</span><span style=''>
+</span>149 <span style=''>  def getTextCharacters() : Array[Char] = </span><span style='background: #AEF1AE'>getText.toArray</span><span style=''>
+</span>150 <span style=''>  def getTextCharacters(sourceStart : Int, target : Array[Char], targetStart : Int, length : Int) : Int = {
+</span>151 <span style=''>    if (</span><span style='background: #AEF1AE'>targetStart &lt; 0 || targetStart &gt; getTextLength()</span><span style=''>)
+</span>152 <span style=''>      </span><span style='background: #F0ADAD'>throw new IndexOutOfBoundsException(&quot;TargetStart was out of bounds: &quot;+targetStart+&quot; textLength &quot;+getTextLength())</span><span style=''>
+</span>153 <span style=''>    
+</span>154 <span style=''>    if (</span><span style='background: #AEF1AE'>length &lt; 0 || (targetStart + length &gt; getTextLength())</span><span style=''>) 
+</span>155 <span style=''>      </span><span style='background: #F0ADAD'>throw new IndexOutOfBoundsException(&quot;TargetStart and Length was out of bounds: &quot;+targetStart+&quot; length &quot;+length+&quot; textLength &quot;+getTextLength())</span><span style=''>
+</span>156 <span style=''>    
+</span>157 <span style=''>    </span><span style='background: #AEF1AE'>System.arraycopy(getTextCharacters(), sourceStart, target, targetStart, length)</span><span style=''>
+</span>158 <span style=''>    length
+</span>159 <span style=''>  }
+</span>160 <span style=''>
+</span>161 <span style=''>  def getTextLength() : Int = </span><span style='background: #AEF1AE'>getText().size</span><span style=''>
+</span>162 <span style=''>  def getTextStart() : Int = </span><span style='background: #AEF1AE'>0</span><span style=''>
+</span>163 <span style=''>
+</span>164 <span style=''>  def getVersion() : String  = </span><span style='background: #AEF1AE'>docLike.prolog.decl.version.version</span><span style=''>
+</span>165 <span style=''>
+</span>166 <span style=''>  def hasName() : Boolean = </span><span style='background: #F0ADAD'>evType == START_ELEMENT || evType == END_ELEMENT</span><span style=''>
+</span>167 <span style=''>  def hasNext() : Boolean = </span><span style='background: #AEF1AE'>prologItr.hasNext || itr.hasNext || endItr.hasNext || doEndDoc</span><span style=''>
+</span>168 <span style=''>  def hasText() : Boolean = </span><span style='background: #F0ADAD'>evType == CDATA || evType == COMMENT || evType == CHARACTERS</span><span style=''>
+</span>169 <span style=''>
+</span>170 <span style=''>  def isAttributeSpecified(index : Int) : Boolean = </span><span style='background: #AEF1AE'>false</span><span style=''> // can't specify this
+</span>171 <span style=''>  def isCharacters() : Boolean = </span><span style='background: #F0ADAD'>evType == CHARACTERS</span><span style=''>
+</span>172 <span style=''>  def isEndElement() : Boolean = </span><span style='background: #F0ADAD'>evType == END_ELEMENT</span><span style=''>
+</span>173 <span style=''>  def isStandalone() : Boolean = </span><span style='background: #AEF1AE'>standaloneSet</span><span style=''>
+</span>174 <span style=''>  def isStartElement() : Boolean = </span><span style='background: #F0ADAD'>evType == START_ELEMENT</span><span style=''>
+</span>175 <span style=''>  def isWhiteSpace() : Boolean = </span><span style='background: #F0ADAD'>getText.trim.size == 0</span><span style=''>
+</span>176 <span style=''>
+</span>177 <span style=''>  def doPop {
+</span>178 <span style=''>    if (</span><span style='background: #AEF1AE'>shouldPop</span><span style=''>) </span><span style='background: #AEF1AE'>{
+</span>179 <span style=''></span><span style='background: #AEF1AE'>      nc = nc.parent
+</span>180 <span style=''></span><span style='background: #AEF1AE'>      shouldPop = false
+</span>181 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>182 <span style=''>  }
+</span>183 <span style=''>
+</span>184 <span style=''>  def next() : Int = {
+</span>185 <span style=''>    if (</span><span style='background: #AEF1AE'>!startedDoc</span><span style=''>) </span><span style='background: #AEF1AE'>{
+</span>186 <span style=''></span><span style='background: #AEF1AE'>      startedDoc = true
+</span>187 <span style=''></span><span style='background: #AEF1AE'>      return START_DOCUMENT
+</span>188 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>189 <span style=''>
+</span>190 <span style=''>    if (</span><span style='background: #AEF1AE'>doEndDoc</span><span style=''>) </span><span style='background: #AEF1AE'>{
+</span>191 <span style=''></span><span style='background: #AEF1AE'>      doEndDoc = false
+</span>192 <span style=''></span><span style='background: #AEF1AE'>//      println(&quot;doc end&quot;) 
+</span>193 <span style=''></span><span style='background: #AEF1AE'>      return END_DOCUMENT
+</span>194 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>195 <span style=''>
+</span>196 <span style=''>    if (</span><span style='background: #AEF1AE'>prologItr.hasNext</span><span style=''>) {
+</span>197 <span style=''>      </span><span style='background: #AEF1AE'>ev = prologItr.next.fold(x=&gt;x, y=&gt;y)</span><span style=''>
+</span>198 <span style=''>    } else </span><span style='background: #AEF1AE'>if (itr.hasNext) {
+</span>199 <span style=''></span><span style='background: #AEF1AE'>      ev = itr.next
+</span>200 <span style=''></span><span style='background: #AEF1AE'>    } else {
+</span>201 <span style=''></span><span style='background: #AEF1AE'>      ev = endItr.next.fold(x=&gt;x, y=&gt;y)
+</span>202 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>203 <span style=''>    
+</span>204 <span style=''>    </span><span style='background: #AEF1AE'>setEv</span><span style=''>
+</span>205 <span style=''>
+</span>206 <span style=''>    import NamespaceContextFunctions._
+</span>207 <span style=''>
+</span>208 <span style=''>    </span><span style='background: #AEF1AE'>evType</span><span style=''> match {
+</span>209 <span style=''>      case START_ELEMENT </span><span style='background: #AEF1AE'>=&gt; 
+</span>210 <span style=''></span><span style='background: #AEF1AE'>//	println(&quot; se : &quot;+ev)
+</span>211 <span style=''></span><span style='background: #AEF1AE'>	val el = ev.left.get.asInstanceOf[Elem]
+</span>212 <span style=''></span><span style='background: #AEF1AE'>	attribs = el.attributes.toArray
+</span>213 <span style=''></span><span style='background: #AEF1AE'>	
+</span>214 <span style=''></span><span style='background: #AEF1AE'>	doPop
+</span>215 <span style=''></span><span style='background: #AEF1AE'>	nc = newContext(nc, el)</span><span style=''>
+</span>216 <span style=''>      case END_ELEMENT =&gt;
+</span>217 <span style=''>//	println(&quot; ee : &quot;+ ev)
+</span>218 <span style=''>	</span><span style='background: #AEF1AE'>shouldPop = true</span><span style=''>
+</span>219 <span style=''>      case _ =&gt; 
+</span>220 <span style=''>//	println(&quot; item &quot;+ev)
+</span>221 <span style=''>	</span><span style='background: #AEF1AE'>doPop</span><span style=''>
+</span>222 <span style=''>    }
+</span>223 <span style=''>
+</span>224 <span style=''>    if (</span><span style='background: #AEF1AE'>!itr.hasNext &amp;&amp; !endItr.hasNext</span><span style=''>) {
+</span>225 <span style=''>      </span><span style='background: #AEF1AE'>doEndDoc = true</span><span style=''>
+</span>226 <span style=''>    }
+</span>227 <span style=''>
+</span>228 <span style=''>    </span><span style='background: #AEF1AE'>evType</span><span style=''>
+</span>229 <span style=''>  }
+</span>230 <span style=''>
+</span>231 <span style=''>  // tough one as well, Skips any white space (isWhiteSpace() returns true), COMMENT, or PROCESSING_INSTRUCTION, until a START_ELEMENT or END_ELEMENT is reached.
+</span>232 <span style=''>  def nextTag() : Int = {
+</span>233 <span style=''>    var eventType = </span><span style='background: #AEF1AE'>next()</span><span style=''>
+</span>234 <span style=''>    while(</span><span style='background: #AEF1AE'>(eventType == XMLStreamConstants.CHARACTERS &amp;&amp; </span><span style='background: #F0ADAD'>isWhiteSpace()</span><span style='background: #AEF1AE'>) // skip whitespace
+</span>235 <span style=''></span><span style='background: #AEF1AE'>	  || (eventType == XMLStreamConstants.CDATA &amp;&amp; </span><span style='background: #F0ADAD'>isWhiteSpace()</span><span style='background: #AEF1AE'>) 
+</span>236 <span style=''></span><span style='background: #AEF1AE'>	  // skip whitespace
+</span>237 <span style=''></span><span style='background: #AEF1AE'>	  || eventType == XMLStreamConstants.SPACE
+</span>238 <span style=''></span><span style='background: #AEF1AE'>	  || eventType == XMLStreamConstants.PROCESSING_INSTRUCTION
+</span>239 <span style=''></span><span style='background: #AEF1AE'>	  || eventType == XMLStreamConstants.COMMENT</span><span style=''>
+</span>240 <span style=''>	) {
+</span>241 <span style=''>      </span><span style='background: #AEF1AE'>eventType = next()</span><span style=''>
+</span>242 <span style=''>    }
+</span>243 <span style=''>    if (</span><span style='background: #AEF1AE'>eventType != XMLStreamConstants.START_ELEMENT &amp;&amp; </span><span style='background: #F0ADAD'>eventType != XMLStreamConstants.END_ELEMENT</span><span style=''>) {
+</span>244 <span style=''>      </span><span style='background: #F0ADAD'>throw new XMLStreamException(&quot;expected start or end tag&quot;, getLocation())</span><span style=''>
+</span>245 <span style=''>    }
+</span>246 <span style=''>    eventType
+</span>247 <span style=''>  }
+</span>248 <span style=''>
+</span>249 <span style=''>  def require(tipe : Int, namespaceURI : String , localName : String) {
+</span>250 <span style=''>    if (</span><span style='background: #F0ADAD'>evType != tipe</span><span style=''>)
+</span>251 <span style=''>      </span><span style='background: #F0ADAD'>throw new XMLStreamException(&quot;Type does not match&quot;, getLocation())</span><span style=''>
+</span>252 <span style=''>    
+</span>253 <span style=''>    if (</span><span style='background: #F0ADAD'>namespaceURI != null &amp;&amp; namespaceURI != getNamespaceURI()</span><span style=''>)
+</span>254 <span style=''>      </span><span style='background: #F0ADAD'>throw new XMLStreamException(&quot;Namespace does not match&quot;, getLocation())</span><span style=''>
+</span>255 <span style=''>
+</span>256 <span style=''>    if (</span><span style='background: #F0ADAD'>localName != null &amp;&amp; localName != getLocalName()</span><span style=''>)
+</span>257 <span style=''>      </span><span style='background: #F0ADAD'>throw new XMLStreamException(&quot;LocalName does not match&quot;, getLocation())</span><span style=''>
+</span>258 <span style=''>  }
+</span>259 <span style=''>
+</span>260 <span style=''>  def standaloneSet() : Boolean = </span><span style='background: #AEF1AE'>docLike.prolog.decl.standalone</span><span style=''>
+</span>261 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          27
+        </td>
+        <td>
+          5548
+        </td>
+        <td>
+          609
+          -
+          623
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          7
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          5549
+        </td>
+        <td>
+          696
+          -
+          701
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          5561
+        </td>
+        <td>
+          957
+          -
+          1180
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Either.fold
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.ev.fold[Int](((x$1: scales.xml.XmlEvent) =&gt; x$1 match {
+  case (_: scales.xml.Elem) =&gt; 1
+  case (_: scales.xml.Text) =&gt; 4
+  case (_: scales.xml.CData) =&gt; 12
+  case (_: scales.xml.Comment) =&gt; 5
+  case (_: scales.xml.PI) =&gt; 3
+}), ((x$2: scales.xml.EndElem) =&gt; 2))
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          5562
+        </td>
+        <td>
+          948
+          -
+          1180
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.evType_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.evType_=(ScalesStreamReader.this.ev.fold[Int](((x$1: scales.xml.XmlEvent) =&gt; x$1 match {
+  case (_: scales.xml.Elem) =&gt; 1
+  case (_: scales.xml.Text) =&gt; 4
+  case (_: scales.xml.CData) =&gt; 12
+  case (_: scales.xml.Comment) =&gt; 5
+  case (_: scales.xml.PI) =&gt; 3
+}), ((x$2: scales.xml.EndElem) =&gt; 2)))
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          5550
+        </td>
+        <td>
+          999
+          -
+          1012
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          5551
+        </td>
+        <td>
+          999
+          -
+          1012
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          5552
+        </td>
+        <td>
+          1036
+          -
+          1046
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          4
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          5553
+        </td>
+        <td>
+          1036
+          -
+          1046
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          4
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          5554
+        </td>
+        <td>
+          1071
+          -
+          1076
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          12
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          5555
+        </td>
+        <td>
+          1071
+          -
+          1076
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          12
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          5556
+        </td>
+        <td>
+          1103
+          -
+          1110
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          5
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          5557
+        </td>
+        <td>
+          1103
+          -
+          1110
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          5
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          5558
+        </td>
+        <td>
+          1132
+          -
+          1154
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          3
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          5559
+        </td>
+        <td>
+          1132
+          -
+          1154
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          3
+        </td>
+      </tr><tr>
+        <td>
+          49
+        </td>
+        <td>
+          5560
+        </td>
+        <td>
+          1168
+          -
+          1179
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          2
+        </td>
+      </tr><tr>
+        <td>
+          53
+        </td>
+        <td>
+          5563
+        </td>
+        <td>
+          1241
+          -
+          1246
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          5564
+        </td>
+        <td>
+          1266
+          -
+          1271
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          65
+        </td>
+        <td>
+          5565
+        </td>
+        <td>
+          1516
+          -
+          1518
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          67
+        </td>
+        <td>
+          5566
+        </td>
+        <td>
+          1554
+          -
+          1561
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.attribs
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.attribs
+        </td>
+      </tr><tr>
+        <td>
+          67
+        </td>
+        <td>
+          5567
+        </td>
+        <td>
+          1554
+          -
+          1566
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.SeqLike.size
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.refArrayOps[scales.xml.Attribute](ScalesStreamReader.this.attribs).size
+        </td>
+      </tr><tr>
+        <td>
+          68
+        </td>
+        <td>
+          5568
+        </td>
+        <td>
+          1621
+          -
+          1635
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Array.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.attribs.apply(index)
+        </td>
+      </tr><tr>
+        <td>
+          68
+        </td>
+        <td>
+          5569
+        </td>
+        <td>
+          1621
+          -
+          1641
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.QName.local
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.ScalesXml.toQNameF.apply(ScalesStreamReader.this.attribs.apply(index)).local
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          5570
+        </td>
+        <td>
+          1714
+          -
+          1728
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Array.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.attribs.apply(index)
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          5571
+        </td>
+        <td>
+          1714
+          -
+          1728
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.ScalesXml.toQNameF.apply(ScalesStreamReader.this.attribs.apply(index))
+        </td>
+      </tr><tr>
+        <td>
+          72
+        </td>
+        <td>
+          5572
+        </td>
+        <td>
+          1791
+          -
+          1798
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.QName.local
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          l.local
+        </td>
+      </tr><tr>
+        <td>
+          72
+        </td>
+        <td>
+          5573
+        </td>
+        <td>
+          1780
+          -
+          1799
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.namespace.QName.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new javax.xml.namespace.QName(l.local)
+        </td>
+      </tr><tr>
+        <td>
+          72
+        </td>
+        <td>
+          5574
+        </td>
+        <td>
+          1780
+          -
+          1799
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          javax.xml.namespace.QName.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new javax.xml.namespace.QName(l.local)
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          5575
+        </td>
+        <td>
+          1845
+          -
+          1860
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.UnderlyingNamespace.uri
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          u.namespace.uri
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          5576
+        </td>
+        <td>
+          1862
+          -
+          1869
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.CanHavePrefix.local
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          u.local
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          5577
+        </td>
+        <td>
+          1834
+          -
+          1870
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.namespace.QName.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new javax.xml.namespace.QName(u.namespace.uri, u.local)
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          5578
+        </td>
+        <td>
+          1834
+          -
+          1870
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          javax.xml.namespace.QName.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new javax.xml.namespace.QName(u.namespace.uri, u.local)
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          5579
+        </td>
+        <td>
+          1914
+          -
+          1929
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.UnderlyingNamespace.uri
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          p.namespace.uri
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          5580
+        </td>
+        <td>
+          1931
+          -
+          1938
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.CanHavePrefix.local
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          p.local
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          5581
+        </td>
+        <td>
+          1940
+          -
+          1952
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Option.get
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          p.prefix.get
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          5582
+        </td>
+        <td>
+          1903
+          -
+          1953
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.namespace.QName.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new javax.xml.namespace.QName(p.namespace.uri, p.local, p.prefix.get)
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          5583
+        </td>
+        <td>
+          1903
+          -
+          1953
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          javax.xml.namespace.QName.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new javax.xml.namespace.QName(p.namespace.uri, p.local, p.prefix.get)
+        </td>
+      </tr><tr>
+        <td>
+          78
+        </td>
+        <td>
+          5584
+        </td>
+        <td>
+          2018
+          -
+          2032
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Array.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.attribs.apply(index)
+        </td>
+      </tr><tr>
+        <td>
+          78
+        </td>
+        <td>
+          5585
+        </td>
+        <td>
+          2018
+          -
+          2046
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.UnderlyingNamespace.uri
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.ScalesXml.toQNameF.apply(ScalesStreamReader.this.attribs.apply(index)).namespace.uri
+        </td>
+      </tr><tr>
+        <td>
+          79
+        </td>
+        <td>
+          5586
+        </td>
+        <td>
+          2097
+          -
+          2111
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Array.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.attribs.apply(index)
+        </td>
+      </tr><tr>
+        <td>
+          79
+        </td>
+        <td>
+          5587
+        </td>
+        <td>
+          2129
+          -
+          2133
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          79
+        </td>
+        <td>
+          5588
+        </td>
+        <td>
+          2097
+          -
+          2143
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.getOrElse
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.ScalesXml.toQNameF.apply(ScalesStreamReader.this.attribs.apply(index)).prefix.getOrElse[String]((null: String))
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          5589
+        </td>
+        <td>
+          2193
+          -
+          2197
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          81
+        </td>
+        <td>
+          5590
+        </td>
+        <td>
+          2257
+          -
+          2277
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Attribute.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.attribs.apply(index).value
+        </td>
+      </tr><tr>
+        <td>
+          83
+        </td>
+        <td>
+          5591
+        </td>
+        <td>
+          2412
+          -
+          2412
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.DefaultXmlVersion.defaultVersion
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.xml.ScalesXml.defaultVersion
+        </td>
+      </tr><tr>
+        <td>
+          83
+        </td>
+        <td>
+          5592
+        </td>
+        <td>
+          2412
+          -
+          2412
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.XmlTypesImplicits.fromParserDefault
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.xml.ScalesXml.fromParserDefault
+        </td>
+      </tr><tr>
+        <td>
+          83
+        </td>
+        <td>
+          5593
+        </td>
+        <td>
+          2432
+          -
+          2432
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.DefaultXmlVersion.defaultVersion
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.xml.ScalesXml.defaultVersion
+        </td>
+      </tr><tr>
+        <td>
+          83
+        </td>
+        <td>
+          5594
+        </td>
+        <td>
+          2432
+          -
+          2432
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.XmlTypesImplicits.fromParserDefault
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.xml.ScalesXml.fromParserDefault
+        </td>
+      </tr><tr>
+        <td>
+          83
+        </td>
+        <td>
+          5595
+        </td>
+        <td>
+          2403
+          -
+          2443
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.Namespace.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.xml.Namespace.apply(namespaceURI)(scales.xml.ScalesXml.defaultVersion, scales.xml.ScalesXml.fromParserDefault).apply(localName)(scales.xml.ScalesXml.defaultVersion, scales.xml.ScalesXml.fromParserDefault)
+        </td>
+      </tr><tr>
+        <td>
+          83
+        </td>
+        <td>
+          5596
+        </td>
+        <td>
+          2402
+          -
+          2402
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.XmlTypesImplicits.qnameEquiv
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.xml.ScalesXml.qnameEquiv
+        </td>
+      </tr><tr>
+        <td>
+          83
+        </td>
+        <td>
+          5597
+        </td>
+        <td>
+          2402
+          -
+          2402
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.XmlTypesImplicits.toQNameF
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.xml.ScalesXml.toQNameF
+        </td>
+      </tr><tr>
+        <td>
+          83
+        </td>
+        <td>
+          5598
+        </td>
+        <td>
+          2402
+          -
+          2402
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Predef.$conforms
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Predef.$conforms[scales.xml.UnprefixedQName]
+        </td>
+      </tr><tr>
+        <td>
+          83
+        </td>
+        <td>
+          5599
+        </td>
+        <td>
+          2449
+          -
+          2456
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Attribute.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          x$3.value
+        </td>
+      </tr><tr>
+        <td>
+          83
+        </td>
+        <td>
+          5600
+        </td>
+        <td>
+          2468
+          -
+          2472
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          83
+        </td>
+        <td>
+          5601
+        </td>
+        <td>
+          2361
+          -
+          2482
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.getOrElse
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ScalesStreamReader.this.ev.left.get.asInstanceOf[scales.xml.Elem].attributes.apply[scales.xml.UnprefixedQName, scales.xml.QName](scales.xml.Namespace.apply(namespaceURI)(scales.xml.ScalesXml.defaultVersion, scales.xml.ScalesXml.fromParserDefault).apply(localName)(scales.xml.ScalesXml.defaultVersion, scales.xml.ScalesXml.fromParserDefault))(scales.xml.ScalesXml.qnameEquiv, scales.xml.ScalesXml.toQNameF, scala.Predef.$conforms[scales.xml.UnprefixedQName]).map[String](((x$3: scales.xml.Attribute) =&gt; x$3.value)).getOrElse[String]((null: String))
+        </td>
+      </tr><tr>
+        <td>
+          85
+        </td>
+        <td>
+          5602
+        </td>
+        <td>
+          2530
+          -
+          2538
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;UTF-16&quot;
+        </td>
+      </tr><tr>
+        <td>
+          88
+        </td>
+        <td>
+          5603
+        </td>
+        <td>
+          2585
+          -
+          2635
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.!=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ScalesStreamReader.this.getEventType().!=(1)
+        </td>
+      </tr><tr>
+        <td>
+          88
+        </td>
+        <td>
+          5606
+        </td>
+        <td>
+          2582
+          -
+          2582
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          88
+        </td>
+        <td>
+          5607
+        </td>
+        <td>
+          2582
+          -
+          2582
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          5604
+        </td>
+        <td>
+          2645
+          -
+          2743
+        </td>
+        <td>
+          Throw
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          throw new javax.xml.stream.XMLStreamException(&quot;parser must be on START_ELEMENT to read next text&quot;, ScalesStreamReader.this.getLocation())
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          5605
+        </td>
+        <td>
+          2645
+          -
+          2743
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          throw new javax.xml.stream.XMLStreamException(&quot;parser must be on START_ELEMENT to read next text&quot;, ScalesStreamReader.this.getLocation())
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          5608
+        </td>
+        <td>
+          2771
+          -
+          2777
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.next
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ScalesStreamReader.this.next()
+        </td>
+      </tr><tr>
+        <td>
+          93
+        </td>
+        <td>
+          5609
+        </td>
+        <td>
+          2793
+          -
+          2812
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.mutable.StringBuilder.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new scala.`package`.StringBuilder()
+        </td>
+      </tr><tr>
+        <td>
+          94
+        </td>
+        <td>
+          5610
+        </td>
+        <td>
+          2824
+          -
+          2867
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.!=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          eventType.!=(2)
+        </td>
+      </tr><tr>
+        <td>
+          94
+        </td>
+        <td>
+          5636
+        </td>
+        <td>
+          2870
+          -
+          2870
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.while$1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          while$1()
+        </td>
+      </tr><tr>
+        <td>
+          94
+        </td>
+        <td>
+          5637
+        </td>
+        <td>
+          2870
+          -
+          3695
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          {
+  {
+    if (eventType.==(4).||(eventType.==(12)).||(eventType.==(6)).||(eventType.==(9)))
+      buf.append(ScalesStreamReader.this.getText())
+    else
+      if (eventType.==(3).||(eventType.==(5)))
+        ()
+      else
+        if (eventType.==(8))
+          throw new javax.xml.stream.XMLStreamException(&quot;unexpected end of document when reading element text content&quot;)
+        else
+          if (eventType.==(1))
+            throw new javax.xml.stream.XMLStreamException(&quot;element text content may not contain START_ELEMENT&quot;, ScalesStreamReader.this.getLocation())
+          else
+            throw new javax.xml.stream.XMLStreamException(&quot;Unexpected event type &quot;.+(eventType), ScalesStreamReader.this.getLocation());
+    eventType = ScalesStreamReader.this.next()
+  };
+  while$1()
+}
+        </td>
+      </tr><tr>
+        <td>
+          94
+        </td>
+        <td>
+          5638
+        </td>
+        <td>
+          2818
+          -
+          2818
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          94
+        </td>
+        <td>
+          5639
+        </td>
+        <td>
+          2818
+          -
+          2818
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          95
+        </td>
+        <td>
+          5611
+        </td>
+        <td>
+          2894
+          -
+          2923
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          4
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          5612
+        </td>
+        <td>
+          2929
+          -
+          2966
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          eventType.==(12)
+        </td>
+      </tr><tr>
+        <td>
+          97
+        </td>
+        <td>
+          5613
+        </td>
+        <td>
+          2972
+          -
+          3009
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          eventType.==(6)
+        </td>
+      </tr><tr>
+        <td>
+          98
+        </td>
+        <td>
+          5614
+        </td>
+        <td>
+          3015
+          -
+          3063
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          eventType.==(9)
+        </td>
+      </tr><tr>
+        <td>
+          98
+        </td>
+        <td>
+          5615
+        </td>
+        <td>
+          2881
+          -
+          3063
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.||
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          eventType.==(4).||(eventType.==(12)).||(eventType.==(6)).||(eventType.==(9))
+        </td>
+      </tr><tr>
+        <td>
+          99
+        </td>
+        <td>
+          5616
+        </td>
+        <td>
+          3079
+          -
+          3088
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.getText
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ScalesStreamReader.this.getText()
+        </td>
+      </tr><tr>
+        <td>
+          99
+        </td>
+        <td>
+          5617
+        </td>
+        <td>
+          3068
+          -
+          3089
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.mutable.StringBuilder.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          buf.append(ScalesStreamReader.this.getText())
+        </td>
+      </tr><tr>
+        <td>
+          99
+        </td>
+        <td>
+          5618
+        </td>
+        <td>
+          3068
+          -
+          3089
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.collection.mutable.StringBuilder.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          buf.append(ScalesStreamReader.this.getText())
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          5619
+        </td>
+        <td>
+          3120
+          -
+          3161
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          3
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          5634
+        </td>
+        <td>
+          3104
+          -
+          3663
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          if (eventType.==(3).||(eventType.==(5)))
+  ()
+else
+  if (eventType.==(8))
+    throw new javax.xml.stream.XMLStreamException(&quot;unexpected end of document when reading element text content&quot;)
+  else
+    if (eventType.==(1))
+      throw new javax.xml.stream.XMLStreamException(&quot;element text content may not contain START_ELEMENT&quot;, ScalesStreamReader.this.getLocation())
+    else
+      throw new javax.xml.stream.XMLStreamException(&quot;Unexpected event type &quot;.+(eventType), ScalesStreamReader.this.getLocation())
+        </td>
+      </tr><tr>
+        <td>
+          101
+        </td>
+        <td>
+          5620
+        </td>
+        <td>
+          3167
+          -
+          3206
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          eventType.==(5)
+        </td>
+      </tr><tr>
+        <td>
+          101
+        </td>
+        <td>
+          5621
+        </td>
+        <td>
+          3107
+          -
+          3206
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.||
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          eventType.==(3).||(eventType.==(5))
+        </td>
+      </tr><tr>
+        <td>
+          101
+        </td>
+        <td>
+          5622
+        </td>
+        <td>
+          3208
+          -
+          3230
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          101
+        </td>
+        <td>
+          5623
+        </td>
+        <td>
+          3208
+          -
+          3230
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          103
+        </td>
+        <td>
+          5624
+        </td>
+        <td>
+          3239
+          -
+          3283
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          eventType.==(8)
+        </td>
+      </tr><tr>
+        <td>
+          103
+        </td>
+        <td>
+          5633
+        </td>
+        <td>
+          3236
+          -
+          3663
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          if (eventType.==(8))
+  throw new javax.xml.stream.XMLStreamException(&quot;unexpected end of document when reading element text content&quot;)
+else
+  if (eventType.==(1))
+    throw new javax.xml.stream.XMLStreamException(&quot;element text content may not contain START_ELEMENT&quot;, ScalesStreamReader.this.getLocation())
+  else
+    throw new javax.xml.stream.XMLStreamException(&quot;Unexpected event type &quot;.+(eventType), ScalesStreamReader.this.getLocation())
+        </td>
+      </tr><tr>
+        <td>
+          104
+        </td>
+        <td>
+          5625
+        </td>
+        <td>
+          3288
+          -
+          3384
+        </td>
+        <td>
+          Throw
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          throw new javax.xml.stream.XMLStreamException(&quot;unexpected end of document when reading element text content&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          104
+        </td>
+        <td>
+          5626
+        </td>
+        <td>
+          3288
+          -
+          3384
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          throw new javax.xml.stream.XMLStreamException(&quot;unexpected end of document when reading element text content&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          106
+        </td>
+        <td>
+          5627
+        </td>
+        <td>
+          3402
+          -
+          3447
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          eventType.==(1)
+        </td>
+      </tr><tr>
+        <td>
+          106
+        </td>
+        <td>
+          5632
+        </td>
+        <td>
+          3399
+          -
+          3663
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          if (eventType.==(1))
+  throw new javax.xml.stream.XMLStreamException(&quot;element text content may not contain START_ELEMENT&quot;, ScalesStreamReader.this.getLocation())
+else
+  throw new javax.xml.stream.XMLStreamException(&quot;Unexpected event type &quot;.+(eventType), ScalesStreamReader.this.getLocation())
+        </td>
+      </tr><tr>
+        <td>
+          107
+        </td>
+        <td>
+          5628
+        </td>
+        <td>
+          3452
+          -
+          3553
+        </td>
+        <td>
+          Throw
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          throw new javax.xml.stream.XMLStreamException(&quot;element text content may not contain START_ELEMENT&quot;, ScalesStreamReader.this.getLocation())
+        </td>
+      </tr><tr>
+        <td>
+          107
+        </td>
+        <td>
+          5629
+        </td>
+        <td>
+          3452
+          -
+          3553
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          throw new javax.xml.stream.XMLStreamException(&quot;element text content may not contain START_ELEMENT&quot;, ScalesStreamReader.this.getLocation())
+        </td>
+      </tr><tr>
+        <td>
+          110
+        </td>
+        <td>
+          5630
+        </td>
+        <td>
+          3571
+          -
+          3654
+        </td>
+        <td>
+          Throw
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          throw new javax.xml.stream.XMLStreamException(&quot;Unexpected event type &quot;.+(eventType), ScalesStreamReader.this.getLocation())
+        </td>
+      </tr><tr>
+        <td>
+          110
+        </td>
+        <td>
+          5631
+        </td>
+        <td>
+          3571
+          -
+          3654
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          throw new javax.xml.stream.XMLStreamException(&quot;Unexpected event type &quot;.+(eventType), ScalesStreamReader.this.getLocation())
+        </td>
+      </tr><tr>
+        <td>
+          113
+        </td>
+        <td>
+          5635
+        </td>
+        <td>
+          3682
+          -
+          3688
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.next
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ScalesStreamReader.this.next()
+        </td>
+      </tr><tr>
+        <td>
+          115
+        </td>
+        <td>
+          5640
+        </td>
+        <td>
+          3700
+          -
+          3714
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.mutable.StringBuilder.toString
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          buf.toString()
+        </td>
+      </tr><tr>
+        <td>
+          118
+        </td>
+        <td>
+          5641
+        </td>
+        <td>
+          3753
+          -
+          3761
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;UTF-16&quot;
+        </td>
+      </tr><tr>
+        <td>
+          119
+        </td>
+        <td>
+          5642
+        </td>
+        <td>
+          3791
+          -
+          3797
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.evType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.evType
+        </td>
+      </tr><tr>
+        <td>
+          124
+        </td>
+        <td>
+          5643
+        </td>
+        <td>
+          3897
+          -
+          3922
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Elem.name
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          e.asInstanceOf[scales.xml.Elem].name
+        </td>
+      </tr><tr>
+        <td>
+          124
+        </td>
+        <td>
+          5645
+        </td>
+        <td>
+          3884
+          -
+          3943
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Either.fold
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.ev.fold[scales.xml.QName](((e: scales.xml.XmlEvent) =&gt; e.asInstanceOf[scales.xml.Elem].name), ((ee: scales.xml.EndElem) =&gt; ee.name))
+        </td>
+      </tr><tr>
+        <td>
+          125
+        </td>
+        <td>
+          5644
+        </td>
+        <td>
+          3935
+          -
+          3942
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.EndElem.name
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ee.name
+        </td>
+      </tr><tr>
+        <td>
+          127
+        </td>
+        <td>
+          5646
+        </td>
+        <td>
+          3977
+          -
+          3991
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.QName.local
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.elemName.local
+        </td>
+      </tr><tr>
+        <td>
+          130
+        </td>
+        <td>
+          5647
+        </td>
+        <td>
+          4077
+          -
+          4085
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.elemName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.elemName
+        </td>
+      </tr><tr>
+        <td>
+          131
+        </td>
+        <td>
+          5648
+        </td>
+        <td>
+          4140
+          -
+          4147
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.QName.local
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          l.local
+        </td>
+      </tr><tr>
+        <td>
+          131
+        </td>
+        <td>
+          5649
+        </td>
+        <td>
+          4129
+          -
+          4148
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.namespace.QName.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new javax.xml.namespace.QName(l.local)
+        </td>
+      </tr><tr>
+        <td>
+          131
+        </td>
+        <td>
+          5650
+        </td>
+        <td>
+          4129
+          -
+          4148
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          javax.xml.namespace.QName.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new javax.xml.namespace.QName(l.local)
+        </td>
+      </tr><tr>
+        <td>
+          132
+        </td>
+        <td>
+          5651
+        </td>
+        <td>
+          4194
+          -
+          4209
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.UnderlyingNamespace.uri
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          u.namespace.uri
+        </td>
+      </tr><tr>
+        <td>
+          132
+        </td>
+        <td>
+          5652
+        </td>
+        <td>
+          4211
+          -
+          4218
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.CanHavePrefix.local
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          u.local
+        </td>
+      </tr><tr>
+        <td>
+          132
+        </td>
+        <td>
+          5653
+        </td>
+        <td>
+          4183
+          -
+          4219
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.namespace.QName.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new javax.xml.namespace.QName(u.namespace.uri, u.local)
+        </td>
+      </tr><tr>
+        <td>
+          132
+        </td>
+        <td>
+          5654
+        </td>
+        <td>
+          4183
+          -
+          4219
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          javax.xml.namespace.QName.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new javax.xml.namespace.QName(u.namespace.uri, u.local)
+        </td>
+      </tr><tr>
+        <td>
+          133
+        </td>
+        <td>
+          5655
+        </td>
+        <td>
+          4263
+          -
+          4278
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.UnderlyingNamespace.uri
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          p.namespace.uri
+        </td>
+      </tr><tr>
+        <td>
+          133
+        </td>
+        <td>
+          5656
+        </td>
+        <td>
+          4280
+          -
+          4287
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.CanHavePrefix.local
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          p.local
+        </td>
+      </tr><tr>
+        <td>
+          133
+        </td>
+        <td>
+          5657
+        </td>
+        <td>
+          4289
+          -
+          4301
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Option.get
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          p.prefix.get
+        </td>
+      </tr><tr>
+        <td>
+          133
+        </td>
+        <td>
+          5658
+        </td>
+        <td>
+          4252
+          -
+          4302
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.namespace.QName.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new javax.xml.namespace.QName(p.namespace.uri, p.local, p.prefix.get)
+        </td>
+      </tr><tr>
+        <td>
+          133
+        </td>
+        <td>
+          5659
+        </td>
+        <td>
+          4252
+          -
+          4302
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          javax.xml.namespace.QName.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new javax.xml.namespace.QName(p.namespace.uri, p.local, p.prefix.get)
+        </td>
+      </tr><tr>
+        <td>
+          136
+        </td>
+        <td>
+          5660
+        </td>
+        <td>
+          4361
+          -
+          4363
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.nc
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.nc
+        </td>
+      </tr><tr>
+        <td>
+          137
+        </td>
+        <td>
+          5661
+        </td>
+        <td>
+          4398
+          -
+          4403
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.trax.TNC.ns
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.nc.ns
+        </td>
+      </tr><tr>
+        <td>
+          137
+        </td>
+        <td>
+          5662
+        </td>
+        <td>
+          4398
+          -
+          4408
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.SeqLike.size
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.refArrayOps[(String, String)](ScalesStreamReader.this.nc.ns).size
+        </td>
+      </tr><tr>
+        <td>
+          138
+        </td>
+        <td>
+          5663
+        </td>
+        <td>
+          4458
+          -
+          4473
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.nc.ns.apply(index)._1
+        </td>
+      </tr><tr>
+        <td>
+          139
+        </td>
+        <td>
+          5664
+        </td>
+        <td>
+          4509
+          -
+          4531
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.UnderlyingNamespace.uri
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.elemName.namespace.uri
+        </td>
+      </tr><tr>
+        <td>
+          140
+        </td>
+        <td>
+          5665
+        </td>
+        <td>
+          4580
+          -
+          4595
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.nc.ns.apply(index)._2
+        </td>
+      </tr><tr>
+        <td>
+          141
+        </td>
+        <td>
+          5666
+        </td>
+        <td>
+          4647
+          -
+          4673
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          javax.xml.namespace.NamespaceContext.getNamespaceURI
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ScalesStreamReader.this.nc.getNamespaceURI(prefix)
+        </td>
+      </tr><tr>
+        <td>
+          143
+        </td>
+        <td>
+          5667
+        </td>
+        <td>
+          4704
+          -
+          4738
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.XmlItem.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.ev.left.get.asInstanceOf[scales.xml.PI].value
+        </td>
+      </tr><tr>
+        <td>
+          144
+        </td>
+        <td>
+          5668
+        </td>
+        <td>
+          4770
+          -
+          4805
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.PI.target
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.ev.left.get.asInstanceOf[scales.xml.PI].target
+        </td>
+      </tr><tr>
+        <td>
+          146
+        </td>
+        <td>
+          5669
+        </td>
+        <td>
+          4836
+          -
+          4865
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.getOrElse
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.elemName.prefix.getOrElse[String](&quot;&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          147
+        </td>
+        <td>
+          5670
+        </td>
+        <td>
+          4926
+          -
+          4930
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          148
+        </td>
+        <td>
+          5671
+        </td>
+        <td>
+          4958
+          -
+          4997
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.XmlItem.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.ev.left.get.asInstanceOf[scales.xml.XmlItem].value
+        </td>
+      </tr><tr>
+        <td>
+          149
+        </td>
+        <td>
+          5672
+        </td>
+        <td>
+          5040
+          -
+          5047
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.getText
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.getText()
+        </td>
+      </tr><tr>
+        <td>
+          149
+        </td>
+        <td>
+          5673
+        </td>
+        <td>
+          5040
+          -
+          5055
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.immutable.StringLike.toArray
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.augmentString(ScalesStreamReader.this.getText()).toArray[Char]((ClassTag.Char: scala.reflect.ClassTag[Char]))
+        </td>
+      </tr><tr>
+        <td>
+          151
+        </td>
+        <td>
+          5674
+        </td>
+        <td>
+          5186
+          -
+          5187
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          151
+        </td>
+        <td>
+          5675
+        </td>
+        <td>
+          5205
+          -
+          5220
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.getTextLength
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.getTextLength()
+        </td>
+      </tr><tr>
+        <td>
+          151
+        </td>
+        <td>
+          5676
+        </td>
+        <td>
+          5191
+          -
+          5220
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          targetStart.&gt;(ScalesStreamReader.this.getTextLength())
+        </td>
+      </tr><tr>
+        <td>
+          151
+        </td>
+        <td>
+          5677
+        </td>
+        <td>
+          5172
+          -
+          5220
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.||
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          targetStart.&lt;(0).||(targetStart.&gt;(ScalesStreamReader.this.getTextLength()))
+        </td>
+      </tr><tr>
+        <td>
+          151
+        </td>
+        <td>
+          5680
+        </td>
+        <td>
+          5168
+          -
+          5168
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          151
+        </td>
+        <td>
+          5681
+        </td>
+        <td>
+          5168
+          -
+          5168
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          152
+        </td>
+        <td>
+          5678
+        </td>
+        <td>
+          5228
+          -
+          5341
+        </td>
+        <td>
+          Throw
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          throw new scala.`package`.IndexOutOfBoundsException(&quot;TargetStart was out of bounds: &quot;.+(targetStart).+(&quot; textLength &quot;).+(ScalesStreamReader.this.getTextLength()))
+        </td>
+      </tr><tr>
+        <td>
+          152
+        </td>
+        <td>
+          5679
+        </td>
+        <td>
+          5228
+          -
+          5341
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          throw new scala.`package`.IndexOutOfBoundsException(&quot;TargetStart was out of bounds: &quot;.+(targetStart).+(&quot; textLength &quot;).+(ScalesStreamReader.this.getTextLength()))
+        </td>
+      </tr><tr>
+        <td>
+          154
+        </td>
+        <td>
+          5682
+        </td>
+        <td>
+          5364
+          -
+          5365
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          154
+        </td>
+        <td>
+          5683
+        </td>
+        <td>
+          5393
+          -
+          5408
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.getTextLength
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.getTextLength()
+        </td>
+      </tr><tr>
+        <td>
+          154
+        </td>
+        <td>
+          5684
+        </td>
+        <td>
+          5370
+          -
+          5408
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          targetStart.+(length).&gt;(ScalesStreamReader.this.getTextLength())
+        </td>
+      </tr><tr>
+        <td>
+          154
+        </td>
+        <td>
+          5685
+        </td>
+        <td>
+          5355
+          -
+          5409
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.||
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          length.&lt;(0).||(targetStart.+(length).&gt;(ScalesStreamReader.this.getTextLength()))
+        </td>
+      </tr><tr>
+        <td>
+          154
+        </td>
+        <td>
+          5688
+        </td>
+        <td>
+          5351
+          -
+          5351
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          154
+        </td>
+        <td>
+          5689
+        </td>
+        <td>
+          5351
+          -
+          5351
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          155
+        </td>
+        <td>
+          5686
+        </td>
+        <td>
+          5418
+          -
+          5560
+        </td>
+        <td>
+          Throw
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          throw new scala.`package`.IndexOutOfBoundsException(&quot;TargetStart and Length was out of bounds: &quot;.+(targetStart).+(&quot; length &quot;).+(length).+(&quot; textLength &quot;).+(ScalesStreamReader.this.getTextLength()))
+        </td>
+      </tr><tr>
+        <td>
+          155
+        </td>
+        <td>
+          5687
+        </td>
+        <td>
+          5418
+          -
+          5560
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          throw new scala.`package`.IndexOutOfBoundsException(&quot;TargetStart and Length was out of bounds: &quot;.+(targetStart).+(&quot; length &quot;).+(length).+(&quot; textLength &quot;).+(ScalesStreamReader.this.getTextLength()))
+        </td>
+      </tr><tr>
+        <td>
+          157
+        </td>
+        <td>
+          5690
+        </td>
+        <td>
+          5587
+          -
+          5606
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.getTextCharacters
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.getTextCharacters()
+        </td>
+      </tr><tr>
+        <td>
+          157
+        </td>
+        <td>
+          5691
+        </td>
+        <td>
+          5570
+          -
+          5649
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.System.arraycopy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          java.lang.System.arraycopy(ScalesStreamReader.this.getTextCharacters(), sourceStart, target, targetStart, length)
+        </td>
+      </tr><tr>
+        <td>
+          161
+        </td>
+        <td>
+          5692
+        </td>
+        <td>
+          5696
+          -
+          5705
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.getText
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.getText()
+        </td>
+      </tr><tr>
+        <td>
+          161
+        </td>
+        <td>
+          5693
+        </td>
+        <td>
+          5696
+          -
+          5710
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.SeqLike.size
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.augmentString(ScalesStreamReader.this.getText()).size
+        </td>
+      </tr><tr>
+        <td>
+          162
+        </td>
+        <td>
+          5694
+        </td>
+        <td>
+          5740
+          -
+          5741
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          164
+        </td>
+        <td>
+          5695
+        </td>
+        <td>
+          5774
+          -
+          5809
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.XmlVersion.version
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.docLike.prolog.decl.version.version
+        </td>
+      </tr><tr>
+        <td>
+          166
+        </td>
+        <td>
+          5696
+        </td>
+        <td>
+          5849
+          -
+          5862
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          166
+        </td>
+        <td>
+          5697
+        </td>
+        <td>
+          5866
+          -
+          5887
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ScalesStreamReader.this.evType.==(2)
+        </td>
+      </tr><tr>
+        <td>
+          166
+        </td>
+        <td>
+          5698
+        </td>
+        <td>
+          5839
+          -
+          5887
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.||
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ScalesStreamReader.this.evType.==(1).||(ScalesStreamReader.this.evType.==(2))
+        </td>
+      </tr><tr>
+        <td>
+          167
+        </td>
+        <td>
+          5699
+        </td>
+        <td>
+          5937
+          -
+          5948
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.Iterator.hasNext
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.itr.hasNext
+        </td>
+      </tr><tr>
+        <td>
+          167
+        </td>
+        <td>
+          5700
+        </td>
+        <td>
+          5952
+          -
+          5966
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.Iterator.hasNext
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.endItr.hasNext
+        </td>
+      </tr><tr>
+        <td>
+          167
+        </td>
+        <td>
+          5701
+        </td>
+        <td>
+          5970
+          -
+          5978
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.doEndDoc
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.doEndDoc
+        </td>
+      </tr><tr>
+        <td>
+          167
+        </td>
+        <td>
+          5702
+        </td>
+        <td>
+          5916
+          -
+          5978
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.||
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.prologItr.hasNext.||(ScalesStreamReader.this.itr.hasNext).||(ScalesStreamReader.this.endItr.hasNext).||(ScalesStreamReader.this.doEndDoc)
+        </td>
+      </tr><tr>
+        <td>
+          168
+        </td>
+        <td>
+          5703
+        </td>
+        <td>
+          6017
+          -
+          6022
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          12
+        </td>
+      </tr><tr>
+        <td>
+          168
+        </td>
+        <td>
+          5704
+        </td>
+        <td>
+          6026
+          -
+          6043
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ScalesStreamReader.this.evType.==(5)
+        </td>
+      </tr><tr>
+        <td>
+          168
+        </td>
+        <td>
+          5705
+        </td>
+        <td>
+          6047
+          -
+          6067
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ScalesStreamReader.this.evType.==(4)
+        </td>
+      </tr><tr>
+        <td>
+          168
+        </td>
+        <td>
+          5706
+        </td>
+        <td>
+          6007
+          -
+          6067
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.||
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ScalesStreamReader.this.evType.==(12).||(ScalesStreamReader.this.evType.==(5)).||(ScalesStreamReader.this.evType.==(4))
+        </td>
+      </tr><tr>
+        <td>
+          170
+        </td>
+        <td>
+          5707
+        </td>
+        <td>
+          6121
+          -
+          6126
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          171
+        </td>
+        <td>
+          5708
+        </td>
+        <td>
+          6182
+          -
+          6202
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ScalesStreamReader.this.evType.==(4)
+        </td>
+      </tr><tr>
+        <td>
+          172
+        </td>
+        <td>
+          5709
+        </td>
+        <td>
+          6236
+          -
+          6257
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ScalesStreamReader.this.evType.==(2)
+        </td>
+      </tr><tr>
+        <td>
+          173
+        </td>
+        <td>
+          5710
+        </td>
+        <td>
+          6291
+          -
+          6304
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.standaloneSet
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.standaloneSet()
+        </td>
+      </tr><tr>
+        <td>
+          174
+        </td>
+        <td>
+          5711
+        </td>
+        <td>
+          6340
+          -
+          6363
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ScalesStreamReader.this.evType.==(1)
+        </td>
+      </tr><tr>
+        <td>
+          175
+        </td>
+        <td>
+          5712
+        </td>
+        <td>
+          6397
+          -
+          6419
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Predef.augmentString(ScalesStreamReader.this.getText().trim()).size.==(0)
+        </td>
+      </tr><tr>
+        <td>
+          178
+        </td>
+        <td>
+          5713
+        </td>
+        <td>
+          6443
+          -
+          6452
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.shouldPop
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.shouldPop
+        </td>
+      </tr><tr>
+        <td>
+          178
+        </td>
+        <td>
+          5717
+        </td>
+        <td>
+          6454
+          -
+          6506
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  ScalesStreamReader.this.nc_=(ScalesStreamReader.this.nc.parent);
+  ScalesStreamReader.this.shouldPop_=(false)
+}
+        </td>
+      </tr><tr>
+        <td>
+          178
+        </td>
+        <td>
+          5718
+        </td>
+        <td>
+          6439
+          -
+          6439
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          178
+        </td>
+        <td>
+          5719
+        </td>
+        <td>
+          6439
+          -
+          6439
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          179
+        </td>
+        <td>
+          5714
+        </td>
+        <td>
+          6467
+          -
+          6476
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.trax.TNC.parent
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.nc.parent
+        </td>
+      </tr><tr>
+        <td>
+          179
+        </td>
+        <td>
+          5715
+        </td>
+        <td>
+          6462
+          -
+          6476
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.nc_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.nc_=(ScalesStreamReader.this.nc.parent)
+        </td>
+      </tr><tr>
+        <td>
+          180
+        </td>
+        <td>
+          5716
+        </td>
+        <td>
+          6483
+          -
+          6500
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.shouldPop_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.shouldPop_=(false)
+        </td>
+      </tr><tr>
+        <td>
+          185
+        </td>
+        <td>
+          5720
+        </td>
+        <td>
+          6543
+          -
+          6554
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.startedDoc.unary_!
+        </td>
+      </tr><tr>
+        <td>
+          185
+        </td>
+        <td>
+          5723
+        </td>
+        <td>
+          6556
+          -
+          6615
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  ScalesStreamReader.this.startedDoc_=(true);
+  return 7
+}
+        </td>
+      </tr><tr>
+        <td>
+          185
+        </td>
+        <td>
+          5724
+        </td>
+        <td>
+          6539
+          -
+          6539
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          185
+        </td>
+        <td>
+          5725
+        </td>
+        <td>
+          6539
+          -
+          6539
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          186
+        </td>
+        <td>
+          5721
+        </td>
+        <td>
+          6564
+          -
+          6581
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.startedDoc_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.startedDoc_=(true)
+        </td>
+      </tr><tr>
+        <td>
+          187
+        </td>
+        <td>
+          5722
+        </td>
+        <td>
+          6595
+          -
+          6609
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          7
+        </td>
+      </tr><tr>
+        <td>
+          190
+        </td>
+        <td>
+          5726
+        </td>
+        <td>
+          6625
+          -
+          6633
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.doEndDoc
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.doEndDoc
+        </td>
+      </tr><tr>
+        <td>
+          190
+        </td>
+        <td>
+          5729
+        </td>
+        <td>
+          6635
+          -
+          6719
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  ScalesStreamReader.this.doEndDoc_=(false);
+  return 8
+}
+        </td>
+      </tr><tr>
+        <td>
+          190
+        </td>
+        <td>
+          5730
+        </td>
+        <td>
+          6621
+          -
+          6621
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          190
+        </td>
+        <td>
+          5731
+        </td>
+        <td>
+          6621
+          -
+          6621
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          191
+        </td>
+        <td>
+          5727
+        </td>
+        <td>
+          6643
+          -
+          6659
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.doEndDoc_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.doEndDoc_=(false)
+        </td>
+      </tr><tr>
+        <td>
+          193
+        </td>
+        <td>
+          5728
+        </td>
+        <td>
+          6701
+          -
+          6713
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          8
+        </td>
+      </tr><tr>
+        <td>
+          196
+        </td>
+        <td>
+          5732
+        </td>
+        <td>
+          6729
+          -
+          6746
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.Iterator.hasNext
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.prologItr.hasNext
+        </td>
+      </tr><tr>
+        <td>
+          197
+        </td>
+        <td>
+          5733
+        </td>
+        <td>
+          6784
+          -
+          6785
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPulls.toLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.`package`.toLeft(x)
+        </td>
+      </tr><tr>
+        <td>
+          197
+        </td>
+        <td>
+          5734
+        </td>
+        <td>
+          6790
+          -
+          6791
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPulls.toLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.`package`.toLeft(y)
+        </td>
+      </tr><tr>
+        <td>
+          197
+        </td>
+        <td>
+          5735
+        </td>
+        <td>
+          6761
+          -
+          6792
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Either.fold
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.prologItr.next().fold[scala.util.Left[scales.xml.XmlEvent,Nothing]](((x: scales.xml.Comment) =&gt; scales.xml.`package`.toLeft(x)), ((y: scales.xml.PI) =&gt; scales.xml.`package`.toLeft(y)))
+        </td>
+      </tr><tr>
+        <td>
+          197
+        </td>
+        <td>
+          5736
+        </td>
+        <td>
+          6756
+          -
+          6792
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.ev_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.ev_=(ScalesStreamReader.this.prologItr.next().fold[scala.util.Left[scales.xml.XmlEvent,Nothing]](((x: scales.xml.Comment) =&gt; scales.xml.`package`.toLeft(x)), ((y: scales.xml.PI) =&gt; scales.xml.`package`.toLeft(y))))
+        </td>
+      </tr><tr>
+        <td>
+          197
+        </td>
+        <td>
+          5737
+        </td>
+        <td>
+          6756
+          -
+          6792
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.ev_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.ev_=(ScalesStreamReader.this.prologItr.next().fold[scala.util.Left[scales.xml.XmlEvent,Nothing]](((x: scales.xml.Comment) =&gt; scales.xml.`package`.toLeft(x)), ((y: scales.xml.PI) =&gt; scales.xml.`package`.toLeft(y))))
+        </td>
+      </tr><tr>
+        <td>
+          198
+        </td>
+        <td>
+          5738
+        </td>
+        <td>
+          6808
+          -
+          6819
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.Iterator.hasNext
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.itr.hasNext
+        </td>
+      </tr><tr>
+        <td>
+          198
+        </td>
+        <td>
+          5747
+        </td>
+        <td>
+          6804
+          -
+          6901
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (ScalesStreamReader.this.itr.hasNext)
+  ScalesStreamReader.this.ev_=(ScalesStreamReader.this.itr.next())
+else
+  ScalesStreamReader.this.ev_=(ScalesStreamReader.this.endItr.next().fold[scala.util.Left[scales.xml.XmlEvent,Nothing]](((x: scales.xml.Comment) =&gt; scales.xml.`package`.toLeft(x)), ((y: scales.xml.PI) =&gt; scales.xml.`package`.toLeft(y))))
+        </td>
+      </tr><tr>
+        <td>
+          199
+        </td>
+        <td>
+          5739
+        </td>
+        <td>
+          6834
+          -
+          6842
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.Iterator.next
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.itr.next()
+        </td>
+      </tr><tr>
+        <td>
+          199
+        </td>
+        <td>
+          5740
+        </td>
+        <td>
+          6829
+          -
+          6842
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.ev_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.ev_=(ScalesStreamReader.this.itr.next())
+        </td>
+      </tr><tr>
+        <td>
+          199
+        </td>
+        <td>
+          5741
+        </td>
+        <td>
+          6829
+          -
+          6842
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.ev_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.ev_=(ScalesStreamReader.this.itr.next())
+        </td>
+      </tr><tr>
+        <td>
+          201
+        </td>
+        <td>
+          5742
+        </td>
+        <td>
+          6887
+          -
+          6888
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPulls.toLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.`package`.toLeft(x)
+        </td>
+      </tr><tr>
+        <td>
+          201
+        </td>
+        <td>
+          5743
+        </td>
+        <td>
+          6893
+          -
+          6894
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPulls.toLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.`package`.toLeft(y)
+        </td>
+      </tr><tr>
+        <td>
+          201
+        </td>
+        <td>
+          5744
+        </td>
+        <td>
+          6867
+          -
+          6895
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Either.fold
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.endItr.next().fold[scala.util.Left[scales.xml.XmlEvent,Nothing]](((x: scales.xml.Comment) =&gt; scales.xml.`package`.toLeft(x)), ((y: scales.xml.PI) =&gt; scales.xml.`package`.toLeft(y)))
+        </td>
+      </tr><tr>
+        <td>
+          201
+        </td>
+        <td>
+          5745
+        </td>
+        <td>
+          6862
+          -
+          6895
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.ev_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.ev_=(ScalesStreamReader.this.endItr.next().fold[scala.util.Left[scales.xml.XmlEvent,Nothing]](((x: scales.xml.Comment) =&gt; scales.xml.`package`.toLeft(x)), ((y: scales.xml.PI) =&gt; scales.xml.`package`.toLeft(y))))
+        </td>
+      </tr><tr>
+        <td>
+          201
+        </td>
+        <td>
+          5746
+        </td>
+        <td>
+          6862
+          -
+          6895
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.ev_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.ev_=(ScalesStreamReader.this.endItr.next().fold[scala.util.Left[scales.xml.XmlEvent,Nothing]](((x: scales.xml.Comment) =&gt; scales.xml.`package`.toLeft(x)), ((y: scales.xml.PI) =&gt; scales.xml.`package`.toLeft(y))))
+        </td>
+      </tr><tr>
+        <td>
+          204
+        </td>
+        <td>
+          5748
+        </td>
+        <td>
+          6911
+          -
+          6916
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.setEv
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.setEv()
+        </td>
+      </tr><tr>
+        <td>
+          208
+        </td>
+        <td>
+          5749
+        </td>
+        <td>
+          6962
+          -
+          6968
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.evType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.evType
+        </td>
+      </tr><tr>
+        <td>
+          209
+        </td>
+        <td>
+          5757
+        </td>
+        <td>
+          7002
+          -
+          7137
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val el: scales.xml.Elem = ScalesStreamReader.this.ev.left.get.asInstanceOf[scales.xml.Elem];
+  ScalesStreamReader.this.attribs_=(el.attributes.toArray[scales.xml.Attribute]((ClassTag.apply[scales.xml.Attribute](classOf[scales.xml.Attribute]): scala.reflect.ClassTag[scales.xml.Attribute])));
+  ScalesStreamReader.this.doPop;
+  ScalesStreamReader.this.nc_=(NamespaceContextFunctions.newContext(ScalesStreamReader.this.nc, el))
+}
+        </td>
+      </tr><tr>
+        <td>
+          211
+        </td>
+        <td>
+          5750
+        </td>
+        <td>
+          7040
+          -
+          7070
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.ev.left.get.asInstanceOf[scales.xml.Elem]
+        </td>
+      </tr><tr>
+        <td>
+          212
+        </td>
+        <td>
+          5751
+        </td>
+        <td>
+          7082
+          -
+          7103
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableOnce.toArray
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          el.attributes.toArray[scales.xml.Attribute]((ClassTag.apply[scales.xml.Attribute](classOf[scales.xml.Attribute]): scala.reflect.ClassTag[scales.xml.Attribute]))
+        </td>
+      </tr><tr>
+        <td>
+          212
+        </td>
+        <td>
+          5752
+        </td>
+        <td>
+          7072
+          -
+          7103
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.attribs_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.attribs_=(el.attributes.toArray[scales.xml.Attribute]((ClassTag.apply[scales.xml.Attribute](classOf[scales.xml.Attribute]): scala.reflect.ClassTag[scales.xml.Attribute])))
+        </td>
+      </tr><tr>
+        <td>
+          214
+        </td>
+        <td>
+          5753
+        </td>
+        <td>
+          7107
+          -
+          7112
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.doPop
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.doPop
+        </td>
+      </tr><tr>
+        <td>
+          215
+        </td>
+        <td>
+          5754
+        </td>
+        <td>
+          7130
+          -
+          7132
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.nc
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.nc
+        </td>
+      </tr><tr>
+        <td>
+          215
+        </td>
+        <td>
+          5755
+        </td>
+        <td>
+          7119
+          -
+          7137
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.trax.NamespaceContextFunctions.newContext
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          NamespaceContextFunctions.newContext(ScalesStreamReader.this.nc, el)
+        </td>
+      </tr><tr>
+        <td>
+          215
+        </td>
+        <td>
+          5756
+        </td>
+        <td>
+          7114
+          -
+          7137
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.nc_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.nc_=(NamespaceContextFunctions.newContext(ScalesStreamReader.this.nc, el))
+        </td>
+      </tr><tr>
+        <td>
+          218
+        </td>
+        <td>
+          5758
+        </td>
+        <td>
+          7190
+          -
+          7206
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.shouldPop_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.shouldPop_=(true)
+        </td>
+      </tr><tr>
+        <td>
+          218
+        </td>
+        <td>
+          5759
+        </td>
+        <td>
+          7190
+          -
+          7206
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.shouldPop_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.shouldPop_=(true)
+        </td>
+      </tr><tr>
+        <td>
+          221
+        </td>
+        <td>
+          5760
+        </td>
+        <td>
+          7249
+          -
+          7254
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.doPop
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.doPop
+        </td>
+      </tr><tr>
+        <td>
+          221
+        </td>
+        <td>
+          5761
+        </td>
+        <td>
+          7249
+          -
+          7254
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.doPop
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.doPop
+        </td>
+      </tr><tr>
+        <td>
+          224
+        </td>
+        <td>
+          5762
+        </td>
+        <td>
+          7286
+          -
+          7301
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.endItr.hasNext.unary_!
+        </td>
+      </tr><tr>
+        <td>
+          224
+        </td>
+        <td>
+          5763
+        </td>
+        <td>
+          7270
+          -
+          7301
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.itr.hasNext.unary_!.&amp;&amp;(ScalesStreamReader.this.endItr.hasNext.unary_!)
+        </td>
+      </tr><tr>
+        <td>
+          224
+        </td>
+        <td>
+          5766
+        </td>
+        <td>
+          7266
+          -
+          7266
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          224
+        </td>
+        <td>
+          5767
+        </td>
+        <td>
+          7266
+          -
+          7266
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          225
+        </td>
+        <td>
+          5764
+        </td>
+        <td>
+          7311
+          -
+          7326
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.doEndDoc_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.doEndDoc_=(true)
+        </td>
+      </tr><tr>
+        <td>
+          225
+        </td>
+        <td>
+          5765
+        </td>
+        <td>
+          7311
+          -
+          7326
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.doEndDoc_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.doEndDoc_=(true)
+        </td>
+      </tr><tr>
+        <td>
+          228
+        </td>
+        <td>
+          5768
+        </td>
+        <td>
+          7338
+          -
+          7344
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.evType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.evType
+        </td>
+      </tr><tr>
+        <td>
+          233
+        </td>
+        <td>
+          5769
+        </td>
+        <td>
+          7558
+          -
+          7564
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.next
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.next()
+        </td>
+      </tr><tr>
+        <td>
+          234
+        </td>
+        <td>
+          5770
+        </td>
+        <td>
+          7589
+          -
+          7618
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          4
+        </td>
+      </tr><tr>
+        <td>
+          234
+        </td>
+        <td>
+          5771
+        </td>
+        <td>
+          7622
+          -
+          7636
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.isWhiteSpace
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ScalesStreamReader.this.isWhiteSpace()
+        </td>
+      </tr><tr>
+        <td>
+          234
+        </td>
+        <td>
+          5781
+        </td>
+        <td>
+          7906
+          -
+          7924
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  eventType = ScalesStreamReader.this.next();
+  while$2()
+}
+        </td>
+      </tr><tr>
+        <td>
+          234
+        </td>
+        <td>
+          5782
+        </td>
+        <td>
+          7569
+          -
+          7569
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          234
+        </td>
+        <td>
+          5783
+        </td>
+        <td>
+          7569
+          -
+          7569
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          235
+        </td>
+        <td>
+          5772
+        </td>
+        <td>
+          7677
+          -
+          7701
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          12
+        </td>
+      </tr><tr>
+        <td>
+          235
+        </td>
+        <td>
+          5773
+        </td>
+        <td>
+          7705
+          -
+          7719
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.isWhiteSpace
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ScalesStreamReader.this.isWhiteSpace()
+        </td>
+      </tr><tr>
+        <td>
+          235
+        </td>
+        <td>
+          5774
+        </td>
+        <td>
+          7664
+          -
+          7719
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          eventType.==(12).&amp;&amp;(ScalesStreamReader.this.isWhiteSpace())
+        </td>
+      </tr><tr>
+        <td>
+          237
+        </td>
+        <td>
+          5775
+        </td>
+        <td>
+          7750
+          -
+          7787
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          eventType.==(6)
+        </td>
+      </tr><tr>
+        <td>
+          238
+        </td>
+        <td>
+          5776
+        </td>
+        <td>
+          7794
+          -
+          7848
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          eventType.==(3)
+        </td>
+      </tr><tr>
+        <td>
+          239
+        </td>
+        <td>
+          5777
+        </td>
+        <td>
+          7855
+          -
+          7894
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          eventType.==(5)
+        </td>
+      </tr><tr>
+        <td>
+          239
+        </td>
+        <td>
+          5778
+        </td>
+        <td>
+          7575
+          -
+          7894
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.||
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          eventType.==(4).&amp;&amp;(ScalesStreamReader.this.isWhiteSpace()).||(eventType.==(12).&amp;&amp;(ScalesStreamReader.this.isWhiteSpace())).||(eventType.==(6)).||(eventType.==(3)).||(eventType.==(5))
+        </td>
+      </tr><tr>
+        <td>
+          241
+        </td>
+        <td>
+          5779
+        </td>
+        <td>
+          7918
+          -
+          7924
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.next
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.next()
+        </td>
+      </tr><tr>
+        <td>
+          241
+        </td>
+        <td>
+          5780
+        </td>
+        <td>
+          7916
+          -
+          7916
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.while$2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          while$2()
+        </td>
+      </tr><tr>
+        <td>
+          243
+        </td>
+        <td>
+          5784
+        </td>
+        <td>
+          7952
+          -
+          7984
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          243
+        </td>
+        <td>
+          5785
+        </td>
+        <td>
+          7988
+          -
+          8031
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.!=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          eventType.!=(2)
+        </td>
+      </tr><tr>
+        <td>
+          243
+        </td>
+        <td>
+          5786
+        </td>
+        <td>
+          7939
+          -
+          8031
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          eventType.!=(1).&amp;&amp;(eventType.!=(2))
+        </td>
+      </tr><tr>
+        <td>
+          243
+        </td>
+        <td>
+          5789
+        </td>
+        <td>
+          7935
+          -
+          7935
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          243
+        </td>
+        <td>
+          5790
+        </td>
+        <td>
+          7935
+          -
+          7935
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          244
+        </td>
+        <td>
+          5787
+        </td>
+        <td>
+          8041
+          -
+          8113
+        </td>
+        <td>
+          Throw
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          throw new javax.xml.stream.XMLStreamException(&quot;expected start or end tag&quot;, ScalesStreamReader.this.getLocation())
+        </td>
+      </tr><tr>
+        <td>
+          244
+        </td>
+        <td>
+          5788
+        </td>
+        <td>
+          8041
+          -
+          8113
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          throw new javax.xml.stream.XMLStreamException(&quot;expected start or end tag&quot;, ScalesStreamReader.this.getLocation())
+        </td>
+      </tr><tr>
+        <td>
+          250
+        </td>
+        <td>
+          5791
+        </td>
+        <td>
+          8219
+          -
+          8233
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.!=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ScalesStreamReader.this.evType.!=(tipe)
+        </td>
+      </tr><tr>
+        <td>
+          250
+        </td>
+        <td>
+          5794
+        </td>
+        <td>
+          8215
+          -
+          8215
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          250
+        </td>
+        <td>
+          5795
+        </td>
+        <td>
+          8215
+          -
+          8215
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          251
+        </td>
+        <td>
+          5792
+        </td>
+        <td>
+          8241
+          -
+          8307
+        </td>
+        <td>
+          Throw
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          throw new javax.xml.stream.XMLStreamException(&quot;Type does not match&quot;, ScalesStreamReader.this.getLocation())
+        </td>
+      </tr><tr>
+        <td>
+          251
+        </td>
+        <td>
+          5793
+        </td>
+        <td>
+          8241
+          -
+          8307
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          throw new javax.xml.stream.XMLStreamException(&quot;Type does not match&quot;, ScalesStreamReader.this.getLocation())
+        </td>
+      </tr><tr>
+        <td>
+          253
+        </td>
+        <td>
+          5796
+        </td>
+        <td>
+          8337
+          -
+          8341
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          253
+        </td>
+        <td>
+          5797
+        </td>
+        <td>
+          8361
+          -
+          8378
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.getNamespaceURI
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ScalesStreamReader.this.getNamespaceURI()
+        </td>
+      </tr><tr>
+        <td>
+          253
+        </td>
+        <td>
+          5798
+        </td>
+        <td>
+          8345
+          -
+          8378
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.!=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          namespaceURI.!=(ScalesStreamReader.this.getNamespaceURI())
+        </td>
+      </tr><tr>
+        <td>
+          253
+        </td>
+        <td>
+          5799
+        </td>
+        <td>
+          8321
+          -
+          8378
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          namespaceURI.!=(null).&amp;&amp;(namespaceURI.!=(ScalesStreamReader.this.getNamespaceURI()))
+        </td>
+      </tr><tr>
+        <td>
+          253
+        </td>
+        <td>
+          5802
+        </td>
+        <td>
+          8317
+          -
+          8317
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          253
+        </td>
+        <td>
+          5803
+        </td>
+        <td>
+          8317
+          -
+          8317
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          254
+        </td>
+        <td>
+          5800
+        </td>
+        <td>
+          8386
+          -
+          8457
+        </td>
+        <td>
+          Throw
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          throw new javax.xml.stream.XMLStreamException(&quot;Namespace does not match&quot;, ScalesStreamReader.this.getLocation())
+        </td>
+      </tr><tr>
+        <td>
+          254
+        </td>
+        <td>
+          5801
+        </td>
+        <td>
+          8386
+          -
+          8457
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          throw new javax.xml.stream.XMLStreamException(&quot;Namespace does not match&quot;, ScalesStreamReader.this.getLocation())
+        </td>
+      </tr><tr>
+        <td>
+          256
+        </td>
+        <td>
+          5804
+        </td>
+        <td>
+          8480
+          -
+          8484
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          256
+        </td>
+        <td>
+          5805
+        </td>
+        <td>
+          8501
+          -
+          8515
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.trax.ScalesStreamReader.getLocalName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ScalesStreamReader.this.getLocalName()
+        </td>
+      </tr><tr>
+        <td>
+          256
+        </td>
+        <td>
+          5806
+        </td>
+        <td>
+          8488
+          -
+          8515
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.!=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          localName.!=(ScalesStreamReader.this.getLocalName())
+        </td>
+      </tr><tr>
+        <td>
+          256
+        </td>
+        <td>
+          5807
+        </td>
+        <td>
+          8467
+          -
+          8515
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          localName.!=(null).&amp;&amp;(localName.!=(ScalesStreamReader.this.getLocalName()))
+        </td>
+      </tr><tr>
+        <td>
+          256
+        </td>
+        <td>
+          5810
+        </td>
+        <td>
+          8463
+          -
+          8463
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          256
+        </td>
+        <td>
+          5811
+        </td>
+        <td>
+          8463
+          -
+          8463
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          257
+        </td>
+        <td>
+          5808
+        </td>
+        <td>
+          8523
+          -
+          8594
+        </td>
+        <td>
+          Throw
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          throw new javax.xml.stream.XMLStreamException(&quot;LocalName does not match&quot;, ScalesStreamReader.this.getLocation())
+        </td>
+      </tr><tr>
+        <td>
+          257
+        </td>
+        <td>
+          5809
+        </td>
+        <td>
+          8523
+          -
+          8594
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          throw new javax.xml.stream.XMLStreamException(&quot;LocalName does not match&quot;, ScalesStreamReader.this.getLocation())
+        </td>
+      </tr><tr>
+        <td>
+          260
+        </td>
+        <td>
+          5812
+        </td>
+        <td>
+          8634
+          -
+          8664
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Declaration.standalone
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesStreamReader.this.docLike.prolog.decl.standalone
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

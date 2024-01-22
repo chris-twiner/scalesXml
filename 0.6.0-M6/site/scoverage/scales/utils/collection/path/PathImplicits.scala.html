@@ -1,0 +1,410 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/utils/collection/path/PathImplicits.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.utils.collection.path
+</span>2 <span style=''>
+</span>3 <span style=''>import scala.collection.generic.CanBuildFrom
+</span>4 <span style=''>import scales.utils.collection.{SeqLikeThing, Tree}
+</span>5 <span style=''>import scales.utils.{FoldR, LeftLike, PathFoldR, deepestLast}
+</span>6 <span style=''>import scalaz._
+</span>7 <span style=''>import Scalaz._
+</span>8 <span style=''>
+</span>9 <span style=''>/**
+</span>10 <span style=''> * Provide &amp; combinator to pass the result of one fold onto the other,
+</span>11 <span style=''> * in the case of failure no further joined functions will be called.
+</span>12 <span style=''> *
+</span>13 <span style=''> * And provides | which allows NoPaths failures, allowing the use site to decide
+</span>14 <span style=''> * how to combine
+</span>15 <span style=''> */
+</span>16 <span style=''>class PathFoldCombiner[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]](f: PathFoldR[Item, Section, CC]) {
+</span>17 <span style=''>  
+</span>18 <span style=''>  private[this] def onSuccess(next: PathFoldR[Item, Section, CC], orOnFail: (Path[Item, Section, CC], FoldError) =&gt; FoldR[Item, Section, CC] = (a, b) =&gt; Right(b)): PathFoldR[Item, Section, CC] =
+</span>19 <span style=''>    (path: Path[Item, Section, CC]) =&gt;
+</span>20 <span style=''>      // modify back in (allows changes), or pass on the error
+</span>21 <span style=''>      </span><span style='background: #AEF1AE'>f(path).fold(fres =&gt;
+</span>22 <span style=''></span><span style='background: #AEF1AE'>        next(path.modify(_ =&gt; fres.tree)),
+</span>23 <span style=''></span><span style='background: #AEF1AE'>	    orOnFail(path, _))</span><span style=''>
+</span>24 <span style=''>
+</span>25 <span style=''>  /**
+</span>26 <span style=''>   * Combine with next, but only when this PathFoldR has not failed
+</span>27 <span style=''>   */ 
+</span>28 <span style=''>  def &amp;(next: PathFoldR[Item, Section, CC]): PathFoldR[Item, Section, CC] =
+</span>29 <span style=''>    </span><span style='background: #AEF1AE'>onSuccess(next)</span><span style=''>
+</span>30 <span style=''>
+</span>31 <span style=''>  /**
+</span>32 <span style=''>   * Combine with next, and allow next to be used if this PathFoldR returns NoPaths
+</span>33 <span style=''>   */ 
+</span>34 <span style=''>  def |(next: PathFoldR[Item, Section, CC]): PathFoldR[Item, Section, CC] =
+</span>35 <span style=''>    </span><span style='background: #AEF1AE'>onSuccess(next, orOnFail = (path, res) =&gt;
+</span>36 <span style=''></span><span style='background: #AEF1AE'>      if (res eq NoPaths)
+</span>37 <span style=''></span><span style='background: #AEF1AE'>        next(path)
+</span>38 <span style=''></span><span style='background: #AEF1AE'>      else
+</span>39 <span style=''></span><span style='background: #AEF1AE'>        </span><span style='background: #F0ADAD'>Right(res)</span><span style='background: #AEF1AE'>)</span><span style=''>
+</span>40 <span style=''>}
+</span>41 <span style=''>
+</span>42 <span style=''>
+</span>43 <span style=''>trait PathImplicits {
+</span>44 <span style=''>  /**
+</span>45 <span style=''>   * Provide &amp; combinator to pass the result of one fold onto the other,
+</span>46 <span style=''>   * in the case of failure no further joined functions will be called.
+</span>47 <span style=''>   *
+</span>48 <span style=''>   * And provides | which allows NoPaths failures, allowing the use site to decide
+</span>49 <span style=''>   * how to combine
+</span>50 <span style=''>   */
+</span>51 <span style=''>  implicit def fToFoldRToCombine[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]](f: PathFoldR[Item, Section, CC]) = </span><span style='background: #AEF1AE'>new PathFoldCombiner[Item, Section, CC](f)</span><span style=''>
+</span>52 <span style=''>
+</span>53 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          21
+        </td>
+        <td>
+          938
+        </td>
+        <td>
+          910
+          -
+          997
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Either.fold
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          PathFoldCombiner.this.f.apply(path).fold[scales.utils.FoldR[Item,Section,CC]](((fres: scales.utils.collection.path.Path[Item,Section,CC]) =&gt; next.apply(path.modify(((x$1: scales.utils.ItemOrTree[Item,Section,CC]) =&gt; fres.tree())))), ((x$2: scales.utils.collection.path.FoldError) =&gt; orOnFail.apply(path, x$2)))
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          934
+        </td>
+        <td>
+          961
+          -
+          970
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Path.tree
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          fres.tree()
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          935
+        </td>
+        <td>
+          944
+          -
+          971
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Path.modify
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path.modify(((x$1: scales.utils.ItemOrTree[Item,Section,CC]) =&gt; fres.tree()))
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          936
+        </td>
+        <td>
+          939
+          -
+          972
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          next.apply(path.modify(((x$1: scales.utils.ItemOrTree[Item,Section,CC]) =&gt; fres.tree())))
+        </td>
+      </tr><tr>
+        <td>
+          23
+        </td>
+        <td>
+          937
+        </td>
+        <td>
+          979
+          -
+          996
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          orOnFail.apply(path, x$2)
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          939
+        </td>
+        <td>
+          1160
+          -
+          1175
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.PathFoldCombiner.onSuccess
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          PathFoldCombiner.this.onSuccess(next, PathFoldCombiner.this.onSuccess$default$2)
+        </td>
+      </tr><tr>
+        <td>
+          35
+        </td>
+        <td>
+          945
+        </td>
+        <td>
+          1354
+          -
+          1471
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.PathFoldCombiner.onSuccess
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          PathFoldCombiner.this.onSuccess(next, ((path: scales.utils.collection.path.Path[Item,Section,CC], res: scales.utils.collection.path.FoldError) =&gt; if (res.eq(NoPaths))
+  next.apply(path)
+else
+  scala.`package`.Right.apply[Nothing, scales.utils.collection.path.FoldError](res)))
+        </td>
+      </tr><tr>
+        <td>
+          36
+        </td>
+        <td>
+          940
+        </td>
+        <td>
+          1406
+          -
+          1420
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          res.eq(NoPaths)
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          941
+        </td>
+        <td>
+          1430
+          -
+          1440
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          next.apply(path)
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          942
+        </td>
+        <td>
+          1430
+          -
+          1440
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          next.apply(path)
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          943
+        </td>
+        <td>
+          1460
+          -
+          1470
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Right.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.`package`.Right.apply[Nothing, scales.utils.collection.path.FoldError](res)
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          944
+        </td>
+        <td>
+          1460
+          -
+          1470
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.util.Right.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.`package`.Right.apply[Nothing, scales.utils.collection.path.FoldError](res)
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          946
+        </td>
+        <td>
+          1896
+          -
+          1938
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.PathFoldCombiner.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new scales.utils.collection.path.PathFoldCombiner[Item,Section,CC](f)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

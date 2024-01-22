@@ -1,0 +1,1768 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/xml/equals/LogicalComparisons.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.xml.equals
+</span>2 <span style=''>
+</span>3 <span style=''>import scales.xml.{PullType, Text, CData, PI, Comment}
+</span>4 <span style=''>
+</span>5 <span style=''>/**
+</span>6 <span style=''> * Modifies the stream to turn CData nodes into Text nodes and join all adjacent Text nodes togeter i.e. a &quot;tree&quot; with children (Text, CData, Text, CData) will become a single Text child.
+</span>7 <span style=''> *
+</span>8 <span style=''> * CData can be kept if keepCData is set to true
+</span>9 <span style=''> */ 
+</span>10 <span style=''>class JoinTextAndCData( var it : Iterator[PullType], val keepCData : Boolean = false) extends Iterator[PullType] {
+</span>11 <span style=''>
+</span>12 <span style=''>  var gotNext = </span><span style='background: #AEF1AE'>false</span><span style=''>
+</span>13 <span style=''>  var item : PullType = _
+</span>14 <span style=''>  var nextIsNonText = </span><span style='background: #AEF1AE'>false</span><span style=''>
+</span>15 <span style=''>  var nonText : PullType = _
+</span>16 <span style=''>  var sb : java.lang.StringBuilder = _
+</span>17 <span style=''>
+</span>18 <span style=''>  def hasNext = </span><span style='background: #AEF1AE'>gotNext</span><span style=''>
+</span>19 <span style=''>
+</span>20 <span style=''>  def next = {
+</span>21 <span style=''>    if (</span><span style='background: #AEF1AE'>!gotNext</span><span style=''>) </span><span style='background: #F0ADAD'>throw new java.util.NoSuchElementException(&quot;No more data to give&quot;)</span><span style=''>
+</span>22 <span style=''>    var i = </span><span style='background: #AEF1AE'>item</span><span style=''>
+</span>23 <span style=''>    </span><span style='background: #AEF1AE'>pumpNext</span><span style=''> // set the next one up
+</span>24 <span style=''>    i
+</span>25 <span style=''>  }
+</span>26 <span style=''>
+</span>27 <span style=''>  def pumpNext {
+</span>28 <span style=''>    if (</span><span style='background: #AEF1AE'>nextIsNonText</span><span style=''>) </span><span style='background: #AEF1AE'>{
+</span>29 <span style=''></span><span style='background: #AEF1AE'>      nextIsNonText = false
+</span>30 <span style=''></span><span style='background: #AEF1AE'>      // set gotNext to true as we have it anyway
+</span>31 <span style=''></span><span style='background: #AEF1AE'>      item = nonText
+</span>32 <span style=''></span><span style='background: #AEF1AE'>      gotNext = true
+</span>33 <span style=''></span><span style='background: #AEF1AE'>      return
+</span>34 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>35 <span style=''>    // otherwise we must try again
+</span>36 <span style=''>    
+</span>37 <span style=''>    </span><span style='background: #AEF1AE'>gotNext = false</span><span style=''>
+</span>38 <span style=''>    var inText = </span><span style='background: #AEF1AE'>false</span><span style=''>
+</span>39 <span style=''>
+</span>40 <span style=''>    def addText( str : String ) {
+</span>41 <span style=''>      if (</span><span style='background: #AEF1AE'>!inText</span><span style=''>) </span><span style='background: #AEF1AE'>{
+</span>42 <span style=''></span><span style='background: #AEF1AE'>	inText = true
+</span>43 <span style=''></span><span style='background: #AEF1AE'>	sb = new java.lang.StringBuilder()
+</span>44 <span style=''></span><span style='background: #AEF1AE'>      }</span><span style=''>
+</span>45 <span style=''>      </span><span style='background: #AEF1AE'>sb.append(str)</span><span style=''>
+</span>46 <span style=''>    }
+</span>47 <span style=''>
+</span>48 <span style=''>    while( </span><span style='background: #AEF1AE'>!gotNext &amp;&amp; it.hasNext</span><span style=''>) </span><span style='background: #AEF1AE'>{
+</span>49 <span style=''></span><span style='background: #AEF1AE'>      item = it.next
+</span>50 <span style=''></span><span style='background: #AEF1AE'>      item match {
+</span>51 <span style=''></span><span style='background: #AEF1AE'>	case Left(x : Text) =&gt; addText(x.value)
+</span>52 <span style=''></span><span style='background: #AEF1AE'>	case Left(x : CData) if (!keepCData) =&gt; addText(x.value)
+</span>53 <span style=''></span><span style='background: #AEF1AE'>	case x : PullType =&gt; 
+</span>54 <span style=''></span><span style='background: #AEF1AE'>	  if (inText) {
+</span>55 <span style=''></span><span style='background: #AEF1AE'>	    nextIsNonText = true
+</span>56 <span style=''></span><span style='background: #AEF1AE'>	    nonText = item
+</span>57 <span style=''></span><span style='background: #AEF1AE'>	    // join them up
+</span>58 <span style=''></span><span style='background: #AEF1AE'>	    item = Left(Text(sb.toString))
+</span>59 <span style=''></span><span style='background: #AEF1AE'>	  } else {
+</span>60 <span style=''></span><span style='background: #AEF1AE'>	    nextIsNonText = false
+</span>61 <span style=''></span><span style='background: #AEF1AE'>	  }
+</span>62 <span style=''></span><span style='background: #AEF1AE'>	gotNext = true
+</span>63 <span style=''></span><span style='background: #AEF1AE'>      }
+</span>64 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>65 <span style=''>  }
+</span>66 <span style=''>
+</span>67 <span style=''>  </span><span style='background: #AEF1AE'>pumpNext</span><span style=''> // start it off
+</span>68 <span style=''>}
+</span>69 <span style=''>
+</span>70 <span style=''>
+</span>71 <span style=''>/**
+</span>72 <span style=''> * A collection of stream filters to help with equality
+</span>73 <span style=''> */ 
+</span>74 <span style=''>object LogicalFilters {
+</span>75 <span style=''>  
+</span>76 <span style=''>  /**
+</span>77 <span style=''>   * Modifies the stream to turn CData nodes into Text nodes and join all adjacent Text nodes togeter i.e. a &quot;tree&quot; with children (Text, CData, Text, CData) will become a single Text child. 
+</span>78 <span style=''>   */ 
+</span>79 <span style=''>  def joinTextAndCData( it : Iterator[PullType] ) : Iterator[PullType] = 
+</span>80 <span style=''>    </span><span style='background: #AEF1AE'>new JoinTextAndCData(it)</span><span style=''>
+</span>81 <span style=''>
+</span>82 <span style=''>  /**
+</span>83 <span style=''>   * Joins all adjacent Text nodes together but keeps CData nodes
+</span>84 <span style=''>   * @see joinTextAndCData
+</span>85 <span style=''>   */ 
+</span>86 <span style=''>  def joinText( it : Iterator[PullType] ) : Iterator[PullType] =
+</span>87 <span style=''>    </span><span style='background: #AEF1AE'>new JoinTextAndCData(it, true)</span><span style=''>
+</span>88 <span style=''>
+</span>89 <span style=''>  /**
+</span>90 <span style=''>   * Removes all comments and PIs.  This is not used by default.
+</span>91 <span style=''>   */ 
+</span>92 <span style=''>  def removePIAndComments( it : Iterator[PullType] ) : Iterator[PullType] =
+</span>93 <span style=''>    </span><span style='background: #AEF1AE'>it.filter{
+</span>94 <span style=''></span><span style='background: #AEF1AE'>      case Left(_ : PI) | Left(_ : Comment) =&gt; false
+</span>95 <span style=''></span><span style='background: #AEF1AE'>      case _ =&gt; true
+</span>96 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>97 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          12
+        </td>
+        <td>
+          2833
+        </td>
+        <td>
+          464
+          -
+          469
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          14
+        </td>
+        <td>
+          2834
+        </td>
+        <td>
+          518
+          -
+          523
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          18
+        </td>
+        <td>
+          2835
+        </td>
+        <td>
+          609
+          -
+          616
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.JoinTextAndCData.gotNext
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          JoinTextAndCData.this.gotNext
+        </td>
+      </tr><tr>
+        <td>
+          21
+        </td>
+        <td>
+          2836
+        </td>
+        <td>
+          641
+          -
+          649
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          JoinTextAndCData.this.gotNext.unary_!
+        </td>
+      </tr><tr>
+        <td>
+          21
+        </td>
+        <td>
+          2837
+        </td>
+        <td>
+          651
+          -
+          717
+        </td>
+        <td>
+          Throw
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          throw new java.util.NoSuchElementException(&quot;No more data to give&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          21
+        </td>
+        <td>
+          2838
+        </td>
+        <td>
+          651
+          -
+          717
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          throw new java.util.NoSuchElementException(&quot;No more data to give&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          21
+        </td>
+        <td>
+          2839
+        </td>
+        <td>
+          637
+          -
+          637
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          21
+        </td>
+        <td>
+          2840
+        </td>
+        <td>
+          637
+          -
+          637
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          2841
+        </td>
+        <td>
+          730
+          -
+          734
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.JoinTextAndCData.item
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          JoinTextAndCData.this.item
+        </td>
+      </tr><tr>
+        <td>
+          23
+        </td>
+        <td>
+          2842
+        </td>
+        <td>
+          739
+          -
+          747
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.JoinTextAndCData.pumpNext
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          JoinTextAndCData.this.pumpNext
+        </td>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          2843
+        </td>
+        <td>
+          807
+          -
+          820
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.JoinTextAndCData.nextIsNonText
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          JoinTextAndCData.this.nextIsNonText
+        </td>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          2849
+        </td>
+        <td>
+          822
+          -
+          962
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  JoinTextAndCData.this.nextIsNonText_=(false);
+  JoinTextAndCData.this.item_=(JoinTextAndCData.this.nonText);
+  JoinTextAndCData.this.gotNext_=(true);
+  return ()
+}
+        </td>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          2850
+        </td>
+        <td>
+          803
+          -
+          803
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          2851
+        </td>
+        <td>
+          803
+          -
+          803
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          2844
+        </td>
+        <td>
+          830
+          -
+          851
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.JoinTextAndCData.nextIsNonText_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          JoinTextAndCData.this.nextIsNonText_=(false)
+        </td>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          2845
+        </td>
+        <td>
+          915
+          -
+          922
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.JoinTextAndCData.nonText
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          JoinTextAndCData.this.nonText
+        </td>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          2846
+        </td>
+        <td>
+          908
+          -
+          922
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.JoinTextAndCData.item_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          JoinTextAndCData.this.item_=(JoinTextAndCData.this.nonText)
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          2847
+        </td>
+        <td>
+          929
+          -
+          943
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.JoinTextAndCData.gotNext_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          JoinTextAndCData.this.gotNext_=(true)
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          2848
+        </td>
+        <td>
+          950
+          -
+          956
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          2852
+        </td>
+        <td>
+          1007
+          -
+          1022
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.JoinTextAndCData.gotNext_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          JoinTextAndCData.this.gotNext_=(false)
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          2853
+        </td>
+        <td>
+          1040
+          -
+          1045
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          2854
+        </td>
+        <td>
+          1091
+          -
+          1098
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          inText.unary_!
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          2858
+        </td>
+        <td>
+          1100
+          -
+          1160
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  inText = true;
+  JoinTextAndCData.this.sb_=(new java.lang.StringBuilder())
+}
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          2859
+        </td>
+        <td>
+          1087
+          -
+          1087
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          2860
+        </td>
+        <td>
+          1087
+          -
+          1087
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          42
+        </td>
+        <td>
+          2855
+        </td>
+        <td>
+          1112
+          -
+          1116
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          2856
+        </td>
+        <td>
+          1123
+          -
+          1152
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.StringBuilder.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new java.lang.StringBuilder()
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          2857
+        </td>
+        <td>
+          1118
+          -
+          1152
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.JoinTextAndCData.sb_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          JoinTextAndCData.this.sb_=(new java.lang.StringBuilder())
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          2861
+        </td>
+        <td>
+          1167
+          -
+          1181
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.StringBuilder.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          JoinTextAndCData.this.sb.append(str)
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          2862
+        </td>
+        <td>
+          1176
+          -
+          1176
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          2863
+        </td>
+        <td>
+          1212
+          -
+          1222
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.Iterator.hasNext
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          JoinTextAndCData.this.it.hasNext
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          2864
+        </td>
+        <td>
+          1200
+          -
+          1222
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          JoinTextAndCData.this.gotNext.unary_!.&amp;&amp;(JoinTextAndCData.this.it.hasNext)
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          2887
+        </td>
+        <td>
+          1224
+          -
+          1224
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.JoinTextAndCData.while$1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          while$1()
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          2888
+        </td>
+        <td>
+          1224
+          -
+          1581
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  {
+    JoinTextAndCData.this.item_=(JoinTextAndCData.this.it.next());
+    JoinTextAndCData.this.item match {
+      case (value: scales.xml.XmlEvent)scala.util.Left[scales.xml.XmlEvent,scales.xml.EndElem]((x @ (_: scales.xml.Text))) =&gt; addText(x.value)
+      case (value: scales.xml.XmlEvent)scala.util.Left[scales.xml.XmlEvent,scales.xml.EndElem]((x @ (_: scales.xml.CData))) if JoinTextAndCData.this.keepCData.unary_! =&gt; addText(x.value)
+      case (x @ (_: scales.xml.PullType)) =&gt; {
+        if (inText)
+          {
+            JoinTextAndCData.this.nextIsNonText_=(true);
+            JoinTextAndCData.this.nonText_=(JoinTextAndCData.this.item);
+            JoinTextAndCData.this.item_=(scala.`package`.Left.apply[scales.xml.Text, Nothing](scales.xml.Text.apply(JoinTextAndCData.this.sb.toString())))
+          }
+        else
+          JoinTextAndCData.this.nextIsNonText_=(false);
+        JoinTextAndCData.this.gotNext_=(true)
+      }
+    }
+  };
+  while$1()
+}
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          2889
+        </td>
+        <td>
+          1193
+          -
+          1193
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          2890
+        </td>
+        <td>
+          1193
+          -
+          1193
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          49
+        </td>
+        <td>
+          2865
+        </td>
+        <td>
+          1239
+          -
+          1246
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.Iterator.next
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          JoinTextAndCData.this.it.next()
+        </td>
+      </tr><tr>
+        <td>
+          49
+        </td>
+        <td>
+          2866
+        </td>
+        <td>
+          1232
+          -
+          1246
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.JoinTextAndCData.item_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          JoinTextAndCData.this.item_=(JoinTextAndCData.this.it.next())
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          2867
+        </td>
+        <td>
+          1253
+          -
+          1257
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.JoinTextAndCData.item
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          JoinTextAndCData.this.item
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          2868
+        </td>
+        <td>
+          1298
+          -
+          1305
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Text.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x.value
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          2869
+        </td>
+        <td>
+          1290
+          -
+          1306
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.JoinTextAndCData.addText
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          addText(x.value)
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          2870
+        </td>
+        <td>
+          1290
+          -
+          1306
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.equals.JoinTextAndCData.addText
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          addText(x.value)
+        </td>
+      </tr><tr>
+        <td>
+          52
+        </td>
+        <td>
+          2871
+        </td>
+        <td>
+          1333
+          -
+          1343
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          JoinTextAndCData.this.keepCData.unary_!
+        </td>
+      </tr><tr>
+        <td>
+          52
+        </td>
+        <td>
+          2872
+        </td>
+        <td>
+          1356
+          -
+          1363
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.XmlItem.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x.value
+        </td>
+      </tr><tr>
+        <td>
+          52
+        </td>
+        <td>
+          2873
+        </td>
+        <td>
+          1348
+          -
+          1364
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.JoinTextAndCData.addText
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          addText(x.value)
+        </td>
+      </tr><tr>
+        <td>
+          52
+        </td>
+        <td>
+          2874
+        </td>
+        <td>
+          1348
+          -
+          1364
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.equals.JoinTextAndCData.addText
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          addText(x.value)
+        </td>
+      </tr><tr>
+        <td>
+          53
+        </td>
+        <td>
+          2886
+        </td>
+        <td>
+          1384
+          -
+          1567
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  if (inText)
+    {
+      JoinTextAndCData.this.nextIsNonText_=(true);
+      JoinTextAndCData.this.nonText_=(JoinTextAndCData.this.item);
+      JoinTextAndCData.this.item_=(scala.`package`.Left.apply[scales.xml.Text, Nothing](scales.xml.Text.apply(JoinTextAndCData.this.sb.toString())))
+    }
+  else
+    JoinTextAndCData.this.nextIsNonText_=(false);
+  JoinTextAndCData.this.gotNext_=(true)
+}
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          2882
+        </td>
+        <td>
+          1403
+          -
+          1512
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  JoinTextAndCData.this.nextIsNonText_=(true);
+  JoinTextAndCData.this.nonText_=(JoinTextAndCData.this.item);
+  JoinTextAndCData.this.item_=(scala.`package`.Left.apply[scales.xml.Text, Nothing](scales.xml.Text.apply(JoinTextAndCData.this.sb.toString())))
+}
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          2875
+        </td>
+        <td>
+          1410
+          -
+          1430
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.JoinTextAndCData.nextIsNonText_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          JoinTextAndCData.this.nextIsNonText_=(true)
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          2876
+        </td>
+        <td>
+          1446
+          -
+          1450
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.JoinTextAndCData.item
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          JoinTextAndCData.this.item
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          2877
+        </td>
+        <td>
+          1436
+          -
+          1450
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.JoinTextAndCData.nonText_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          JoinTextAndCData.this.nonText_=(JoinTextAndCData.this.item)
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          2878
+        </td>
+        <td>
+          1494
+          -
+          1505
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.StringBuilder.toString
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          JoinTextAndCData.this.sb.toString()
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          2879
+        </td>
+        <td>
+          1489
+          -
+          1506
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Text.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Text.apply(JoinTextAndCData.this.sb.toString())
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          2880
+        </td>
+        <td>
+          1484
+          -
+          1507
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Left.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Left.apply[scales.xml.Text, Nothing](scales.xml.Text.apply(JoinTextAndCData.this.sb.toString()))
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          2881
+        </td>
+        <td>
+          1477
+          -
+          1507
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.JoinTextAndCData.item_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          JoinTextAndCData.this.item_=(scala.`package`.Left.apply[scales.xml.Text, Nothing](scales.xml.Text.apply(JoinTextAndCData.this.sb.toString())))
+        </td>
+      </tr><tr>
+        <td>
+          60
+        </td>
+        <td>
+          2883
+        </td>
+        <td>
+          1525
+          -
+          1546
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.JoinTextAndCData.nextIsNonText_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          JoinTextAndCData.this.nextIsNonText_=(false)
+        </td>
+      </tr><tr>
+        <td>
+          60
+        </td>
+        <td>
+          2884
+        </td>
+        <td>
+          1525
+          -
+          1546
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.equals.JoinTextAndCData.nextIsNonText_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          JoinTextAndCData.this.nextIsNonText_=(false)
+        </td>
+      </tr><tr>
+        <td>
+          62
+        </td>
+        <td>
+          2885
+        </td>
+        <td>
+          1553
+          -
+          1567
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.JoinTextAndCData.gotNext_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          JoinTextAndCData.this.gotNext_=(true)
+        </td>
+      </tr><tr>
+        <td>
+          67
+        </td>
+        <td>
+          2891
+        </td>
+        <td>
+          1589
+          -
+          1597
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.JoinTextAndCData.pumpNext
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          JoinTextAndCData.this.pumpNext
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          2892
+        </td>
+        <td>
+          1992
+          -
+          2016
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.JoinTextAndCData.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new JoinTextAndCData(it, equals.this.JoinTextAndCData.&lt;init&gt;$default$2)
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          2893
+        </td>
+        <td>
+          2193
+          -
+          2223
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.JoinTextAndCData.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new JoinTextAndCData(it, true)
+        </td>
+      </tr><tr>
+        <td>
+          93
+        </td>
+        <td>
+          2898
+        </td>
+        <td>
+          2383
+          -
+          2473
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.Iterator.filter
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          it.filter(((x0$1: scales.xml.PullType) =&gt; x0$1 match {
+  case ((value: scales.xml.XmlEvent)scala.util.Left[scales.xml.XmlEvent,scales.xml.EndElem]((_: scales.xml.PI))| (value: scales.xml.XmlEvent)scala.util.Left[scales.xml.XmlEvent,scales.xml.EndElem]((_: scales.xml.Comment))) =&gt; false
+  case _ =&gt; true
+}))
+        </td>
+      </tr><tr>
+        <td>
+          94
+        </td>
+        <td>
+          2894
+        </td>
+        <td>
+          2441
+          -
+          2446
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          94
+        </td>
+        <td>
+          2895
+        </td>
+        <td>
+          2441
+          -
+          2446
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          95
+        </td>
+        <td>
+          2896
+        </td>
+        <td>
+          2463
+          -
+          2467
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          95
+        </td>
+        <td>
+          2897
+        </td>
+        <td>
+          2463
+          -
+          2467
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

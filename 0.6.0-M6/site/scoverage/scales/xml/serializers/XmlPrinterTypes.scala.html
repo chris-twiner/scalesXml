@@ -1,0 +1,247 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/xml/serializers/XmlPrinterTypes.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.xml.serializers
+</span>2 <span style=''>
+</span>3 <span style=''>import scales.utils._
+</span>4 <span style=''>
+</span>5 <span style=''>import scales.xml.{DocLike, QName, XmlVersion}
+</span>6 <span style=''>
+</span>7 <span style=''>import scala.collection.immutable.Map
+</span>8 <span style=''>
+</span>9 <span style=''>import java.io.Writer
+</span>10 <span style=''>
+</span>11 <span style=''>import java.nio.charset.Charset
+</span>12 <span style=''>
+</span>13 <span style=''>/**
+</span>14 <span style=''> * Type class for choosing a serializing algo
+</span>15 <span style=''> */
+</span>16 <span style=''>trait SerializeableXml[T] {
+</span>17 <span style=''>  /**
+</span>18 <span style=''>   * When provided a given T, returns the DocLike object for it
+</span>19 <span style=''>   */ 
+</span>20 <span style=''>  def doc(it: T): DocLike
+</span>21 <span style=''>  
+</span>22 <span style=''>  /**
+</span>23 <span style=''>   * When given a T and the required output and serializer the type class instance will serializers to the XmlOutput using the serializer.
+</span>24 <span style=''>   *
+</span>25 <span style=''>   * Returns the resulting XmlOutput and an exception if an error occurred.
+</span>26 <span style=''>   */ 
+</span>27 <span style=''>  def apply(it: T)(out: XmlOutput, serializer: Serializer): (XmlOutput, Option[Throwable])
+</span>28 <span style=''>}
+</span>29 <span style=''>
+</span>30 <span style=''>/**
+</span>31 <span style=''> * This class represents state during a serialization
+</span>32 <span style=''> */
+</span>33 <span style=''>case class XmlOutput(data: SerializerData,
+</span>34 <span style=''>  currentMappings: List[Map[String, String]] = List[Map[String, String]](
+</span>35 <span style=''>    Map[String, String]() + (&quot;&quot; -&gt; &quot;&quot;) // default namespace 
+</span>36 <span style=''>    ), path: List[QName] = List())(implicit serializerFI: SerializerFactory) {
+</span>37 <span style=''>  implicit val serializerF = </span><span style='background: #AEF1AE'>serializerFI</span><span style=''>
+</span>38 <span style=''>}
+</span>39 <span style=''>
+</span>40 <span style=''>/**
+</span>41 <span style=''> * Wraps the use of writeTo allowing: xml writeTo output
+</span>42 <span style=''> */ 
+</span>43 <span style=''>case class WriteTo[T : SerializeableXml](it: T, version: Option[XmlVersion] = None, encoding: Option[Charset] = None){
+</span>44 <span style=''>
+</span>45 <span style=''>  /**
+</span>46 <span style=''>   * type specific forward to copy, allows overriding of the parameters and converting to WriteTo in one go.
+</span>47 <span style=''>   */ 
+</span>48 <span style=''>  def writeWith(it : T = it, version: Option[XmlVersion] = None, encoding: Option[Charset] = None) = </span><span style='background: #AEF1AE'>copy(it, version, encoding)</span><span style=''>
+</span>49 <span style=''>  
+</span>50 <span style=''>  def writeTo(output : Writer)(implicit serializerFI: SerializerFactory) = </span><span style='background: #AEF1AE'>scales.xml.writeTo(it, output, version, encoding)</span><span style=''>
+</span>51 <span style=''>
+</span>52 <span style=''>}
+</span>53 <span style=''>
+</span>54 <span style=''>/**
+</span>55 <span style=''> * A NamespaceContext represents the prefix-&gt;namespace mappings for a given elements children.  It is only valid for the time of serialization (or comparison).
+</span>56 <span style=''> *
+</span>57 <span style=''> * @param mappings prefix -&gt; namespace
+</span>58 <span style=''> * @param declMap prefix -&gt; namespace (these should be declared for a given element)
+</span>59 <span style=''> * @param addDefault should a new xmlns=&quot;&quot; default be added, if so Some(String)
+</span>60 <span style=''> */ 
+</span>61 <span style=''>case class NamespaceContext( mappings : Map[String, String], declMap : Map[String, String], addDefault : Option[String] )
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          5541
+        </td>
+        <td>
+          1061
+          -
+          1073
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.XmlOutput.serializerFI
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlOutput.this.serializerFI
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          5542
+        </td>
+        <td>
+          1486
+          -
+          1513
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.serializers.WriteTo.copy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          WriteTo.this.copy[T](it, version, encoding)(WriteTo.this.evidence$1)
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          5543
+        </td>
+        <td>
+          1611
+          -
+          1613
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.WriteTo.it
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          WriteTo.this.it
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          5544
+        </td>
+        <td>
+          1623
+          -
+          1630
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.WriteTo.version
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          WriteTo.this.version
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          5545
+        </td>
+        <td>
+          1632
+          -
+          1640
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.WriteTo.encoding
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          WriteTo.this.encoding
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          5546
+        </td>
+        <td>
+          1592
+          -
+          1641
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.serializers.XmlPrinter.writeTo
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.`package`.writeTo[T](WriteTo.this.it, output, WriteTo.this.version, WriteTo.this.encoding)(serializerFI, WriteTo.this.evidence$1)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

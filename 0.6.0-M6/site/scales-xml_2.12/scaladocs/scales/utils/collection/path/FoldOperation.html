@@ -1,0 +1,781 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+          <title>scales-xml 0.6.0-M6 API  - scales.utils.collection.path.FoldOperation</title>
+          <meta name="description" content="scales - xml 0.6.0 - M6 API - scales.utils.collection.path.FoldOperation" />
+          <meta name="keywords" content="scales xml 0.6.0 M6 API scales.utils.collection.path.FoldOperation" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      
+      <link href="../../../../lib/index.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../lib/jquery.min.js"></script>
+      <script type="text/javascript" src="../../../../lib/jquery.panzoom.min.js"></script>
+      <script type="text/javascript" src="../../../../lib/jquery.mousewheel.min.js"></script>
+      <script type="text/javascript" src="../../../../lib/index.js"></script>
+      <script type="text/javascript" src="../../../../index.js"></script>
+      <script type="text/javascript" src="../../../../lib/scheduler.js"></script>
+      <script type="text/javascript" src="../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../lib/modernizr.custom.js"></script><script type="text/javascript" src="../../../../lib/diagrams.js" id="diagrams-js"></script>
+      <script type="text/javascript">
+        /* this variable can be used by the JS to determine the path to the root document */
+        var toRoot = '../../../../';
+      </script>
+    
+        </head>
+        <body>
+      <div id="search">
+        <span id="doc-title">scales-xml 0.6.0-M6 API<span id="doc-version"></span></span>
+        <span class="close-results"><span class="left">&lt;</span> Back</span>
+        <div id="textfilter">
+          <span class="input">
+            <input autocapitalize="none" placeholder="Search" id="index-input" type="text" accesskey="/" />
+            <i class="clear material-icons"></i>
+            <i id="search-icon" class="material-icons"></i>
+          </span>
+        </div>
+    </div>
+      <div id="search-results">
+        <div id="search-progress">
+          <div id="progress-fill"></div>
+        </div>
+        <div id="results-content">
+          <div id="entity-results"></div>
+          <div id="member-results"></div>
+        </div>
+      </div>
+      <div id="content-scroll-container" style="-webkit-overflow-scrolling: touch;">
+        <div id="content-container" style="-webkit-overflow-scrolling: touch;">
+          <div id="subpackage-spacer">
+            <div id="packages">
+              <h1>Packages</h1>
+              <ul>
+                <li name="_root_.root" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="_root_"></a><a id="root:_root_"></a>
+      <span class="permalink">
+      <a href="../../../../index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="../../../../index.html"><span class="name">root</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../../index.html" class="extype" name="_root_">root</a></dd></dl></div>
+    </li><li name="_root_.scales" visbl="pub" class="indented1 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="scales"></a><a id="scales:scales"></a>
+      <span class="permalink">
+      <a href="../../../../scales/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="Scales Xml provides both a more flexible approach to XML handling and a simplified way of interacting with XML." href="../../../index.html"><span class="name">scales</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Scales Xml provides both a more flexible approach to XML handling and a simplified way of interacting with XML.</p><div class="fullcomment"><div class="comment cmt"><p>Scales Xml provides both a more flexible approach to XML handling and a simplified way of interacting with XML.</p><p>It fits nicely with the Java APIs you know, TrAX and javax.xml.validation for example, allowing you to run XSLTs and convert to and from Scales XML and other DOMs.</p><p>It also provides a far more XPath like experience than the normal Scala XML, Paths look like XPaths and work like them too (with many of the same functions and axes).
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../../index.html" class="extype" name="_root_">root</a></dd></dl></div>
+    </li><li name="scales.utils" visbl="pub" class="indented2 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="utils"></a><a id="utils:utils"></a>
+      <span class="permalink">
+      <a href="../../../../scales/utils/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="The scales.utils packages provide the basis functionality for scales.xml." href="../../index.html"><span class="name">utils</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">The <a href="../../index.html" class="extype" name="scales.utils">scales.utils</a> packages provide the basis functionality for <a href="../../../xml/index.html" class="extype" name="scales.xml">scales.xml</a>.</p><div class="fullcomment"><div class="comment cmt"><p>The <a href="../../index.html" class="extype" name="scales.utils">scales.utils</a> packages provide the basis functionality for <a href="../../../xml/index.html" class="extype" name="scales.xml">scales.xml</a>.</p><p>The Tree an Path collections that underpin the XML model, as well as the iteratee functionality are located in the relevant sub-packages.</p><p>The package object itself pulls in the main utility functions for tree, path and iteratee handling.  Import the <a href="../../ScalesUtils$.html" class="extype" name="scales.utils.ScalesUtils">scales.utils.ScalesUtils</a> object implicit members to provide the path &amp; and | extension functions, the iteratorEnumerator and the +:+ lazy appender for <span class="extype" name="scalaz.EphemeralStream">scalaz.EphemeralStream</span>.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../index.html" class="extype" name="scales">scales</a></dd></dl></div>
+    </li><li name="scales.utils.collection" visbl="pub" class="indented3 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="collection"></a><a id="collection:collection"></a>
+      <span class="permalink">
+      <a href="../../../../scales/utils/collection/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="The collection pacakge provides the scales.utils.collection.Tree" href="../index.html"><span class="name">collection</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">The collection pacakge provides the <a href="../Tree.html" class="extype" name="scales.utils.collection.Tree">scales.utils.collection.Tree</a>
+</p><div class="fullcomment"><div class="comment cmt"><p>The collection pacakge provides the <a href="../Tree.html" class="extype" name="scales.utils.collection.Tree">scales.utils.collection.Tree</a>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../index.html" class="extype" name="scales.utils">utils</a></dd></dl></div>
+    </li><li name="scales.utils.collection.path" visbl="pub" class="indented4 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="path"></a><a id="path:path"></a>
+      <span class="permalink">
+      <a href="../../../../scales/utils/collection/path/index.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="index.html"><span class="name">path</span></a>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="scales.utils.collection">collection</a></dd></dl></div>
+    </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="trait" href="AbstractPathIterator.html" title="Provides an Iterator from a given initial path that traverses the entire tree, allows both forwards and backwards iteration."></a>
+                        <a href="AbstractPathIterator.html" title="Provides an Iterator from a given initial path that traverses the entire tree, allows both forwards and backwards iteration.">AbstractPathIterator</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="class" href="AddAfter.html" title=""></a>
+                        <a href="AddAfter.html" title="">AddAfter</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="class" href="AddBefore.html" title=""></a>
+                        <a href="AddBefore.html" title="">AddBefore</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="object" href="AddedBeforeOrAfterRoot$.html" title=""></a>
+                        <a href="AddedBeforeOrAfterRoot$.html" title="">AddedBeforeOrAfterRoot</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="class" href="AsIs.html" title="Use to make it easier to filter out large sets (for those that aren't interesting simply asis them, see tests for use case)"></a>
+                        <a href="AsIs.html" title="Use to make it easier to filter out large sets (for those that aren't interesting simply asis them, see tests for use case)">AsIs</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="class" href="DirectionIterator.html" title="Iterates over paths using the document order it skips over EndElemS events when going forward and StartElem when reversing, returning just the path."></a>
+                        <a href="DirectionIterator.html" title="Iterates over paths using the document order it skips over EndElemS events when going forward and StartElem when reversing, returning just the path.">DirectionIterator</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="trait" href="FoldError.html" title=""></a>
+                        <a href="FoldError.html" title="">FoldError</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="trait" href="" title="Represents the base for operations that fold over a list of paths"></a>
+                        <a href="" title="Represents the base for operations that fold over a list of paths">FoldOperation</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="object" href="NoPaths$.html" title=""></a>
+                        <a href="NoPaths$.html" title="">NoPaths</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="object" href="NoSingleRoot$.html" title=""></a>
+                        <a href="NoSingleRoot$.html" title="">NoSingleRoot</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="class" href="Node.html" title="Position in a parent Paths children"></a>
+                        <a href="Node.html" title="Position in a parent Paths children">Node</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="class" href="Path.html" title=""></a>
+                        <a href="Path.html" title="">Path</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="object" href="PathFold$.html" title=""></a>
+                        <a href="PathFold$.html" title="">PathFold</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="class" href="PathFoldCombiner.html" title="Provide &amp; combinator to pass the result of one fold onto the other, in the case of failure no further joined functions will be called."></a>
+                        <a href="PathFoldCombiner.html" title="Provide &amp; combinator to pass the result of one fold onto the other, in the case of failure no further joined functions will be called.">PathFoldCombiner</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="trait" href="PathImplicits.html" title=""></a>
+                        <a href="PathImplicits.html" title="">PathImplicits</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="trait" href="Paths.html" title="Utility functions for Paths, sorting, moving between Paths, getting to the root etc."></a>
+                        <a href="Paths.html" title="Utility functions for Paths, sorting, moving between Paths, getting to the root etc.">Paths</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="trait" href="Position.html" title="Positions only have meaning for a given Path(s)."></a>
+                        <a href="Position.html" title="Positions only have meaning for a given Path(s).">Position</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="class" href="Remove.html" title=""></a>
+                        <a href="Remove.html" title="">Remove</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="object" href="RemovedRoot$.html" title=""></a>
+                        <a href="RemovedRoot$.html" title="">RemovedRoot</a>
+                      </li><li class="current-entities indented4">
+                        <a class="object" href="Replace$.html" title=""></a>
+                        <a class="class" href="Replace.html" title="Allows replacing one path with many, may be easier to use the * version however"></a>
+                        <a href="Replace.html" title="Allows replacing one path with many, may be easier to use the * version however">Replace</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="class" href="ReplaceWith.html" title="Allows foldPositions to be nested, only replace and delete makes sense here (afaict)."></a>
+                        <a href="ReplaceWith.html" title="Allows foldPositions to be nested, only replace and delete makes sense here (afaict).">ReplaceWith</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="class" href="Top.html" title="Represents the Top for a given Path, there isn't a tree above this"></a>
+                        <a href="Top.html" title="Represents the Top for a given Path, there isn't a tree above this">Top</a>
+                      </li>
+              </ul>
+            </div>
+          </div>
+          <div id="content">
+            <body class="trait type">
+      <div id="definition">
+        <div class="big-circle trait">t</div>
+        <p id="owner"><a href="../../../index.html" class="extype" name="scales">scales</a>.<a href="../../index.html" class="extype" name="scales.utils">utils</a>.<a href="../index.html" class="extype" name="scales.utils.collection">collection</a>.<a href="index.html" class="extype" name="scales.utils.collection.path">path</a></p>
+        <h1>FoldOperation<span class="permalink">
+      <a href="../../../../scales/utils/collection/path/FoldOperation.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span></h1>
+        <h3><span class="morelinks"></span></h3>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">sealed </span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <span class="name">FoldOperation</span><span class="tparams">[<span name="Item">Item &lt;: <a href="../../LeftLike.html" class="extype" name="scales.utils.LeftLike">LeftLike</a>[<span class="extype" name="scales.utils.collection.path.FoldOperation.Item">Item</span>, <a href="../Tree.html" class="extype" name="scales.utils.collection.Tree">Tree</a>[<span class="extype" name="scales.utils.collection.path.FoldOperation.Item">Item</span>, <span class="extype" name="scales.utils.collection.path.FoldOperation.Section">Section</span>, <span class="extype" name="scales.utils.collection.path.FoldOperation.CC">CC</span>]]</span>, <span name="Section">Section</span>, <span name="CC">CC<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4>
+
+      
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Represents the base for operations that fold over a list of paths
+</p></div><div class="toggleContainer block">
+          <span class="toggle">
+            Linear Supertypes
+          </span>
+          <div class="superTypes hiddenContent"><span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+        </div><div class="toggleContainer block">
+            <span class="toggle">
+              Known Subclasses
+            </span>
+            <div class="subClasses hiddenContent"><a href="AddAfter.html" class="extype" name="scales.utils.collection.path.AddAfter">AddAfter</a>, <a href="AddBefore.html" class="extype" name="scales.utils.collection.path.AddBefore">AddBefore</a>, <a href="AsIs.html" class="extype" name="scales.utils.collection.path.AsIs">AsIs</a>, <a href="Remove.html" class="extype" name="scales.utils.collection.path.Remove">Remove</a>, <a href="Replace.html" class="extype" name="scales.utils.collection.path.Replace">Replace</a>, <a href="ReplaceWith.html" class="extype" name="scales.utils.collection.path.ReplaceWith">ReplaceWith</a></div>
+          </div><div class="toggleContainer block diagram-container" id="inheritance-diagram-container">
+                <span class="toggle diagram-link">
+                  Type Hierarchy
+                </span>
+                <div class="diagram" id="inheritance-diagram"><svg class="class-diagram" id="graph1" width="1091pt" height="155pt" viewBox="0.00 0.00 1090.50 155.00" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><g id="page0,1_graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 151)"><polygon fill="white" stroke="transparent" points="-4,4 -4,-151 1086.5,-151 1086.5,4 -4,4"></polygon><g id="clust1" class="cluster"></g><g id="clust2" class="cluster"></g><!-- node0 --><g class="node this trait" id="graph1_0"><g id="a_this trait|graph1_0"><a xlink:href="#inheritance-diagram" xlink:title="scales.utils.collection.path.FoldOperation (this trait)"><path fill="#2e6d82" stroke="#2e6d82" d="M623.67,-86C623.67,-86 450.33,-86 450.33,-86 446.17,-86 442,-81.83 442,-77.67 442,-77.67 442,-69.33 442,-69.33 442,-65.17 446.17,-61 450.33,-61 450.33,-61 623.67,-61 623.67,-61 627.83,-61 632,-65.17 632,-69.33 632,-69.33 632,-77.67 632,-77.67 632,-81.83 627.83,-86 623.67,-86"></path><image xlink:href="../../../../lib/trait_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="452" y="-80.5"></image><text text-anchor="start" x="473" y="-71.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">FoldOperation[Item, Section, CC]</text></a></g></g><!-- node1 --><g class="node class" id="graph1_1"><g id="a_class|graph1_1"><a xlink:href="AddAfter.html#inheritance-diagram" xlink:title="scales.utils.collection.path.AddAfter"><path fill="#418565" stroke="#418565" d="M159.67,-25C159.67,-25 8.33,-25 8.33,-25 4.17,-25 0,-20.83 0,-16.67 0,-16.67 0,-8.33 0,-8.33 0,-4.17 4.17,0 8.33,0 8.33,0 159.67,0 159.67,0 163.83,0 168,-4.17 168,-8.33 168,-8.33 168,-16.67 168,-16.67 168,-20.83 163.83,-25 159.67,-25"></path><image xlink:href="../../../../lib/class_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="10" y="-19.5"></image><text text-anchor="start" x="31" y="-10.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">AddAfter[Item, Section, CC]</text></a></g></g><!-- node0&#45;&gt;node1 --><g class="edge inheritance" id="graph1_0_1"><g id="a_inheritance|graph1_0_1"><a xlink:title="AddAfter[Item, Section, CC] is a subtype of FoldOperation[Item, Section, CC]"><path fill="none" stroke="#d4d4d4" d="M441.36,-60.04C360.52,-49.51 245.83,-34.58 168.37,-24.49"></path><polygon fill="none" stroke="#d4d4d4" points="441.32,-62.51 448.58,-60.98 441.96,-57.65 441.32,-62.51"></polygon></a></g></g><!-- node2 --><g class="node class" id="graph1_2"><g id="a_class|graph1_2"><a xlink:href="AddBefore.html#inheritance-diagram" xlink:title="scales.utils.collection.path.AddBefore"><path fill="#418565" stroke="#418565" d="M349.67,-25C349.67,-25 194.33,-25 194.33,-25 190.17,-25 186,-20.83 186,-16.67 186,-16.67 186,-8.33 186,-8.33 186,-4.17 190.17,0 194.33,0 194.33,0 349.67,0 349.67,0 353.83,0 358,-4.17 358,-8.33 358,-8.33 358,-16.67 358,-16.67 358,-20.83 353.83,-25 349.67,-25"></path><image xlink:href="../../../../lib/class_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="196" y="-19.5"></image><text text-anchor="start" x="217" y="-10.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">AddBefore[Item, Section, CC]</text></a></g></g><!-- node0&#45;&gt;node2 --><g class="edge inheritance" id="graph1_0_2"><g id="a_inheritance|graph1_0_2"><a xlink:title="AddBefore[Item, Section, CC] is a subtype of FoldOperation[Item, Section, CC]"><path fill="none" stroke="#d4d4d4" d="M478.31,-59.43C432.14,-49.15 368.41,-34.96 324.05,-25.09"></path><polygon fill="none" stroke="#d4d4d4" points="477.91,-61.85 485.28,-60.98 478.98,-57.07 477.91,-61.85"></polygon></a></g></g><!-- node3 --><g class="node class" id="graph1_3"><g id="a_class|graph1_3"><a xlink:href="AsIs.html#inheritance-diagram" xlink:title="scales.utils.collection.path.AsIs"><path fill="#418565" stroke="#418565" d="M517.67,-25C517.67,-25 384.33,-25 384.33,-25 380.17,-25 376,-20.83 376,-16.67 376,-16.67 376,-8.33 376,-8.33 376,-4.17 380.17,0 384.33,0 384.33,0 517.67,0 517.67,0 521.83,0 526,-4.17 526,-8.33 526,-8.33 526,-16.67 526,-16.67 526,-20.83 521.83,-25 517.67,-25"></path><image xlink:href="../../../../lib/class_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="386" y="-19.5"></image><text text-anchor="start" x="407" y="-10.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">AsIs[Item, Section, CC]</text></a></g></g><!-- node0&#45;&gt;node3 --><g class="edge inheritance" id="graph1_0_3"><g id="a_inheritance|graph1_0_3"><a xlink:title="AsIs[Item, Section, CC] is a subtype of FoldOperation[Item, Section, CC]"><path fill="none" stroke="#d4d4d4" d="M514.06,-56.76C499.56,-46.82 481.14,-34.18 467.96,-25.13"></path><polygon fill="none" stroke="#d4d4d4" points="512.85,-58.9 520.01,-60.84 515.62,-54.86 512.85,-58.9"></polygon></a></g></g><!-- node4 --><g class="node class" id="graph1_4"><g id="a_class|graph1_4"><a xlink:href="Remove.html#inheritance-diagram" xlink:title="scales.utils.collection.path.Remove"><path fill="#418565" stroke="#418565" d="M694.17,-25C694.17,-25 551.83,-25 551.83,-25 547.67,-25 543.5,-20.83 543.5,-16.67 543.5,-16.67 543.5,-8.33 543.5,-8.33 543.5,-4.17 547.67,0 551.83,0 551.83,0 694.17,0 694.17,0 698.33,0 702.5,-4.17 702.5,-8.33 702.5,-8.33 702.5,-16.67 702.5,-16.67 702.5,-20.83 698.33,-25 694.17,-25"></path><image xlink:href="../../../../lib/class_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="554" y="-19.5"></image><text text-anchor="start" x="575" y="-10.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">Remove[Item, Section, CC]</text></a></g></g><!-- node0&#45;&gt;node4 --><g class="edge inheritance" id="graph1_0_4"><g id="a_inheritance|graph1_0_4"><a xlink:title="Remove[Item, Section, CC] is a subtype of FoldOperation[Item, Section, CC]"><path fill="none" stroke="#d4d4d4" d="M559.94,-56.76C574.44,-46.82 592.86,-34.18 606.04,-25.13"></path><polygon fill="none" stroke="#d4d4d4" points="558.38,-54.86 553.99,-60.84 561.15,-58.9 558.38,-54.86"></polygon></a></g></g><!-- node5 --><g class="node class" id="graph1_5"><g id="a_class|graph1_5"><a xlink:href="Replace.html#inheritance-diagram" xlink:title="scales.utils.collection.path.Replace"><path fill="#418565" stroke="#418565" d="M875.17,-25C875.17,-25 728.83,-25 728.83,-25 724.67,-25 720.5,-20.83 720.5,-16.67 720.5,-16.67 720.5,-8.33 720.5,-8.33 720.5,-4.17 724.67,0 728.83,0 728.83,0 875.17,0 875.17,0 879.33,0 883.5,-4.17 883.5,-8.33 883.5,-8.33 883.5,-16.67 883.5,-16.67 883.5,-20.83 879.33,-25 875.17,-25"></path><image xlink:href="../../../../lib/class_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="731" y="-19.5"></image><text text-anchor="start" x="752" y="-10.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">Replace[Item, Section, CC]</text></a></g></g><!-- node0&#45;&gt;node5 --><g class="edge inheritance" id="graph1_0_5"><g id="a_inheritance|graph1_0_5"><a xlink:title="Replace[Item, Section, CC] is a subtype of FoldOperation[Item, Section, CC]"><path fill="none" stroke="#d4d4d4" d="M595.69,-59.43C641.86,-49.15 705.59,-34.96 749.95,-25.09"></path><polygon fill="none" stroke="#d4d4d4" points="595.02,-57.07 588.72,-60.98 596.09,-61.85 595.02,-57.07"></polygon></a></g></g><!-- node6 --><g class="node class" id="graph1_6"><g id="a_class|graph1_6"><a xlink:href="ReplaceWith.html#inheritance-diagram" xlink:title="scales.utils.collection.path.ReplaceWith"><path fill="#418565" stroke="#418565" d="M1074.17,-25C1074.17,-25 909.83,-25 909.83,-25 905.67,-25 901.5,-20.83 901.5,-16.67 901.5,-16.67 901.5,-8.33 901.5,-8.33 901.5,-4.17 905.67,0 909.83,0 909.83,0 1074.17,0 1074.17,0 1078.33,0 1082.5,-4.17 1082.5,-8.33 1082.5,-8.33 1082.5,-16.67 1082.5,-16.67 1082.5,-20.83 1078.33,-25 1074.17,-25"></path><image xlink:href="../../../../lib/class_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="912" y="-19.5"></image><text text-anchor="start" x="933" y="-10.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">ReplaceWith[Item, Section, CC]</text></a></g></g><!-- node0&#45;&gt;node6 --><g class="edge inheritance" id="graph1_0_6"><g id="a_inheritance|graph1_0_6"><a xlink:title="ReplaceWith[Item, Section, CC] is a subtype of FoldOperation[Item, Section, CC]"><path fill="none" stroke="#d4d4d4" d="M632.94,-60.06C712.68,-49.72 825.28,-35.12 903.03,-25.04"></path><polygon fill="none" stroke="#d4d4d4" points="632.44,-57.65 625.81,-60.98 633.07,-62.51 632.44,-57.65"></polygon></a></g></g><!-- node7 --><g class="node class" id="graph1_7"><g id="a_class|graph1_7"><a xlink:title="scala.AnyRef"><path fill="#418565" stroke="#418565" d="M565.17,-147C565.17,-147 508.83,-147 508.83,-147 504.67,-147 500.5,-142.83 500.5,-138.67 500.5,-138.67 500.5,-130.33 500.5,-130.33 500.5,-126.17 504.67,-122 508.83,-122 508.83,-122 565.17,-122 565.17,-122 569.33,-122 573.5,-126.17 573.5,-130.33 573.5,-130.33 573.5,-138.67 573.5,-138.67 573.5,-142.83 569.33,-147 565.17,-147"></path><image xlink:href="../../../../lib/class_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="511" y="-141.5"></image><text text-anchor="start" x="532" y="-132.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">AnyRef</text></a></g></g><!-- node7&#45;&gt;node0 --><g class="edge inheritance" id="graph1_7_0"><g id="a_inheritance|graph1_7_0"><a xlink:title="FoldOperation[Item, Section, CC] is a subtype of AnyRef"><path fill="none" stroke="#d4d4d4" d="M537,-114.76C537,-105.37 537,-94.29 537,-86.13"></path><polygon fill="none" stroke="#d4d4d4" points="534.55,-114.84 537,-121.84 539.45,-114.84 534.55,-114.84"></polygon></a></g></g></g></svg></div>
+                <div id="diagram-controls" class="hiddenContent">
+                  <button id="diagram-zoom-out" class="diagram-btn"><i class="material-icons"></i></button>
+                  <button id="diagram-zoom-in" class="diagram-btn"><i class="material-icons"></i></button>
+                  <button title="Toggle full-screen" id="diagram-fs" class="diagram-btn to-full"><i class="material-icons"></i></button>
+                </div>
+              </div></div>
+        
+
+      <div id="mbrsel">
+        <div class="toggle"></div>
+        <div id="memberfilter">
+          <i class="material-icons arrow"></i>
+          <span class="input">
+            <input id="mbrsel-input" placeholder="Filter all members" type="text" accesskey="/" />
+          </span>
+          <i class="clear material-icons"></i>
+        </div>
+        <div id="filterby">
+          <div id="order">
+            <span class="filtertype">Ordering</span>
+            <ol>
+              
+              <li class="alpha in"><span>Alphabetic</span></li>
+              <li class="inherit out"><span>By Inheritance</span></li>
+            </ol>
+          </div>
+          <div class="ancestors">
+                  <span class="filtertype">Inherited<br />
+                  </span>
+                  <ol id="linearization">
+                    <li class="in" name="scales.utils.collection.path.FoldOperation"><span>FoldOperation</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  </ol>
+                </div><div class="ancestors">
+              <span class="filtertype"></span>
+              <ol>
+                <li class="hideall out"><span>Hide All</span></li>
+                <li class="showall in"><span>Show All</span></li>
+              </ol>
+            </div>
+          <div id="visbl">
+              <span class="filtertype">Visibility</span>
+              <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+            </div>
+        </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        
+
+        <div class="values members">
+              <h3>Abstract Value Members</h3>
+              <ol><li name="scales.utils.collection.path.FoldOperation#perform" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="perform(path:scales.utils.collection.path.Path[Item,Section,CC]):scales.utils.FoldR[Item,Section,CC]"></a><a id="perform(Path[Item,Section,CC]):utils.FoldR[Item,Section,CC]"></a>
+      <span class="permalink">
+      <a href="../../../../scales/utils/collection/path/FoldOperation.html#perform(path:scales.utils.collection.path.Path[Item,Section,CC]):scales.utils.FoldR[Item,Section,CC]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">perform</span><span class="params">(<span name="path">path: <a href="Path.html" class="extype" name="scales.utils.collection.path.Path">Path</a>[<span class="extype" name="scales.utils.collection.path.FoldOperation.Item">Item</span>, <span class="extype" name="scales.utils.collection.path.FoldOperation.Section">Section</span>, <span class="extype" name="scales.utils.collection.path.FoldOperation.CC">CC</span>]</span>)</span><span class="result">: <a href="../../index.html#FoldR[Item&lt;:scales.utils.LeftLike[Item,scales.utils.collection.Tree[Item,Section,CC]],Section,CC[_]]=Either[scales.utils.collection.path.Path[Item,Section,CC],scales.utils.collection.path.FoldError]" class="extmbr" name="scales.utils.FoldR">utils.FoldR</a>[<span class="extype" name="scales.utils.collection.path.FoldOperation.Item">Item</span>, <span class="extype" name="scales.utils.collection.path.FoldOperation.Section">Section</span>, <span class="extype" name="scales.utils.collection.path.FoldOperation.CC">CC</span>]</span>
+      </span>
+      
+      
+    </li><li name="scales.utils.collection.path.FoldOperation#seqLikeThing" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="seqLikeThing:scales.utils.collection.SeqLikeThing[CC[_],scales.utils.ItemOrTree[Item,Section,CC],CC]"></a><a id="seqLikeThing:SeqLikeThing[CC[_],utils.ItemOrTree[Item,Section,CC],CC]"></a>
+      <span class="permalink">
+      <a href="../../../../scales/utils/collection/path/FoldOperation.html#seqLikeThing:scales.utils.collection.SeqLikeThing[CC[_],scales.utils.ItemOrTree[Item,Section,CC],CC]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">implicit abstract </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">seqLikeThing</span><span class="result">: <a href="../SeqLikeThing.html" class="extype" name="scales.utils.collection.SeqLikeThing">SeqLikeThing</a>[<span class="extype" name="scales.utils.collection.path.FoldOperation.CC">CC</span>[_], <a href="../../index.html#ItemOrTree[Item&lt;:scales.utils.LeftLike[Item,scales.utils.collection.Tree[Item,Section,CC]],Section,CC[_]]=scales.utils.EitherLike[Item,scales.utils.collection.Tree[Item,Section,CC]]" class="extmbr" name="scales.utils.ItemOrTree">utils.ItemOrTree</a>[<span class="extype" name="scales.utils.collection.path.FoldOperation.Item">Item</span>, <span class="extype" name="scales.utils.collection.path.FoldOperation.Section">Section</span>, <span class="extype" name="scales.utils.collection.path.FoldOperation.CC">CC</span>], <span class="extype" name="scales.utils.collection.path.FoldOperation.CC">CC</span>]</span>
+      </span>
+      
+      
+    </li></ol>
+            </div>
+
+        <div class="values members">
+              <h3>Concrete Value Members</h3>
+              <ol>
+                <li name="scala.AnyRef#!=" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="!=(x$1:Any):Boolean"></a><a id="!=(Any):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../../scales/utils/collection/path/FoldOperation.html#!=(x$1:Any):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef###" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="##():Int"></a>
+      <span class="permalink">
+      <a href="../../../../scales/utils/collection/path/FoldOperation.html###():Int" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $hash$hash" class="name">##</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#==" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="==(x$1:Any):Boolean"></a><a id="==(Any):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../../scales/utils/collection/path/FoldOperation.html#==(x$1:Any):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scales.utils.collection.path.FoldOperation#add" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="add(path:scales.utils.collection.path.Path[Item,Section,CC],direction:Int,newPath:Iterable[scales.utils.ItemOrTree[Item,Section,CC]]):scales.utils.FoldR[Item,Section,CC]"></a><a id="add(Path[Item,Section,CC],Int,Iterable[utils.ItemOrTree[Item,Section,CC]]):utils.FoldR[Item,Section,CC]"></a>
+      <span class="permalink">
+      <a href="../../../../scales/utils/collection/path/FoldOperation.html#add(path:scales.utils.collection.path.Path[Item,Section,CC],direction:Int,newPath:Iterable[scales.utils.ItemOrTree[Item,Section,CC]]):scales.utils.FoldR[Item,Section,CC]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">add</span><span class="params">(<span name="path">path: <a href="Path.html" class="extype" name="scales.utils.collection.path.Path">Path</a>[<span class="extype" name="scales.utils.collection.path.FoldOperation.Item">Item</span>, <span class="extype" name="scales.utils.collection.path.FoldOperation.Section">Section</span>, <span class="extype" name="scales.utils.collection.path.FoldOperation.CC">CC</span>]</span>, <span name="direction">direction: <span class="extype" name="scala.Int">Int</span></span>, <span name="newPath">newPath: <span class="extype" name="scala.Iterable">Iterable</span>[<a href="../../index.html#ItemOrTree[Item&lt;:scales.utils.LeftLike[Item,scales.utils.collection.Tree[Item,Section,CC]],Section,CC[_]]=scales.utils.EitherLike[Item,scales.utils.collection.Tree[Item,Section,CC]]" class="extmbr" name="scales.utils.ItemOrTree">utils.ItemOrTree</a>[<span class="extype" name="scales.utils.collection.path.FoldOperation.Item">Item</span>, <span class="extype" name="scales.utils.collection.path.FoldOperation.Section">Section</span>, <span class="extype" name="scales.utils.collection.path.FoldOperation.CC">CC</span>]]</span>)</span><span class="result">: <a href="../../index.html#FoldR[Item&lt;:scales.utils.LeftLike[Item,scales.utils.collection.Tree[Item,Section,CC]],Section,CC[_]]=Either[scales.utils.collection.path.Path[Item,Section,CC],scales.utils.collection.path.FoldError]" class="extmbr" name="scales.utils.FoldR">utils.FoldR</a>[<span class="extype" name="scales.utils.collection.path.FoldOperation.Item">Item</span>, <span class="extype" name="scales.utils.collection.path.FoldOperation.Section">Section</span>, <span class="extype" name="scales.utils.collection.path.FoldOperation.CC">CC</span>]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li name="scala.Any#asInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="asInstanceOf[T0]:T0"></a>
+      <span class="permalink">
+      <a href="../../../../scales/utils/collection/path/FoldOperation.html#asInstanceOf[T0]:T0" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Any.asInstanceOf.T0">T0</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="scala.AnyRef#clone" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="clone():Object"></a><a id="clone():AnyRef"></a>
+      <span class="permalink">
+      <a href="../../../../scales/utils/collection/path/FoldOperation.html#clone():Object" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<span class="extype" name="java.lang">lang</span>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.CloneNotSupportedException]">...</span>
+    </span>)</span>
+              
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#eq" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="eq(x$1:AnyRef):Boolean"></a><a id="eq(AnyRef):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../../scales/utils/collection/path/FoldOperation.html#eq(x$1:AnyRef):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#equals" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="equals(x$1:Any):Boolean"></a><a id="equals(Any):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../../scales/utils/collection/path/FoldOperation.html#equals(x$1:Any):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#finalize" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="finalize():Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/utils/collection/path/FoldOperation.html#finalize():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">finalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<span class="extype" name="java.lang">lang</span>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.lang.Throwable]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#getClass" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getClass():Class[_]"></a>
+      <span class="permalink">
+      <a href="../../../../scales/utils/collection/path/FoldOperation.html#getClass():Class[_]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getClass</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.Class">Class</span>[_]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd><dt>Annotations</dt><dd>
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#hashCode" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hashCode():Int"></a>
+      <span class="permalink">
+      <a href="../../../../scales/utils/collection/path/FoldOperation.html#hashCode():Int" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd><dt>Annotations</dt><dd>
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.Any#isInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <span class="permalink">
+      <a href="../../../../scales/utils/collection/path/FoldOperation.html#isInstanceOf[T0]:Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="scala.AnyRef#ne" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ne(x$1:AnyRef):Boolean"></a><a id="ne(AnyRef):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../../scales/utils/collection/path/FoldOperation.html#ne(x$1:AnyRef):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#notify" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notify():Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/utils/collection/path/FoldOperation.html#notify():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notify</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#notifyAll" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notifyAll():Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/utils/collection/path/FoldOperation.html#notifyAll():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notifyAll</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="scales.utils.collection.path.FoldOperation#rootChangeAllowed" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="rootChangeAllowed:Boolean"></a>
+      <span class="permalink">
+      <a href="../../../../scales/utils/collection/path/FoldOperation.html#rootChangeAllowed:Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">rootChangeAllowed</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li name="scala.AnyRef#synchronized" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="synchronized[T0](x$1:=&gt;T0):T0"></a><a id="synchronized[T0](⇒T0):T0"></a>
+      <span class="permalink">
+      <a href="../../../../scales/utils/collection/path/FoldOperation.html#synchronized[T0](x$1:=&gt;T0):T0" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">synchronized</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="params">(<span name="arg0">arg0: ⇒ <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>)</span><span class="result">: <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#toString" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toString():String"></a>
+      <span class="permalink">
+      <a href="../../../../scales/utils/collection/path/FoldOperation.html#toString():String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait():Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/utils/collection/path/FoldOperation.html#wait():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long,x$2:Int):Unit"></a><a id="wait(Long,Int):Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/utils/collection/path/FoldOperation.html#wait(x$1:Long,x$2:Int):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long):Unit"></a><a id="wait(Long):Unit"></a>
+      <span class="permalink">
+      <a href="../../../../scales/utils/collection/path/FoldOperation.html#wait(x$1:Long):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li>
+              </ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+    </body>
+          </div>
+        </div>
+      </div>
+    </body>
+      </html>

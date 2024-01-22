@@ -1,0 +1,237 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/utils/package.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales
+</span>2 <span style=''>
+</span>3 <span style=''>import scales.utils.collection.SeqLikeThing
+</span>4 <span style=''>
+</span>5 <span style=''>/**
+</span>6 <span style=''> * The [[scales.utils]] packages provide the basis functionality for [[scales.xml]].
+</span>7 <span style=''> *
+</span>8 <span style=''> * The Tree an Path collections that underpin the XML model, as well as the iteratee functionality are located in the relevant sub-packages.
+</span>9 <span style=''> *
+</span>10 <span style=''> * The package object itself pulls in the main utility functions for tree, path and iteratee handling.  Import the [[scales.utils.ScalesUtils]] object implicit members to provide the path &amp; and | extension functions, the iteratorEnumerator and the +:+ lazy appender for [[scalaz.EphemeralStream]]. 
+</span>11 <span style=''> */
+</span>12 <span style=''>package object utils extends collection.IterableUtils 
+</span>13 <span style=''>  with AsBooleanTrait
+</span>14 <span style=''>  with collection.StackUtils
+</span>15 <span style=''>  with iteratee.Iteratees
+</span>16 <span style=''>  with EquivFunctions
+</span>17 <span style=''>  with collection.Trees
+</span>18 <span style=''>  with collection.path.Paths
+</span>19 <span style=''>  with collection.ConcurrentMapUtils
+</span>20 <span style=''>{
+</span>21 <span style=''>  //def error(str : String) = sys.error(str)
+</span>22 <span style=''>
+</span>23 <span style=''>// https://issues.scala-lang.org/browse/SI-4767 forces them to be here if we want them inlining
+</span>24 <span style=''>
+</span>25 <span style=''>  import scala.collection.generic.CanBuildFrom
+</span>26 <span style=''>  
+</span>27 <span style=''>  import collection.Tree
+</span>28 <span style=''>
+</span>29 <span style=''>  @inline final def item[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]](item: Item): ItemOrTree[Item, Section, CC] = item
+</span>30 <span style=''>
+</span>31 <span style=''>  @inline final def subtree[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]](section: Section, children: CC[ItemOrTree[Item, Section, CC]])(implicit iseqLikeThing: SeqLikeThing[CC[_], ItemOrTree[Item, Section, CC], CC]): ItemOrTree[Item, Section, CC] = </span><span style='background: #AEF1AE'>Tree[Item, Section, CC](section, children)</span><span style=''>
+</span>32 <span style=''>
+</span>33 <span style=''>  @inline final def one[T]( i : T ) : List[T] =
+</span>34 <span style=''>      </span><span style='background: #AEF1AE'>i :: Nil</span><span style=''>
+</span>35 <span style=''>
+</span>36 <span style=''>  /**
+</span>37 <span style=''>   * Simple grabber of resources
+</span>38 <span style=''>   */ 
+</span>39 <span style=''>  def resource(a : AnyRef, path : String) =
+</span>40 <span style=''>    </span><span style='background: #AEF1AE'>a.getClass.getResource(path)</span><span style=''>
+</span>41 <span style=''>
+</span>42 <span style=''>  import java.nio.charset.Charset
+</span>43 <span style=''>  val UTF_8 = </span><span style='background: #AEF1AE'>Charset.forName(&quot;UTF-8&quot;)</span><span style=''>
+</span>44 <span style=''>  val US_ASCII = </span><span style='background: #AEF1AE'>Charset.forName(&quot;US-ASCII&quot;)</span><span style=''>
+</span>45 <span style=''>
+</span>46 <span style=''>  /**
+</span>47 <span style=''>   * A usable default of UTF8 NOT the vm's Charset.defaultCharset based on its locale, use vmDefaultCharset for that
+</span>48 <span style=''>   */
+</span>49 <span style=''>  val defaultCharset = </span><span style='background: #AEF1AE'>UTF_8</span><span style=''>
+</span>50 <span style=''>
+</span>51 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          1970
+        </td>
+        <td>
+          1475
+          -
+          1517
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.Tree.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.Tree.apply[Item, Section, CC](section, children)(iseqLikeThing)
+        </td>
+      </tr><tr>
+        <td>
+          34
+        </td>
+        <td>
+          1971
+        </td>
+        <td>
+          1573
+          -
+          1581
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.List.::
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.collection.immutable.Nil.::[T](x$1)
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          1972
+        </td>
+        <td>
+          1677
+          -
+          1705
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Class.getResource
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          a.getClass().getResource(path)
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          1973
+        </td>
+        <td>
+          1755
+          -
+          1779
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.nio.charset.Charset.forName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          java.nio.charset.Charset.forName(&quot;UTF-8&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          1974
+        </td>
+        <td>
+          1797
+          -
+          1824
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.nio.charset.Charset.forName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          java.nio.charset.Charset.forName(&quot;US-ASCII&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          49
+        </td>
+        <td>
+          1975
+        </td>
+        <td>
+          1978
+          -
+          1983
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.UTF_8
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          `package`.this.UTF_8
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

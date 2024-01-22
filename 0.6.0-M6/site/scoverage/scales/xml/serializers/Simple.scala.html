@@ -1,0 +1,834 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/xml/serializers/Simple.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.xml.serializers
+</span>2 <span style=''>
+</span>3 <span style=''>import scales.xml._
+</span>4 <span style=''>
+</span>5 <span style=''>import scales.utils._
+</span>6 <span style=''>
+</span>7 <span style=''>import java.nio.charset.Charset
+</span>8 <span style=''>
+</span>9 <span style=''>object SimpleSerializerFactory extends SerializerFactory {
+</span>10 <span style=''>  type ExactSerializer = SimpleSerializer
+</span>11 <span style=''>
+</span>12 <span style=''>  def apply[R](thunk: Serializer =&gt; R)(sdata: SerializerData): R =
+</span>13 <span style=''>    </span><span style='background: #AEF1AE'>thunk(borrow(sdata))</span><span style=''>
+</span>14 <span style=''>
+</span>15 <span style=''>  def borrow( sdata : SerializerData ) : ExactSerializer =
+</span>16 <span style=''>    </span><span style='background: #AEF1AE'>new</span><span style=''> SimpleSerializer { val data = sdata }
+</span>17 <span style=''>
+</span>18 <span style=''>  def giveBack( serializer : ExactSerializer ) </span><span style='background: #F0ADAD'>{}</span><span style=''>
+</span>19 <span style=''>}
+</span>20 <span style=''>
+</span>21 <span style=''>/**
+</span>22 <span style=''> * Performs no validation, sorting of attributes, extra spaces on the end of empty element declarations and uses the short form for empty elements.
+</span>23 <span style=''> *
+</span>24 <span style=''> * Basically its good for non-pretty printing debugging only
+</span>25 <span style=''> *
+</span>26 <span style=''> */
+</span>27 <span style=''>trait SimpleSerializer extends Serializer {
+</span>28 <span style=''>
+</span>29 <span style=''>  val data: SerializerData
+</span>30 <span style=''>  import data._
+</span>31 <span style=''>
+</span>32 <span style=''>  def item(item: XmlItem, path: List[QName]): Option[Throwable] =
+</span>33 <span style=''>    </span><span style='background: #AEF1AE'>SerializerHelpers.item(out, item, path)</span><span style=''>
+</span>34 <span style=''>
+</span>35 <span style=''>  def doElem(qName: QName, attribs: Traversable[Attribute], ns: Map[String, String], declareDefaultNS: Option[String]) {
+</span>36 <span style=''>
+</span>37 <span style=''>    </span><span style='background: #AEF1AE'>out.append(&quot;&lt;&quot; + qName.qName)</span><span style=''>
+</span>38 <span style=''>
+</span>39 <span style=''>    </span><span style='background: #AEF1AE'>declareDefaultNS.foreach { dns =&gt;
+</span>40 <span style=''></span><span style='background: #AEF1AE'>      out.append(&quot; xmlns=\&quot;&quot; + dns + &quot;\&quot;&quot;)
+</span>41 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>42 <span style=''>
+</span>43 <span style=''>    </span><span style='background: #AEF1AE'>ns.foreach { x =&gt;
+</span>44 <span style=''></span><span style='background: #AEF1AE'>      out.append(&quot; xmlns:&quot; + x._1 + &quot;=\&quot;&quot; + x._2 + &quot;\&quot;&quot;)
+</span>45 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>46 <span style=''>
+</span>47 <span style=''>    import ScalesXml._
+</span>48 <span style=''>
+</span>49 <span style=''>    </span><span style='background: #AEF1AE'>attribs.foreach { x =&gt;
+</span>50 <span style=''></span><span style='background: #AEF1AE'>      out.append(&quot; &quot; + x.name.qName + &quot;=\&quot;&quot; + x.value + &quot;\&quot;&quot;)
+</span>51 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>52 <span style=''>  }
+</span>53 <span style=''>
+</span>54 <span style=''>  def emptyElement(qName: QName, attributes: Traversable[Attribute], namespaces: Map[String, String], declareDefaultNS: Option[String], path: List[QName]): Option[Throwable] = {
+</span>55 <span style=''>    </span><span style='background: #AEF1AE'>doElem(qName, attributes, namespaces, declareDefaultNS)</span><span style=''>
+</span>56 <span style=''>    </span><span style='background: #AEF1AE'>out.append(&quot;/&gt;&quot;)</span><span style=''>
+</span>57 <span style=''>    </span><span style='background: #AEF1AE'>None</span><span style=''>
+</span>58 <span style=''>  }
+</span>59 <span style=''>
+</span>60 <span style=''>  def startElement(qName: QName, attributes: Traversable[Attribute], namespaces: Map[String, String], declareDefaultNS: Option[String], path: List[QName]): Option[Throwable] = {
+</span>61 <span style=''>    </span><span style='background: #AEF1AE'>doElem(qName, attributes, namespaces, declareDefaultNS)</span><span style=''>
+</span>62 <span style=''>    </span><span style='background: #AEF1AE'>out.append(&quot;&gt;&quot;)</span><span style=''>
+</span>63 <span style=''>    </span><span style='background: #AEF1AE'>None</span><span style=''>
+</span>64 <span style=''>  }
+</span>65 <span style=''>
+</span>66 <span style=''>  def endElement(qName: QName, path: List[QName]): Option[Throwable] = {
+</span>67 <span style=''>    </span><span style='background: #AEF1AE'>out.append(&quot;&lt;/&quot; + qName.qName + &quot;&gt;&quot;)</span><span style=''>
+</span>68 <span style=''>    </span><span style='background: #AEF1AE'>None</span><span style=''>
+</span>69 <span style=''>  }
+</span>70 <span style=''>
+</span>71 <span style=''>  def xmlDeclaration(encoding: Charset, version: XmlVersion): Option[Throwable] = </span><span style='background: #AEF1AE'>SerializerHelpers.xmlDecl(out, encoding, version)</span><span style=''>
+</span>72 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          13
+        </td>
+        <td>
+          5362
+        </td>
+        <td>
+          288
+          -
+          301
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.SimpleSerializerFactory.borrow
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SimpleSerializerFactory.this.borrow(sdata)
+        </td>
+      </tr><tr>
+        <td>
+          13
+        </td>
+        <td>
+          5363
+        </td>
+        <td>
+          282
+          -
+          302
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          thunk.apply(SimpleSerializerFactory.this.borrow(sdata))
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          5364
+        </td>
+        <td>
+          367
+          -
+          370
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.SimpleSerializerFactory.$anon.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          18
+        </td>
+        <td>
+          5365
+        </td>
+        <td>
+          457
+          -
+          459
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          5366
+        </td>
+        <td>
+          868
+          -
+          871
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.SerializerData.out
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SimpleSerializer.this.data.out
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          5367
+        </td>
+        <td>
+          845
+          -
+          884
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.SerializerHelpers.item
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SerializerHelpers.item(SimpleSerializer.this.data.out, item, path)
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          5368
+        </td>
+        <td>
+          1023
+          -
+          1026
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;&lt;&quot;
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          5369
+        </td>
+        <td>
+          1029
+          -
+          1040
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.QName.qName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          qName.qName
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          5370
+        </td>
+        <td>
+          1023
+          -
+          1040
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;&lt;&quot;.+(qName.qName)
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          5371
+        </td>
+        <td>
+          1012
+          -
+          1041
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.Writer.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SimpleSerializer.this.data.out.append(&quot;&lt;&quot;.+(qName.qName))
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          5374
+        </td>
+        <td>
+          1047
+          -
+          1129
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.foreach
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          declareDefaultNS.foreach[java.io.Writer](((dns: String) =&gt; SimpleSerializer.this.data.out.append(&quot; xmlns=\&quot;&quot;.+(dns).+(&quot;\&quot;&quot;))))
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          5372
+        </td>
+        <td>
+          1098
+          -
+          1122
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot; xmlns=\&quot;&quot;.+(dns).+(&quot;\&quot;&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          5373
+        </td>
+        <td>
+          1087
+          -
+          1123
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.Writer.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SimpleSerializer.this.data.out.append(&quot; xmlns=\&quot;&quot;.+(dns).+(&quot;\&quot;&quot;))
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          5377
+        </td>
+        <td>
+          1135
+          -
+          1215
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.IterableLike.foreach
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ns.foreach[java.io.Writer](((x: (String, String)) =&gt; SimpleSerializer.this.data.out.append(&quot; xmlns:&quot;.+(x._1).+(&quot;=\&quot;&quot;).+(x._2).+(&quot;\&quot;&quot;))))
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          5375
+        </td>
+        <td>
+          1170
+          -
+          1208
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot; xmlns:&quot;.+(x._1).+(&quot;=\&quot;&quot;).+(x._2).+(&quot;\&quot;&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          5376
+        </td>
+        <td>
+          1159
+          -
+          1209
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.Writer.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SimpleSerializer.this.data.out.append(&quot; xmlns:&quot;.+(x._1).+(&quot;=\&quot;&quot;).+(x._2).+(&quot;\&quot;&quot;))
+        </td>
+      </tr><tr>
+        <td>
+          49
+        </td>
+        <td>
+          5380
+        </td>
+        <td>
+          1245
+          -
+          1335
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.generic.GenericTraversableTemplate.foreach
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          attribs.foreach[java.io.Writer](((x: scales.xml.Attribute) =&gt; SimpleSerializer.this.data.out.append(&quot; &quot;.+(scales.xml.ScalesXml.toQName(x.name).qName).+(&quot;=\&quot;&quot;).+(x.value).+(&quot;\&quot;&quot;))))
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          5378
+        </td>
+        <td>
+          1285
+          -
+          1328
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot; &quot;.+(scales.xml.ScalesXml.toQName(x.name).qName).+(&quot;=\&quot;&quot;).+(x.value).+(&quot;\&quot;&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          5379
+        </td>
+        <td>
+          1274
+          -
+          1329
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.Writer.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SimpleSerializer.this.data.out.append(&quot; &quot;.+(scales.xml.ScalesXml.toQName(x.name).qName).+(&quot;=\&quot;&quot;).+(x.value).+(&quot;\&quot;&quot;))
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          5381
+        </td>
+        <td>
+          1523
+          -
+          1578
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.SimpleSerializer.doElem
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SimpleSerializer.this.doElem(qName, attributes, namespaces, declareDefaultNS)
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          5382
+        </td>
+        <td>
+          1583
+          -
+          1599
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.Writer.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SimpleSerializer.this.data.out.append(&quot;/&gt;&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          5383
+        </td>
+        <td>
+          1604
+          -
+          1608
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          61
+        </td>
+        <td>
+          5384
+        </td>
+        <td>
+          1796
+          -
+          1851
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.SimpleSerializer.doElem
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SimpleSerializer.this.doElem(qName, attributes, namespaces, declareDefaultNS)
+        </td>
+      </tr><tr>
+        <td>
+          62
+        </td>
+        <td>
+          5385
+        </td>
+        <td>
+          1856
+          -
+          1871
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.Writer.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SimpleSerializer.this.data.out.append(&quot;&gt;&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          5386
+        </td>
+        <td>
+          1876
+          -
+          1880
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          67
+        </td>
+        <td>
+          5387
+        </td>
+        <td>
+          1974
+          -
+          1998
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;&lt;/&quot;.+(qName.qName).+(&quot;&gt;&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          67
+        </td>
+        <td>
+          5388
+        </td>
+        <td>
+          1963
+          -
+          1999
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.Writer.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SimpleSerializer.this.data.out.append(&quot;&lt;/&quot;.+(qName.qName).+(&quot;&gt;&quot;))
+        </td>
+      </tr><tr>
+        <td>
+          68
+        </td>
+        <td>
+          5389
+        </td>
+        <td>
+          2004
+          -
+          2008
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          71
+        </td>
+        <td>
+          5390
+        </td>
+        <td>
+          2122
+          -
+          2125
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.serializers.SerializerData.out
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SimpleSerializer.this.data.out
+        </td>
+      </tr><tr>
+        <td>
+          71
+        </td>
+        <td>
+          5391
+        </td>
+        <td>
+          2096
+          -
+          2145
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.serializers.SerializerHelpers.xmlDecl
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SerializerHelpers.xmlDecl(SimpleSerializer.this.data.out, encoding, version)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>
