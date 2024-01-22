@@ -226,10 +226,10 @@ trait ReadableByteChannelWrapperImplicits {
           i.pointI
         case i =>
           i mapCont { k =>
-            //val realChunkF = F.point( chunker.nextChunk )
-            val realChunk = chunker.nextChunk
+            val realChunkF = F.point( chunker.nextChunk )
+            //val realChunk = chunker.nextChunk
             iterateeT {
-            //  F.bind(realChunkF) { realChunk =>
+              F.bind(realChunkF) { realChunk =>
                 val nc =
                   if (realChunk.isEmpty)
                     count + 1
@@ -254,25 +254,22 @@ trait ReadableByteChannelWrapperImplicits {
                       k(Empty[DataChunk])
                   } else
                     k(Element(realChunk))
-                SuspendData
+
                 println("called k with " + realChunk)
 
                 F.bind(nextIStep.value) { step =>
 
-                  if (isEOFS(step))
-                    nextIStep.value
-                    //F.point(step)
-                  else if (shouldPause && !isDoneS(step)) {
+                  if (shouldPause && !isDoneS(step)) {
                     println("attempting to pause")
-                    //apply(nc)(step).value //nextIStep.value
-                    nextIStep.value
-                    //F.point(step)
+                    //nextIStep.value actually calls twice as it's then bound twice
+                    F.point(step)
                   } else {
                     println("moving forward")
                     //(nextIStep >>== apply(nc)).value
                     apply(nc)(step).value
                   }
-              //  }
+
+                }
               }
             }
           }

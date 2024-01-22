@@ -16,8 +16,8 @@ import scales.utils.iteratee.functions.{ResumableIter, ResumableStep}
  */ 
 trait SerializingIter {
 
-  type SerialIterT[F[_]] = ResumableIter[PullType, F, (XmlOutput, Option[Throwable])]
-  type SerialStepT[F[_]] = ResumableStep[PullType, F, (XmlOutput, Option[Throwable])]
+  type SerialIterT[F[_]] = IterateeT[PullType, F, (XmlOutput, Option[Throwable])]
+  type SerialStepT[F[_]] = StepT[PullType, F, (XmlOutput, Option[Throwable])]
 
   import java.nio.charset.Charset
 
@@ -37,7 +37,7 @@ trait SerializingIter {
       // give it back
       closer()
       //println("empties was "+empties)
-      F.point(Done(((status.output, status.thrown), cont(go(false, status))), Eof[PullType]))
+      F.point(Done((status.output, status.thrown), Eof[PullType]))
     }
 
     def go(fromStart: Boolean, status: StreamStatus)(s: Input[PullType]): SerialIterT[F] =
@@ -59,7 +59,7 @@ trait SerializingIter {
           },
           empty = {
             empties += 1
-            //val nstatus = if (theStatus eq null) status else theStatus
+            val nstatus = if (theStatus eq null) status else theStatus
             println("outitr empty " +status.prev + " from start " + fromStart )
             //println("outitr empty " +nstatus.prev + " from start " + fromStart )
             F.point(Cont(go(false, status)))

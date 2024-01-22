@@ -279,6 +279,7 @@ object AsyncParser {
       s(el = e => {
           //print(new String(e.array, e.offset, e.length, "UTF-8"))
           if (e eq SuspendData) {
+            println("We are suspending with a done signal in parser")
             done((emptyEphemeralStream, cont(step(false))), Input.Empty[DataChunk])
           } else {
 

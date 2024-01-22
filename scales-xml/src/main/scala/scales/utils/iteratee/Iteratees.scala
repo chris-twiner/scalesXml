@@ -808,13 +808,6 @@ object functions {
      * Call the toMany continuation function
      */
     def pumpNext(x: Input[E], toMany: Input[E] => ResumableIter[E, F, EphemeralStream[A]], k: Input[A] => ResumableIter[A, F, R]): ResumableIter[E, F, R] = {
-
-      /*
-       println("and then I was here "+
-         x(el = e => e.toString,
-         empty = "I'm empty ",
-         eof = "I'm eof"))
-       */
       val afterNewCall = toMany(x)
       //println("and then " + afterNewCall)
       import scalaz._
@@ -832,8 +825,9 @@ object functions {
                   nextI(k(Eof[A]), empty, nextContR)
                 else {
                   if (e1.isEmpty)
-                    {println("empty on nextcontr")
-                    nextI(k(Empty[A]), empty, nextContR)}
+                    {println("empty on nextcontr - this situation only exists in async pull tests if we send SuspendData as a pause signal")
+                      nextI(k(Empty[A]), empty, nextContR)
+                    }
                   else {
                     val h = e1.headOption.get
                     //println("some data after all "+h)
@@ -858,11 +852,9 @@ object functions {
      * For Cont handling we must loop when there is more data left on the stream,
      * when not verify if the toMany has returned more data to process.
      */
-    def contk(k: Input[A] => ResumableIter[A, F, R], i: ResumableStep[A, F, R], s: EphemeralStream[A], toMany: ResumableIter[E, F, EphemeralStream[A]]): ResumableIter[E, F, R] = {
+    def contk(k: Input[A] => ResumableIter[A, F, R], step: ResumableStep[A, F, R], s: EphemeralStream[A], toMany: ResumableIter[E, F, EphemeralStream[A]]): ResumableIter[E, F, R] = {
       if (!s.isEmpty) {
-        val r = loop(i, s)
-        //println("empty against the s "+ni + " " + ns().isEmpty)
-        //if (isDone(ni))
+        val r = loop(step, s)
         iterateeT(F.bind(r) { pair =>
           val (ni, ns) = pair
           next(ni, ns, toMany).value // bad - should let a done exit early
@@ -901,9 +893,8 @@ object functions {
                 )*/
               )
             },
-            empty = {println("contk - empty nexti")
-              val r = k(Empty[A])
-              nextI(r, empty, toMany)
+            empty = {println("contk - empty nexti")// - only used when we stop enumerating - the async 'pause' case - we should not nextI")
+              nextI(k(Empty[A]), empty, toMany)
             },
             eof = nextI(k(Eof[A]), empty, toMany)
           )
@@ -959,14 +950,14 @@ object functions {
 
       if (Eof.unapply(y) && !internalEOF) {
         // signal the end here to toMany, don't care about result, tested by testSimpleLoad and testRandomAmounts in AsyncPullTest
-        iterateeT(F.bind(returnThis.value) { v =>
+        iterateeT(
           toMany.foldT(done = (a1, y1) => returnThis.value,
             cont = k => {
-              F.map(k(Eof[E]).value){
-                _ => v
+              F.bind(k(Eof[E]).value) {
+                _ => returnThis.value
               }
             })
-        })
+        )
       } else
         returnThis
     }

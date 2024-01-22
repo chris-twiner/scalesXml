@@ -47,7 +47,7 @@ object StreamSerializer {
           status // nothing to do
         case (Some(Right(lastElem)), EOF) =>
           status.copy(output.copy(currentMappings = output.currentMappings.tail,
-            path = output.path.tail),
+            path = Nil),
             serializer.endElement(lastElem.name, output.path), false, Some(currentEvent))
         case (Some(Left(p: XmlItem)), _) => // allow EOF's through for xmlitems
           status.copy(output, serializer.item(p, output.path), false, Some(currentEvent))
