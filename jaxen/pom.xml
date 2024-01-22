@@ -6,7 +6,7 @@
     <parent>
         <artifactId>scales-xml-root_${scalaCompatVersion}</artifactId>
         <groupId>org.scalesxml</groupId>
-        <version>0.6.0-M5</version>
+        <version>0.6.0-M6</version>
     </parent>
     <version>${project.parent.version}</version>
     <packaging>jar</packaging>
