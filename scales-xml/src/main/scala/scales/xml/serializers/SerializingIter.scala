@@ -1,15 +1,13 @@
 package scales.xml.serializers
 
-import scales.utils._
-import resources._
-import scalaz.Id.Id
 import scalaz.Monad
 import scalaz.iteratee.Input.Eof
-import scalaz.iteratee.Iteratee.{cont, iteratee, iterateeT}
+import scalaz.iteratee.Iteratee.iterateeT
 import scalaz.iteratee.StepT.{Cont, Done}
+import scalaz.iteratee.{Input, IterateeT, StepT}
+import scales.utils._
+import scales.utils.resources._
 import scales.xml._
-import scalaz.iteratee.{Enumerator, Input, Iteratee, IterateeT, StepT}
-import scales.utils.iteratee.functions.{ResumableIter, ResumableStep}
 
 /**
  * Provide push based serializing Iteratee
@@ -36,38 +34,34 @@ trait SerializingIter {
     def done(status: StreamStatus): F[SerialStepT[F]] = {
       // give it back
       closer()
-      //println("empties was "+empties)
+
       F.point(Done((status.output, status.thrown), Eof[PullType]))
     }
 
-    def go(fromStart: Boolean, status: StreamStatus)(s: Input[PullType]): SerialIterT[F] =
+    def rest(status: StreamStatus, prev: PullType)(s: Input[PullType]): SerialIterT[F] =
       iterateeT(
         s(el = e => {
             if (status.thrown.isDefined) done(status)
             else {
               val r = F.point{
-                val r = StreamSerializer.pump(e, status, serializer)
-                println("pumped rest e " + System.identityHashCode(e) + " r " + System.identityHashCode(r) + " status prev "+ status.prev +" r.prev "+ r.prev)
+                val r = StreamSerializer.pump((prev, e), status, serializer)
                 r
               }
 
               F.map(r) {r=>
                 theStatus = r
-                Cont(go(false, r))
+                Cont(rest(r, e))
               }
             }
           },
           empty = {
             empties += 1
-            val nstatus = if (theStatus eq null) status else theStatus
-            println("outitr empty " +status.prev + " from start " + fromStart )
-            //println("outitr empty " +nstatus.prev + " from start " + fromStart )
-            F.point(Cont(go(false, status)))
+            F.point(Cont(rest(status, prev)))
           },
           eof = {
             if (status.thrown.isDefined) done(status)
             else {
-              val r = StreamSerializer.pump(StreamSerializer.EOF, status, serializer)
+              val r = StreamSerializer.pump((prev, StreamSerializer.dummy), status, serializer)
               val opt = serializeMisc(r.output, doc.end.misc, serializer)._2
 
               val lastStatus = r.copy(thrown = opt)
@@ -78,21 +72,27 @@ trait SerializingIter {
         )
       )
 
-    lazy val status = {
-      val status = StreamStatus(output)
-      if (!status.haveSetProlog) {
-        // decl and prolog misc, which should have been collected by now
-        val opt = serializer.xmlDeclaration(status.output.data.encoding,
-          status.output.data.version).orElse {
-          serializeMisc(status.output, doc.prolog.misc, serializer)._2
-        }
+    def first( status : StreamStatus)(s : Input[PullType]) : SerialIterT[F] =
+      iterateeT(F.point(
+        s(el = e => {
+            // decl and prolog misc, which should have been collected by now
+            val opt = serializer.xmlDeclaration(status.output.data.encoding,
+              status.output.data.version).orElse{
+              serializeMisc(status.output, doc.prolog.misc, serializer)._2
+            }
+            val nstatus = status.copy(thrown = opt)
 
-        status.copy(thrown = opt, haveSetProlog = true)
-      } else
-        status
-    }
+            Cont(rest(nstatus, e))
+          },
+          empty = {
+            empties += 1
+            Cont(first(status))
+          },
+          eof = Done((status.output, Some(NoDataInStream())), Eof[PullType])
+        )
+      ))
 
-    iterateeT(F.point(Cont(go(true, status))))
+    iterateeT(F.point(Cont(first(StreamStatus(output)))))
   }
 
   /**

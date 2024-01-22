@@ -825,9 +825,7 @@ object functions {
                   nextI(k(Eof[A]), empty, nextContR)
                 else {
                   if (e1.isEmpty)
-                    {println("empty on nextcontr - this situation only exists in async pull tests if we send SuspendData as a pause signal")
-                      nextI(k(Empty[A]), empty, nextContR)
-                    }
+                    nextI(k(Empty[A]), empty, nextContR)
                   else {
                     val h = e1.headOption.get
                     //println("some data after all "+h)
@@ -840,10 +838,8 @@ object functions {
 
             r
           },
-          cont = k1 => {
-            println("conted after here")
+          cont = k1 =>
             nextI(k(Empty[A]), empty, afterNewCall).value
-          }
         )
       )
     }
@@ -863,7 +859,6 @@ object functions {
         iterateeT(F.point(Cont((x: Input[E]) =>
           x(
             el = e => {
-              //println("got a cont x el e "+e)
               iterateeT(
                 F.bind(toMany.value){
                   tooManyStep =>
@@ -874,28 +869,14 @@ object functions {
                         scales.utils.error("Unexpected State for enumToMany - Cont but toMany is done")
                       },
                       cont = toManyCont => {
-                        println("contk - toManyCont")
                         pumpNext(x, toManyCont, k).value
                       }
                     )
                 }
-                /*
-                toMany.foldT(
-                  done = (a, y) => {
-                    val (e1, nextContR) = a
-                    val nextCont = nextContR.asInstanceOf[ResumableIter[E, F, scalaz.EphemeralStream[A]]]
-                    scales.utils.error("Unexpected State for enumToMany - Cont but toMany is done")
-                  },
-                  cont = toManyCont => {
-                    println("contk - toManyCont")
-                    pumpNext(x, toManyCont, k).value
-                  }
-                )*/
               )
             },
-            empty = {println("contk - empty nexti")// - only used when we stop enumerating - the async 'pause' case - we should not nextI")
-              nextI(k(Empty[A]), empty, toMany)
-            },
+            empty = // - only used when we stop enumerating - the async 'pause' case - we should not nextI")
+              nextI(k(Empty[A]), empty, toMany),
             eof = nextI(k(Eof[A]), empty, toMany)
           )
         )))
@@ -934,13 +915,11 @@ object functions {
                 lazy val ocont = nextI(nextCont, s, toMany, true)
 
                 if (s.isEmpty) {
-                  println("attempted to force cont - donewith")
                   // need to process this res but force another to be
                   // calculated before it is returned to the enumerator
                   //cont[E,F,(R,IterateeT[E,F,_])]( _ => cont[E,F,(R,IterateeT[E,F,_])]( _ => ocont))
                   cont[E, F, (R, IterateeT[E, F, _])](_ => ocont)
                 } else {
-                  println("didn't force cont - donewith")
                   // still data to process
                   ocont
                 }
@@ -1009,50 +988,6 @@ object functions {
     through(itr)
   }
 
-
-  /**
-   * Drives an iteratee only calling Done when the Done(Element) is not the same reference (element ne prev_element),
-   * allows iteratee's to be side effect free even when trampolining restarts.
-   *
-   * This iteratee _does_ however use state you cannot copy an interim value and re-use it safely.
-   *
-   * When EOF is reached the last used E will be returned (or null should there never have been one)
-   *
-   * @tparam E
-   * @tparam F
-   * @return
-
-  commented as, although it works, it doesn't solve the problem of restarting iteratees sending duplicate state in trampolines
-
-  def referenceDedup[E, F[_]](implicit F: Monad[F]): IterateeT[E, F, E] = {
-    var prev: Option[E] = None
-
-    def usePrev(nextE: E): Option[E] = prev.fold{
-      prev = Some(nextE)
-      prev
-    } {prevI =>
-      if (System.identityHashCode(nextE) != System.identityHashCode(prevI)) {
-        prev = Some(nextE)
-        prev
-      } else None
-    }
-
-    def step(input: Input[E]): IterateeT[E, F, E] =
-      iterateeT(F.point(input(
-        el = e => {
-          val r = usePrev(e)
-          r.fold{
-            Cont(step)
-          }{ e =>
-            Done(e, Empty[E])
-          }
-        },
-        empty = Cont(step),
-        eof = Done(prev.get, Eof[E])
-      )))
-
-    iterateeT(F.point(Cont(step)))
-  } */
 }
 
 trait Iteratees {
@@ -1061,12 +996,12 @@ trait Iteratees {
 
   def iterateesOf[F[_]](implicit F: Monad[F]) = new IterateeFunctions[F](F)
 
-  val ioIteratees = iterateesOf[IO]
-  val trampolineIteratees = iterateesOf[Trampoline]
+  implicit val ioIteratees = iterateesOf[IO]
+  implicit val trampolineIteratees = iterateesOf[Trampoline]
   /**
    * Warning: Id does not trampoline, consider trampolineIteratees or ioIteratees to import from
    */
-  val idIteratees = iterateesOf[Id]
+  implicit val idIteratees = iterateesOf[Id]
 }
 
 

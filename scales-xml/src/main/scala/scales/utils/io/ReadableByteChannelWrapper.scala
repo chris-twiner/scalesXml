@@ -226,56 +226,44 @@ trait ReadableByteChannelWrapperImplicits {
           i.pointI
         case i =>
           i mapCont { k =>
-            val realChunkF = F.point( chunker.nextChunk )
-            //val realChunk = chunker.nextChunk
+            val realChunk = chunker.nextChunk
             iterateeT {
-              F.bind(realChunkF) { realChunk =>
-                val nc =
-                  if (realChunk.isEmpty)
-                    count + 1
+              val nc =
+                if (realChunk.isEmpty)
+                  count + 1
+                else
+                  0
+
+              val shouldPause =
+                if (((contOnCont != INFINITE_RETRIES) && (nc > contOnCont)))
+                  true
+                else
+                  false
+
+              val nextIStep =
+                if (realChunk.isEOF)
+                  k(Eof[DataChunk])
+                else if (realChunk.isEmpty) {
+                  if (shouldPause)
+                    k(Element(SuspendData))
                   else
-                    0
+                    k(Empty[DataChunk])
+                } else
+                  k(Element(realChunk))
 
-                val shouldPause =
-                  if (((contOnCont != INFINITE_RETRIES) && (nc > contOnCont)))
-                    true
-                  else
-                    false
+              F.bind(nextIStep.value) { step =>
 
-                //F.bind(realChunkF) { realChunk =>
-                println("calling k with " + realChunk)
-                val nextIStep =
-                  if (realChunk.isEOF)
-                    k(Eof[DataChunk])
-                  else if (realChunk.isEmpty) {
-                    if (shouldPause)
-                      k(Element(SuspendData))
-                    else
-                      k(Empty[DataChunk])
-                  } else
-                    k(Element(realChunk))
+                if (shouldPause && !isDoneS(step))
+                  //nextIStep.value actually calls twice as it's then bound twice
+                  F.point(step)
+                else
+                  apply(nc)(step).value
 
-                println("called k with " + realChunk)
-
-                F.bind(nextIStep.value) { step =>
-
-                  if (shouldPause && !isDoneS(step)) {
-                    println("attempting to pause")
-                    //nextIStep.value actually calls twice as it's then bound twice
-                    F.point(step)
-                  } else {
-                    println("moving forward")
-                    //(nextIStep >>== apply(nc)).value
-                    apply(nc)(step).value
-                  }
-
-                }
               }
             }
           }
       }
 
-      //println("i's ident " + System.identityHashCode(i))
       apply(0)
     }
   }

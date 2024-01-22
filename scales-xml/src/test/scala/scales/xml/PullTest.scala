@@ -1,7 +1,9 @@
 package scales.xmlTest
 
 import scalaz.Free.Trampoline
+import scalaz.Id.Id
 import scalaz.Monad
+import scalaz.effect.IO
 import scalaz.iteratee.EnumeratorT
 import scalaz.iteratee.Iteratee.{done, foldM, head}
 import scales.utils.iteratee.EphemeralStreamEnum.enumEphemeralStreamF
@@ -787,17 +789,11 @@ on both the qname matching (3 of them) and then the above combos
     p runIt
   }
 
-  def testFirstThenNextId():Unit = {
-    implicit val ev = idIteratees
+  def testFirstThenNextId():Unit =
+    doTestFirstThenNext[Id]
 
-    doTestFirstThenNext[ev.TheF]
-  }
-
-  def testFirstThenNextIO():Unit = {
-    implicit val ev = ioIteratees
-
-    doTestFirstThenNext[ev.TheF]
-  }
+  def testFirstThenNextIO():Unit =
+    doTestFirstThenNext[IO]
 
   def ofInterestEvents(i : Int, max : Int) : WeakStream[PullType] = {
     def iOfInterestEvents( i : Int, max :Int) : WeakStream[PullType] =

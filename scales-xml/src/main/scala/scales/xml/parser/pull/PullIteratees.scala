@@ -54,10 +54,10 @@ trait PullIteratees {
 
   def pullIterateesOf[F[_]](implicit F: Monad[F]): PullIterateeFunctions[F] = new PullIterateeFunctions[F](F)
 
-  val ioPullIteratees = pullIterateesOf[IO]
-  val trampolinePullIteratees = pullIterateesOf[Trampoline]
+  implicit val ioPullIteratees = pullIterateesOf[IO]
+  implicit val trampolinePullIteratees = pullIterateesOf[Trampoline]
   // not recommended but may help migrations
-  val idPullIteratees = pullIterateesOf[Id]
+  implicit val idPullIteratees = pullIterateesOf[Id]
 
   // enumerators and iteratees follow
 

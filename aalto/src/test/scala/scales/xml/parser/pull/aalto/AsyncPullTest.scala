@@ -1,43 +1,38 @@
 package scales.xml.parser.pull.aalto
 
 import scalaz.Free.Trampoline
-import scalaz.iteratee.Input.{Element, Empty, Eof}
-import scalaz.iteratee.{EnumeratorT, Input, Iteratee, IterateeT, StepT}
-import scalaz.iteratee.Iteratee.{emptyInput, eofInput, iterateeT, peek}
-import scalaz.iteratee.StepT.{Cont, Done}
+import scalaz.Scalaz._
 import scalaz._
-import Scalaz._
-import junit.framework.Assert.assertTrue
-import scales.utils.iteratee.monadHelpers.Performer
-//import scales.utils.iteratee.functions.referenceDedup
-import scales.utils.trampolineIteratees._
+import scalaz.effect.IO
+import scalaz.iteratee.Input.{Element, Empty, Eof}
+import scalaz.iteratee.Iteratee.peek
+import scalaz.iteratee.IterateeT
+import scalaz.iteratee.StepT.Done
+import scales.utils.iteratee.IterateeFunctions
 import scales.utils.iteratee.functions.IterOps
+import scales.utils.iteratee.monadHelpers.{CanRunIt, Performer}
+import scales.utils.trampolineIteratees._
 
 class AsyncPullTest extends junit.framework.TestCase {
 
   import junit.framework.Assert._
-  import java.io._
-  import java.nio.channels._
-
   import scales.utils._
-  import ScalesUtils._
   import scales.xml._
   import ScalesXml._
-
-  import scales.xml.impl.NoVersionXmlReaderFactoryPool
-
   import io._
   import ScalesUtilsIO._
+  import scales.xml.impl.NoVersionXmlReaderFactoryPool
+
+  import java.nio.channels._
 
   val Default = Namespace("urn:default")
   val DefaultRoot = Default("Default")
 
+  import DangerousIterateeImplicits._
   import EphemeralStream.emptyEphemeralStream
-
-  import scales.utils.{resource => sresource}
-  import scalaz.iteratee.Iteratee.{cont, done, elInput, empty, foldM, iterateeT, repeat}
-  import DangerousIterateeImplicits._ // toRunEval
   import TestIteratees._
+  import scalaz.iteratee.Iteratee.{iterateeT, repeat}
+  import scales.utils.{resource => sresource}
 
   val smallBufSize = 10
   
@@ -48,37 +43,6 @@ class AsyncPullTest extends junit.framework.TestCase {
 
 
   type SerialIterT = IterateeT[PullType, TheF, (XmlOutput, Option[Throwable])]
-
-  import java.nio.charset.Charset
-  import scales.utils.{io, resources}
-  import resources._
-
-  /**
-   * returns the cont and drops the input parameter or returns Done
-   */
-  trait EvalW[WHAT, F[_],RETURN] {
-
-    val orig : IterateeT[WHAT, F, RETURN]
-
-    def evalEmpty(implicit F: Monad[F]) : IterateeT[WHAT, F, RETURN] =
-      iterateeT(
-        orig.foldT(
-          cont = k => k(Empty[WHAT]).value
-          , done = (a, i) => F.point(Done(a, i))
-        ))
-/*
-    def evalw(implicit F: Monad[F]) : IterateeT[WHAT, F, RETURN] =
-      iterateeT(
-        F.bind((orig &= empty[WHAT,F]).value)((s: StepT[WHAT, F, RETURN]) => s.fold(
-          cont = k => //s.pointI.value//
-            k(Empty[WHAT]).value
-          , done = (a, i) => F.point(Done(a, i))
-        ))) */
-  }
-
-  implicit def toEvalw[WHAT, F[_], RETURN]( i : IterateeT[WHAT, F, RETURN] ) = new EvalW[WHAT, F, RETURN] {
-    lazy val orig = i
-  }
 
   /**
    * ensure that the enumerator doesn't break basic assumptions when it can get
@@ -318,6 +282,10 @@ class AsyncPullTest extends junit.framework.TestCase {
 
     val stream = url.openStream()
 
+    /*
+     * the random channel does every 10, every 6 forces it back but allows
+     * a fair chunk of Empty -> Conts followed by data
+     */
     val randomChannel = new RandomChannelStreamWrapper(stream, smallBufSize)
 
     val parser = AsyncParser()
@@ -328,37 +296,17 @@ class AsyncPullTest extends junit.framework.TestCase {
     val enumeratee = enumToMany(iter.toResumableIter)(AsyncParser.parse(parser))
     val wrapped = new ReadableByteChannelWrapper(randomChannel, true, tinyBuffers)
 
-    /*
-     * the random channel does every 10, every 6 forces it back but allows
-     * a fair chunk of Empty -> Conts followed by data
-     */
-    val readableByteChannelEnumerator = new AsyncDataChunkerEnumerator[DataChunk, TheF](wrapped, 6 )
-
-    val cstable = enumeratee/// (enumeratee &= readableByteChannelEnumerator)//.evalw
-
-    var c = cstable
-
     import scales.utils.iteratee.monadHelpers._
-    var count = 0
-/*
-    do {
-      c = (c &= dataChunkerEnumerator(wrapped)).evalw
-      count += 1
-      done = (for {
-        r <- isDone(c)
-      } yield r).runIt
-    } while (!done) */
 
     val itr =
-      repeatUntilM((cstable, false, 0)) {
+      repeatUntilM((enumeratee, false, 0)) {
         triple =>
           val (c, stop, count) = triple
           if (!stop) {
             F.bind(c.value) {
               cstep => // to let us know if we have stopped
                  // feed more data
-                println("evaling")
-                val newc = (c &= dataChunkerEnumerator(wrapped))//.evalEmpty
+                val newc = (c &= dataChunkerEnumerator(wrapped))
                 F.map(newc.value) { newcStep =>
                   val isEof = isEOFS(newcStep)
                   (newcStep.pointI, isEof, if (isDoneS(cstep)) count else count + 1)
@@ -373,16 +321,12 @@ class AsyncPullTest extends junit.framework.TestCase {
         r <- itr
         // stopped on EOF for the cont - but never pushes the eof to the parser
         ((cont, _, count), remainingCont) = r
-        //step <- c.value
-        remain <- remainingCont.value
         step <- cont.value
       } yield {
 
         if (randomChannel.zeroed > 0) {
           assertTrue("There were " + randomChannel.zeroed + " zeros fed but it never left the evalw", count > 0)
         }
-
-        val r = remain
 
         step(
           done = (a, i) => {
@@ -458,11 +402,19 @@ class AsyncPullTest extends junit.framework.TestCase {
 
   }
 
-  def testSimpleLoadSerializing =
-    doSimpleLoadSerializing(Channels.newChannel(_).wrapped)
+  import scalaz.Scalaz._
+  import scales.utils.iteratee.monadHelpers._
+  import scales.utils._
 
-  def doSimpleLoadSerializing(streamToChannel: java.io.InputStream => DataChunker[DataChunk]) = {
-    import idIteratees._
+  def testSimpleLoadSerializing =
+    doSimpleLoadSerializing[Id](Channels.newChannel(_).wrapped)
+
+  def testSimpleLoadSerializingIO =
+    doSimpleLoadSerializing[IO](Channels.newChannel(_).wrapped)
+
+  def doSimpleLoadSerializing[F[_]: Monad: CanRunIt: IterateeFunctions](streamToChannel: java.io.InputStream => DataChunker[DataChunk]) = {
+    val funcs = implicitly[IterateeFunctions[F]]
+    import funcs._
     val url = sresource(this, "/data/BaseXmlTest.xml")
 
     val doc = loadXmlReader(url, parsers = NoVersionXmlReaderFactoryPool)
@@ -473,35 +425,61 @@ class AsyncPullTest extends junit.framework.TestCase {
     val parser = AsyncParser()
 
     val strout = new java.io.StringWriter()
-    val (closer, iter) = pushXmlIter[Id]( strout , doc )
+    val (closer, iter) = pushXmlIter[TheF]( strout , doc )
 
     val enumeratee = enumToMany(iter.toResumableIter)(parser.iteratee)
-    val ((out, thrown), cont) = (enumeratee &= dataChunkerEnumerator(channel)).run
 
-    // we can swallow the lot
-    assertFalse( "shouldn't have thrown", thrown.isDefined)
+    val p =
+      for {
+        r <- (enumeratee &= dataChunkerEnumerator(channel)).run
+        ((out, thrown), cont) = r
+      } yield {
 
-    assertTrue("should have been auto closed", closer.isClosed)
-    assertEquals(str, strout.toString)
+        // we can swallow the lot
+        assertFalse("shouldn't have thrown", thrown.isDefined)
 
-    assertTrue("Channel itself should have been auto closed", channel.isClosed)
+        assertTrue("should have been auto closed", closer.isClosed)
+        assertEquals(str, strout.toString)
+
+        assertTrue("Channel itself should have been auto closed", channel.isClosed)
+      }
+
+    p.runIt
   }
 
   def testSimpleLoadSerializingDirect =
-    doSimpleLoadSerializing( s => new ReadableByteChannelWrapper(Channels.newChannel(s), bytePool = new DirectBufferPool()))
+    doSimpleLoadSerializing[Id]( s => new ReadableByteChannelWrapper(Channels.newChannel(s), bytePool = new DirectBufferPool()))
 
   def testSimpleLoadSerializingDirectSmallArrays =
-    doSimpleLoadSerializing{ s =>
+    doSimpleLoadSerializing[Id]{ s =>
       new ReadableByteChannelWrapper(Channels.newChannel(s), bytePool = new DirectBufferPool(), directBufferArrayPool = new ByteArrayPool(50))
     }
 
   def testSimpleLoadSerializingSmallDirectLargerArrays =
-    doSimpleLoadSerializing{ s =>
+    doSimpleLoadSerializing[Id]{ s =>
       new ReadableByteChannelWrapper(Channels.newChannel(s), bytePool = new DirectBufferPool(50))
     }
 
   def testSimpleLoadSerializingSmallDirectSmallArrays =
-    doSimpleLoadSerializing{ s =>
+    doSimpleLoadSerializing[Id]{ s =>
+      new ReadableByteChannelWrapper(Channels.newChannel(s), bytePool = new DirectBufferPool(50), directBufferArrayPool = new ByteArrayPool(50))
+    }
+
+  def testSimpleLoadSerializingDirectIO =
+    doSimpleLoadSerializing[IO]( s => new ReadableByteChannelWrapper(Channels.newChannel(s), bytePool = new DirectBufferPool()))
+
+  def testSimpleLoadSerializingDirectSmallArraysIO =
+    doSimpleLoadSerializing[IO]{ s =>
+      new ReadableByteChannelWrapper(Channels.newChannel(s), bytePool = new DirectBufferPool(), directBufferArrayPool = new ByteArrayPool(50))
+    }
+
+  def testSimpleLoadSerializingSmallDirectLargerArraysIO =
+    doSimpleLoadSerializing[IO]{ s =>
+      new ReadableByteChannelWrapper(Channels.newChannel(s), bytePool = new DirectBufferPool(50))
+    }
+
+  def testSimpleLoadSerializingSmallDirectSmallArraysIO =
+    doSimpleLoadSerializing[IO]{ s =>
       new ReadableByteChannelWrapper(Channels.newChannel(s), bytePool = new DirectBufferPool(50), directBufferArrayPool = new ByteArrayPool(50))
     }
 
