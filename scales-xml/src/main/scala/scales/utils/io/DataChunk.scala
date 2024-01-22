@@ -36,17 +36,6 @@ object EmptyData extends DataChunk {
 }
 
 /**
- * Represents a data stream that has had too many empty reads (pretty much only aalto parsing)
- */
-object SuspendData extends DataChunk {
-  val array = Array.empty[Byte]
-  val offset = -23
-  val length = 0
-
-  override val isEmpty = true
-}
-
-/**
  * Represents the full array
  */ 
 final case class FullChunk( array: Array[Byte] ) extends DataChunk {
@@ -55,16 +44,6 @@ final case class FullChunk( array: Array[Byte] ) extends DataChunk {
 }
 
 /**
- * A section of a Byte array.  Due to Trampolining this cannot be re-used, as such a copy is made.  TODO Perhaps this should be optional
+ * A section of a Byte array.
  */ 
-//final case class Chunk( array: Array[Byte], offset: Int, length: Int) extends DataChunk
-
-object Chunk{
-  def apply( array: Array[Byte], offset: Int, length: Int): DataChunk =
-    FullChunk{
-      val c = Array.ofDim[Byte](length)
-      Array.copy(array, offset, c, 0, length)
-      c
-    }
-}
-
+final case class Chunk( array: Array[Byte], offset: Int, length: Int) extends DataChunk

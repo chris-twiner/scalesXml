@@ -277,26 +277,21 @@ object AsyncParser {
 
     def step(fromStart: Boolean): Input[DataChunk] => ResumableIter[DataChunk, F, EphemeralStream[PullType]] = s =>
       s(el = e => {
-          if (e eq SuspendData)
-            done((emptyEphemeralStream, cont(step(false))), Input.Empty[DataChunk])
-          else {
+          val r = parser.nextInput(e)
 
-            val r = parser.nextInput(e)
-
-            r(el = es => {
-                done((es,
-                  cont(step(false)))
-                  , Input.Empty[DataChunk])
-              },
-              empty = {
-                //emptyness
-                cont(step(false))
-              },
-              eof = {
-                EOF
-              }
-            )
-          }
+          r(el = es => {
+              done((es,
+                cont(step(false)))
+                , Input.Empty[DataChunk])
+            },
+            empty = {
+              //emptyness
+              cont(step(false))
+            },
+            eof = {
+              EOF
+            }
+          )
         },
         empty = {
           cont(step(false))

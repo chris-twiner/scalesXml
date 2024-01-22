@@ -243,12 +243,9 @@ trait ReadableByteChannelWrapperImplicits {
               val nextIStep =
                 if (realChunk.isEOF)
                   k(Eof[DataChunk])
-                else if (realChunk.isEmpty) {
-                  if (shouldPause)
-                    k(Element(SuspendData))
-                  else
-                    k(Empty[DataChunk])
-                } else
+                else if (realChunk.isEmpty)
+                  k(Empty[DataChunk])
+                else
                   k(Element(realChunk))
 
               F.bind(nextIStep.value) { step =>

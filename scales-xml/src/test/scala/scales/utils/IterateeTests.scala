@@ -18,7 +18,7 @@ import scales.utils._
 
 import scala.annotation.tailrec
 import scales.utils.iteratee.functions.IterOps
-import scales.utils.iteratee.monadHelpers.Performer
+import scales.utils.iteratee.monadHelpers._
 object StreamHelpers {
 
   def lTo(lower: Long, upper: Long): EphemeralStream[Long] =
