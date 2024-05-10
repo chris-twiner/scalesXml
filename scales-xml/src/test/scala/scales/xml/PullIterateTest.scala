@@ -62,7 +62,8 @@ class PullIterateTest extends junit.framework.TestCase {
       (x, i) <- itr.zipWithIndex
     } {
       assertEquals("Wasn't giving back child", "{}child", qualifiedName(x))
-      assertEquals( "interesting content "+ (i+1) +"interesting content "+ (i + 2)
+      // bad added as #56 test case for onQName tests
+      assertEquals( "interesting content "+ (i+1) +"interesting content "+ (i + 2)+"interesting  >>> BAAAD content "+(i+3)
 		   , text(x))
       val count = x.zipUp.children.size
       if (count != 1){

@@ -198,6 +198,7 @@ object SaxonPresentation {
   def foldNames {
     val pull = pullXml(new java.io.
 		  FileReader("./src/test/data/svnLogIteratorEg.xml"))
+    import idPullIteratees._
 
     // Who touched what file at what revision
     val LogEntries = List("log"l,"logentry"l)

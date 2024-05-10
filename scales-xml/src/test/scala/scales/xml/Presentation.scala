@@ -4,10 +4,9 @@ import scales.utils._
 import ScalesUtils._
 import scales.xml._
 import ScalesXml._
-
 import idIteratees._
-
 import collection.path.Replace
+import scales.xml.parser.pull.PullIteratees.onQNames
 
 /**
  * Code used in the intro presentation.  Variables aren't re-used as the functions
@@ -179,12 +178,13 @@ object Presentation {
     val LogEntries = List("log"l,"logentry"l)
 
     // iterate is lazy be default
-    val bits = for{ entry : XmlPath <- iterate(LogEntries, pull)
-	revision <- entry.\.*@("revision"l).one
-	author <- entry.\*("author"l).one
-	path <- entry.\*("paths"l).\*("path"l)
-	kind <- path.\.*@("kind"l)
-	action <- path.\.*@("action"l)
+    val bits = for{
+      entry : XmlPath <- iterate(LogEntries, pull)
+      revision <- entry.\.*@("revision"l).one
+      author <- entry.\*("author"l).one
+      path <- entry.\*("paths"l).\*("path"l)
+      kind <- path.\.*@("kind"l)
+      action <- path.\.*@("action"l)
     } yield (text(revision), 
 	     value(author), text(kind), 
 	     text(action), value(path))
@@ -204,8 +204,10 @@ object Presentation {
 
     // combine the Iteratee
     val ionDone = onDone(
-      List(onQNames(Authors), 
-	   onQNames(Paths))
+      List(
+        onQNames(Authors),
+	      onQNames(Paths)
+      )
     )
     
     val allAuthorsAndFiles = foldOnDone(iteratorEnumerator(pull.it))(

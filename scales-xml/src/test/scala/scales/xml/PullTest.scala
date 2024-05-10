@@ -342,7 +342,7 @@ on both the qname matching (3 of them) and then the above combos
          Elem("shouldNotBeInteresting"l),
          Text("interesting "),
          Elem("interesting"l),
-         Text("BAAAD content "+(i + 1)),
+         Text(" >>> BAAAD content "+(i + 2)),
          EndElem("interesting"l),
          EndElem("shouldNotBeInteresting"l),
         EndElem("child"l)
@@ -449,6 +449,7 @@ on both the qname matching (3 of them) and then the above combos
     val ourMax = maxIterations / 10 // full takes too long but does work in constant space
 
     import scalaz.Scalaz._
+    import scales.xml.parser.pull.PullIteratees.onQNames
 
     type TheF[X] = Trampoline[X]
 
@@ -467,7 +468,7 @@ on both the qname matching (3 of them) and then the above combos
       at = 0
       val QNames = List("root" l, "child" l, "interesting" l)
 
-      val ionDone = onDone[PullType, TheF, QNamesMatch](List(onQNames(QNames)))
+      val ionDone = onDone[PullType, TheF, QNamesMatch](List(onQNames[TheF](QNames)))
 
       def isDone[F[_]](i: Int, res: ResumableIterList[PullType, F, QNamesMatch])(implicit F: Monad[F]) =
         F.map(res.value) { step =>
@@ -563,7 +564,7 @@ on both the qname matching (3 of them) and then the above combos
       Monad[TheF].map(res.value){_( done = (x,y) => (x,y) match {
         case (((QNames, Some(x)) :: Nil,cont), y)  =>
           // we want to see both sub text nodes
-          assertEquals( "interesting content "+ i +"interesting content "+ (i + 1)
+          assertEquals( "interesting content "+ i +"interesting content "+ (i + 1)+"interesting  >>> BAAAD content "+(i+2)
                  , text(x))
           val count = x.zipUp.children.size
           if (count != 1){
@@ -718,8 +719,8 @@ on both the qname matching (3 of them) and then the above combos
   val repeatingQNames = List("root"l, "child"l, "interesting"l, "interesting"l)
   val stillInterestingQNames = List( "root"l, "anotherChild"l, "stillInteresting"l )
 
-  def altOnDone[F[_]: Monad] = onDone(List(onQNames[F](repeatingQNames),
-			      onQNames[F](stillInterestingQNames)))
+  def altOnDone[F[_]: Monad] = onDone(List(scales.xml.parser.pull.PullIteratees.onQNames[F](repeatingQNames),
+    scales.xml.parser.pull.PullIteratees.onQNames[F](stillInterestingQNames)))
 
   def thePair[F[_]: Monad] = {
 
@@ -835,8 +836,8 @@ on both the qname matching (3 of them) and then the above combos
   val Headers = List("root"l,"section"l,"sectionHeader"l)
   val OfInterest = List("root"l,"section"l,"ofInterest"l)
 
-  def ofInterestOnDone[F[_]: Monad]() = onDone(List(onQNames[F](Headers),
-    onQNames[F](OfInterest)))
+  def ofInterestOnDone[F[_]: Monad]() = onDone(List(scales.xml.parser.pull.PullIteratees.onQNames[F](Headers),
+    scales.xml.parser.pull.PullIteratees.onQNames[F](OfInterest)))
 
 
 
@@ -945,7 +946,7 @@ on both the qname matching (3 of them) and then the above combos
   def testIteratorCombo = {
     val pull = pullXml(sresource(this, "/data/svnLogIteratorEg.xml"))
     val LogEntries = List("log"l,"logentry"l)
-    val ionDone = onDone(List(onQNames(LogEntries)))
+    val ionDone = onDone(List(scales.xml.parser.pull.PullIteratees.onQNames(LogEntries)))
 
     val entries = foldOnDone(iteratorEnumerator(pull.it))( List[FiveStrings](), ionDone ){
       (t, qnamesMatch) =>
@@ -972,6 +973,7 @@ on both the qname matching (3 of them) and then the above combos
 
   def testSkipTop = {
     val iter = events(10).iterator
+    import idPullIteratees._
 
     var res = (skip(List())  &= iteratorEnumerator(iter)) run
 
@@ -984,6 +986,7 @@ on both the qname matching (3 of them) and then the above combos
 
   def testSkipSoap = {
     val iter = events(10).iterator
+    import idPullIteratees._
 
     var res = (skip(List(2, 1)) &= iteratorEnumerator(iter)) run
 
@@ -996,7 +999,7 @@ on both the qname matching (3 of them) and then the above combos
 
   def testSkipTooFar = {
     val iter = events(2).iterator
-
+    import idPullIteratees._
     val res = (skip(List(20, 1)) &= iteratorEnumerator(iter)) run
 
     assertTrue("Should not have found anything", res.isEmpty)
@@ -1004,7 +1007,7 @@ on both the qname matching (3 of them) and then the above combos
 
   def testSkipNoMatch = {
     def iter = events(2).iterator
-
+    import idPullIteratees._
     var res = (skip(List(1, 20)) &= iteratorEnumerator(iter)) run
 
     assertTrue("Should not have found anything", res.isEmpty)

@@ -1,16 +1,16 @@
 package scales.xml.parser.pull
 
 import scales.utils._
-import scales.xml.{Elem, EndElem, PullType, QName, ScalesXml, XmlBuilder, XmlItem, XmlPath, addAndFocus, addChild, noXmlPath, parser, impl => ximpl}
-import scales.xml.parser.strategies.{MemoryOptimisationStrategy, OptimisationToken}
+import scales.xml.{Elem, EndElem, PullType, QName, ScalesXml, XmlBuilder, XmlItem, XmlPath, addAndFocus, addChild, noXmlPath, impl => ximpl}
 import collection.FlatMapIterator
 import scalaz.Free.Trampoline
 import scalaz.Id.Id
 import scalaz.Scalaz.ToEqualOps
 import scalaz.effect.IO
 import scalaz.{Equal, Monad}
+import scalaz.iteratee.Input
 import scalaz.iteratee.Input.{Empty, Eof}
-import scalaz.iteratee.Iteratee.{iteratee, iterateeT}
+import scalaz.iteratee.Iteratee.iterateeT
 import scalaz.iteratee.{IterateeT, StepT}
 import scalaz.iteratee.StepT.{Cont, Done}
 
@@ -20,7 +20,7 @@ class PullIterateeFunctions[F[_]](val F: Monad[F]){
   import scales.xml.{QNamesMatch, PeekMatch}
 
   def onQNames(qnames: List[QName])(implicit F: Monad[F]): ResumableIter[PullType, F, QNamesMatch] =
-    scales.xml.onQNames[F](qnames)
+    PullIteratees.onQNames[F](qnames)
 
   /**
    * Collects all data belonging to an element that matches
@@ -30,10 +30,10 @@ class PullIterateeFunctions[F[_]](val F: Monad[F]){
    * as a path (each parent node containing only one child node).
    */
   def onQNamesI(qnames: List[QName])(implicit qe: Equal[QName], F: Monad[F]): ResumableIter[PullType, F, QNamesMatch] =
-    scales.xml.onQNamesI[F](qnames)
+    PullIteratees.onQNamesI[F](qnames)
 
   def skipv(downTo: Int*)(implicit F: Monad[F]): IterateeT[PullType, F, PeekMatch] =
-    scales.xml.skipv[F](downTo: _*)
+    PullIteratees.skipv[F](downTo: _*)
 
   /**
    * Skips all events until the indexes match downTo, can be seen as
@@ -44,7 +44,8 @@ class PullIterateeFunctions[F[_]](val F: Monad[F]){
    * An empty list will simply return the first Element found.
    */
   def skip(downTo: => List[Int])(implicit F: Monad[F]): IterateeT[PullType, F, PeekMatch] =
-    scales.xml.skip[F](downTo)
+    PullIteratees.skip[F](downTo)
+
 }
 
 /**
@@ -59,13 +60,27 @@ trait PullIteratees {
   // not recommended but may help migrations
   implicit val idPullIteratees = pullIterateesOf[Id]
 
-  // enumerators and iteratees follow
+  type PeekMatch = PullIteratees.PeekMatch
 
-  import scalaz.EphemeralStream
-  import scalaz.iteratee.{Iteratee, Enumerator, Input}
+  type QNamesMatch = PullIteratees.QNamesMatch
+
+  /**
+   * Wraps XmlPull
+   */
+  def iterate(path: List[QName], xml: XmlPull)(implicit qe: Equal[QName]): FlatMapIterator[XmlPath] = iterate(path, xml.it)
+
+  /**
+   * A wrapping around withIter(onDone(List(onQNames(path))))(enumXml(xml, _))
+   * it unwraps the data providing an Iterator[XPath]
+   */
+  def iterate(path: List[QName], xml: Iterator[PullType])(implicit qe: Equal[QName]): FlatMapIterator[XmlPath] =
+    new Iterate(path, xml)
+
+}
+
+object PullIteratees {
 
   type QNamesMatch = (List[QName], Option[XmlPath])
-
   /**
    * Collects all data belonging to an element that matches
    * the list. <top><middle><ofInterest> content </ofInterest><ofInterest....
@@ -90,7 +105,6 @@ trait PullIteratees {
      * The pairs allow the depth of each element to be followed.  In particular this stops both descent and ascent problems in the
      * pushing and popping on the stack.  I.e. it covers the case where you have nested repeating QNames, both when you are looking for them
      * and when your are not.  Don't pop too early and don't incorrectly force a done.
-     */
 
     lazy val starter = Cont(step(Nil, (qnames.head, 0), qnames.tail.map((_, 0)), noXmlPath, false))
 
@@ -165,7 +179,62 @@ trait PullIteratees {
         )
       ))
     }
+     */
 
+    lazy val starter = Cont(step(Nil, noXmlPath, false))
+
+    def step(before: List[QName], path: XmlPath, collecting: Boolean)(s: Input[PullType]): ResumableIter[PullType, F, QNamesMatch] = {
+      iterateeT( Monad[F].point(
+        s(el = {
+          case Left(elem@Elem(q, a, n)) => {
+            val npath = addAndFocus(path, elem)
+
+            val shouldCollect = collecting || (
+              before.size == (qnames.size - 1) &&
+              // eval only when needed
+              (before :+ q).zip(qnames).forall(p => p._1 === p._2)
+            )
+
+            Cont( step(before :+ q, npath, shouldCollect) )
+          }
+
+          case Left(x: XmlItem) =>
+            Cont(step(before,
+              if (collecting)
+                addChild(path, x)
+              else
+                path, collecting))
+
+          case Right(EndElem(q, n)) =>
+            // is this the end path ?  We have to re-verify the path, do so only when needed but stops same height (but not same path)
+            // and nested repeat issues
+            val haveCollected = collecting && before.size == qnames.size && before.zip(qnames).forall(p => p._1 === p._2)
+            val npath =
+              if (haveCollected) {
+                // done with path
+                path
+              } else
+                if (collecting) {
+                  // we are popping to the selected level
+                  path.zipUp()
+                } else {
+                  path.removeAndUp().getOrElse(noXmlPath)
+                }
+
+            if (haveCollected)
+              Done(((qnames, Some(npath)),
+                iterateeT( Monad[F].point( Cont(step(before.dropRight(1),
+                  // remove all children on the next iteration
+                  npath.removeAndUp.getOrElse(noXmlPath), collecting && !haveCollected))))), Empty[PullType])
+            else
+              Cont(step(before.dropRight(1), npath, collecting && !haveCollected))
+
+          },
+          empty = Cont(step(before, path, false)),
+          eof = Done(((qnames, None), iterateeT( Monad[F].point(starter) )), Eof[PullType])
+        )
+      ))
+    }
 
     if (qnames.isEmpty) error("Qnames is empty")
 
@@ -234,18 +303,6 @@ trait PullIteratees {
     iterateeT( F.point( Cont(step(List[Int](), List(0), 1 :: downTo, noXmlPath)) ) )
   }
 
-  /**
-   * Wraps XmlPull
-   */
-  def iterate(path: List[QName], xml: XmlPull)(implicit qe: Equal[QName]): FlatMapIterator[XmlPath] = iterate(path, xml.it)
-
-  /**
-   * A wrapping around withIter(onDone(List(onQNames(path))))(enumXml(xml, _))
-   * it unwraps the data providing an Iterator[XPath]
-   */
-  def iterate(path: List[QName], xml: Iterator[PullType])(implicit qe: Equal[QName]): FlatMapIterator[XmlPath] =
-    new Iterate(path, xml)
-
 }
 
 /**
@@ -297,9 +354,9 @@ class Iterate(path: List[QName], xml: Iterator[PullType])(implicit qe: Equal[QNa
           proxies.beginSub(elem, XmlBuilder())
 
           val shouldCollect = collecting || (
-            before.size == (path.size - 1) &&
+            before.size == (qnames.size - 1) &&
             // eval only when needed
-            before.zip(path.dropRight(1)).forall(p => p._1 === p._2)
+            (before :+ q).zip(qnames.dropRight(1)).forall(p => p._1 === p._2)
           )
           set(before :+ q, proxies, shouldCollect)
 
@@ -313,7 +370,7 @@ class Iterate(path: List[QName], xml: Iterator[PullType])(implicit qe: Equal[QNa
 
           // is this the end path ?  We have to re-verify the path, do so only when needed but stops same height (but not same path)
           // and nested repeat issues
-          val haveCollected = collecting && before.size == path.size && before.zip(path).forall(p => p._1 === p._2)
+          val haveCollected = collecting && before.size == qnames.size && before.zip(qnames).forall(p => p._1 === p._2)
           if (haveCollected) {
             res = proxies.proxyPath
           } else

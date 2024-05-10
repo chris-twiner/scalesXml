@@ -132,9 +132,9 @@ A simple, and recommended, way to leverage onDone is with the [foldOnDone functi
       val i = text(head._2.get).toInt
       // onQNames always returns the list as well as the XmlPath to allow matching against the input.
       if (head._1 eq Headers) {
-	assertEquals(t._1, t._2)
-	// get new section
-	(i, 1)
+        assertEquals(t._1, t._2)
+        // get new section
+        (i, 1)
       } else (t._1, i)
     }
   }

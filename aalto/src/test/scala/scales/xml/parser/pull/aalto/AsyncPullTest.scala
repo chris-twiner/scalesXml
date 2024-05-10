@@ -12,6 +12,7 @@ import scales.utils.iteratee.IterateeFunctions
 import scales.utils.iteratee.functions.IterOps
 import scales.utils.iteratee.monadHelpers.{CanRunIt, Performer}
 import scales.utils.trampolineIteratees._
+import scales.xml.parser.pull.PullIteratees.onQNames
 
 class AsyncPullTest extends junit.framework.TestCase {
 
