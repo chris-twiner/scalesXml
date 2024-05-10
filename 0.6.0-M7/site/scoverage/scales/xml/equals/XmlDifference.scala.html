@@ -1,0 +1,332 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/xml/equals/XmlDifference.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.xml.equals
+</span>2 <span style=''>
+</span>3 <span style=''>import scales.xml.{PullType, QName, Elem, Attributes, Attribute, XmlItem, EndElem, Misc, Miscs}
+</span>4 <span style=''>
+</span>5 <span style=''>/**
+</span>6 <span style=''> * Why did equality fail, pattern match fun
+</span>7 <span style=''> */ 
+</span>8 <span style=''>sealed trait XmlDifference[X] {
+</span>9 <span style=''>  val left : X
+</span>10 <span style=''>  val right : X
+</span>11 <span style=''>}
+</span>12 <span style=''>
+</span>13 <span style=''>/**
+</span>14 <span style=''> * Magik object for when we aren't attempting to calculate whats wrong 
+</span>15 <span style=''> */ 
+</span>16 <span style=''>object SomeDifference extends XmlDifference[AnyRef] {
+</span>17 <span style=''>  val left = </span><span style='background: #AEF1AE'>null</span><span style=''>
+</span>18 <span style=''>  val right = </span><span style='background: #AEF1AE'>null</span><span style=''>
+</span>19 <span style=''>
+</span>20 <span style=''>  def unapply(a : XmlDifference[AnyRef]) : Option[(AnyRef, AnyRef)] = </span><span style='background: #AEF1AE'>Some((left,right))</span><span style=''>
+</span>21 <span style=''>
+</span>22 <span style=''>  val noCalculation : Option[(XmlDifference[_], ComparisonContext)] = </span><span style='background: #AEF1AE'>Some((this, ComparisonContext()))</span><span style=''>
+</span>23 <span style=''>}
+</span>24 <span style=''>
+</span>25 <span style=''>/**
+</span>26 <span style=''> * When types are different, or an end element vs XmlEvent
+</span>27 <span style=''> */ 
+</span>28 <span style=''>case class DifferentTypes( left : PullType, right : PullType ) extends XmlDifference[PullType]
+</span>29 <span style=''>
+</span>30 <span style=''>case class QNameDifference( left : QName, right : QName ) extends  XmlDifference[QName]
+</span>31 <span style=''>
+</span>32 <span style=''>sealed trait AttributeDifference extends XmlDifference[Attribute]
+</span>33 <span style=''>sealed trait ElemDifference extends XmlDifference[Elem]
+</span>34 <span style=''>sealed trait AttributesDifference extends XmlDifference[Attributes]
+</span>35 <span style=''>
+</span>36 <span style=''>case class AttributeNameDifference( left : Attribute, right : Attribute ) extends AttributeDifference
+</span>37 <span style=''>case class AttributeValueDifference( left : Attribute, right : Attribute ) extends AttributeDifference
+</span>38 <span style=''>
+</span>39 <span style=''>/**
+</span>40 <span style=''> * Their size is different
+</span>41 <span style=''> */ 
+</span>42 <span style=''>case class DifferentNumberOfAttributes( left : Attributes, right : Attributes ) extends AttributesDifference
+</span>43 <span style=''>
+</span>44 <span style=''>/**
+</span>45 <span style=''> * Re-packs the AttributeValueDifference, but will only occur when the attributes QName is present
+</span>46 <span style=''> */
+</span>47 <span style=''>case class DifferentValueAttributes( left : Attributes, right : Attributes, differentValue : Attribute ) extends AttributesDifference
+</span>48 <span style=''>
+</span>49 <span style=''>/**
+</span>50 <span style=''> * The size is the same but one of lefts qnames is not present in right
+</span>51 <span style=''> */ 
+</span>52 <span style=''>case class MissingAttributes( left : Attributes, right : Attributes, missing : Attribute ) extends AttributesDifference
+</span>53 <span style=''>
+</span>54 <span style=''>case class ItemDifference( left : XmlItem, right : XmlItem) extends XmlDifference[XmlItem]
+</span>55 <span style=''>
+</span>56 <span style=''>case class ElemNameDifference( left : Elem, right : Elem ) extends ElemDifference
+</span>57 <span style=''>
+</span>58 <span style=''>/**
+</span>59 <span style=''> * If the difference is due to an attribute thats included as well
+</span>60 <span style=''> */ 
+</span>61 <span style=''>case class ElemAttributeDifference( left : Elem, right : Elem, attributesDifference : AttributesDifference ) extends ElemDifference
+</span>62 <span style=''>
+</span>63 <span style=''>/**
+</span>64 <span style=''> * This can only be returned when an ElemComparisom has been suplied with a custom namespaces implementation.
+</span>65 <span style=''> */ 
+</span>66 <span style=''>case class ElemNamespacesDifference( left : Elem, right : Elem ) extends ElemDifference
+</span>67 <span style=''>
+</span>68 <span style=''>case class EndElemNameDifference( left : EndElem, right : EndElem ) extends XmlDifference[EndElem]
+</span>69 <span style=''>
+</span>70 <span style=''>case class MiscDifference( left : Misc, right : Misc, isProlog : Boolean ) extends XmlDifference[Misc]
+</span>71 <span style=''>
+</span>72 <span style=''>case class MiscDifferentTypes( left : Misc, right : Misc, isProlog : Boolean ) extends XmlDifference[Misc]
+</span>73 <span style=''>
+</span>74 <span style=''>case class DifferentNumberOfMiscs( left : Miscs, right : Miscs, isProlog : Boolean ) extends XmlDifference[Miscs]
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          17
+        </td>
+        <td>
+          3145
+        </td>
+        <td>
+          391
+          -
+          395
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          18
+        </td>
+        <td>
+          3146
+        </td>
+        <td>
+          410
+          -
+          414
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          3147
+        </td>
+        <td>
+          492
+          -
+          496
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.SomeDifference.left
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SomeDifference.this.left
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          3148
+        </td>
+        <td>
+          497
+          -
+          502
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.SomeDifference.right
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SomeDifference.this.right
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          3149
+        </td>
+        <td>
+          491
+          -
+          503
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[Null, Null](SomeDifference.this.left, SomeDifference.this.right)
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          3150
+        </td>
+        <td>
+          486
+          -
+          504
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[(Null, Null)](scala.Tuple2.apply[Null, Null](SomeDifference.this.left, SomeDifference.this.right))
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          3151
+        </td>
+        <td>
+          588
+          -
+          607
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.ComparisonContext.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ComparisonContext.apply()
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          3152
+        </td>
+        <td>
+          581
+          -
+          608
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[scales.xml.equals.SomeDifference.type, scales.xml.equals.ComparisonContext](this, ComparisonContext.apply())
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          3153
+        </td>
+        <td>
+          576
+          -
+          609
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[(scales.xml.equals.SomeDifference.type, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.SomeDifference.type, scales.xml.equals.ComparisonContext](this, ComparisonContext.apply()))
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

@@ -1,0 +1,236 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/utils/io/Buffers.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.utils.io
+</span>2 <span style=''>
+</span>3 <span style=''>import scales.utils.resources._
+</span>4 <span style=''>import java.nio.ByteBuffer
+</span>5 <span style=''>
+</span>6 <span style=''>/**
+</span>7 <span style=''> * ByteBuffer.allocate(bufferSize) backed pool
+</span>8 <span style=''> * 
+</span>9 <span style=''> * 8k default buffer size with a pool reduction of 30.
+</span>10 <span style=''> */ 
+</span>11 <span style=''>class JVMBufferPool( val bufferSize : Int = 8192, override val reduceSize : Int = 30 ) extends SimpleUnboundedPool[ByteBuffer] {
+</span>12 <span style=''>  
+</span>13 <span style=''>  def create =
+</span>14 <span style=''>    </span><span style='background: #F0ADAD'>ByteBuffer.allocate(bufferSize)</span><span style=''>
+</span>15 <span style=''>
+</span>16 <span style=''>}
+</span>17 <span style=''>
+</span>18 <span style=''>/**
+</span>19 <span style=''> * ByteBuffer.allocateDirect(bufferSize) backed pool
+</span>20 <span style=''> * 
+</span>21 <span style=''> * 8k default buffer size with a pool reduction of 30
+</span>22 <span style=''> */ 
+</span>23 <span style=''>class DirectBufferPool( val bufferSize : Int = 8192, override val reduceSize : Int = 30 ) extends SimpleUnboundedPool[ByteBuffer] {
+</span>24 <span style=''>  
+</span>25 <span style=''>  def create =
+</span>26 <span style=''>    </span><span style='background: #F0ADAD'>ByteBuffer.allocateDirect(bufferSize)</span><span style=''>
+</span>27 <span style=''>
+</span>28 <span style=''>}
+</span>29 <span style=''>
+</span>30 <span style=''>/**
+</span>31 <span style=''> * Pools byte arrays
+</span>32 <span style=''> */ 
+</span>33 <span style=''>class ByteArrayPool( val byteArraySize: Int ) extends SimpleUnboundedPool[Array[Byte]]{
+</span>34 <span style=''>
+</span>35 <span style=''>  def create = 
+</span>36 <span style=''>    </span><span style='background: #F0ADAD'>Array.ofDim[Byte](byteArraySize)</span><span style=''>
+</span>37 <span style=''>
+</span>38 <span style=''>}
+</span>39 <span style=''>
+</span>40 <span style=''>/**
+</span>41 <span style=''> * Default buffer pool backed by byte arrays
+</span>42 <span style=''> */ 
+</span>43 <span style=''>object DefaultBufferPool extends JVMBufferPool {
+</span>44 <span style=''>}
+</span>45 <span style=''>
+</span>46 <span style=''>/**
+</span>47 <span style=''> * Default Byte Array pool with 8k chunks
+</span>48 <span style=''> */ 
+</span>49 <span style=''>object DefaultByteArrayPool extends ByteArrayPool(8192) {
+</span>50 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          14
+        </td>
+        <td>
+          1231
+        </td>
+        <td>
+          371
+          -
+          381
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.io.JVMBufferPool.bufferSize
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          JVMBufferPool.this.bufferSize
+        </td>
+      </tr><tr>
+        <td>
+          14
+        </td>
+        <td>
+          1232
+        </td>
+        <td>
+          351
+          -
+          382
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.nio.ByteBuffer.allocate
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          java.nio.ByteBuffer.allocate(JVMBufferPool.this.bufferSize)
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          1233
+        </td>
+        <td>
+          687
+          -
+          697
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.io.DirectBufferPool.bufferSize
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          DirectBufferPool.this.bufferSize
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          1234
+        </td>
+        <td>
+          661
+          -
+          698
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.nio.ByteBuffer.allocateDirect
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          java.nio.ByteBuffer.allocateDirect(DirectBufferPool.this.bufferSize)
+        </td>
+      </tr><tr>
+        <td>
+          36
+        </td>
+        <td>
+          1235
+        </td>
+        <td>
+          860
+          -
+          873
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.io.ByteArrayPool.byteArraySize
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ByteArrayPool.this.byteArraySize
+        </td>
+      </tr><tr>
+        <td>
+          36
+        </td>
+        <td>
+          1236
+        </td>
+        <td>
+          842
+          -
+          874
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.Array.ofDim
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Array.ofDim[Byte](ByteArrayPool.this.byteArraySize)((ClassTag.Byte: scala.reflect.ClassTag[Byte]))
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

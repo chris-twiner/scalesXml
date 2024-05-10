@@ -1,0 +1,1490 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/utils/collection/StackUtils.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.utils.collection
+</span>2 <span style=''>
+</span>3 <span style=''>trait StackUtils {
+</span>4 <span style=''>
+</span>5 <span style=''>  // it is expected that the top is the same, afterwards recurse (as available) until a difference is seen
+</span>6 <span style=''>  @scala.annotation.tailrec
+</span>7 <span style=''>  final def compareStack(p1: List[Int], p2: List[Int]): Int = {
+</span>8 <span style=''>    if (</span><span style='background: #AEF1AE'>p1.isEmpty &amp;&amp; p2.isEmpty == false</span><span style=''>) {
+</span>9 <span style=''>      </span><span style='background: #AEF1AE'>1</span><span style=''> // the position could be parent of same item, parents first 
+</span>10 <span style=''>    } else </span><span style='background: #AEF1AE'>if (p1.isEmpty == false &amp;&amp; p2.isEmpty) {
+</span>11 <span style=''></span><span style='background: #AEF1AE'>      -1 // the position could be parent of same item, parents first 
+</span>12 <span style=''></span><span style='background: #AEF1AE'>    } else if (p1.isEmpty &amp;&amp; p2.isEmpty) {
+</span>13 <span style=''></span><span style='background: #AEF1AE'>      0 // no idea what this should be other than == 0 from normal comparisom
+</span>14 <span style=''></span><span style='background: #AEF1AE'>    } else {
+</span>15 <span style=''></span><span style='background: #AEF1AE'>      // get the tops, compare, if same pop and recurse
+</span>16 <span style=''></span><span style='background: #AEF1AE'>      val t1 = p1.head
+</span>17 <span style=''></span><span style='background: #AEF1AE'>      val t2 = p2.head
+</span>18 <span style=''></span><span style='background: #AEF1AE'>      if (t1 == t2) {
+</span>19 <span style=''></span><span style='background: #AEF1AE'>        compareStack(p1.tail, p2.tail)
+</span>20 <span style=''></span><span style='background: #AEF1AE'>      } else {
+</span>21 <span style=''></span><span style='background: #AEF1AE'>        if (t1 &lt; t2)
+</span>22 <span style=''></span><span style='background: #AEF1AE'>          1
+</span>23 <span style=''></span><span style='background: #AEF1AE'>        else
+</span>24 <span style=''></span><span style='background: #AEF1AE'>          -1
+</span>25 <span style=''></span><span style='background: #AEF1AE'>      }
+</span>26 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>27 <span style=''>  }
+</span>28 <span style=''>
+</span>29 <span style=''>  def sameBase(test: List[Int], against: List[Int]): Boolean = {
+</span>30 <span style=''>
+</span>31 <span style=''>    /**
+</span>32 <span style=''>     * Should go into a seperate util class along with compare
+</span>33 <span style=''>     */
+</span>34 <span style=''>    @scala.annotation.tailrec
+</span>35 <span style=''>    def iSameBase(test: List[Int], against: List[Int]): Boolean = {
+</span>36 <span style=''>      if (</span><span style='background: #AEF1AE'>test.isEmpty &amp;&amp; against.isEmpty == false</span><span style=''>) {
+</span>37 <span style=''>        </span><span style='background: #AEF1AE'>true</span><span style=''> // if it was empty to start its still true, if not against is still below this stack
+</span>38 <span style=''>      } else </span><span style='background: #AEF1AE'>if (test.isEmpty == false &amp;&amp; against.isEmpty) {
+</span>39 <span style=''></span><span style='background: #AEF1AE'>        false // base has more nodes
+</span>40 <span style=''></span><span style='background: #AEF1AE'>      } else if (test.isEmpty &amp;&amp; </span><span style='background: #F0ADAD'>against.isEmpty</span><span style='background: #AEF1AE'>) {
+</span>41 <span style=''></span><span style='background: #AEF1AE'>        </span><span style='background: #F0ADAD'>true</span><span style='background: #AEF1AE'> // the same depth, and in this function the same position
+</span>42 <span style=''></span><span style='background: #AEF1AE'>      } else {
+</span>43 <span style=''></span><span style='background: #AEF1AE'>        // get the tops, compare, if same pop and recurse
+</span>44 <span style=''></span><span style='background: #AEF1AE'>        val t1 = test.head
+</span>45 <span style=''></span><span style='background: #AEF1AE'>        val t2 = against.head
+</span>46 <span style=''></span><span style='background: #AEF1AE'>        if (t1 == t2) {
+</span>47 <span style=''></span><span style='background: #AEF1AE'>          iSameBase(test.tail, against.tail)
+</span>48 <span style=''></span><span style='background: #AEF1AE'>        } else {
+</span>49 <span style=''></span><span style='background: #AEF1AE'>          false // different
+</span>50 <span style=''></span><span style='background: #AEF1AE'>        }
+</span>51 <span style=''></span><span style='background: #AEF1AE'>      }</span><span style=''>
+</span>52 <span style=''>    }
+</span>53 <span style=''>    </span><span style='background: #AEF1AE'>iSameBase(test, against)</span><span style=''>
+</span>54 <span style=''>  }
+</span>55 <span style=''>
+</span>56 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          8
+        </td>
+        <td>
+          623
+        </td>
+        <td>
+          274
+          -
+          293
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          p2.isEmpty.==(false)
+        </td>
+      </tr><tr>
+        <td>
+          8
+        </td>
+        <td>
+          624
+        </td>
+        <td>
+          260
+          -
+          293
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          p1.isEmpty.&amp;&amp;(p2.isEmpty.==(false))
+        </td>
+      </tr><tr>
+        <td>
+          9
+        </td>
+        <td>
+          625
+        </td>
+        <td>
+          303
+          -
+          304
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          9
+        </td>
+        <td>
+          626
+        </td>
+        <td>
+          303
+          -
+          304
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          10
+        </td>
+        <td>
+          627
+        </td>
+        <td>
+          395
+          -
+          400
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          10
+        </td>
+        <td>
+          628
+        </td>
+        <td>
+          404
+          -
+          414
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.SeqLike.isEmpty
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          p2.isEmpty
+        </td>
+      </tr><tr>
+        <td>
+          10
+        </td>
+        <td>
+          629
+        </td>
+        <td>
+          381
+          -
+          414
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          p1.isEmpty.==(false).&amp;&amp;(p2.isEmpty)
+        </td>
+      </tr><tr>
+        <td>
+          10
+        </td>
+        <td>
+          651
+        </td>
+        <td>
+          377
+          -
+          872
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (p1.isEmpty.==(false).&amp;&amp;(p2.isEmpty))
+  -1
+else
+  if (p1.isEmpty.&amp;&amp;(p2.isEmpty))
+    0
+  else
+    {
+      val t1: Int = p1.head;
+      val t2: Int = p2.head;
+      if (t1.==(t2))
+        StackUtils.this.compareStack(p1.tail, p2.tail)
+      else
+        if (t1.&lt;(t2))
+          1
+        else
+          -1
+    }
+        </td>
+      </tr><tr>
+        <td>
+          11
+        </td>
+        <td>
+          630
+        </td>
+        <td>
+          424
+          -
+          426
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          -1
+        </td>
+      </tr><tr>
+        <td>
+          11
+        </td>
+        <td>
+          631
+        </td>
+        <td>
+          424
+          -
+          426
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          -1
+        </td>
+      </tr><tr>
+        <td>
+          12
+        </td>
+        <td>
+          632
+        </td>
+        <td>
+          517
+          -
+          527
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.SeqLike.isEmpty
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          p2.isEmpty
+        </td>
+      </tr><tr>
+        <td>
+          12
+        </td>
+        <td>
+          633
+        </td>
+        <td>
+          503
+          -
+          527
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          p1.isEmpty.&amp;&amp;(p2.isEmpty)
+        </td>
+      </tr><tr>
+        <td>
+          12
+        </td>
+        <td>
+          650
+        </td>
+        <td>
+          499
+          -
+          872
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (p1.isEmpty.&amp;&amp;(p2.isEmpty))
+  0
+else
+  {
+    val t1: Int = p1.head;
+    val t2: Int = p2.head;
+    if (t1.==(t2))
+      StackUtils.this.compareStack(p1.tail, p2.tail)
+    else
+      if (t1.&lt;(t2))
+        1
+      else
+        -1
+  }
+        </td>
+      </tr><tr>
+        <td>
+          13
+        </td>
+        <td>
+          634
+        </td>
+        <td>
+          537
+          -
+          538
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          13
+        </td>
+        <td>
+          635
+        </td>
+        <td>
+          537
+          -
+          538
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          14
+        </td>
+        <td>
+          649
+        </td>
+        <td>
+          620
+          -
+          872
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val t1: Int = p1.head;
+  val t2: Int = p2.head;
+  if (t1.==(t2))
+    StackUtils.this.compareStack(p1.tail, p2.tail)
+  else
+    if (t1.&lt;(t2))
+      1
+    else
+      -1
+}
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          636
+        </td>
+        <td>
+          693
+          -
+          700
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.IterableLike.head
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          p1.head
+        </td>
+      </tr><tr>
+        <td>
+          17
+        </td>
+        <td>
+          637
+        </td>
+        <td>
+          716
+          -
+          723
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.IterableLike.head
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          p2.head
+        </td>
+      </tr><tr>
+        <td>
+          18
+        </td>
+        <td>
+          638
+        </td>
+        <td>
+          734
+          -
+          742
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          t1.==(t2)
+        </td>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          639
+        </td>
+        <td>
+          767
+          -
+          774
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.TraversableLike.tail
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          p1.tail
+        </td>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          640
+        </td>
+        <td>
+          776
+          -
+          783
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.TraversableLike.tail
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          p2.tail
+        </td>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          641
+        </td>
+        <td>
+          754
+          -
+          784
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.StackUtils.compareStack
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          StackUtils.this.compareStack(p1.tail, p2.tail)
+        </td>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          642
+        </td>
+        <td>
+          754
+          -
+          784
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.collection.StackUtils.compareStack
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          StackUtils.this.compareStack(p1.tail, p2.tail)
+        </td>
+      </tr><tr>
+        <td>
+          21
+        </td>
+        <td>
+          643
+        </td>
+        <td>
+          812
+          -
+          819
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&lt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          t1.&lt;(t2)
+        </td>
+      </tr><tr>
+        <td>
+          21
+        </td>
+        <td>
+          648
+        </td>
+        <td>
+          808
+          -
+          858
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (t1.&lt;(t2))
+  1
+else
+  -1
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          644
+        </td>
+        <td>
+          831
+          -
+          832
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          645
+        </td>
+        <td>
+          831
+          -
+          832
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          24
+        </td>
+        <td>
+          646
+        </td>
+        <td>
+          856
+          -
+          858
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          -1
+        </td>
+      </tr><tr>
+        <td>
+          24
+        </td>
+        <td>
+          647
+        </td>
+        <td>
+          856
+          -
+          858
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          -1
+        </td>
+      </tr><tr>
+        <td>
+          36
+        </td>
+        <td>
+          652
+        </td>
+        <td>
+          1147
+          -
+          1171
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          against.isEmpty.==(false)
+        </td>
+      </tr><tr>
+        <td>
+          36
+        </td>
+        <td>
+          653
+        </td>
+        <td>
+          1131
+          -
+          1171
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          test.isEmpty.&amp;&amp;(against.isEmpty.==(false))
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          654
+        </td>
+        <td>
+          1183
+          -
+          1187
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          655
+        </td>
+        <td>
+          1183
+          -
+          1187
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          656
+        </td>
+        <td>
+          1306
+          -
+          1311
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          657
+        </td>
+        <td>
+          1315
+          -
+          1330
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.SeqLike.isEmpty
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          against.isEmpty
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          658
+        </td>
+        <td>
+          1290
+          -
+          1330
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          test.isEmpty.==(false).&amp;&amp;(against.isEmpty)
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          676
+        </td>
+        <td>
+          1286
+          -
+          1756
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (test.isEmpty.==(false).&amp;&amp;(against.isEmpty))
+  false
+else
+  if (test.isEmpty.&amp;&amp;(against.isEmpty))
+    true
+  else
+    {
+      val t1: Int = test.head;
+      val t2: Int = against.head;
+      if (t1.==(t2))
+        iSameBase(test.tail, against.tail)
+      else
+        false
+    }
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          659
+        </td>
+        <td>
+          1342
+          -
+          1347
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          660
+        </td>
+        <td>
+          1342
+          -
+          1347
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          661
+        </td>
+        <td>
+          1404
+          -
+          1419
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.SeqLike.isEmpty
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          against.isEmpty
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          662
+        </td>
+        <td>
+          1388
+          -
+          1419
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          test.isEmpty.&amp;&amp;(against.isEmpty)
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          675
+        </td>
+        <td>
+          1384
+          -
+          1756
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (test.isEmpty.&amp;&amp;(against.isEmpty))
+  true
+else
+  {
+    val t1: Int = test.head;
+    val t2: Int = against.head;
+    if (t1.==(t2))
+      iSameBase(test.tail, against.tail)
+    else
+      false
+  }
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          663
+        </td>
+        <td>
+          1431
+          -
+          1435
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          664
+        </td>
+        <td>
+          1431
+          -
+          1435
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          42
+        </td>
+        <td>
+          674
+        </td>
+        <td>
+          1507
+          -
+          1756
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val t1: Int = test.head;
+  val t2: Int = against.head;
+  if (t1.==(t2))
+    iSameBase(test.tail, against.tail)
+  else
+    false
+}
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          665
+        </td>
+        <td>
+          1584
+          -
+          1593
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.IterableLike.head
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          test.head
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          666
+        </td>
+        <td>
+          1611
+          -
+          1623
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.IterableLike.head
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          against.head
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          667
+        </td>
+        <td>
+          1636
+          -
+          1644
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          t1.==(t2)
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          668
+        </td>
+        <td>
+          1668
+          -
+          1677
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.TraversableLike.tail
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          test.tail
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          669
+        </td>
+        <td>
+          1679
+          -
+          1691
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.TraversableLike.tail
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          against.tail
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          670
+        </td>
+        <td>
+          1658
+          -
+          1692
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.StackUtils.iSameBase
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          iSameBase(test.tail, against.tail)
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          671
+        </td>
+        <td>
+          1658
+          -
+          1692
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.collection.StackUtils.iSameBase
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          iSameBase(test.tail, against.tail)
+        </td>
+      </tr><tr>
+        <td>
+          49
+        </td>
+        <td>
+          672
+        </td>
+        <td>
+          1720
+          -
+          1725
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          49
+        </td>
+        <td>
+          673
+        </td>
+        <td>
+          1720
+          -
+          1725
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          53
+        </td>
+        <td>
+          677
+        </td>
+        <td>
+          1767
+          -
+          1791
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.StackUtils.iSameBase
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          iSameBase(test, against)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

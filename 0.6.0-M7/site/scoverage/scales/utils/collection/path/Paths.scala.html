@@ -1,0 +1,4599 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/utils/collection/path/Paths.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.utils.collection.path
+</span>2 <span style=''>
+</span>3 <span style=''>import scala.collection.generic.CanBuildFrom
+</span>4 <span style=''>import scales.utils.{EitherLike, ItemOrTree, LeftLike, RightLike, TreeCBF, collection, subtree}
+</span>5 <span style=''>import collection.{SeqLikeThing, Tree}
+</span>6 <span style=''>
+</span>7 <span style=''>/**
+</span>8 <span style=''> * Represents the Top for a given Path, there isn't a tree above this
+</span>9 <span style=''> */ 
+</span>10 <span style=''>case class Top[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]]() extends LeftLike[Top[Item, Section, CC], Path[Item, Section, CC]]
+</span>11 <span style=''>
+</span>12 <span style=''>/**
+</span>13 <span style=''> * Positions only have meaning for a given Path(s).
+</span>14 <span style=''> *
+</span>15 <span style=''> * Their internal representation may change, as such its private to Paths.
+</span>16 <span style=''> *
+</span>17 <span style=''> * @author Chris
+</span>18 <span style=''> *
+</span>19 <span style=''> */
+</span>20 <span style=''>trait Position[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]] {
+</span>21 <span style=''>  private[utils] val root: Path[Item, Section, CC]
+</span>22 <span style=''>  private[utils] val position: List[Int]
+</span>23 <span style=''>}
+</span>24 <span style=''>
+</span>25 <span style=''>private[utils] case class PositionImpl[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]](position: List[Int], root: Path[Item, Section, CC]) extends Position[Item, Section, CC]
+</span>26 <span style=''>
+</span>27 <span style=''>/**
+</span>28 <span style=''> * Position in a parent Paths children
+</span>29 <span style=''> * 
+</span>30 <span style=''> * @author Chris
+</span>31 <span style=''> *
+</span>32 <span style=''> */ // note - lazy is a perf killer for building, probably doesn't save much over interrogation either (given Iterator is used) 
+</span>33 <span style=''>case class Node[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]](index: Int, focus: ItemOrTree[Item, Section, CC])
+</span>34 <span style=''>
+</span>35 <span style=''>case class Path[Item &lt;: LeftLike[Item, Tree[Item, Section, CC]], Section, CC[_]](top: EitherLike[Top[Item,Section,CC], Path[Item, Section, CC]], node: Node[Item, Section, CC])
+</span>36 <span style=''>     (implicit /*cbf : TreeCBF[Item, Section, CC], */seqLikeThing: SeqLikeThing[CC[_], ItemOrTree[Item, Section, CC], CC]) extends Iterable[Path[Item, Section, CC]] with RightLike[Top[Item, Section, CC], Path[Item, Section, CC]] { self =&gt;
+</span>37 <span style=''>
+</span>38 <span style=''>  def parentTree : Tree[Item, Section, CC] = </span><span style='background: #AEF1AE'>top.getRight.node.focus.getRight</span><span style=''>
+</span>39 <span style=''>
+</span>40 <span style=''>  def parentCount = if (</span><span style='background: #AEF1AE'>top.isLeft</span><span style=''>) </span><span style='background: #AEF1AE'>0</span><span style=''> else </span><span style='background: #AEF1AE'>seqLikeThing.length(parentTree.children)</span><span style=''>
+</span>41 <span style=''>
+</span>42 <span style=''>  /** Is there a previous sibling */
+</span>43 <span style=''>  def hasPreviousSibling = (</span><span style='background: #AEF1AE'>node.index &gt; 0 &amp;&amp; node.index &lt;= parentCount</span><span style=''>)
+</span>44 <span style=''>
+</span>45 <span style=''>  /** Does it have a further sibling */
+</span>46 <span style=''>  def hasNextSibling = (</span><span style='background: #AEF1AE'>node.index &gt; -1 &amp;&amp; node.index &lt; (parentCount - 1)</span><span style=''>)
+</span>47 <span style=''>
+</span>48 <span style=''>  /**
+</span>49 <span style=''>   * Is the focus an Item?
+</span>50 <span style=''>   */
+</span>51 <span style=''>  def isItem = </span><span style='background: #AEF1AE'>node.focus.isLeft</span><span style=''>
+</span>52 <span style=''>
+</span>53 <span style=''>  /**
+</span>54 <span style=''>   * Does the focus have a child?
+</span>55 <span style=''>   */
+</span>56 <span style=''>  def hasChildren =
+</span>57 <span style=''>    if (</span><span style='background: #AEF1AE'>isItem</span><span style=''>) </span><span style='background: #F0ADAD'>false</span><span style=''>
+</span>58 <span style=''>    else </span><span style='background: #AEF1AE'>seqLikeThing.length(children) != 0</span><span style=''>
+</span>59 <span style=''>
+</span>60 <span style=''>  /**
+</span>61 <span style=''>   * Folds over child or tree
+</span>62 <span style=''>   */ 
+</span>63 <span style=''>  def focus[R]( i : Item =&gt; R, t : Tree[Item,Section,CC] =&gt; R) : R =
+</span>64 <span style=''>    </span><span style='background: #AEF1AE'>node.focus.fold(i, t)</span><span style=''>
+</span>65 <span style=''>
+</span>66 <span style=''>  /**
+</span>67 <span style=''>   * Children for a path, don't call unless it is not an item
+</span>68 <span style=''>   */ 
+</span>69 <span style=''>  def children : CC[ItemOrTree[Item,Section,CC]]  = </span><span style='background: #AEF1AE'>node.focus.right.get.children</span><span style=''>
+</span>70 <span style=''>
+</span>71 <span style=''>  /**
+</span>72 <span style=''>   * Call hasPreviousSibling first to assert there is a previous sibling
+</span>73 <span style=''>   */
+</span>74 <span style=''>  def previousSibling = </span><span style='background: #AEF1AE'>Path(top, Node(node.index - 1, seqLikeThing.apply(parentTree.children)(node.index - 1)))</span><span style=''>
+</span>75 <span style=''>
+</span>76 <span style=''>  /**
+</span>77 <span style=''>   * Call hasNextSibling first to assert there is a next sibling
+</span>78 <span style=''>   */
+</span>79 <span style=''>  def nextSibling = </span><span style='background: #AEF1AE'>Path(top, Node(node.index + 1, seqLikeThing.apply(parentTree.children)(node.index + 1)))</span><span style=''>
+</span>80 <span style=''>
+</span>81 <span style=''>  /**
+</span>82 <span style=''>   * get the tree (isItem == false)
+</span>83 <span style=''>   * @return
+</span>84 <span style=''>   */
+</span>85 <span style=''>  def tree() = </span><span style='background: #AEF1AE'>node.focus.getRight</span><span style=''>
+</span>86 <span style=''>
+</span>87 <span style=''>  /**
+</span>88 <span style=''>   * get the item (isItem == true)
+</span>89 <span style=''>   * @return
+</span>90 <span style=''>   */
+</span>91 <span style=''>  def item() = </span><span style='background: #AEF1AE'>node.focus.getLeft</span><span style=''>
+</span>92 <span style=''>
+</span>93 <span style=''>  private[this] class ItemIterator() extends Iterator[Path[Item,Section, CC]] { 
+</span>94 <span style=''>    def hasNext = </span><span style='background: #AEF1AE'>false</span><span style=''>
+</span>95 <span style=''>    def next() = </span><span style='background: #F0ADAD'>scales.utils.error(&quot;Cannot iterate over an item&quot;)</span><span style=''>
+</span>96 <span style=''>  }
+</span>97 <span style=''>
+</span>98 <span style=''>  private[this] class TreeIterator() extends Iterator[Path[Item,Section, CC]] { 
+</span>99 <span style=''>    val c = </span><span style='background: #AEF1AE'>seqLikeThing.iterator(children)</span><span style=''>
+</span>100 <span style=''>    var index = </span><span style='background: #AEF1AE'>-1</span><span style=''>
+</span>101 <span style=''>    
+</span>102 <span style=''>    def hasNext = </span><span style='background: #AEF1AE'>c.hasNext</span><span style=''>
+</span>103 <span style=''>
+</span>104 <span style=''>    def next() : Path[Item, Section, CC] = {
+</span>105 <span style=''>      </span><span style='background: #AEF1AE'>index += 1</span><span style=''>
+</span>106 <span style=''>      </span><span style='background: #AEF1AE'>Path(self, Node(index, c.next()))</span><span style=''>
+</span>107 <span style=''>    }
+</span>108 <span style=''>  }
+</span>109 <span style=''>
+</span>110 <span style=''>  /**
+</span>111 <span style=''>   * Provide iterator to the path of the children
+</span>112 <span style=''>   */
+</span>113 <span style=''>  def iterator() = 
+</span>114 <span style=''>    if (</span><span style='background: #AEF1AE'>isItem</span><span style=''>)
+</span>115 <span style=''>      </span><span style='background: #AEF1AE'>new ItemIterator()</span><span style=''>
+</span>116 <span style=''>    else
+</span>117 <span style=''>      </span><span style='background: #AEF1AE'>new TreeIterator()</span><span style=''>
+</span>118 <span style=''>
+</span>119 <span style=''>  /**
+</span>120 <span style=''>   * Returns either the first child or none.  Note the child would still need to be unpacked
+</span>121 <span style=''>   * @return
+</span>122 <span style=''>   */
+</span>123 <span style=''>  def firstChild(): Option[Path[Item, Section, CC]] =
+</span>124 <span style=''>    if (</span><span style='background: #AEF1AE'>!hasChildren</span><span style=''>) </span><span style='background: #F0ADAD'>None</span><span style=''> // can't have a child if its just a data node
+</span>125 <span style=''>    else </span><span style='background: #AEF1AE'>Some(Path(this, Node(0, seqLikeThing.seq(children).head)))</span><span style=''>
+</span>126 <span style=''>
+</span>127 <span style=''>  /**
+</span>128 <span style=''>   * Returns either the last child or none.  Note the child would still need to be unpacked
+</span>129 <span style=''>   * @return
+</span>130 <span style=''>   */
+</span>131 <span style=''>  def lastChild(): Option[Path[Item, Section, CC]] = // don't ask children twice
+</span>132 <span style=''>    if (</span><span style='background: #F0ADAD'>isItem</span><span style=''>) </span><span style='background: #F0ADAD'>None</span><span style=''> // items don't have children
+</span>133 <span style=''>    else </span><span style='background: #F0ADAD'>{
+</span>134 <span style=''></span><span style='background: #F0ADAD'>      val c = children
+</span>135 <span style=''></span><span style='background: #F0ADAD'>      if (seqLikeThing.length(c) == 0) None // no children
+</span>136 <span style=''></span><span style='background: #F0ADAD'>      else {
+</span>137 <span style=''></span><span style='background: #F0ADAD'>        val newPos = seqLikeThing.length(c) - 1
+</span>138 <span style=''></span><span style='background: #F0ADAD'>        Some(Path(this,
+</span>139 <span style=''></span><span style='background: #F0ADAD'>          Node(newPos, seqLikeThing.apply(c)(newPos))))
+</span>140 <span style=''></span><span style='background: #F0ADAD'>      }
+</span>141 <span style=''></span><span style='background: #F0ADAD'>    }</span><span style=''>
+</span>142 <span style=''>										   
+</span>143 <span style=''>  /**
+</span>144 <span style=''>   * zipUp returns this if it is already the top item (doesn't have a parent to zip), and a
+</span>145 <span style=''>   * newly zipped node when not if the focus has been modified
+</span>146 <span style=''>   */
+</span>147 <span style=''>  def zipUp(): Path[Item, Section, CC] =
+</span>148 <span style=''>    if (</span><span style='background: #AEF1AE'>top.isLeft</span><span style=''>) </span><span style='background: #AEF1AE'>this</span><span style=''>
+</span>149 <span style=''>    else </span><span style='background: #AEF1AE'>{
+</span>150 <span style=''></span><span style='background: #AEF1AE'>      val path = top.right.get
+</span>151 <span style=''></span><span style='background: #AEF1AE'>      val pt = parentTree
+</span>152 <span style=''></span><span style='background: #AEF1AE'>
+</span>153 <span style=''></span><span style='background: #AEF1AE'>      if (seqLikeThing.apply(pt.children)(node.index) eq node.focus) path
+</span>154 <span style=''></span><span style='background: #AEF1AE'>      else {
+</span>155 <span style=''></span><span style='background: #AEF1AE'>        val parentFocus = // ZIP IT, must be a tree
+</span>156 <span style=''></span><span style='background: #AEF1AE'>          subtree[Item, Section, CC](pt.section, seqLikeThing.updated(pt.children)(node.index, node.focus).asInstanceOf[CC[ItemOrTree[Item, Section, CC]]])
+</span>157 <span style=''></span><span style='background: #AEF1AE'>
+</span>158 <span style=''></span><span style='background: #AEF1AE'>        Path(path.top, Node(path.node.index,
+</span>159 <span style=''></span><span style='background: #AEF1AE'>          parentFocus))
+</span>160 <span style=''></span><span style='background: #AEF1AE'>      }
+</span>161 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>162 <span style=''>
+</span>163 <span style=''>  /**
+</span>164 <span style=''>   * Replaces this paths focus returning the path for the returned node.
+</span>165 <span style=''>   * @param newFocus transforming function on the ItemOrTree.
+</span>166 <span style=''>   */
+</span>167 <span style=''>  def modify(newFocus: (ItemOrTree[Item, Section, CC]) =&gt; ItemOrTree[Item, Section, CC]) =
+</span>168 <span style=''>    </span><span style='background: #AEF1AE'>Path(top, Node(node.index,
+</span>169 <span style=''></span><span style='background: #AEF1AE'>      newFocus(node.focus)))</span><span style=''>
+</span>170 <span style=''>
+</span>171 <span style=''>  /**
+</span>172 <span style=''>   * Removes this node, returning the parent path or None if its top
+</span>173 <span style=''>   * 
+</span>174 <span style=''>   */
+</span>175 <span style=''>  def removeAndUp(): Option[Path[Item, Section, CC]] =
+</span>176 <span style=''>    if (</span><span style='background: #AEF1AE'>top.isLeft</span><span style=''>) </span><span style='background: #AEF1AE'>None</span><span style=''>
+</span>177 <span style=''>    else </span><span style='background: #AEF1AE'>{
+</span>178 <span style=''></span><span style='background: #AEF1AE'>      val path = top.right.get
+</span>179 <span style=''></span><span style='background: #AEF1AE'>      val tree = path.node.focus.right.get
+</span>180 <span style=''></span><span style='background: #AEF1AE'>
+</span>181 <span style=''></span><span style='background: #AEF1AE'>      val parentFocus = {
+</span>182 <span style=''></span><span style='background: #AEF1AE'>        val c = parentTree.children
+</span>183 <span style=''></span><span style='background: #AEF1AE'>
+</span>184 <span style=''></span><span style='background: #AEF1AE'>        if (seqLikeThing.length(c) == 1) {
+</span>185 <span style=''></span><span style='background: #AEF1AE'>          // optimising for pull parse onqnames, if its only one in the parent, set the parent to empty, sucks if its not traversable
+</span>186 <span style=''></span><span style='background: #AEF1AE'>          subtree(tree.section, seqLikeThing.builder.result())
+</span>187 <span style=''></span><span style='background: #AEF1AE'>        } else {
+</span>188 <span style=''></span><span style='background: #AEF1AE'>          val parts = seqLikeThing.splitAt(parentTree.children)(node.index)
+</span>189 <span style=''></span><span style='background: #AEF1AE'>          subtree(tree.section, (seqLikeThing.++(parts._1)(seqLikeThing.seq(parts._2).tail)))
+</span>190 <span style=''></span><span style='background: #AEF1AE'>        }
+</span>191 <span style=''></span><span style='background: #AEF1AE'>	
+</span>192 <span style=''></span><span style='background: #AEF1AE'>      }
+</span>193 <span style=''></span><span style='background: #AEF1AE'>
+</span>194 <span style=''></span><span style='background: #AEF1AE'>      Some(
+</span>195 <span style=''></span><span style='background: #AEF1AE'>        Path(path.top, Node(path.node.index,
+</span>196 <span style=''></span><span style='background: #AEF1AE'>          parentFocus)))
+</span>197 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>198 <span style=''>
+</span>199 <span style=''>  /**
+</span>200 <span style=''>   * Gets the relative position of this Path
+</span>201 <span style=''>   * DOES NOT perform a zip
+</span>202 <span style=''>   */
+</span>203 <span style=''>  def position(): Position[Item, Section, CC] = {
+</span>204 <span style=''>    @scala.annotation.tailrec
+</span>205 <span style=''>    def makePosition(path: Path[Item, Section, CC], stack: List[Int]): (List[Int], Path[Item, Section, CC]) = {
+</span>206 <span style=''>      val newStack = </span><span style='background: #AEF1AE'>path.node.index :: stack</span><span style=''>
+</span>207 <span style=''>      if (</span><span style='background: #AEF1AE'>path.top.isLeft</span><span style=''>)
+</span>208 <span style=''>        </span><span style='background: #AEF1AE'>(newStack, path)</span><span style=''>
+</span>209 <span style=''>      else
+</span>210 <span style=''>        </span><span style='background: #AEF1AE'>makePosition(path.top.right.get, newStack)</span><span style=''>
+</span>211 <span style=''>    }
+</span>212 <span style=''>
+</span>213 <span style=''>    val res = </span><span style='background: #AEF1AE'>makePosition(this, List[Int]())</span><span style=''>
+</span>214 <span style=''>    </span><span style='background: #AEF1AE'>new PositionImpl[Item,Section,CC](res._1, res._2)</span><span style=''>
+</span>215 <span style=''>  }
+</span>216 <span style=''>
+</span>217 <span style=''>  /**
+</span>218 <span style=''>   * Gives a nicer representation then the standard (Paths(Paths(), Paths).  But still too much info
+</span>219 <span style=''>   *
+</span>220 <span style=''>   * Path( Section | Top, FocusSection | FocusItem)
+</span>221 <span style=''>   *
+</span>222 <span style=''>   * @return
+</span>223 <span style=''>   */
+</span>224 <span style=''>  override def toString(): String = {
+</span>225 <span style=''>    val builder = </span><span style='background: #AEF1AE'>new java.lang.StringBuilder()</span><span style=''>
+</span>226 <span style=''>
+</span>227 <span style=''>    </span><span style='background: #AEF1AE'>builder.append(&quot;Path(&quot;)</span><span style=''>;
+</span>228 <span style=''>    if (</span><span style='background: #AEF1AE'>top.isLeft</span><span style=''>)
+</span>229 <span style=''>      </span><span style='background: #AEF1AE'>builder.append(&quot;Top&quot;)</span><span style=''>;
+</span>230 <span style=''>    else
+</span>231 <span style=''>      </span><span style='background: #F0ADAD'>builder.append(top.right.get.tree.section)</span><span style=''>;
+</span>232 <span style=''>    </span><span style='background: #AEF1AE'>builder.append(&quot;,&quot;)</span><span style=''>;
+</span>233 <span style=''>    </span><span style='background: #AEF1AE'>builder.append(node.index)</span><span style=''>;
+</span>234 <span style=''>    </span><span style='background: #AEF1AE'>builder.append(&quot;,&quot;)</span><span style=''>;
+</span>235 <span style=''>    if (</span><span style='background: #AEF1AE'>isItem</span><span style=''>)
+</span>236 <span style=''>      </span><span style='background: #F0ADAD'>builder.append(item)</span><span style=''>;
+</span>237 <span style=''>    else
+</span>238 <span style=''>      </span><span style='background: #AEF1AE'>builder.append(tree.section)</span><span style=''>;
+</span>239 <span style=''>    </span><span style='background: #AEF1AE'>builder.append(&quot;)&quot;)</span><span style=''>;
+</span>240 <span style=''>
+</span>241 <span style=''>    </span><span style='background: #AEF1AE'>builder.toString</span><span style=''>
+</span>242 <span style=''>  }
+</span>243 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          1040
+        </td>
+        <td>
+          1767
+          -
+          1799
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.EitherLike.getRight
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.top.getRight.node.focus.getRight
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          1041
+        </td>
+        <td>
+          1825
+          -
+          1835
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.EitherLike.isLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.top.isLeft
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          1042
+        </td>
+        <td>
+          1837
+          -
+          1838
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          1043
+        </td>
+        <td>
+          1837
+          -
+          1838
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          1044
+        </td>
+        <td>
+          1864
+          -
+          1883
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.Tree.children
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.parentTree.children
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          1045
+        </td>
+        <td>
+          1844
+          -
+          1884
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.SeqLikeThing.length
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.seqLikeThing.length(Path.this.parentTree.children)
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          1046
+        </td>
+        <td>
+          1844
+          -
+          1884
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.collection.SeqLikeThing.length
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.seqLikeThing.length(Path.this.parentTree.children)
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          1047
+        </td>
+        <td>
+          1964
+          -
+          1965
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          1048
+        </td>
+        <td>
+          1983
+          -
+          1994
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Path.parentCount
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.parentCount
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          1049
+        </td>
+        <td>
+          1969
+          -
+          1994
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&lt;=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.node.index.&lt;=(Path.this.parentCount)
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          1050
+        </td>
+        <td>
+          1951
+          -
+          1994
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.node.index.&gt;(0).&amp;&amp;(Path.this.node.index.&lt;=(Path.this.parentCount))
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          1051
+        </td>
+        <td>
+          2074
+          -
+          2076
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          -1
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          1052
+        </td>
+        <td>
+          2094
+          -
+          2109
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.-
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.parentCount.-(1)
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          1053
+        </td>
+        <td>
+          2080
+          -
+          2110
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&lt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.node.index.&lt;(Path.this.parentCount.-(1))
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          1054
+        </td>
+        <td>
+          2061
+          -
+          2110
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.node.index.&gt;(-1).&amp;&amp;(Path.this.node.index.&lt;(Path.this.parentCount.-(1)))
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          1055
+        </td>
+        <td>
+          2167
+          -
+          2184
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.EitherLike.isLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.node.focus.isLeft
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          1056
+        </td>
+        <td>
+          2260
+          -
+          2266
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Path.isItem
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.isItem
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          1057
+        </td>
+        <td>
+          2268
+          -
+          2273
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          1058
+        </td>
+        <td>
+          2268
+          -
+          2273
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          1059
+        </td>
+        <td>
+          2283
+          -
+          2317
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.!=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.seqLikeThing.length(Path.this.children).!=(0)
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          1060
+        </td>
+        <td>
+          2283
+          -
+          2317
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Int.!=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.seqLikeThing.length(Path.this.children).!=(0)
+        </td>
+      </tr><tr>
+        <td>
+          64
+        </td>
+        <td>
+          1061
+        </td>
+        <td>
+          2435
+          -
+          2456
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.EitherLike.fold
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.node.focus.fold[R](i, t)
+        </td>
+      </tr><tr>
+        <td>
+          69
+        </td>
+        <td>
+          1062
+        </td>
+        <td>
+          2585
+          -
+          2614
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.Tree.children
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.node.focus.right.get.children
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          1063
+        </td>
+        <td>
+          2730
+          -
+          2733
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Path.top
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.top
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          1064
+        </td>
+        <td>
+          2740
+          -
+          2754
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.-
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.node.index.-(1)
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          1065
+        </td>
+        <td>
+          2775
+          -
+          2794
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.Tree.children
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.parentTree.children
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          1066
+        </td>
+        <td>
+          2796
+          -
+          2810
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.-
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.node.index.-(1)
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          1067
+        </td>
+        <td>
+          2756
+          -
+          2811
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.SeqLikeThing.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.seqLikeThing.apply(Path.this.parentTree.children)(Path.this.node.index.-(1))
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          1068
+        </td>
+        <td>
+          2735
+          -
+          2812
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Node.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Node.apply[Item, Section, CC](Path.this.node.index.-(1), Path.this.seqLikeThing.apply(Path.this.parentTree.children)(Path.this.node.index.-(1)))
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          1069
+        </td>
+        <td>
+          2729
+          -
+          2729
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Path.seqLikeThing
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.seqLikeThing
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          1070
+        </td>
+        <td>
+          2725
+          -
+          2813
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.path.Path.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.apply[Item, Section, CC](Path.this.top, Node.apply[Item, Section, CC](Path.this.node.index.-(1), Path.this.seqLikeThing.apply(Path.this.parentTree.children)(Path.this.node.index.-(1))))(Path.this.seqLikeThing)
+        </td>
+      </tr><tr>
+        <td>
+          79
+        </td>
+        <td>
+          1071
+        </td>
+        <td>
+          2917
+          -
+          2920
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Path.top
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.top
+        </td>
+      </tr><tr>
+        <td>
+          79
+        </td>
+        <td>
+          1072
+        </td>
+        <td>
+          2927
+          -
+          2941
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.node.index.+(1)
+        </td>
+      </tr><tr>
+        <td>
+          79
+        </td>
+        <td>
+          1073
+        </td>
+        <td>
+          2962
+          -
+          2981
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.Tree.children
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.parentTree.children
+        </td>
+      </tr><tr>
+        <td>
+          79
+        </td>
+        <td>
+          1074
+        </td>
+        <td>
+          2983
+          -
+          2997
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.node.index.+(1)
+        </td>
+      </tr><tr>
+        <td>
+          79
+        </td>
+        <td>
+          1075
+        </td>
+        <td>
+          2943
+          -
+          2998
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.SeqLikeThing.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.seqLikeThing.apply(Path.this.parentTree.children)(Path.this.node.index.+(1))
+        </td>
+      </tr><tr>
+        <td>
+          79
+        </td>
+        <td>
+          1076
+        </td>
+        <td>
+          2922
+          -
+          2999
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Node.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Node.apply[Item, Section, CC](Path.this.node.index.+(1), Path.this.seqLikeThing.apply(Path.this.parentTree.children)(Path.this.node.index.+(1)))
+        </td>
+      </tr><tr>
+        <td>
+          79
+        </td>
+        <td>
+          1077
+        </td>
+        <td>
+          2916
+          -
+          2916
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Path.seqLikeThing
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.seqLikeThing
+        </td>
+      </tr><tr>
+        <td>
+          79
+        </td>
+        <td>
+          1078
+        </td>
+        <td>
+          2912
+          -
+          3000
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.path.Path.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.apply[Item, Section, CC](Path.this.top, Node.apply[Item, Section, CC](Path.this.node.index.+(1), Path.this.seqLikeThing.apply(Path.this.parentTree.children)(Path.this.node.index.+(1))))(Path.this.seqLikeThing)
+        </td>
+      </tr><tr>
+        <td>
+          85
+        </td>
+        <td>
+          1079
+        </td>
+        <td>
+          3078
+          -
+          3097
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.EitherLike.getRight
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.node.focus.getRight
+        </td>
+      </tr><tr>
+        <td>
+          91
+        </td>
+        <td>
+          1080
+        </td>
+        <td>
+          3174
+          -
+          3192
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.EitherLike.getLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.node.focus.getLeft
+        </td>
+      </tr><tr>
+        <td>
+          94
+        </td>
+        <td>
+          1081
+        </td>
+        <td>
+          3293
+          -
+          3298
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          95
+        </td>
+        <td>
+          1082
+        </td>
+        <td>
+          3316
+          -
+          3365
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.iteratee.Iteratees.error
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.utils.`package`.error(&quot;Cannot iterate over an item&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          99
+        </td>
+        <td>
+          1083
+        </td>
+        <td>
+          3486
+          -
+          3494
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Path.children
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.children
+        </td>
+      </tr><tr>
+        <td>
+          99
+        </td>
+        <td>
+          1084
+        </td>
+        <td>
+          3464
+          -
+          3495
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.SeqLikeThing.iterator
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.seqLikeThing.iterator(Path.this.children)
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          1085
+        </td>
+        <td>
+          3512
+          -
+          3514
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          -1
+        </td>
+      </tr><tr>
+        <td>
+          102
+        </td>
+        <td>
+          1086
+        </td>
+        <td>
+          3538
+          -
+          3547
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.Iterator.hasNext
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          TreeIterator.this.c.hasNext
+        </td>
+      </tr><tr>
+        <td>
+          105
+        </td>
+        <td>
+          1087
+        </td>
+        <td>
+          3600
+          -
+          3610
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          TreeIterator.this.index.+(1)
+        </td>
+      </tr><tr>
+        <td>
+          105
+        </td>
+        <td>
+          1088
+        </td>
+        <td>
+          3600
+          -
+          3610
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Path.TreeIterator.index_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          TreeIterator.this.index_=(TreeIterator.this.index.+(1))
+        </td>
+      </tr><tr>
+        <td>
+          106
+        </td>
+        <td>
+          1089
+        </td>
+        <td>
+          3633
+          -
+          3638
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Path.TreeIterator.index
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          TreeIterator.this.index
+        </td>
+      </tr><tr>
+        <td>
+          106
+        </td>
+        <td>
+          1090
+        </td>
+        <td>
+          3640
+          -
+          3648
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.Iterator.next
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          TreeIterator.this.c.next()
+        </td>
+      </tr><tr>
+        <td>
+          106
+        </td>
+        <td>
+          1091
+        </td>
+        <td>
+          3628
+          -
+          3649
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Node.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Node.apply[Item, Section, CC](TreeIterator.this.index, TreeIterator.this.c.next())
+        </td>
+      </tr><tr>
+        <td>
+          106
+        </td>
+        <td>
+          1092
+        </td>
+        <td>
+          3621
+          -
+          3621
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Path.seqLikeThing
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.seqLikeThing
+        </td>
+      </tr><tr>
+        <td>
+          106
+        </td>
+        <td>
+          1093
+        </td>
+        <td>
+          3617
+          -
+          3650
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.path.Path.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.apply[Item, Section, CC](Path.this, Node.apply[Item, Section, CC](TreeIterator.this.index, TreeIterator.this.c.next()))(Path.this.seqLikeThing)
+        </td>
+      </tr><tr>
+        <td>
+          114
+        </td>
+        <td>
+          1094
+        </td>
+        <td>
+          3752
+          -
+          3758
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Path.isItem
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.isItem
+        </td>
+      </tr><tr>
+        <td>
+          115
+        </td>
+        <td>
+          1095
+        </td>
+        <td>
+          3766
+          -
+          3784
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Path.ItemIterator.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new Path.this.ItemIterator()
+        </td>
+      </tr><tr>
+        <td>
+          115
+        </td>
+        <td>
+          1096
+        </td>
+        <td>
+          3766
+          -
+          3784
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.collection.path.Path.ItemIterator.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new Path.this.ItemIterator()
+        </td>
+      </tr><tr>
+        <td>
+          117
+        </td>
+        <td>
+          1097
+        </td>
+        <td>
+          3800
+          -
+          3818
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Path.TreeIterator.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new Path.this.TreeIterator()
+        </td>
+      </tr><tr>
+        <td>
+          117
+        </td>
+        <td>
+          1098
+        </td>
+        <td>
+          3800
+          -
+          3818
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.collection.path.Path.TreeIterator.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new Path.this.TreeIterator()
+        </td>
+      </tr><tr>
+        <td>
+          124
+        </td>
+        <td>
+          1099
+        </td>
+        <td>
+          4000
+          -
+          4012
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.hasChildren.unary_!
+        </td>
+      </tr><tr>
+        <td>
+          124
+        </td>
+        <td>
+          1100
+        </td>
+        <td>
+          4014
+          -
+          4018
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          124
+        </td>
+        <td>
+          1101
+        </td>
+        <td>
+          4014
+          -
+          4018
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          125
+        </td>
+        <td>
+          1102
+        </td>
+        <td>
+          4095
+          -
+          4096
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          125
+        </td>
+        <td>
+          1103
+        </td>
+        <td>
+          4115
+          -
+          4123
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Path.children
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.children
+        </td>
+      </tr><tr>
+        <td>
+          125
+        </td>
+        <td>
+          1104
+        </td>
+        <td>
+          4098
+          -
+          4129
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.IterableLike.head
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.seqLikeThing.seq(Path.this.children).head
+        </td>
+      </tr><tr>
+        <td>
+          125
+        </td>
+        <td>
+          1105
+        </td>
+        <td>
+          4090
+          -
+          4130
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Node.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Node.apply[Item, Section, CC](0, Path.this.seqLikeThing.seq(Path.this.children).head)
+        </td>
+      </tr><tr>
+        <td>
+          125
+        </td>
+        <td>
+          1106
+        </td>
+        <td>
+          4083
+          -
+          4083
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Path.seqLikeThing
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.seqLikeThing
+        </td>
+      </tr><tr>
+        <td>
+          125
+        </td>
+        <td>
+          1107
+        </td>
+        <td>
+          4079
+          -
+          4131
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.path.Path.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.apply[Item, Section, CC](this, Node.apply[Item, Section, CC](0, Path.this.seqLikeThing.seq(Path.this.children).head))(Path.this.seqLikeThing)
+        </td>
+      </tr><tr>
+        <td>
+          125
+        </td>
+        <td>
+          1108
+        </td>
+        <td>
+          4074
+          -
+          4132
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[scales.utils.collection.path.Path[Item,Section,CC]](Path.apply[Item, Section, CC](this, Node.apply[Item, Section, CC](0, Path.this.seqLikeThing.seq(Path.this.children).head))(Path.this.seqLikeThing))
+        </td>
+      </tr><tr>
+        <td>
+          125
+        </td>
+        <td>
+          1109
+        </td>
+        <td>
+          4074
+          -
+          4132
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[scales.utils.collection.path.Path[Item,Section,CC]](Path.apply[Item, Section, CC](this, Node.apply[Item, Section, CC](0, Path.this.seqLikeThing.seq(Path.this.children).head))(Path.this.seqLikeThing))
+        </td>
+      </tr><tr>
+        <td>
+          132
+        </td>
+        <td>
+          1110
+        </td>
+        <td>
+          4340
+          -
+          4346
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Path.isItem
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Path.this.isItem
+        </td>
+      </tr><tr>
+        <td>
+          132
+        </td>
+        <td>
+          1111
+        </td>
+        <td>
+          4348
+          -
+          4352
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          132
+        </td>
+        <td>
+          1112
+        </td>
+        <td>
+          4348
+          -
+          4352
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          133
+        </td>
+        <td>
+          1124
+        </td>
+        <td>
+          4391
+          -
+          4629
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          {
+  val c: CC[scales.utils.ItemOrTree[Item,Section,CC]] = Path.this.children;
+  if (Path.this.seqLikeThing.length(c).==(0))
+    scala.None
+  else
+    {
+      val newPos: Int = Path.this.seqLikeThing.length(c).-(1);
+      scala.Some.apply[scales.utils.collection.path.Path[Item,Section,CC]](Path.apply[Item, Section, CC](this, Node.apply[Item, Section, CC](newPos, Path.this.seqLikeThing.apply(c)(newPos)))(Path.this.seqLikeThing))
+    }
+}
+        </td>
+      </tr><tr>
+        <td>
+          134
+        </td>
+        <td>
+          1113
+        </td>
+        <td>
+          4407
+          -
+          4415
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Path.children
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Path.this.children
+        </td>
+      </tr><tr>
+        <td>
+          135
+        </td>
+        <td>
+          1114
+        </td>
+        <td>
+          4426
+          -
+          4453
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Path.this.seqLikeThing.length(c).==(0)
+        </td>
+      </tr><tr>
+        <td>
+          135
+        </td>
+        <td>
+          1115
+        </td>
+        <td>
+          4455
+          -
+          4459
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          135
+        </td>
+        <td>
+          1116
+        </td>
+        <td>
+          4455
+          -
+          4459
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          136
+        </td>
+        <td>
+          1123
+        </td>
+        <td>
+          4486
+          -
+          4623
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          {
+  val newPos: Int = Path.this.seqLikeThing.length(c).-(1);
+  scala.Some.apply[scales.utils.collection.path.Path[Item,Section,CC]](Path.apply[Item, Section, CC](this, Node.apply[Item, Section, CC](newPos, Path.this.seqLikeThing.apply(c)(newPos)))(Path.this.seqLikeThing))
+}
+        </td>
+      </tr><tr>
+        <td>
+          137
+        </td>
+        <td>
+          1117
+        </td>
+        <td>
+          4509
+          -
+          4535
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.-
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Path.this.seqLikeThing.length(c).-(1)
+        </td>
+      </tr><tr>
+        <td>
+          138
+        </td>
+        <td>
+          1120
+        </td>
+        <td>
+          4553
+          -
+          4553
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Path.seqLikeThing
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Path.this.seqLikeThing
+        </td>
+      </tr><tr>
+        <td>
+          138
+        </td>
+        <td>
+          1121
+        </td>
+        <td>
+          4549
+          -
+          4614
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.path.Path.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Path.apply[Item, Section, CC](this, Node.apply[Item, Section, CC](newPos, Path.this.seqLikeThing.apply(c)(newPos)))(Path.this.seqLikeThing)
+        </td>
+      </tr><tr>
+        <td>
+          138
+        </td>
+        <td>
+          1122
+        </td>
+        <td>
+          4544
+          -
+          4615
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Some.apply[scales.utils.collection.path.Path[Item,Section,CC]](Path.apply[Item, Section, CC](this, Node.apply[Item, Section, CC](newPos, Path.this.seqLikeThing.apply(c)(newPos)))(Path.this.seqLikeThing))
+        </td>
+      </tr><tr>
+        <td>
+          139
+        </td>
+        <td>
+          1118
+        </td>
+        <td>
+          4583
+          -
+          4612
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.SeqLikeThing.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Path.this.seqLikeThing.apply(c)(newPos)
+        </td>
+      </tr><tr>
+        <td>
+          139
+        </td>
+        <td>
+          1119
+        </td>
+        <td>
+          4570
+          -
+          4613
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Node.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Node.apply[Item, Section, CC](newPos, Path.this.seqLikeThing.apply(c)(newPos))
+        </td>
+      </tr><tr>
+        <td>
+          148
+        </td>
+        <td>
+          1125
+        </td>
+        <td>
+          4860
+          -
+          4870
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.EitherLike.isLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.top.isLeft
+        </td>
+      </tr><tr>
+        <td>
+          148
+        </td>
+        <td>
+          1126
+        </td>
+        <td>
+          4872
+          -
+          4876
+        </td>
+        <td>
+          This
+        </td>
+        <td>
+          scales.utils.collection.path.Path
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          this
+        </td>
+      </tr><tr>
+        <td>
+          149
+        </td>
+        <td>
+          1147
+        </td>
+        <td>
+          4886
+          -
+          5324
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val path: scales.utils.collection.path.Path[Item,Section,CC] = Path.this.top.right.get;
+  val pt: scales.utils.collection.Tree[Item,Section,CC] = Path.this.parentTree;
+  if (Path.this.seqLikeThing.apply(pt.children)(Path.this.node.index).eq(Path.this.node.focus))
+    path
+  else
+    {
+      val parentFocus: scales.utils.ItemOrTree[Item,Section,CC] = scales.utils.`package`.subtree[Item, Section, CC](pt.section, Path.this.seqLikeThing.updated(pt.children)(Path.this.node.index, Path.this.node.focus).asInstanceOf[CC[scales.utils.ItemOrTree[Item,Section,CC]]])(Path.this.seqLikeThing);
+      Path.apply[Item, Section, CC](path.top, Node.apply[Item, Section, CC](path.node.index, parentFocus))(Path.this.seqLikeThing)
+    }
+}
+        </td>
+      </tr><tr>
+        <td>
+          150
+        </td>
+        <td>
+          1127
+        </td>
+        <td>
+          4905
+          -
+          4918
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.impl.RightLikeProjection.get
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.top.right.get
+        </td>
+      </tr><tr>
+        <td>
+          151
+        </td>
+        <td>
+          1128
+        </td>
+        <td>
+          4934
+          -
+          4944
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Path.parentTree
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.parentTree
+        </td>
+      </tr><tr>
+        <td>
+          153
+        </td>
+        <td>
+          1129
+        </td>
+        <td>
+          4975
+          -
+          4986
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.Tree.children
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          pt.children
+        </td>
+      </tr><tr>
+        <td>
+          153
+        </td>
+        <td>
+          1130
+        </td>
+        <td>
+          4988
+          -
+          4998
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Node.index
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.node.index
+        </td>
+      </tr><tr>
+        <td>
+          153
+        </td>
+        <td>
+          1131
+        </td>
+        <td>
+          5003
+          -
+          5013
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Node.focus
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.node.focus
+        </td>
+      </tr><tr>
+        <td>
+          153
+        </td>
+        <td>
+          1132
+        </td>
+        <td>
+          4956
+          -
+          5013
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.seqLikeThing.apply(pt.children)(Path.this.node.index).eq(Path.this.node.focus)
+        </td>
+      </tr><tr>
+        <td>
+          153
+        </td>
+        <td>
+          1133
+        </td>
+        <td>
+          5015
+          -
+          5019
+        </td>
+        <td>
+          Ident
+        </td>
+        <td>
+          scales.utils.collection.path.Path.path
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path
+        </td>
+      </tr><tr>
+        <td>
+          154
+        </td>
+        <td>
+          1146
+        </td>
+        <td>
+          5031
+          -
+          5318
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val parentFocus: scales.utils.ItemOrTree[Item,Section,CC] = scales.utils.`package`.subtree[Item, Section, CC](pt.section, Path.this.seqLikeThing.updated(pt.children)(Path.this.node.index, Path.this.node.focus).asInstanceOf[CC[scales.utils.ItemOrTree[Item,Section,CC]]])(Path.this.seqLikeThing);
+  Path.apply[Item, Section, CC](path.top, Node.apply[Item, Section, CC](path.node.index, parentFocus))(Path.this.seqLikeThing)
+}
+        </td>
+      </tr><tr>
+        <td>
+          156
+        </td>
+        <td>
+          1134
+        </td>
+        <td>
+          5122
+          -
+          5132
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.Tree.section
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          pt.section
+        </td>
+      </tr><tr>
+        <td>
+          156
+        </td>
+        <td>
+          1135
+        </td>
+        <td>
+          5155
+          -
+          5166
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.Tree.children
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          pt.children
+        </td>
+      </tr><tr>
+        <td>
+          156
+        </td>
+        <td>
+          1136
+        </td>
+        <td>
+          5168
+          -
+          5178
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Node.index
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.node.index
+        </td>
+      </tr><tr>
+        <td>
+          156
+        </td>
+        <td>
+          1137
+        </td>
+        <td>
+          5180
+          -
+          5190
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Node.focus
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.node.focus
+        </td>
+      </tr><tr>
+        <td>
+          156
+        </td>
+        <td>
+          1138
+        </td>
+        <td>
+          5134
+          -
+          5239
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.seqLikeThing.updated(pt.children)(Path.this.node.index, Path.this.node.focus).asInstanceOf[CC[scales.utils.ItemOrTree[Item,Section,CC]]]
+        </td>
+      </tr><tr>
+        <td>
+          156
+        </td>
+        <td>
+          1139
+        </td>
+        <td>
+          5121
+          -
+          5121
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Path.seqLikeThing
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.seqLikeThing
+        </td>
+      </tr><tr>
+        <td>
+          156
+        </td>
+        <td>
+          1140
+        </td>
+        <td>
+          5095
+          -
+          5240
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.subtree
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.subtree[Item, Section, CC](pt.section, Path.this.seqLikeThing.updated(pt.children)(Path.this.node.index, Path.this.node.focus).asInstanceOf[CC[scales.utils.ItemOrTree[Item,Section,CC]]])(Path.this.seqLikeThing)
+        </td>
+      </tr><tr>
+        <td>
+          158
+        </td>
+        <td>
+          1141
+        </td>
+        <td>
+          5255
+          -
+          5263
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Path.top
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path.top
+        </td>
+      </tr><tr>
+        <td>
+          158
+        </td>
+        <td>
+          1142
+        </td>
+        <td>
+          5270
+          -
+          5285
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Node.index
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path.node.index
+        </td>
+      </tr><tr>
+        <td>
+          158
+        </td>
+        <td>
+          1143
+        </td>
+        <td>
+          5265
+          -
+          5309
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Node.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Node.apply[Item, Section, CC](path.node.index, parentFocus)
+        </td>
+      </tr><tr>
+        <td>
+          158
+        </td>
+        <td>
+          1144
+        </td>
+        <td>
+          5254
+          -
+          5254
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Path.seqLikeThing
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.seqLikeThing
+        </td>
+      </tr><tr>
+        <td>
+          158
+        </td>
+        <td>
+          1145
+        </td>
+        <td>
+          5250
+          -
+          5310
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.path.Path.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.apply[Item, Section, CC](path.top, Node.apply[Item, Section, CC](path.node.index, parentFocus))(Path.this.seqLikeThing)
+        </td>
+      </tr><tr>
+        <td>
+          168
+        </td>
+        <td>
+          1148
+        </td>
+        <td>
+          5573
+          -
+          5576
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Path.top
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.top
+        </td>
+      </tr><tr>
+        <td>
+          168
+        </td>
+        <td>
+          1149
+        </td>
+        <td>
+          5583
+          -
+          5593
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Node.index
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.node.index
+        </td>
+      </tr><tr>
+        <td>
+          168
+        </td>
+        <td>
+          1152
+        </td>
+        <td>
+          5578
+          -
+          5622
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Node.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Node.apply[Item, Section, CC](Path.this.node.index, newFocus.apply(Path.this.node.focus))
+        </td>
+      </tr><tr>
+        <td>
+          168
+        </td>
+        <td>
+          1153
+        </td>
+        <td>
+          5572
+          -
+          5572
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Path.seqLikeThing
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.seqLikeThing
+        </td>
+      </tr><tr>
+        <td>
+          168
+        </td>
+        <td>
+          1154
+        </td>
+        <td>
+          5568
+          -
+          5623
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.path.Path.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.apply[Item, Section, CC](Path.this.top, Node.apply[Item, Section, CC](Path.this.node.index, newFocus.apply(Path.this.node.focus)))(Path.this.seqLikeThing)
+        </td>
+      </tr><tr>
+        <td>
+          169
+        </td>
+        <td>
+          1150
+        </td>
+        <td>
+          5610
+          -
+          5620
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Node.focus
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.node.focus
+        </td>
+      </tr><tr>
+        <td>
+          169
+        </td>
+        <td>
+          1151
+        </td>
+        <td>
+          5601
+          -
+          5621
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          newFocus.apply(Path.this.node.focus)
+        </td>
+      </tr><tr>
+        <td>
+          176
+        </td>
+        <td>
+          1155
+        </td>
+        <td>
+          5775
+          -
+          5785
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.EitherLike.isLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.top.isLeft
+        </td>
+      </tr><tr>
+        <td>
+          176
+        </td>
+        <td>
+          1156
+        </td>
+        <td>
+          5787
+          -
+          5791
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          176
+        </td>
+        <td>
+          1157
+        </td>
+        <td>
+          5787
+          -
+          5791
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          177
+        </td>
+        <td>
+          1184
+        </td>
+        <td>
+          5801
+          -
+          6476
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val path: scales.utils.collection.path.Path[Item,Section,CC] = Path.this.top.right.get;
+  val tree: scales.utils.collection.Tree[Item,Section,CC] = path.node.focus.right.get;
+  val parentFocus: scales.utils.ItemOrTree[Item,Section,CC] = {
+    val c: CC[scales.utils.ItemOrTree[Item,Section,CC]] = Path.this.parentTree.children;
+    if (Path.this.seqLikeThing.length(c).==(1))
+      scales.utils.`package`.subtree[Item, Section, CC](tree.section, Path.this.seqLikeThing.builder.result())(Path.this.seqLikeThing)
+    else
+      {
+        val parts: (CC[scales.utils.ItemOrTree[Item,Section,CC]], CC[scales.utils.ItemOrTree[Item,Section,CC]]) = Path.this.seqLikeThing.splitAt(Path.this.parentTree.children)(Path.this.node.index);
+        scales.utils.`package`.subtree[Item, Section, CC](tree.section, Path.this.seqLikeThing.++(parts._1)(Path.this.seqLikeThing.seq(parts._2).tail))(Path.this.seqLikeThing)
+      }
+  };
+  scala.Some.apply[scales.utils.collection.path.Path[Item,Section,CC]](Path.apply[Item, Section, CC](path.top, Node.apply[Item, Section, CC](path.node.index, parentFocus))(Path.this.seqLikeThing))
+}
+        </td>
+      </tr><tr>
+        <td>
+          178
+        </td>
+        <td>
+          1158
+        </td>
+        <td>
+          5820
+          -
+          5833
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.impl.RightLikeProjection.get
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.top.right.get
+        </td>
+      </tr><tr>
+        <td>
+          179
+        </td>
+        <td>
+          1159
+        </td>
+        <td>
+          5851
+          -
+          5876
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.impl.RightLikeProjection.get
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path.node.focus.right.get
+        </td>
+      </tr><tr>
+        <td>
+          182
+        </td>
+        <td>
+          1160
+        </td>
+        <td>
+          5920
+          -
+          5939
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.Tree.children
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.parentTree.children
+        </td>
+      </tr><tr>
+        <td>
+          184
+        </td>
+        <td>
+          1161
+        </td>
+        <td>
+          5953
+          -
+          5980
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.seqLikeThing.length(c).==(1)
+        </td>
+      </tr><tr>
+        <td>
+          186
+        </td>
+        <td>
+          1162
+        </td>
+        <td>
+          6136
+          -
+          6148
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.Tree.section
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          tree.section
+        </td>
+      </tr><tr>
+        <td>
+          186
+        </td>
+        <td>
+          1163
+        </td>
+        <td>
+          6150
+          -
+          6179
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.mutable.Builder.result
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.seqLikeThing.builder.result()
+        </td>
+      </tr><tr>
+        <td>
+          186
+        </td>
+        <td>
+          1164
+        </td>
+        <td>
+          6135
+          -
+          6135
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Path.seqLikeThing
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.seqLikeThing
+        </td>
+      </tr><tr>
+        <td>
+          186
+        </td>
+        <td>
+          1165
+        </td>
+        <td>
+          6128
+          -
+          6180
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.subtree
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.subtree[Item, Section, CC](tree.section, Path.this.seqLikeThing.builder.result())(Path.this.seqLikeThing)
+        </td>
+      </tr><tr>
+        <td>
+          186
+        </td>
+        <td>
+          1166
+        </td>
+        <td>
+          6128
+          -
+          6180
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.subtree
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.subtree[Item, Section, CC](tree.section, Path.this.seqLikeThing.builder.result())(Path.this.seqLikeThing)
+        </td>
+      </tr><tr>
+        <td>
+          187
+        </td>
+        <td>
+          1177
+        </td>
+        <td>
+          6196
+          -
+          6377
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val parts: (CC[scales.utils.ItemOrTree[Item,Section,CC]], CC[scales.utils.ItemOrTree[Item,Section,CC]]) = Path.this.seqLikeThing.splitAt(Path.this.parentTree.children)(Path.this.node.index);
+  scales.utils.`package`.subtree[Item, Section, CC](tree.section, Path.this.seqLikeThing.++(parts._1)(Path.this.seqLikeThing.seq(parts._2).tail))(Path.this.seqLikeThing)
+}
+        </td>
+      </tr><tr>
+        <td>
+          188
+        </td>
+        <td>
+          1167
+        </td>
+        <td>
+          6241
+          -
+          6260
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.Tree.children
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.parentTree.children
+        </td>
+      </tr><tr>
+        <td>
+          188
+        </td>
+        <td>
+          1168
+        </td>
+        <td>
+          6262
+          -
+          6272
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Node.index
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.node.index
+        </td>
+      </tr><tr>
+        <td>
+          188
+        </td>
+        <td>
+          1169
+        </td>
+        <td>
+          6220
+          -
+          6273
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.SeqLikeThing.splitAt
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.seqLikeThing.splitAt(Path.this.parentTree.children)(Path.this.node.index)
+        </td>
+      </tr><tr>
+        <td>
+          189
+        </td>
+        <td>
+          1170
+        </td>
+        <td>
+          6292
+          -
+          6304
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.Tree.section
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          tree.section
+        </td>
+      </tr><tr>
+        <td>
+          189
+        </td>
+        <td>
+          1171
+        </td>
+        <td>
+          6323
+          -
+          6331
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          parts._1
+        </td>
+      </tr><tr>
+        <td>
+          189
+        </td>
+        <td>
+          1172
+        </td>
+        <td>
+          6350
+          -
+          6358
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          parts._2
+        </td>
+      </tr><tr>
+        <td>
+          189
+        </td>
+        <td>
+          1173
+        </td>
+        <td>
+          6333
+          -
+          6364
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.TraversableLike.tail
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.seqLikeThing.seq(parts._2).tail
+        </td>
+      </tr><tr>
+        <td>
+          189
+        </td>
+        <td>
+          1174
+        </td>
+        <td>
+          6307
+          -
+          6365
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.SeqLikeThing.++
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.seqLikeThing.++(parts._1)(Path.this.seqLikeThing.seq(parts._2).tail)
+        </td>
+      </tr><tr>
+        <td>
+          189
+        </td>
+        <td>
+          1175
+        </td>
+        <td>
+          6291
+          -
+          6291
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Path.seqLikeThing
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.seqLikeThing
+        </td>
+      </tr><tr>
+        <td>
+          189
+        </td>
+        <td>
+          1176
+        </td>
+        <td>
+          6284
+          -
+          6367
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.subtree
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.subtree[Item, Section, CC](tree.section, Path.this.seqLikeThing.++(parts._1)(Path.this.seqLikeThing.seq(parts._2).tail))(Path.this.seqLikeThing)
+        </td>
+      </tr><tr>
+        <td>
+          194
+        </td>
+        <td>
+          1183
+        </td>
+        <td>
+          6395
+          -
+          6470
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[scales.utils.collection.path.Path[Item,Section,CC]](Path.apply[Item, Section, CC](path.top, Node.apply[Item, Section, CC](path.node.index, parentFocus))(Path.this.seqLikeThing))
+        </td>
+      </tr><tr>
+        <td>
+          195
+        </td>
+        <td>
+          1178
+        </td>
+        <td>
+          6414
+          -
+          6422
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Path.top
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path.top
+        </td>
+      </tr><tr>
+        <td>
+          195
+        </td>
+        <td>
+          1179
+        </td>
+        <td>
+          6429
+          -
+          6444
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Node.index
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path.node.index
+        </td>
+      </tr><tr>
+        <td>
+          195
+        </td>
+        <td>
+          1180
+        </td>
+        <td>
+          6424
+          -
+          6468
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Node.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Node.apply[Item, Section, CC](path.node.index, parentFocus)
+        </td>
+      </tr><tr>
+        <td>
+          195
+        </td>
+        <td>
+          1181
+        </td>
+        <td>
+          6413
+          -
+          6413
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Path.seqLikeThing
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.seqLikeThing
+        </td>
+      </tr><tr>
+        <td>
+          195
+        </td>
+        <td>
+          1182
+        </td>
+        <td>
+          6409
+          -
+          6469
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.path.Path.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.apply[Item, Section, CC](path.top, Node.apply[Item, Section, CC](path.node.index, parentFocus))(Path.this.seqLikeThing)
+        </td>
+      </tr><tr>
+        <td>
+          206
+        </td>
+        <td>
+          1185
+        </td>
+        <td>
+          6776
+          -
+          6800
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.List.::
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          stack.::[Int](x$1)
+        </td>
+      </tr><tr>
+        <td>
+          207
+        </td>
+        <td>
+          1186
+        </td>
+        <td>
+          6811
+          -
+          6826
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.EitherLike.isLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path.top.isLeft
+        </td>
+      </tr><tr>
+        <td>
+          208
+        </td>
+        <td>
+          1187
+        </td>
+        <td>
+          6836
+          -
+          6852
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[List[Int], scales.utils.collection.path.Path[Item,Section,CC]](newStack, path)
+        </td>
+      </tr><tr>
+        <td>
+          208
+        </td>
+        <td>
+          1188
+        </td>
+        <td>
+          6836
+          -
+          6852
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[List[Int], scales.utils.collection.path.Path[Item,Section,CC]](newStack, path)
+        </td>
+      </tr><tr>
+        <td>
+          210
+        </td>
+        <td>
+          1189
+        </td>
+        <td>
+          6885
+          -
+          6903
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.impl.RightLikeProjection.get
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path.top.right.get
+        </td>
+      </tr><tr>
+        <td>
+          210
+        </td>
+        <td>
+          1190
+        </td>
+        <td>
+          6872
+          -
+          6914
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Path.makePosition
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          makePosition(path.top.right.get, newStack)
+        </td>
+      </tr><tr>
+        <td>
+          210
+        </td>
+        <td>
+          1191
+        </td>
+        <td>
+          6872
+          -
+          6914
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.collection.path.Path.makePosition
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          makePosition(path.top.right.get, newStack)
+        </td>
+      </tr><tr>
+        <td>
+          213
+        </td>
+        <td>
+          1192
+        </td>
+        <td>
+          6955
+          -
+          6966
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.immutable.Nil
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.collection.immutable.Nil
+        </td>
+      </tr><tr>
+        <td>
+          213
+        </td>
+        <td>
+          1193
+        </td>
+        <td>
+          6936
+          -
+          6967
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Path.makePosition
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          makePosition(this, scala.collection.immutable.Nil)
+        </td>
+      </tr><tr>
+        <td>
+          214
+        </td>
+        <td>
+          1194
+        </td>
+        <td>
+          7006
+          -
+          7012
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          res._1
+        </td>
+      </tr><tr>
+        <td>
+          214
+        </td>
+        <td>
+          1195
+        </td>
+        <td>
+          7014
+          -
+          7020
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          res._2
+        </td>
+      </tr><tr>
+        <td>
+          214
+        </td>
+        <td>
+          1196
+        </td>
+        <td>
+          6972
+          -
+          7021
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.PositionImpl.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new scales.utils.collection.path.PositionImpl[Item,Section,CC](res._1, res._2)
+        </td>
+      </tr><tr>
+        <td>
+          225
+        </td>
+        <td>
+          1197
+        </td>
+        <td>
+          7271
+          -
+          7300
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.StringBuilder.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new java.lang.StringBuilder()
+        </td>
+      </tr><tr>
+        <td>
+          227
+        </td>
+        <td>
+          1198
+        </td>
+        <td>
+          7306
+          -
+          7329
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.StringBuilder.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          builder.append(&quot;Path(&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          228
+        </td>
+        <td>
+          1199
+        </td>
+        <td>
+          7339
+          -
+          7349
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.EitherLike.isLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.top.isLeft
+        </td>
+      </tr><tr>
+        <td>
+          229
+        </td>
+        <td>
+          1200
+        </td>
+        <td>
+          7357
+          -
+          7378
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.StringBuilder.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          builder.append(&quot;Top&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          229
+        </td>
+        <td>
+          1201
+        </td>
+        <td>
+          7357
+          -
+          7378
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          java.lang.StringBuilder.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          builder.append(&quot;Top&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          231
+        </td>
+        <td>
+          1202
+        </td>
+        <td>
+          7410
+          -
+          7436
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.Tree.section
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Path.this.top.right.get.tree().section
+        </td>
+      </tr><tr>
+        <td>
+          231
+        </td>
+        <td>
+          1203
+        </td>
+        <td>
+          7395
+          -
+          7437
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.StringBuilder.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          builder.append(Path.this.top.right.get.tree().section)
+        </td>
+      </tr><tr>
+        <td>
+          231
+        </td>
+        <td>
+          1204
+        </td>
+        <td>
+          7395
+          -
+          7437
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          java.lang.StringBuilder.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          builder.append(Path.this.top.right.get.tree().section)
+        </td>
+      </tr><tr>
+        <td>
+          232
+        </td>
+        <td>
+          1205
+        </td>
+        <td>
+          7443
+          -
+          7462
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.StringBuilder.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          builder.append(&quot;,&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          233
+        </td>
+        <td>
+          1206
+        </td>
+        <td>
+          7483
+          -
+          7493
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Node.index
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.node.index
+        </td>
+      </tr><tr>
+        <td>
+          233
+        </td>
+        <td>
+          1207
+        </td>
+        <td>
+          7468
+          -
+          7494
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.StringBuilder.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          builder.append(Path.this.node.index)
+        </td>
+      </tr><tr>
+        <td>
+          234
+        </td>
+        <td>
+          1208
+        </td>
+        <td>
+          7500
+          -
+          7519
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.StringBuilder.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          builder.append(&quot;,&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          235
+        </td>
+        <td>
+          1209
+        </td>
+        <td>
+          7529
+          -
+          7535
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.path.Path.isItem
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.isItem
+        </td>
+      </tr><tr>
+        <td>
+          236
+        </td>
+        <td>
+          1210
+        </td>
+        <td>
+          7558
+          -
+          7562
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Path.item
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Path.this.item()
+        </td>
+      </tr><tr>
+        <td>
+          236
+        </td>
+        <td>
+          1211
+        </td>
+        <td>
+          7543
+          -
+          7563
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.StringBuilder.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          builder.append(Path.this.item())
+        </td>
+      </tr><tr>
+        <td>
+          236
+        </td>
+        <td>
+          1212
+        </td>
+        <td>
+          7543
+          -
+          7563
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          java.lang.StringBuilder.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          builder.append(Path.this.item())
+        </td>
+      </tr><tr>
+        <td>
+          238
+        </td>
+        <td>
+          1213
+        </td>
+        <td>
+          7595
+          -
+          7607
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.Tree.section
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Path.this.tree().section
+        </td>
+      </tr><tr>
+        <td>
+          238
+        </td>
+        <td>
+          1214
+        </td>
+        <td>
+          7580
+          -
+          7608
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.StringBuilder.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          builder.append(Path.this.tree().section)
+        </td>
+      </tr><tr>
+        <td>
+          238
+        </td>
+        <td>
+          1215
+        </td>
+        <td>
+          7580
+          -
+          7608
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          java.lang.StringBuilder.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          builder.append(Path.this.tree().section)
+        </td>
+      </tr><tr>
+        <td>
+          239
+        </td>
+        <td>
+          1216
+        </td>
+        <td>
+          7614
+          -
+          7633
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.StringBuilder.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          builder.append(&quot;)&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          241
+        </td>
+        <td>
+          1217
+        </td>
+        <td>
+          7640
+          -
+          7656
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.StringBuilder.toString
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          builder.toString()
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

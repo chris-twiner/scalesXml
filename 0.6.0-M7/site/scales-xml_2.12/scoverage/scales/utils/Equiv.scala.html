@@ -1,0 +1,160 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/utils/Equiv.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.utils
+</span>2 <span style=''>
+</span>3 <span style=''>import scalaz.Equal
+</span>4 <span style=''>
+</span>5 <span style=''>/**
+</span>6 <span style=''> * Provides evidence that two instances of two disctinct types are equivalent after a conversion.
+</span>7 <span style=''> * Requires an instance of Equal for the common convertable type.
+</span>8 <span style=''> * 
+</span>9 <span style=''> * @author Derek Williams
+</span>10 <span style=''> */ 
+</span>11 <span style=''>class Equiv[A : Equal] {
+</span>12 <span style=''>  def apply[ B &lt;% A, C &lt;% A]( b : B , c : C) : Boolean = </span><span style='background: #AEF1AE'>implicitly[Equal[A]].equal(b:A, c:A)</span><span style=''>
+</span>13 <span style=''>}
+</span>14 <span style=''>
+</span>15 <span style=''>trait EquivFunctions {
+</span>16 <span style=''>
+</span>17 <span style=''>  /**
+</span>18 <span style=''>   * Are these two parameters (convertable to a C) equal for a given Equiv[C] instance
+</span>19 <span style=''>   */ 
+</span>20 <span style=''>  def equivalent[A, B, C]( a : A, b : B)(implicit equiv: Equiv[C], viewA: A =&gt; C, viewB: B =&gt; C) = </span><span style='background: #AEF1AE'>equiv(a, b)</span><span style=''>
+</span>21 <span style=''>
+</span>22 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          12
+        </td>
+        <td>
+          434
+        </td>
+        <td>
+          355
+          -
+          356
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          evidence$2.apply(b)
+        </td>
+      </tr><tr>
+        <td>
+          12
+        </td>
+        <td>
+          435
+        </td>
+        <td>
+          360
+          -
+          361
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          evidence$3.apply(c)
+        </td>
+      </tr><tr>
+        <td>
+          12
+        </td>
+        <td>
+          436
+        </td>
+        <td>
+          328
+          -
+          364
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.Equal.equal
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.implicitly[scalaz.Equal[A]](Equiv.this.evidence$1).equal((evidence$2.apply(b): A), (evidence$3.apply(c): A))
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          437
+        </td>
+        <td>
+          591
+          -
+          602
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.Equiv.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          equiv.apply[A, B](a, b)(viewA, viewB)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

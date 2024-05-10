@@ -1,0 +1,6216 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/xml/parser/pull/PullIteratees.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.xml.parser.pull
+</span>2 <span style=''>
+</span>3 <span style=''>import scales.utils._
+</span>4 <span style=''>import scales.xml.{Elem, EndElem, PullType, QName, ScalesXml, XmlBuilder, XmlItem, XmlPath, addAndFocus, addChild, noXmlPath, impl =&gt; ximpl}
+</span>5 <span style=''>import collection.FlatMapIterator
+</span>6 <span style=''>import scalaz.Free.Trampoline
+</span>7 <span style=''>import scalaz.Id.Id
+</span>8 <span style=''>import scalaz.Scalaz.ToEqualOps
+</span>9 <span style=''>import scalaz.effect.IO
+</span>10 <span style=''>import scalaz.{Equal, Monad}
+</span>11 <span style=''>import scalaz.iteratee.Input
+</span>12 <span style=''>import scalaz.iteratee.Input.{Empty, Eof}
+</span>13 <span style=''>import scalaz.iteratee.Iteratee.iterateeT
+</span>14 <span style=''>import scalaz.iteratee.{IterateeT, StepT}
+</span>15 <span style=''>import scalaz.iteratee.StepT.{Cont, Done}
+</span>16 <span style=''>
+</span>17 <span style=''>import scales.utils.iteratee.functions._
+</span>18 <span style=''>
+</span>19 <span style=''>class PullIterateeFunctions[F[_]](val F: Monad[F]){
+</span>20 <span style=''>  import scales.xml.{QNamesMatch, PeekMatch}
+</span>21 <span style=''>
+</span>22 <span style=''>  def onQNames(qnames: List[QName])(implicit F: Monad[F]): ResumableIter[PullType, F, QNamesMatch] =
+</span>23 <span style=''>    </span><span style='background: #AEF1AE'>PullIteratees.onQNames[F](qnames)</span><span style=''>
+</span>24 <span style=''>
+</span>25 <span style=''>  /**
+</span>26 <span style=''>   * Collects all data belonging to an element that matches
+</span>27 <span style=''>   * the list. &lt;top&gt;&lt;middle&gt;&lt;ofInterest&gt; content &lt;/ofInterest&gt;&lt;ofInterest....
+</span>28 <span style=''>   * onQNames(List(&quot;top&quot;l, &quot;middle&quot;l, &quot;ofInterest&quot;l))
+</span>29 <span style=''>   * would return an iteratee that returned every &lt;ofInterest&gt; content &lt;/ofInterest&gt;
+</span>30 <span style=''>   * as a path (each parent node containing only one child node).
+</span>31 <span style=''>   */
+</span>32 <span style=''>  def onQNamesI(qnames: List[QName])(implicit qe: Equal[QName], F: Monad[F]): ResumableIter[PullType, F, QNamesMatch] =
+</span>33 <span style=''>    </span><span style='background: #F0ADAD'>PullIteratees.onQNamesI[F](qnames)</span><span style=''>
+</span>34 <span style=''>
+</span>35 <span style=''>  def skipv(downTo: Int*)(implicit F: Monad[F]): IterateeT[PullType, F, PeekMatch] =
+</span>36 <span style=''>    </span><span style='background: #AEF1AE'>PullIteratees.skipv[F](downTo: _*)</span><span style=''>
+</span>37 <span style=''>
+</span>38 <span style=''>  /**
+</span>39 <span style=''>   * Skips all events until the indexes match downTo, can be seen as
+</span>40 <span style=''>   * \*\*[b]\*[c] skipping until c with skip(List(b,c)).
+</span>41 <span style=''>   * This can be used, for example, to identify qnames within a message and combined with capture to allow replaying.
+</span>42 <span style=''>   * Identifying a soap doc-lit request would be skip(List(2,1)).
+</span>43 <span style=''>   * It returns the XmlPath to the skipped position, for soap /Envelope/Body/Request but does not collect the contents of that node.
+</span>44 <span style=''>   * An empty list will simply return the first Element found.
+</span>45 <span style=''>   */
+</span>46 <span style=''>  def skip(downTo: =&gt; List[Int])(implicit F: Monad[F]): IterateeT[PullType, F, PeekMatch] =
+</span>47 <span style=''>    </span><span style='background: #AEF1AE'>PullIteratees.skip[F](downTo)</span><span style=''>
+</span>48 <span style=''>
+</span>49 <span style=''>}
+</span>50 <span style=''>
+</span>51 <span style=''>/**
+</span>52 <span style=''> * Iteratees related to pull parsing
+</span>53 <span style=''> */
+</span>54 <span style=''>trait PullIteratees {
+</span>55 <span style=''>
+</span>56 <span style=''>  def pullIterateesOf[F[_]](implicit F: Monad[F]): PullIterateeFunctions[F] = </span><span style='background: #AEF1AE'>new PullIterateeFunctions[F](F)</span><span style=''>
+</span>57 <span style=''>
+</span>58 <span style=''>  implicit val ioPullIteratees = </span><span style='background: #AEF1AE'>pullIterateesOf[IO]</span><span style=''>
+</span>59 <span style=''>  implicit val trampolinePullIteratees = </span><span style='background: #AEF1AE'>pullIterateesOf[Trampoline]</span><span style=''>
+</span>60 <span style=''>  // not recommended but may help migrations
+</span>61 <span style=''>  implicit val idPullIteratees = </span><span style='background: #AEF1AE'>pullIterateesOf[Id]</span><span style=''>
+</span>62 <span style=''>
+</span>63 <span style=''>  type PeekMatch = PullIteratees.PeekMatch
+</span>64 <span style=''>
+</span>65 <span style=''>  type QNamesMatch = PullIteratees.QNamesMatch
+</span>66 <span style=''>
+</span>67 <span style=''>  /**
+</span>68 <span style=''>   * Wraps XmlPull
+</span>69 <span style=''>   */
+</span>70 <span style=''>  def iterate(path: List[QName], xml: XmlPull)(implicit qe: Equal[QName]): FlatMapIterator[XmlPath] = </span><span style='background: #AEF1AE'>iterate(path, xml.it)</span><span style=''>
+</span>71 <span style=''>
+</span>72 <span style=''>  /**
+</span>73 <span style=''>   * A wrapping around withIter(onDone(List(onQNames(path))))(enumXml(xml, _))
+</span>74 <span style=''>   * it unwraps the data providing an Iterator[XPath]
+</span>75 <span style=''>   */
+</span>76 <span style=''>  def iterate(path: List[QName], xml: Iterator[PullType])(implicit qe: Equal[QName]): FlatMapIterator[XmlPath] =
+</span>77 <span style=''>    </span><span style='background: #AEF1AE'>new Iterate(path, xml)</span><span style=''>
+</span>78 <span style=''>
+</span>79 <span style=''>}
+</span>80 <span style=''>
+</span>81 <span style=''>object PullIteratees {
+</span>82 <span style=''>
+</span>83 <span style=''>  type QNamesMatch = (List[QName], Option[XmlPath])
+</span>84 <span style=''>  /**
+</span>85 <span style=''>   * Collects all data belonging to an element that matches
+</span>86 <span style=''>   * the list. &lt;top&gt;&lt;middle&gt;&lt;ofInterest&gt; content &lt;/ofInterest&gt;&lt;ofInterest....
+</span>87 <span style=''>   * onQNames(List(&quot;top&quot;l, &quot;middle&quot;l, &quot;ofInterest&quot;l))
+</span>88 <span style=''>   * would return an iteratee that returned every &lt;ofInterest&gt; content &lt;/ofInterest&gt;
+</span>89 <span style=''>   * as a path (each parent node containing only one child node).
+</span>90 <span style=''>   */
+</span>91 <span style=''>  def onQNames[F[_]: Monad](qnames: List[QName]): ResumableIter[PullType, F, QNamesMatch] = </span><span style='background: #AEF1AE'>onQNamesI(qnames)(ScalesXml.qnameEqual, implicitly[Monad[F]])</span><span style=''>
+</span>92 <span style=''>
+</span>93 <span style=''>  /**
+</span>94 <span style=''>   * Collects all data belonging to an element that matches
+</span>95 <span style=''>   * the list. &lt;top&gt;&lt;middle&gt;&lt;ofInterest&gt; content &lt;/ofInterest&gt;&lt;ofInterest....
+</span>96 <span style=''>   * onQNames(List(&quot;top&quot;l, &quot;middle&quot;l, &quot;ofInterest&quot;l))
+</span>97 <span style=''>   * would return an iteratee that returned every &lt;ofInterest&gt; content &lt;/ofInterest&gt;
+</span>98 <span style=''>   * as a path (each parent node containing only one child node).
+</span>99 <span style=''>   *
+</span>100 <span style=''>   * This version of onQNamesI allows a custom QName Equal to be passed.
+</span>101 <span style=''>   */
+</span>102 <span style=''>  def onQNamesI[F[_]](qnames: List[QName])(implicit qe: Equal[QName], F: Monad[F]): ResumableIter[PullType, F, QNamesMatch] = {
+</span>103 <span style=''>
+</span>104 <span style=''>    /*
+</span>105 <span style=''>     * The pairs allow the depth of each element to be followed.  In particular this stops both descent and ascent problems in the
+</span>106 <span style=''>     * pushing and popping on the stack.  I.e. it covers the case where you have nested repeating QNames, both when you are looking for them
+</span>107 <span style=''>     * and when your are not.  Don't pop too early and don't incorrectly force a done.
+</span>108 <span style=''>
+</span>109 <span style=''>    lazy val starter = Cont(step(Nil, (qnames.head, 0), qnames.tail.map((_, 0)), noXmlPath, false))
+</span>110 <span style=''>
+</span>111 <span style=''>    def step(before: List[(QName, Int)], focus: (QName, Int), toGo: List[(QName, Int)], path: XmlPath, collecting: Boolean)(s: Input[PullType]): ResumableIter[PullType, F, QNamesMatch] = {
+</span>112 <span style=''>      iterateeT( Monad[F].point(
+</span>113 <span style=''>        s(el = {
+</span>114 <span style=''>            case Left(elem@Elem(q, a, n)) =&gt; {
+</span>115 <span style=''>              val nfocus =
+</span>116 <span style=''>                if (q === focus._1)
+</span>117 <span style=''>                  (focus._1, focus._2 + 1)
+</span>118 <span style=''>                else
+</span>119 <span style=''>                  focus
+</span>120 <span style=''>
+</span>121 <span style=''>              val npath = addAndFocus(path, elem)
+</span>122 <span style=''>
+</span>123 <span style=''>              val shouldCollect = collecting || (toGo.isEmpty &amp;&amp; q === focus._1)
+</span>124 <span style=''>
+</span>125 <span style=''>              Cont(
+</span>126 <span style=''>                // is it our head?
+</span>127 <span style=''>                if ((!toGo.isEmpty) &amp;&amp; q === focus._1)
+</span>128 <span style=''>                  // move down
+</span>129 <span style=''>                  step(before :+ focus, toGo.head, toGo.tail, npath, false)
+</span>130 <span style=''>                else
+</span>131 <span style=''>                  // wait for a down
+</span>132 <span style=''>                  step(before, nfocus, toGo, npath, shouldCollect))
+</span>133 <span style=''>            }
+</span>134 <span style=''>
+</span>135 <span style=''>            case Left(x: XmlItem) =&gt;
+</span>136 <span style=''>              if (collecting) // collect
+</span>137 <span style=''>                Cont(step(before, focus, toGo, addChild(path, x), true))
+</span>138 <span style=''>              else
+</span>139 <span style=''>                Cont(step(before, focus, toGo, path, false)) // don't collect
+</span>140 <span style=''>
+</span>141 <span style=''>            case Right(EndElem(q, n)) =&gt;
+</span>142 <span style=''>
+</span>143 <span style=''>              if (q === focus._1) {
+</span>144 <span style=''>                val ncfocus = (focus._1, focus._2 - 1)
+</span>145 <span style=''>
+</span>146 <span style=''>                if (toGo.isEmpty &amp;&amp; ncfocus._2 == 0) // we are popping to the selected level
+</span>147 <span style=''>                  Done(((qnames, Some(path)),
+</span>148 <span style=''>                    iterateeT( Monad[F].point( Cont(step(before, ncfocus, toGo,
+</span>149 <span style=''>                      // remove all children on the next iteration
+</span>150 <span style=''>                      path.removeAndUp.getOrElse(noXmlPath), false))))), Empty[PullType])
+</span>151 <span style=''>                else {
+</span>152 <span style=''>                  if (before.isEmpty)
+</span>153 <span style=''>                    starter // only when the root is asked for, could just refuse that of course?
+</span>154 <span style=''>                  else {
+</span>155 <span style=''>                    if (collecting)
+</span>156 <span style=''>                      // we are collecting but we still have more than 0 repeated qnames deep
+</span>157 <span style=''>                      Cont(step(before, ncfocus, toGo, path.zipUp, true))
+</span>158 <span style=''>                    else {
+</span>159 <span style=''>                      // we aren't collecting but we are moving up, we just have repeated names
+</span>160 <span style=''>                      val nfocus = before.last
+</span>161 <span style=''>                      val nbefore = before.dropRight(1)
+</span>162 <span style=''>                      Cont(step(nbefore, nfocus, focus :: toGo,
+</span>163 <span style=''>                        path.removeAndUp.getOrElse(noXmlPath), false // we have NOT been collecting
+</span>164 <span style=''>                        ))
+</span>165 <span style=''>                    }
+</span>166 <span style=''>                  }
+</span>167 <span style=''>                }
+</span>168 <span style=''>              } else {
+</span>169 <span style=''>                Cont(step(before, focus, toGo,
+</span>170 <span style=''>                  if (collecting) // empty is not enough, it should also be definitely collecting
+</span>171 <span style=''>                    path.zipUp
+</span>172 <span style=''>                  else
+</span>173 <span style=''>                    path.removeAndUp.getOrElse(noXmlPath), collecting))
+</span>174 <span style=''>              }
+</span>175 <span style=''>
+</span>176 <span style=''>          },
+</span>177 <span style=''>          empty = Cont(step(before, focus, toGo, path, false)),
+</span>178 <span style=''>          eof = Done(((qnames, None), iterateeT( Monad[F].point(starter) )), Eof[PullType])
+</span>179 <span style=''>        )
+</span>180 <span style=''>      ))
+</span>181 <span style=''>    }
+</span>182 <span style=''>     */
+</span>183 <span style=''>
+</span>184 <span style=''>    lazy val starter = Cont(step(Nil, noXmlPath, false))
+</span>185 <span style=''>
+</span>186 <span style=''>    def step(before: List[QName], path: XmlPath, collecting: Boolean)(s: Input[PullType]): ResumableIter[PullType, F, QNamesMatch] = {
+</span>187 <span style=''>      </span><span style='background: #AEF1AE'>iterateeT( Monad[F].point(
+</span>188 <span style=''></span><span style='background: #AEF1AE'>        s(el = {
+</span>189 <span style=''></span><span style='background: #AEF1AE'>          case Left(elem@Elem(q, a, n)) =&gt; {
+</span>190 <span style=''></span><span style='background: #AEF1AE'>            val npath = addAndFocus(path, elem)
+</span>191 <span style=''></span><span style='background: #AEF1AE'>
+</span>192 <span style=''></span><span style='background: #AEF1AE'>            val shouldCollect = collecting || (
+</span>193 <span style=''></span><span style='background: #AEF1AE'>              before.size == (qnames.size - 1) &amp;&amp;
+</span>194 <span style=''></span><span style='background: #AEF1AE'>              // eval only when needed
+</span>195 <span style=''></span><span style='background: #AEF1AE'>              (before :+ q).zip(qnames).forall(p =&gt; p._1 === p._2)
+</span>196 <span style=''></span><span style='background: #AEF1AE'>            )
+</span>197 <span style=''></span><span style='background: #AEF1AE'>
+</span>198 <span style=''></span><span style='background: #AEF1AE'>            Cont( step(before :+ q, npath, shouldCollect) )
+</span>199 <span style=''></span><span style='background: #AEF1AE'>          }
+</span>200 <span style=''></span><span style='background: #AEF1AE'>
+</span>201 <span style=''></span><span style='background: #AEF1AE'>          case Left(x: XmlItem) =&gt;
+</span>202 <span style=''></span><span style='background: #AEF1AE'>            Cont(step(before,
+</span>203 <span style=''></span><span style='background: #AEF1AE'>              if (collecting)
+</span>204 <span style=''></span><span style='background: #AEF1AE'>                addChild(path, x)
+</span>205 <span style=''></span><span style='background: #AEF1AE'>              else
+</span>206 <span style=''></span><span style='background: #AEF1AE'>                path, collecting))
+</span>207 <span style=''></span><span style='background: #AEF1AE'>
+</span>208 <span style=''></span><span style='background: #AEF1AE'>          case Right(EndElem(q, n)) =&gt;
+</span>209 <span style=''></span><span style='background: #AEF1AE'>            // is this the end path ?  We have to re-verify the path, do so only when needed but stops same height (but not same path)
+</span>210 <span style=''></span><span style='background: #AEF1AE'>            // and nested repeat issues
+</span>211 <span style=''></span><span style='background: #AEF1AE'>            val haveCollected = collecting &amp;&amp; before.size == qnames.size &amp;&amp; before.zip(qnames).forall(p =&gt; p._1 === p._2)
+</span>212 <span style=''></span><span style='background: #AEF1AE'>            val npath =
+</span>213 <span style=''></span><span style='background: #AEF1AE'>              if (haveCollected) {
+</span>214 <span style=''></span><span style='background: #AEF1AE'>                // done with path
+</span>215 <span style=''></span><span style='background: #AEF1AE'>                path
+</span>216 <span style=''></span><span style='background: #AEF1AE'>              } else
+</span>217 <span style=''></span><span style='background: #AEF1AE'>                if (collecting) {
+</span>218 <span style=''></span><span style='background: #AEF1AE'>                  // we are popping to the selected level
+</span>219 <span style=''></span><span style='background: #AEF1AE'>                  path.zipUp()
+</span>220 <span style=''></span><span style='background: #AEF1AE'>                } else {
+</span>221 <span style=''></span><span style='background: #AEF1AE'>                  path.removeAndUp().getOrElse(noXmlPath)
+</span>222 <span style=''></span><span style='background: #AEF1AE'>                }
+</span>223 <span style=''></span><span style='background: #AEF1AE'>
+</span>224 <span style=''></span><span style='background: #AEF1AE'>            if (haveCollected)
+</span>225 <span style=''></span><span style='background: #AEF1AE'>              Done(((qnames, Some(npath)),
+</span>226 <span style=''></span><span style='background: #AEF1AE'>                iterateeT( Monad[F].point( Cont(step(before.dropRight(1),
+</span>227 <span style=''></span><span style='background: #AEF1AE'>                  // remove all children on the next iteration
+</span>228 <span style=''></span><span style='background: #AEF1AE'>                  npath.removeAndUp.getOrElse(noXmlPath), collecting &amp;&amp; !haveCollected))))), Empty[PullType])
+</span>229 <span style=''></span><span style='background: #AEF1AE'>            else
+</span>230 <span style=''></span><span style='background: #AEF1AE'>              Cont(step(before.dropRight(1), npath, collecting &amp;&amp; !haveCollected))
+</span>231 <span style=''></span><span style='background: #AEF1AE'>
+</span>232 <span style=''></span><span style='background: #AEF1AE'>          },
+</span>233 <span style=''></span><span style='background: #AEF1AE'>          empty = </span><span style='background: #F0ADAD'>Cont(step(before, path, false))</span><span style='background: #AEF1AE'>,
+</span>234 <span style=''></span><span style='background: #AEF1AE'>          eof = </span><span style='background: #F0ADAD'>Done(((qnames, None), iterateeT( Monad[F].point(starter) )), Eof[PullType])</span><span style='background: #AEF1AE'>
+</span>235 <span style=''></span><span style='background: #AEF1AE'>        )
+</span>236 <span style=''></span><span style='background: #AEF1AE'>      ))</span><span style=''>
+</span>237 <span style=''>    }
+</span>238 <span style=''>
+</span>239 <span style=''>    if (</span><span style='background: #AEF1AE'>qnames.isEmpty</span><span style=''>) </span><span style='background: #F0ADAD'>error(&quot;Qnames is empty&quot;)</span><span style=''>
+</span>240 <span style=''>
+</span>241 <span style=''>    </span><span style='background: #AEF1AE'>iterateeT( Monad[F].point(starter ))</span><span style=''>
+</span>242 <span style=''>  }
+</span>243 <span style=''>
+</span>244 <span style=''>  type PeekMatch = Option[XmlPath]
+</span>245 <span style=''>
+</span>246 <span style=''>  def skipv[F[_]](downTo: Int*)(implicit F: Monad[F]): IterateeT[PullType, F, PeekMatch] = </span><span style='background: #AEF1AE'>skip[F](List(downTo: _*))</span><span style=''>
+</span>247 <span style=''>
+</span>248 <span style=''>  /**
+</span>249 <span style=''>   * Skips all events until the indexes match downTo, can be seen as
+</span>250 <span style=''>   * \*\*[b]\*[c] skipping until c with skip(List(b,c)).
+</span>251 <span style=''>   * This can be used, for example, to identify qnames within a message and combined with capture to allow replaying.
+</span>252 <span style=''>   * Identifying a soap doc-lit request would be skip(List(2,1)).
+</span>253 <span style=''>   * It returns the XmlPath to the skipped position, for soap /Envelope/Body/Request but does not collect the contents of that node.
+</span>254 <span style=''>   * An empty list will simply return the first Element found.
+</span>255 <span style=''>   */
+</span>256 <span style=''>  def skip[F[_]](downTo: =&gt; List[Int])(implicit F: Monad[F]): IterateeT[PullType, F, PeekMatch] = {
+</span>257 <span style=''>
+</span>258 <span style=''>    lazy val dEof: StepT[PullType, F, PeekMatch] = Done(None, Eof[PullType])
+</span>259 <span style=''>
+</span>260 <span style=''>    def step(before: List[Int], pos: List[Int], toGo: List[Int], path: XmlPath)(s: Input[PullType]): IterateeT[PullType, F, PeekMatch] =
+</span>261 <span style=''>      </span><span style='background: #AEF1AE'>iterateeT(F.point(
+</span>262 <span style=''></span><span style='background: #AEF1AE'>        s(el = {
+</span>263 <span style=''></span><span style='background: #AEF1AE'>
+</span>264 <span style=''></span><span style='background: #AEF1AE'>            case Left(elem@Elem(q, a, n)) =&gt; {
+</span>265 <span style=''></span><span style='background: #AEF1AE'>              lazy val npath = addAndFocus(path, elem)
+</span>266 <span style=''></span><span style='background: #AEF1AE'>              val npos = pos.head + 1 :: pos.tail
+</span>267 <span style=''></span><span style='background: #AEF1AE'>              val could = toGo.head == npos.head
+</span>268 <span style=''></span><span style='background: #AEF1AE'>              //println(&quot;pos &quot;+pos+ &quot; npos &quot;+npos+&quot; before &quot;+before+&quot; toGo &quot;+toGo)
+</span>269 <span style=''></span><span style='background: #AEF1AE'>              if (pos.size == (before.size + 1)) // correct level
+</span>270 <span style=''></span><span style='background: #AEF1AE'>                if (toGo.size == 1 &amp;&amp; could)
+</span>271 <span style=''></span><span style='background: #AEF1AE'>                  Done(Some(npath), </span><span style='background: #F0ADAD'>Empty[PullType]</span><span style='background: #AEF1AE'>)
+</span>272 <span style=''></span><span style='background: #AEF1AE'>                else if (npos.head &gt; toGo.head)
+</span>273 <span style=''></span><span style='background: #AEF1AE'>                  dEof
+</span>274 <span style=''></span><span style='background: #AEF1AE'>                else if (could)
+</span>275 <span style=''></span><span style='background: #AEF1AE'>                  // pop and move down
+</span>276 <span style=''></span><span style='background: #AEF1AE'>                  Cont(step(before :+ toGo.head, 0 :: npos, toGo.tail, npath))
+</span>277 <span style=''></span><span style='background: #AEF1AE'>                else
+</span>278 <span style=''></span><span style='background: #AEF1AE'>                  Cont(step(before, 0 :: npos, toGo, npath))
+</span>279 <span style=''></span><span style='background: #AEF1AE'>              else
+</span>280 <span style=''></span><span style='background: #AEF1AE'>                Cont(step(before, 0 :: npos, toGo, npath))
+</span>281 <span style=''></span><span style='background: #AEF1AE'>
+</span>282 <span style=''></span><span style='background: #AEF1AE'>            }
+</span>283 <span style=''></span><span style='background: #AEF1AE'>
+</span>284 <span style=''></span><span style='background: #AEF1AE'>            // just return this again
+</span>285 <span style=''></span><span style='background: #AEF1AE'>            case Left(x: XmlItem) =&gt;
+</span>286 <span style=''></span><span style='background: #AEF1AE'>              Cont(step(before, pos, toGo, path))
+</span>287 <span style=''></span><span style='background: #AEF1AE'>
+</span>288 <span style=''></span><span style='background: #AEF1AE'>            // pop up no collecting, loose the head as we are moving up again
+</span>289 <span style=''></span><span style='background: #AEF1AE'>            case Right(EndElem(q, n)) =&gt;
+</span>290 <span style=''></span><span style='background: #AEF1AE'>              // get or else end doc elem
+</span>291 <span style=''></span><span style='background: #AEF1AE'>              if (pos.size &gt; 0 &amp;&amp; pos.size == before.size + 1)
+</span>292 <span style=''></span><span style='background: #AEF1AE'>                // we have moved down in toGo
+</span>293 <span style=''></span><span style='background: #AEF1AE'>                Cont(step(before.dropRight(1), pos.tail, before.last :: toGo, path.removeAndUp().getOrElse(noXmlPath)))
+</span>294 <span style=''></span><span style='background: #AEF1AE'>              else
+</span>295 <span style=''></span><span style='background: #AEF1AE'>                Cont(step(before, pos.tail, toGo, path.removeAndUp().getOrElse(noXmlPath)))
+</span>296 <span style=''></span><span style='background: #AEF1AE'>
+</span>297 <span style=''></span><span style='background: #AEF1AE'>          },
+</span>298 <span style=''></span><span style='background: #AEF1AE'>          empty = </span><span style='background: #F0ADAD'>Cont(step(before, pos, toGo, path))</span><span style='background: #AEF1AE'>,
+</span>299 <span style=''></span><span style='background: #AEF1AE'>          eof = dEof //Done((downTo, None),IterV.EOF[PullType])
+</span>300 <span style=''></span><span style='background: #AEF1AE'>          )
+</span>301 <span style=''></span><span style='background: #AEF1AE'>      ))</span><span style=''>
+</span>302 <span style=''>
+</span>303 <span style=''>    </span><span style='background: #AEF1AE'>iterateeT( F.point( Cont(step(List[Int](), List(0), 1 :: downTo, noXmlPath)) ) )</span><span style=''>
+</span>304 <span style=''>  }
+</span>305 <span style=''>
+</span>306 <span style=''>}
+</span>307 <span style=''>
+</span>308 <span style=''>/**
+</span>309 <span style=''> * Iterates over a path of QNames producing XPaths for a given Iterator[PullType]
+</span>310 <span style=''> */
+</span>311 <span style=''>class Iterate(path: List[QName], xml: Iterator[PullType])(implicit qe: Equal[QName]) extends FlatMapIterator[XmlPath] {
+</span>312 <span style=''>  import ScalesXml.{qnameEqual =&gt; _, _}
+</span>313 <span style=''>  import ScalesUtils._
+</span>314 <span style=''>  import ximpl.TreeProxies
+</span>315 <span style=''>  val qnames = </span><span style='background: #AEF1AE'>path</span><span style=''>
+</span>316 <span style=''>
+</span>317 <span style=''>  if (</span><span style='background: #AEF1AE'>qnames.isEmpty</span><span style=''>) </span><span style='background: #F0ADAD'>error(&quot;QNames is empty&quot;)</span><span style=''>
+</span>318 <span style=''>
+</span>319 <span style=''>  /* see onQName for implementation basis */
+</span>320 <span style=''>
+</span>321 <span style=''>  var before: List[QName] = _
+</span>322 <span style=''>  var proxies: TreeProxies = </span><span style='background: #AEF1AE'>new TreeProxies()</span><span style=''>
+</span>323 <span style=''>  var collecting: Boolean = _
+</span>324 <span style=''>
+</span>325 <span style=''>  def reset {
+</span>326 <span style=''>    </span><span style='background: #AEF1AE'>set(Nil, proxies.reuse, false)</span><span style=''>
+</span>327 <span style=''>  }
+</span>328 <span style=''>
+</span>329 <span style=''>  </span><span style='background: #AEF1AE'>reset</span><span style=''>
+</span>330 <span style=''>
+</span>331 <span style=''>  def set(before: List[QName], proxies: TreeProxies, collecting: Boolean) {
+</span>332 <span style=''>    </span><span style='background: #AEF1AE'>this.before = before</span><span style=''>
+</span>333 <span style=''>    </span><span style='background: #AEF1AE'>this.proxies = proxies</span><span style=''>
+</span>334 <span style=''>    </span><span style='background: #AEF1AE'>this.collecting = collecting</span><span style=''>
+</span>335 <span style=''>  }
+</span>336 <span style=''>
+</span>337 <span style=''>  def getNext = </span><span style='background: #AEF1AE'>step</span><span style=''>
+</span>338 <span style=''>  var cur = </span><span style='background: #AEF1AE'>getNext</span><span style=''>
+</span>339 <span style=''>
+</span>340 <span style=''>  def hasNext = </span><span style='background: #AEF1AE'>cur ne null</span><span style=''>
+</span>341 <span style=''>  def next = {
+</span>342 <span style=''>    val t = </span><span style='background: #AEF1AE'>cur</span><span style=''>
+</span>343 <span style=''>    </span><span style='background: #AEF1AE'>cur = getNext</span><span style=''>
+</span>344 <span style=''>    t
+</span>345 <span style=''>  }
+</span>346 <span style=''>
+</span>347 <span style=''>  def step : XmlPath = {
+</span>348 <span style=''>    var res : XmlPath = </span><span style='background: #AEF1AE'>null.asInstanceOf[XmlPath]</span><span style=''>
+</span>349 <span style=''>    while(</span><span style='background: #AEF1AE'>xml.hasNext &amp;&amp; res == null</span><span style=''>) </span><span style='background: #AEF1AE'>{
+</span>350 <span style=''></span><span style='background: #AEF1AE'>      val e = xml.next
+</span>351 <span style=''></span><span style='background: #AEF1AE'>      e match {
+</span>352 <span style=''></span><span style='background: #AEF1AE'>
+</span>353 <span style=''></span><span style='background: #AEF1AE'>        case Left(elem@Elem(q, a, n)) =&gt;
+</span>354 <span style=''></span><span style='background: #AEF1AE'>          proxies.beginSub(elem, XmlBuilder())
+</span>355 <span style=''></span><span style='background: #AEF1AE'>
+</span>356 <span style=''></span><span style='background: #AEF1AE'>          val shouldCollect = collecting || (
+</span>357 <span style=''></span><span style='background: #AEF1AE'>            before.size == (qnames.size - 1) &amp;&amp;
+</span>358 <span style=''></span><span style='background: #AEF1AE'>            // eval only when needed
+</span>359 <span style=''></span><span style='background: #AEF1AE'>            (before :+ q).zip(qnames.dropRight(1)).forall(p =&gt; p._1 === p._2)
+</span>360 <span style=''></span><span style='background: #AEF1AE'>          )
+</span>361 <span style=''></span><span style='background: #AEF1AE'>          set(before :+ q, proxies, shouldCollect)
+</span>362 <span style=''></span><span style='background: #AEF1AE'>
+</span>363 <span style=''></span><span style='background: #AEF1AE'>        case Left(x: XmlItem) =&gt;
+</span>364 <span style=''></span><span style='background: #AEF1AE'>          if (collecting) {
+</span>365 <span style=''></span><span style='background: #AEF1AE'>            proxies.addChild(x)
+</span>366 <span style=''></span><span style='background: #AEF1AE'>          }
+</span>367 <span style=''></span><span style='background: #AEF1AE'>          set(before, proxies, collecting)
+</span>368 <span style=''></span><span style='background: #AEF1AE'>
+</span>369 <span style=''></span><span style='background: #AEF1AE'>        case Right(EndElem(q, n)) =&gt;
+</span>370 <span style=''></span><span style='background: #AEF1AE'>
+</span>371 <span style=''></span><span style='background: #AEF1AE'>          // is this the end path ?  We have to re-verify the path, do so only when needed but stops same height (but not same path)
+</span>372 <span style=''></span><span style='background: #AEF1AE'>          // and nested repeat issues
+</span>373 <span style=''></span><span style='background: #AEF1AE'>          val haveCollected = collecting &amp;&amp; before.size == qnames.size &amp;&amp; before.zip(qnames).forall(p =&gt; p._1 === p._2)
+</span>374 <span style=''></span><span style='background: #AEF1AE'>          if (haveCollected) {
+</span>375 <span style=''></span><span style='background: #AEF1AE'>            res = proxies.proxyPath
+</span>376 <span style=''></span><span style='background: #AEF1AE'>          } else
+</span>377 <span style=''></span><span style='background: #AEF1AE'>            if (collecting) {
+</span>378 <span style=''></span><span style='background: #AEF1AE'>              // we are popping to the selected level
+</span>379 <span style=''></span><span style='background: #AEF1AE'>              proxies.elementEnd()
+</span>380 <span style=''></span><span style='background: #AEF1AE'>            } else {
+</span>381 <span style=''></span><span style='background: #AEF1AE'>              proxies.proxyRemoveAndUp()
+</span>382 <span style=''></span><span style='background: #AEF1AE'>            }
+</span>383 <span style=''></span><span style='background: #AEF1AE'>
+</span>384 <span style=''></span><span style='background: #AEF1AE'>          set(before.dropRight(1), proxies, collecting &amp;&amp; !haveCollected)
+</span>385 <span style=''></span><span style='background: #AEF1AE'>      }
+</span>386 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>387 <span style=''>
+</span>388 <span style=''>    res
+</span>389 <span style=''>  }
+</span>390 <span style=''>
+</span>391 <span style=''>
+</span>392 <span style=''>
+</span>393 <span style=''>  /*
+</span>394 <span style=''>   val orig = withIter(xml)(onQNames(path))
+</span>395 <span style=''>   def getNext = {
+</span>396 <span style=''>   if (orig.hasNext) {
+</span>397 <span style=''>   val t = orig.next
+</span>398 <span style=''>   if (t._2.isDefined)
+</span>399 <span style=''>   (true, t._2)
+</span>400 <span style=''>   else (false, None)
+</span>401 <span style=''>   } else (false, None)
+</span>402 <span style=''>   }
+</span>403 <span style=''>   var cur = getNext
+</span>404 <span style=''>   def hasNext = cur._1 &amp;&amp; cur._2.isDefined
+</span>405 <span style=''>   def next = {
+</span>406 <span style=''>   val t = cur._2
+</span>407 <span style=''>   cur = getNext
+</span>408 <span style=''>   t.get
+</span>409 <span style=''>   }
+</span>410 <span style=''>   */
+</span>411 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          23
+        </td>
+        <td>
+          3872
+        </td>
+        <td>
+          807
+          -
+          840
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.parser.pull.PullIteratees.onQNames
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          PullIteratees.onQNames[F](qnames)(F)
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          3873
+        </td>
+        <td>
+          1321
+          -
+          1355
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.parser.pull.PullIteratees.onQNamesI
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          PullIteratees.onQNamesI[F](qnames)(qe, F)
+        </td>
+      </tr><tr>
+        <td>
+          36
+        </td>
+        <td>
+          3874
+        </td>
+        <td>
+          1446
+          -
+          1480
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.parser.pull.PullIteratees.skipv
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          PullIteratees.skipv[F]((downTo: _*))(F)
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          3875
+        </td>
+        <td>
+          2096
+          -
+          2125
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.parser.pull.PullIteratees.skip
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          PullIteratees.skip[F](downTo)(F)
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          3876
+        </td>
+        <td>
+          2276
+          -
+          2307
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.PullIterateeFunctions.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new scales.xml.parser.pull.PullIterateeFunctions[F](F)
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          3877
+        </td>
+        <td>
+          2357
+          -
+          2357
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scalaz.effect.IOInstances.ioMonadCatchIO
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          effect.this.IO.ioMonadCatchIO
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          3878
+        </td>
+        <td>
+          2342
+          -
+          2361
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.parser.pull.PullIteratees.pullIterateesOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          PullIteratees.this.pullIterateesOf[scalaz.effect.IO](effect.this.IO.ioMonadCatchIO)
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          3879
+        </td>
+        <td>
+          2418
+          -
+          2418
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scalaz.FreeInstances.freeMonad
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.this.Free.freeMonad[Function0]
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          3880
+        </td>
+        <td>
+          2403
+          -
+          2430
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.parser.pull.PullIteratees.pullIterateesOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          PullIteratees.this.pullIterateesOf[scalaz.Free.Trampoline](scalaz.this.Free.freeMonad[Function0])
+        </td>
+      </tr><tr>
+        <td>
+          61
+        </td>
+        <td>
+          3881
+        </td>
+        <td>
+          2524
+          -
+          2524
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scalaz.Monad.idInstance
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.this.Monad.idInstance
+        </td>
+      </tr><tr>
+        <td>
+          61
+        </td>
+        <td>
+          3882
+        </td>
+        <td>
+          2509
+          -
+          2528
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.parser.pull.PullIteratees.pullIterateesOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          PullIteratees.this.pullIterateesOf[scalaz.Id.Id](scalaz.this.Monad.idInstance)
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          3883
+        </td>
+        <td>
+          2755
+          -
+          2776
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.parser.pull.PullIteratees.iterate
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          PullIteratees.this.iterate(path, xml.it)(qe)
+        </td>
+      </tr><tr>
+        <td>
+          77
+        </td>
+        <td>
+          3884
+        </td>
+        <td>
+          3040
+          -
+          3062
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.parser.pull.Iterate.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new Iterate(path, xml)(qe)
+        </td>
+      </tr><tr>
+        <td>
+          91
+        </td>
+        <td>
+          3885
+        </td>
+        <td>
+          3608
+          -
+          3628
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.XmlTypesImplicits.qnameEqual
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.ScalesXml.qnameEqual
+        </td>
+      </tr><tr>
+        <td>
+          91
+        </td>
+        <td>
+          3886
+        </td>
+        <td>
+          3630
+          -
+          3650
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.Predef.implicitly
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.implicitly[scalaz.Monad[F]](evidence$1)
+        </td>
+      </tr><tr>
+        <td>
+          91
+        </td>
+        <td>
+          3887
+        </td>
+        <td>
+          3590
+          -
+          3651
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.PullIteratees.onQNamesI
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          PullIteratees.this.onQNamesI[F](qnames)(scales.xml.ScalesXml.qnameEqual, scala.Predef.implicitly[scalaz.Monad[F]](evidence$1))
+        </td>
+      </tr><tr>
+        <td>
+          187
+        </td>
+        <td>
+          3945
+        </td>
+        <td>
+          7960
+          -
+          9854
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.Applicative.point
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.Monad.apply[F](F).point[scalaz.iteratee.StepT[scales.xml.PullType,F,(scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]]({
+  &lt;artifact&gt; val x$1: (=&gt; scales.xml.PullType) =&gt; scalaz.iteratee.StepT[scales.xml.PullType,F,(scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])] = ((x0$1: =&gt; scales.xml.PullType) =&gt; x0$1 match {
+    case (value: scales.xml.XmlEvent)scala.util.Left[scales.xml.XmlEvent,scales.xml.EndElem]((elem @ scales.xml.Elem.unapply(&lt;unapply-selector&gt;) &lt;unapply&gt; ((q @ _), (a @ _), (n @ _)))) =&gt; {
+      val npath: scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC] = scales.xml.`package`.addAndFocus(path, elem, scales.xml.`package`.addAndFocus$default$3);
+      val shouldCollect: Boolean = collecting.||(before.size.==(qnames.size.-(1)).&amp;&amp;(before.:+[scales.xml.QName, List[scales.xml.QName]](q)(immutable.this.List.canBuildFrom[scales.xml.QName]).zip[scales.xml.QName, scales.xml.QName, List[(scales.xml.QName, scales.xml.QName)]](qnames)(immutable.this.List.canBuildFrom[(scales.xml.QName, scales.xml.QName)]).forall(((p: (scales.xml.QName, scales.xml.QName)) =&gt; scalaz.Scalaz.ToEqualOps[scales.xml.QName](p._1)(qe).===(p._2)))));
+      scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]({
+        &lt;synthetic&gt; val eta$0$1: List[scales.xml.QName] = before.:+[scales.xml.QName, List[scales.xml.QName]](q)(immutable.this.List.canBuildFrom[scales.xml.QName]);
+        ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(eta$0$1, npath, shouldCollect)(s))
+      })
+    }
+    case (value: scales.xml.XmlEvent)scala.util.Left[scales.xml.XmlEvent,scales.xml.EndElem]((x @ (_: scales.xml.XmlItem))) =&gt; scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]({
+      &lt;synthetic&gt; val eta$0$2: scales.xml.XmlPath = if (collecting)
+        scales.xml.`package`.addChild(path, x)
+      else
+        path;
+      ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(before, eta$0$2, collecting)(s))
+    })
+    case (value: scales.xml.EndElem)scala.util.Right[scales.xml.XmlEvent,scales.xml.EndElem]((name: scales.xml.QName, namespaces: scala.collection.immutable.Map[String,String])scales.xml.EndElem((q @ _), (n @ _))) =&gt; {
+      val haveCollected: Boolean = collecting.&amp;&amp;(before.size.==(qnames.size)).&amp;&amp;(before.zip[scales.xml.QName, scales.xml.QName, List[(scales.xml.QName, scales.xml.QName)]](qnames)(immutable.this.List.canBuildFrom[(scales.xml.QName, scales.xml.QName)]).forall(((p: (scales.xml.QName, scales.xml.QName)) =&gt; scalaz.Scalaz.ToEqualOps[scales.xml.QName](p._1)(qe).===(p._2))));
+      val npath: scales.xml.XmlPath = if (haveCollected)
+        path
+      else
+        if (collecting)
+          path.zipUp()
+        else
+          path.removeAndUp().getOrElse[scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scales.xml.`package`.noXmlPath);
+      if (haveCollected)
+        scalaz.iteratee.StepT.Done.apply[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])](scala.Tuple2.apply[(List[scales.xml.QName], Some[scales.xml.XmlPath]), scalaz.iteratee.IterateeT[scales.xml.PullType,F,(scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]](scala.Tuple2.apply[List[scales.xml.QName], Some[scales.xml.XmlPath]](qnames, scala.Some.apply[scales.xml.XmlPath](npath)), scalaz.iteratee.Iteratee.iterateeT[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])](scalaz.Monad.apply[F](F).point[scalaz.iteratee.StepT[scales.xml.PullType,F,(scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]](scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]({
+          &lt;synthetic&gt; val eta$0$3: List[scales.xml.QName] = before.dropRight(1);
+          &lt;synthetic&gt; val eta$1$1: scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC] = npath.removeAndUp().getOrElse[scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scales.xml.`package`.noXmlPath);
+          &lt;synthetic&gt; val eta$2$1: Boolean = collecting.&amp;&amp;(haveCollected.unary_!);
+          ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(eta$0$3, eta$1$1, eta$2$1)(s))
+        })))), scalaz.iteratee.Input.Empty.apply[scales.xml.PullType])
+      else
+        scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]({
+          &lt;synthetic&gt; val eta$0$4: List[scales.xml.QName] = before.dropRight(1);
+          &lt;synthetic&gt; val eta$1$2: Boolean = collecting.&amp;&amp;(haveCollected.unary_!);
+          ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(eta$0$4, npath, eta$1$2)(s))
+        })
+    }
+  });
+  &lt;artifact&gt; val x$2: () =&gt; scalaz.iteratee.StepT[scales.xml.PullType,F,(scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])] = (() =&gt; scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]({
+    ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(before, path, false)(s))
+  }));
+  &lt;artifact&gt; val x$3: () =&gt; scalaz.iteratee.StepT[scales.xml.PullType,F,(scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])] = (() =&gt; scalaz.iteratee.StepT.Done.apply[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])](scala.Tuple2.apply[(List[scales.xml.QName], None.type), scalaz.iteratee.IterateeT[scales.xml.PullType,F,(scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]](scala.Tuple2.apply[List[scales.xml.QName], None.type](qnames, scala.None), scalaz.iteratee.Iteratee.iterateeT[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])](scalaz.Monad.apply[F](F).point[scalaz.iteratee.StepT[scales.xml.PullType,F,(scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]](starter))), scalaz.iteratee.Input.Eof.apply[scales.xml.PullType]));
+  s.apply[scalaz.iteratee.StepT[scales.xml.PullType,F,(scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]](x$2.apply(), x$1, x$3.apply())
+})
+        </td>
+      </tr><tr>
+        <td>
+          187
+        </td>
+        <td>
+          3946
+        </td>
+        <td>
+          7949
+          -
+          9855
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.IterateeTFunctions.iterateeT
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.Iteratee.iterateeT[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])](scalaz.Monad.apply[F](F).point[scalaz.iteratee.StepT[scales.xml.PullType,F,(scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]]({
+  &lt;artifact&gt; val x$1: (=&gt; scales.xml.PullType) =&gt; scalaz.iteratee.StepT[scales.xml.PullType,F,(scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])] = ((x0$1: =&gt; scales.xml.PullType) =&gt; x0$1 match {
+    case (value: scales.xml.XmlEvent)scala.util.Left[scales.xml.XmlEvent,scales.xml.EndElem]((elem @ scales.xml.Elem.unapply(&lt;unapply-selector&gt;) &lt;unapply&gt; ((q @ _), (a @ _), (n @ _)))) =&gt; {
+      val npath: scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC] = scales.xml.`package`.addAndFocus(path, elem, scales.xml.`package`.addAndFocus$default$3);
+      val shouldCollect: Boolean = collecting.||(before.size.==(qnames.size.-(1)).&amp;&amp;(before.:+[scales.xml.QName, List[scales.xml.QName]](q)(immutable.this.List.canBuildFrom[scales.xml.QName]).zip[scales.xml.QName, scales.xml.QName, List[(scales.xml.QName, scales.xml.QName)]](qnames)(immutable.this.List.canBuildFrom[(scales.xml.QName, scales.xml.QName)]).forall(((p: (scales.xml.QName, scales.xml.QName)) =&gt; scalaz.Scalaz.ToEqualOps[scales.xml.QName](p._1)(qe).===(p._2)))));
+      scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]({
+        &lt;synthetic&gt; val eta$0$1: List[scales.xml.QName] = before.:+[scales.xml.QName, List[scales.xml.QName]](q)(immutable.this.List.canBuildFrom[scales.xml.QName]);
+        ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(eta$0$1, npath, shouldCollect)(s))
+      })
+    }
+    case (value: scales.xml.XmlEvent)scala.util.Left[scales.xml.XmlEvent,scales.xml.EndElem]((x @ (_: scales.xml.XmlItem))) =&gt; scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]({
+      &lt;synthetic&gt; val eta$0$2: scales.xml.XmlPath = if (collecting)
+        scales.xml.`package`.addChild(path, x)
+      else
+        path;
+      ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(before, eta$0$2, collecting)(s))
+    })
+    case (value: scales.xml.EndElem)scala.util.Right[scales.xml.XmlEvent,scales.xml.EndElem]((name: scales.xml.QName, namespaces: scala.collection.immutable.Map[String,String])scales.xml.EndElem((q @ _), (n @ _))) =&gt; {
+      val haveCollected: Boolean = collecting.&amp;&amp;(before.size.==(qnames.size)).&amp;&amp;(before.zip[scales.xml.QName, scales.xml.QName, List[(scales.xml.QName, scales.xml.QName)]](qnames)(immutable.this.List.canBuildFrom[(scales.xml.QName, scales.xml.QName)]).forall(((p: (scales.xml.QName, scales.xml.QName)) =&gt; scalaz.Scalaz.ToEqualOps[scales.xml.QName](p._1)(qe).===(p._2))));
+      val npath: scales.xml.XmlPath = if (haveCollected)
+        path
+      else
+        if (collecting)
+          path.zipUp()
+        else
+          path.removeAndUp().getOrElse[scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scales.xml.`package`.noXmlPath);
+      if (haveCollected)
+        scalaz.iteratee.StepT.Done.apply[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])](scala.Tuple2.apply[(List[scales.xml.QName], Some[scales.xml.XmlPath]), scalaz.iteratee.IterateeT[scales.xml.PullType,F,(scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]](scala.Tuple2.apply[List[scales.xml.QName], Some[scales.xml.XmlPath]](qnames, scala.Some.apply[scales.xml.XmlPath](npath)), scalaz.iteratee.Iteratee.iterateeT[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])](scalaz.Monad.apply[F](F).point[scalaz.iteratee.StepT[scales.xml.PullType,F,(scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]](scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]({
+          &lt;synthetic&gt; val eta$0$3: List[scales.xml.QName] = before.dropRight(1);
+          &lt;synthetic&gt; val eta$1$1: scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC] = npath.removeAndUp().getOrElse[scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scales.xml.`package`.noXmlPath);
+          &lt;synthetic&gt; val eta$2$1: Boolean = collecting.&amp;&amp;(haveCollected.unary_!);
+          ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(eta$0$3, eta$1$1, eta$2$1)(s))
+        })))), scalaz.iteratee.Input.Empty.apply[scales.xml.PullType])
+      else
+        scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]({
+          &lt;synthetic&gt; val eta$0$4: List[scales.xml.QName] = before.dropRight(1);
+          &lt;synthetic&gt; val eta$1$2: Boolean = collecting.&amp;&amp;(haveCollected.unary_!);
+          ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(eta$0$4, npath, eta$1$2)(s))
+        })
+    }
+  });
+  &lt;artifact&gt; val x$2: () =&gt; scalaz.iteratee.StepT[scales.xml.PullType,F,(scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])] = (() =&gt; scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]({
+    ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(before, path, false)(s))
+  }));
+  &lt;artifact&gt; val x$3: () =&gt; scalaz.iteratee.StepT[scales.xml.PullType,F,(scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])] = (() =&gt; scalaz.iteratee.StepT.Done.apply[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])](scala.Tuple2.apply[(List[scales.xml.QName], None.type), scalaz.iteratee.IterateeT[scales.xml.PullType,F,(scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]](scala.Tuple2.apply[List[scales.xml.QName], None.type](qnames, scala.None), scalaz.iteratee.Iteratee.iterateeT[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])](scalaz.Monad.apply[F](F).point[scalaz.iteratee.StepT[scales.xml.PullType,F,(scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]](starter))), scalaz.iteratee.Input.Eof.apply[scales.xml.PullType]));
+  s.apply[scalaz.iteratee.StepT[scales.xml.PullType,F,(scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]](x$2.apply(), x$1, x$3.apply())
+}))
+        </td>
+      </tr><tr>
+        <td>
+          188
+        </td>
+        <td>
+          3944
+        </td>
+        <td>
+          7984
+          -
+          9846
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.Input.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          s.apply[scalaz.iteratee.StepT[scales.xml.PullType,F,(scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]](x$2.apply(), x$1, x$3.apply())
+        </td>
+      </tr><tr>
+        <td>
+          189
+        </td>
+        <td>
+          3900
+        </td>
+        <td>
+          8036
+          -
+          8377
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val npath: scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC] = scales.xml.`package`.addAndFocus(path, elem, scales.xml.`package`.addAndFocus$default$3);
+  val shouldCollect: Boolean = collecting.||(before.size.==(qnames.size.-(1)).&amp;&amp;(before.:+[scales.xml.QName, List[scales.xml.QName]](q)(immutable.this.List.canBuildFrom[scales.xml.QName]).zip[scales.xml.QName, scales.xml.QName, List[(scales.xml.QName, scales.xml.QName)]](qnames)(immutable.this.List.canBuildFrom[(scales.xml.QName, scales.xml.QName)]).forall(((p: (scales.xml.QName, scales.xml.QName)) =&gt; scalaz.Scalaz.ToEqualOps[scales.xml.QName](p._1)(qe).===(p._2)))));
+  scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]({
+    &lt;synthetic&gt; val eta$0$1: List[scales.xml.QName] = before.:+[scales.xml.QName, List[scales.xml.QName]](q)(immutable.this.List.canBuildFrom[scales.xml.QName]);
+    ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(eta$0$1, npath, shouldCollect)(s))
+  })
+}
+        </td>
+      </tr><tr>
+        <td>
+          190
+        </td>
+        <td>
+          3888
+        </td>
+        <td>
+          8062
+          -
+          8085
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.XmlTypes.addAndFocus
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.`package`.addAndFocus(path, elem, scales.xml.`package`.addAndFocus$default$3)
+        </td>
+      </tr><tr>
+        <td>
+          192
+        </td>
+        <td>
+          3897
+        </td>
+        <td>
+          8119
+          -
+          8304
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.||
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collecting.||(before.size.==(qnames.size.-(1)).&amp;&amp;(before.:+[scales.xml.QName, List[scales.xml.QName]](q)(immutable.this.List.canBuildFrom[scales.xml.QName]).zip[scales.xml.QName, scales.xml.QName, List[(scales.xml.QName, scales.xml.QName)]](qnames)(immutable.this.List.canBuildFrom[(scales.xml.QName, scales.xml.QName)]).forall(((p: (scales.xml.QName, scales.xml.QName)) =&gt; scalaz.Scalaz.ToEqualOps[scales.xml.QName](p._1)(qe).===(p._2)))))
+        </td>
+      </tr><tr>
+        <td>
+          193
+        </td>
+        <td>
+          3889
+        </td>
+        <td>
+          8165
+          -
+          8180
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.-
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          qnames.size.-(1)
+        </td>
+      </tr><tr>
+        <td>
+          193
+        </td>
+        <td>
+          3896
+        </td>
+        <td>
+          8149
+          -
+          8290
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          before.size.==(qnames.size.-(1)).&amp;&amp;(before.:+[scales.xml.QName, List[scales.xml.QName]](q)(immutable.this.List.canBuildFrom[scales.xml.QName]).zip[scales.xml.QName, scales.xml.QName, List[(scales.xml.QName, scales.xml.QName)]](qnames)(immutable.this.List.canBuildFrom[(scales.xml.QName, scales.xml.QName)]).forall(((p: (scales.xml.QName, scales.xml.QName)) =&gt; scalaz.Scalaz.ToEqualOps[scales.xml.QName](p._1)(qe).===(p._2))))
+        </td>
+      </tr><tr>
+        <td>
+          195
+        </td>
+        <td>
+          3890
+        </td>
+        <td>
+          8246
+          -
+          8246
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.immutable.List.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          immutable.this.List.canBuildFrom[scales.xml.QName]
+        </td>
+      </tr><tr>
+        <td>
+          195
+        </td>
+        <td>
+          3891
+        </td>
+        <td>
+          8255
+          -
+          8255
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.immutable.List.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          immutable.this.List.canBuildFrom[(scales.xml.QName, scales.xml.QName)]
+        </td>
+      </tr><tr>
+        <td>
+          195
+        </td>
+        <td>
+          3892
+        </td>
+        <td>
+          8276
+          -
+          8280
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          p._1
+        </td>
+      </tr><tr>
+        <td>
+          195
+        </td>
+        <td>
+          3893
+        </td>
+        <td>
+          8285
+          -
+          8289
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          p._2
+        </td>
+      </tr><tr>
+        <td>
+          195
+        </td>
+        <td>
+          3894
+        </td>
+        <td>
+          8276
+          -
+          8289
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.syntax.EqualOps.===
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.Scalaz.ToEqualOps[scales.xml.QName](p._1)(qe).===(p._2)
+        </td>
+      </tr><tr>
+        <td>
+          195
+        </td>
+        <td>
+          3895
+        </td>
+        <td>
+          8238
+          -
+          8290
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.LinearSeqOptimized.forall
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          before.:+[scales.xml.QName, List[scales.xml.QName]](q)(immutable.this.List.canBuildFrom[scales.xml.QName]).zip[scales.xml.QName, scales.xml.QName, List[(scales.xml.QName, scales.xml.QName)]](qnames)(immutable.this.List.canBuildFrom[(scales.xml.QName, scales.xml.QName)]).forall(((p: (scales.xml.QName, scales.xml.QName)) =&gt; scalaz.Scalaz.ToEqualOps[scales.xml.QName](p._1)(qe).===(p._2)))
+        </td>
+      </tr><tr>
+        <td>
+          198
+        </td>
+        <td>
+          3898
+        </td>
+        <td>
+          8324
+          -
+          8363
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.PullIteratees.step
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          step(eta$0$1, npath, shouldCollect)(s)
+        </td>
+      </tr><tr>
+        <td>
+          198
+        </td>
+        <td>
+          3899
+        </td>
+        <td>
+          8318
+          -
+          8365
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Cont.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]({
+  &lt;synthetic&gt; val eta$0$1: List[scales.xml.QName] = before.:+[scales.xml.QName, List[scales.xml.QName]](q)(immutable.this.List.canBuildFrom[scales.xml.QName]);
+  ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(eta$0$1, npath, shouldCollect)(s))
+})
+        </td>
+      </tr><tr>
+        <td>
+          202
+        </td>
+        <td>
+          3901
+        </td>
+        <td>
+          8431
+          -
+          8560
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.PullIteratees.step
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          step(before, eta$0$2, collecting)(s)
+        </td>
+      </tr><tr>
+        <td>
+          202
+        </td>
+        <td>
+          3902
+        </td>
+        <td>
+          8426
+          -
+          8561
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Cont.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]({
+  &lt;synthetic&gt; val eta$0$2: scales.xml.XmlPath = if (collecting)
+    scales.xml.`package`.addChild(path, x)
+  else
+    path;
+  ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(before, eta$0$2, collecting)(s))
+})
+        </td>
+      </tr><tr>
+        <td>
+          202
+        </td>
+        <td>
+          3903
+        </td>
+        <td>
+          8426
+          -
+          8561
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Cont.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]({
+  &lt;synthetic&gt; val eta$0$2: scales.xml.XmlPath = if (collecting)
+    scales.xml.`package`.addChild(path, x)
+  else
+    path;
+  ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(before, eta$0$2, collecting)(s))
+})
+        </td>
+      </tr><tr>
+        <td>
+          208
+        </td>
+        <td>
+          3932
+        </td>
+        <td>
+          8599
+          -
+          9679
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val haveCollected: Boolean = collecting.&amp;&amp;(before.size.==(qnames.size)).&amp;&amp;(before.zip[scales.xml.QName, scales.xml.QName, List[(scales.xml.QName, scales.xml.QName)]](qnames)(immutable.this.List.canBuildFrom[(scales.xml.QName, scales.xml.QName)]).forall(((p: (scales.xml.QName, scales.xml.QName)) =&gt; scalaz.Scalaz.ToEqualOps[scales.xml.QName](p._1)(qe).===(p._2))));
+  val npath: scales.xml.XmlPath = if (haveCollected)
+    path
+  else
+    if (collecting)
+      path.zipUp()
+    else
+      path.removeAndUp().getOrElse[scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scales.xml.`package`.noXmlPath);
+  if (haveCollected)
+    scalaz.iteratee.StepT.Done.apply[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])](scala.Tuple2.apply[(List[scales.xml.QName], Some[scales.xml.XmlPath]), scalaz.iteratee.IterateeT[scales.xml.PullType,F,(scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]](scala.Tuple2.apply[List[scales.xml.QName], Some[scales.xml.XmlPath]](qnames, scala.Some.apply[scales.xml.XmlPath](npath)), scalaz.iteratee.Iteratee.iterateeT[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])](scalaz.Monad.apply[F](F).point[scalaz.iteratee.StepT[scales.xml.PullType,F,(scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]](scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]({
+      &lt;synthetic&gt; val eta$0$3: List[scales.xml.QName] = before.dropRight(1);
+      &lt;synthetic&gt; val eta$1$1: scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC] = npath.removeAndUp().getOrElse[scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scales.xml.`package`.noXmlPath);
+      &lt;synthetic&gt; val eta$2$1: Boolean = collecting.&amp;&amp;(haveCollected.unary_!);
+      ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(eta$0$3, eta$1$1, eta$2$1)(s))
+    })))), scalaz.iteratee.Input.Empty.apply[scales.xml.PullType])
+  else
+    scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]({
+      &lt;synthetic&gt; val eta$0$4: List[scales.xml.QName] = before.dropRight(1);
+      &lt;synthetic&gt; val eta$1$2: Boolean = collecting.&amp;&amp;(haveCollected.unary_!);
+      ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(eta$0$4, npath, eta$1$2)(s))
+    })
+}
+        </td>
+      </tr><tr>
+        <td>
+          211
+        </td>
+        <td>
+          3904
+        </td>
+        <td>
+          8838
+          -
+          8849
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.SeqLike.size
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          qnames.size
+        </td>
+      </tr><tr>
+        <td>
+          211
+        </td>
+        <td>
+          3905
+        </td>
+        <td>
+          8823
+          -
+          8849
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          before.size.==(qnames.size)
+        </td>
+      </tr><tr>
+        <td>
+          211
+        </td>
+        <td>
+          3906
+        </td>
+        <td>
+          8863
+          -
+          8863
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.immutable.List.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          immutable.this.List.canBuildFrom[(scales.xml.QName, scales.xml.QName)]
+        </td>
+      </tr><tr>
+        <td>
+          211
+        </td>
+        <td>
+          3907
+        </td>
+        <td>
+          8884
+          -
+          8888
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          p._1
+        </td>
+      </tr><tr>
+        <td>
+          211
+        </td>
+        <td>
+          3908
+        </td>
+        <td>
+          8893
+          -
+          8897
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          p._2
+        </td>
+      </tr><tr>
+        <td>
+          211
+        </td>
+        <td>
+          3909
+        </td>
+        <td>
+          8884
+          -
+          8897
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.syntax.EqualOps.===
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.Scalaz.ToEqualOps[scales.xml.QName](p._1)(qe).===(p._2)
+        </td>
+      </tr><tr>
+        <td>
+          211
+        </td>
+        <td>
+          3910
+        </td>
+        <td>
+          8853
+          -
+          8898
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.LinearSeqOptimized.forall
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          before.zip[scales.xml.QName, scales.xml.QName, List[(scales.xml.QName, scales.xml.QName)]](qnames)(immutable.this.List.canBuildFrom[(scales.xml.QName, scales.xml.QName)]).forall(((p: (scales.xml.QName, scales.xml.QName)) =&gt; scalaz.Scalaz.ToEqualOps[scales.xml.QName](p._1)(qe).===(p._2)))
+        </td>
+      </tr><tr>
+        <td>
+          211
+        </td>
+        <td>
+          3911
+        </td>
+        <td>
+          8809
+          -
+          8898
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collecting.&amp;&amp;(before.size.==(qnames.size)).&amp;&amp;(before.zip[scales.xml.QName, scales.xml.QName, List[(scales.xml.QName, scales.xml.QName)]](qnames)(immutable.this.List.canBuildFrom[(scales.xml.QName, scales.xml.QName)]).forall(((p: (scales.xml.QName, scales.xml.QName)) =&gt; scalaz.Scalaz.ToEqualOps[scales.xml.QName](p._1)(qe).===(p._2))))
+        </td>
+      </tr><tr>
+        <td>
+          215
+        </td>
+        <td>
+          3912
+        </td>
+        <td>
+          9008
+          -
+          9012
+        </td>
+        <td>
+          Ident
+        </td>
+        <td>
+          scales.xml.parser.pull.PullIteratees.path
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path
+        </td>
+      </tr><tr>
+        <td>
+          217
+        </td>
+        <td>
+          3918
+        </td>
+        <td>
+          9050
+          -
+          9257
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (collecting)
+  path.zipUp()
+else
+  path.removeAndUp().getOrElse[scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scales.xml.`package`.noXmlPath)
+        </td>
+      </tr><tr>
+        <td>
+          219
+        </td>
+        <td>
+          3913
+        </td>
+        <td>
+          9144
+          -
+          9156
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.path.Path.zipUp
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path.zipUp()
+        </td>
+      </tr><tr>
+        <td>
+          219
+        </td>
+        <td>
+          3914
+        </td>
+        <td>
+          9144
+          -
+          9156
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.collection.path.Path.zipUp
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path.zipUp()
+        </td>
+      </tr><tr>
+        <td>
+          221
+        </td>
+        <td>
+          3915
+        </td>
+        <td>
+          9229
+          -
+          9238
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.XmlTypes.noXmlPath
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.`package`.noXmlPath
+        </td>
+      </tr><tr>
+        <td>
+          221
+        </td>
+        <td>
+          3916
+        </td>
+        <td>
+          9200
+          -
+          9239
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.getOrElse
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path.removeAndUp().getOrElse[scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scales.xml.`package`.noXmlPath)
+        </td>
+      </tr><tr>
+        <td>
+          221
+        </td>
+        <td>
+          3917
+        </td>
+        <td>
+          9200
+          -
+          9239
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Option.getOrElse
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path.removeAndUp().getOrElse[scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scales.xml.`package`.noXmlPath)
+        </td>
+      </tr><tr>
+        <td>
+          225
+        </td>
+        <td>
+          3919
+        </td>
+        <td>
+          9319
+          -
+          9330
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[scales.xml.XmlPath](npath)
+        </td>
+      </tr><tr>
+        <td>
+          225
+        </td>
+        <td>
+          3920
+        </td>
+        <td>
+          9310
+          -
+          9331
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[List[scales.xml.QName], Some[scales.xml.XmlPath]](qnames, scala.Some.apply[scales.xml.XmlPath](npath))
+        </td>
+      </tr><tr>
+        <td>
+          225
+        </td>
+        <td>
+          3925
+        </td>
+        <td>
+          9309
+          -
+          9561
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[(List[scales.xml.QName], Some[scales.xml.XmlPath]), scalaz.iteratee.IterateeT[scales.xml.PullType,F,(scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]](scala.Tuple2.apply[List[scales.xml.QName], Some[scales.xml.XmlPath]](qnames, scala.Some.apply[scales.xml.XmlPath](npath)), scalaz.iteratee.Iteratee.iterateeT[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])](scalaz.Monad.apply[F](F).point[scalaz.iteratee.StepT[scales.xml.PullType,F,(scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]](scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]({
+  &lt;synthetic&gt; val eta$0$3: List[scales.xml.QName] = before.dropRight(1);
+  &lt;synthetic&gt; val eta$1$1: scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC] = npath.removeAndUp().getOrElse[scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scales.xml.`package`.noXmlPath);
+  &lt;synthetic&gt; val eta$2$1: Boolean = collecting.&amp;&amp;(haveCollected.unary_!);
+  ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(eta$0$3, eta$1$1, eta$2$1)(s))
+}))))
+        </td>
+      </tr><tr>
+        <td>
+          225
+        </td>
+        <td>
+          3927
+        </td>
+        <td>
+          9304
+          -
+          9579
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Done.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.StepT.Done.apply[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])](scala.Tuple2.apply[(List[scales.xml.QName], Some[scales.xml.XmlPath]), scalaz.iteratee.IterateeT[scales.xml.PullType,F,(scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]](scala.Tuple2.apply[List[scales.xml.QName], Some[scales.xml.XmlPath]](qnames, scala.Some.apply[scales.xml.XmlPath](npath)), scalaz.iteratee.Iteratee.iterateeT[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])](scalaz.Monad.apply[F](F).point[scalaz.iteratee.StepT[scales.xml.PullType,F,(scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]](scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]({
+  &lt;synthetic&gt; val eta$0$3: List[scales.xml.QName] = before.dropRight(1);
+  &lt;synthetic&gt; val eta$1$1: scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC] = npath.removeAndUp().getOrElse[scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scales.xml.`package`.noXmlPath);
+  &lt;synthetic&gt; val eta$2$1: Boolean = collecting.&amp;&amp;(haveCollected.unary_!);
+  ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(eta$0$3, eta$1$1, eta$2$1)(s))
+})))), scalaz.iteratee.Input.Empty.apply[scales.xml.PullType])
+        </td>
+      </tr><tr>
+        <td>
+          225
+        </td>
+        <td>
+          3928
+        </td>
+        <td>
+          9304
+          -
+          9579
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Done.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.StepT.Done.apply[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])](scala.Tuple2.apply[(List[scales.xml.QName], Some[scales.xml.XmlPath]), scalaz.iteratee.IterateeT[scales.xml.PullType,F,(scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]](scala.Tuple2.apply[List[scales.xml.QName], Some[scales.xml.XmlPath]](qnames, scala.Some.apply[scales.xml.XmlPath](npath)), scalaz.iteratee.Iteratee.iterateeT[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])](scalaz.Monad.apply[F](F).point[scalaz.iteratee.StepT[scales.xml.PullType,F,(scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]](scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]({
+  &lt;synthetic&gt; val eta$0$3: List[scales.xml.QName] = before.dropRight(1);
+  &lt;synthetic&gt; val eta$1$1: scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC] = npath.removeAndUp().getOrElse[scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scales.xml.`package`.noXmlPath);
+  &lt;synthetic&gt; val eta$2$1: Boolean = collecting.&amp;&amp;(haveCollected.unary_!);
+  ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(eta$0$3, eta$1$1, eta$2$1)(s))
+})))), scalaz.iteratee.Input.Empty.apply[scales.xml.PullType])
+        </td>
+      </tr><tr>
+        <td>
+          226
+        </td>
+        <td>
+          3921
+        </td>
+        <td>
+          9381
+          -
+          9557
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.PullIteratees.step
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          step(eta$0$3, eta$1$1, eta$2$1)(s)
+        </td>
+      </tr><tr>
+        <td>
+          226
+        </td>
+        <td>
+          3922
+        </td>
+        <td>
+          9376
+          -
+          9558
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Cont.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]({
+  &lt;synthetic&gt; val eta$0$3: List[scales.xml.QName] = before.dropRight(1);
+  &lt;synthetic&gt; val eta$1$1: scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC] = npath.removeAndUp().getOrElse[scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scales.xml.`package`.noXmlPath);
+  &lt;synthetic&gt; val eta$2$1: Boolean = collecting.&amp;&amp;(haveCollected.unary_!);
+  ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(eta$0$3, eta$1$1, eta$2$1)(s))
+})
+        </td>
+      </tr><tr>
+        <td>
+          226
+        </td>
+        <td>
+          3923
+        </td>
+        <td>
+          9360
+          -
+          9559
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.Applicative.point
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.Monad.apply[F](F).point[scalaz.iteratee.StepT[scales.xml.PullType,F,(scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]](scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]({
+  &lt;synthetic&gt; val eta$0$3: List[scales.xml.QName] = before.dropRight(1);
+  &lt;synthetic&gt; val eta$1$1: scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC] = npath.removeAndUp().getOrElse[scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scales.xml.`package`.noXmlPath);
+  &lt;synthetic&gt; val eta$2$1: Boolean = collecting.&amp;&amp;(haveCollected.unary_!);
+  ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(eta$0$3, eta$1$1, eta$2$1)(s))
+}))
+        </td>
+      </tr><tr>
+        <td>
+          226
+        </td>
+        <td>
+          3924
+        </td>
+        <td>
+          9349
+          -
+          9560
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.IterateeTFunctions.iterateeT
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.Iteratee.iterateeT[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])](scalaz.Monad.apply[F](F).point[scalaz.iteratee.StepT[scales.xml.PullType,F,(scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]](scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]({
+  &lt;synthetic&gt; val eta$0$3: List[scales.xml.QName] = before.dropRight(1);
+  &lt;synthetic&gt; val eta$1$1: scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC] = npath.removeAndUp().getOrElse[scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scales.xml.`package`.noXmlPath);
+  &lt;synthetic&gt; val eta$2$1: Boolean = collecting.&amp;&amp;(haveCollected.unary_!);
+  ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(eta$0$3, eta$1$1, eta$2$1)(s))
+})))
+        </td>
+      </tr><tr>
+        <td>
+          228
+        </td>
+        <td>
+          3926
+        </td>
+        <td>
+          9563
+          -
+          9578
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scalaz.iteratee.Input.Empty.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.Input.Empty.apply[scales.xml.PullType]
+        </td>
+      </tr><tr>
+        <td>
+          230
+        </td>
+        <td>
+          3929
+        </td>
+        <td>
+          9616
+          -
+          9678
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.PullIteratees.step
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          step(eta$0$4, npath, eta$1$2)(s)
+        </td>
+      </tr><tr>
+        <td>
+          230
+        </td>
+        <td>
+          3930
+        </td>
+        <td>
+          9611
+          -
+          9679
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Cont.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]({
+  &lt;synthetic&gt; val eta$0$4: List[scales.xml.QName] = before.dropRight(1);
+  &lt;synthetic&gt; val eta$1$2: Boolean = collecting.&amp;&amp;(haveCollected.unary_!);
+  ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(eta$0$4, npath, eta$1$2)(s))
+})
+        </td>
+      </tr><tr>
+        <td>
+          230
+        </td>
+        <td>
+          3931
+        </td>
+        <td>
+          9611
+          -
+          9679
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Cont.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]({
+  &lt;synthetic&gt; val eta$0$4: List[scales.xml.QName] = before.dropRight(1);
+  &lt;synthetic&gt; val eta$1$2: Boolean = collecting.&amp;&amp;(haveCollected.unary_!);
+  ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(eta$0$4, npath, eta$1$2)(s))
+})
+        </td>
+      </tr><tr>
+        <td>
+          233
+        </td>
+        <td>
+          3933
+        </td>
+        <td>
+          9717
+          -
+          9742
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.PullIteratees.step
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          step(before, path, false)(s)
+        </td>
+      </tr><tr>
+        <td>
+          233
+        </td>
+        <td>
+          3934
+        </td>
+        <td>
+          9712
+          -
+          9743
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Cont.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]({
+  ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(before, path, false)(s))
+})
+        </td>
+      </tr><tr>
+        <td>
+          233
+        </td>
+        <td>
+          3942
+        </td>
+        <td>
+          9716
+          -
+          9716
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function0.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          x$2.apply()
+        </td>
+      </tr><tr>
+        <td>
+          234
+        </td>
+        <td>
+          3935
+        </td>
+        <td>
+          9776
+          -
+          9780
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          234
+        </td>
+        <td>
+          3936
+        </td>
+        <td>
+          9767
+          -
+          9781
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Tuple2.apply[List[scales.xml.QName], None.type](qnames, scala.None)
+        </td>
+      </tr><tr>
+        <td>
+          234
+        </td>
+        <td>
+          3937
+        </td>
+        <td>
+          9794
+          -
+          9817
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.Applicative.point
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scalaz.Monad.apply[F](F).point[scalaz.iteratee.StepT[scales.xml.PullType,F,(scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]](starter)
+        </td>
+      </tr><tr>
+        <td>
+          234
+        </td>
+        <td>
+          3938
+        </td>
+        <td>
+          9783
+          -
+          9819
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.IterateeTFunctions.iterateeT
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scalaz.iteratee.Iteratee.iterateeT[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])](scalaz.Monad.apply[F](F).point[scalaz.iteratee.StepT[scales.xml.PullType,F,(scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]](starter))
+        </td>
+      </tr><tr>
+        <td>
+          234
+        </td>
+        <td>
+          3939
+        </td>
+        <td>
+          9766
+          -
+          9820
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Tuple2.apply[(List[scales.xml.QName], None.type), scalaz.iteratee.IterateeT[scales.xml.PullType,F,(scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]](scala.Tuple2.apply[List[scales.xml.QName], None.type](qnames, scala.None), scalaz.iteratee.Iteratee.iterateeT[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])](scalaz.Monad.apply[F](F).point[scalaz.iteratee.StepT[scales.xml.PullType,F,(scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]](starter)))
+        </td>
+      </tr><tr>
+        <td>
+          234
+        </td>
+        <td>
+          3940
+        </td>
+        <td>
+          9822
+          -
+          9835
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scalaz.iteratee.Input.Eof.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scalaz.iteratee.Input.Eof.apply[scales.xml.PullType]
+        </td>
+      </tr><tr>
+        <td>
+          234
+        </td>
+        <td>
+          3941
+        </td>
+        <td>
+          9761
+          -
+          9836
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Done.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scalaz.iteratee.StepT.Done.apply[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])](scala.Tuple2.apply[(List[scales.xml.QName], None.type), scalaz.iteratee.IterateeT[scales.xml.PullType,F,(scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]](scala.Tuple2.apply[List[scales.xml.QName], None.type](qnames, scala.None), scalaz.iteratee.Iteratee.iterateeT[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])](scalaz.Monad.apply[F](F).point[scalaz.iteratee.StepT[scales.xml.PullType,F,(scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]](starter))), scalaz.iteratee.Input.Eof.apply[scales.xml.PullType])
+        </td>
+      </tr><tr>
+        <td>
+          234
+        </td>
+        <td>
+          3943
+        </td>
+        <td>
+          9765
+          -
+          9765
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function0.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          x$3.apply()
+        </td>
+      </tr><tr>
+        <td>
+          239
+        </td>
+        <td>
+          3947
+        </td>
+        <td>
+          9871
+          -
+          9885
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.SeqLike.isEmpty
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          qnames.isEmpty
+        </td>
+      </tr><tr>
+        <td>
+          239
+        </td>
+        <td>
+          3948
+        </td>
+        <td>
+          9887
+          -
+          9911
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.iteratee.Iteratees.error
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.utils.`package`.error(&quot;Qnames is empty&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          239
+        </td>
+        <td>
+          3949
+        </td>
+        <td>
+          9887
+          -
+          9911
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.iteratee.Iteratees.error
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.utils.`package`.error(&quot;Qnames is empty&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          239
+        </td>
+        <td>
+          3950
+        </td>
+        <td>
+          9867
+          -
+          9867
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          239
+        </td>
+        <td>
+          3951
+        </td>
+        <td>
+          9867
+          -
+          9867
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          241
+        </td>
+        <td>
+          3952
+        </td>
+        <td>
+          9928
+          -
+          9952
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.Applicative.point
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.Monad.apply[F](F).point[scalaz.iteratee.StepT[scales.xml.PullType,F,(scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]](starter)
+        </td>
+      </tr><tr>
+        <td>
+          241
+        </td>
+        <td>
+          3953
+        </td>
+        <td>
+          9917
+          -
+          9953
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.IterateeTFunctions.iterateeT
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.Iteratee.iterateeT[scales.xml.PullType, F, (scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])](scalaz.Monad.apply[F](F).point[scalaz.iteratee.StepT[scales.xml.PullType,F,(scales.xml.parser.pull.PullIteratees.QNamesMatch, scalaz.iteratee.IterateeT[scales.xml.PullType, F, _])]](starter))
+        </td>
+      </tr><tr>
+        <td>
+          246
+        </td>
+        <td>
+          3954
+        </td>
+        <td>
+          10086
+          -
+          10111
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.parser.pull.PullIteratees.skip
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          PullIteratees.this.skip[F](scala.collection.immutable.List.apply[Int]((downTo: _*)))(F)
+        </td>
+      </tr><tr>
+        <td>
+          261
+        </td>
+        <td>
+          4000
+        </td>
+        <td>
+          10963
+          -
+          12614
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.Applicative.point
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          F.point[scalaz.iteratee.StepT[scales.xml.PullType,F,scales.xml.parser.pull.PullIteratees.PeekMatch]]({
+  &lt;artifact&gt; val x$1: (=&gt; scales.xml.PullType) =&gt; scalaz.iteratee.StepT[scales.xml.PullType,F,scales.xml.parser.pull.PullIteratees.PeekMatch] = ((x0$1: =&gt; scales.xml.PullType) =&gt; x0$1 match {
+    case (value: scales.xml.XmlEvent)scala.util.Left[scales.xml.XmlEvent,scales.xml.EndElem]((elem @ scales.xml.Elem.unapply(&lt;unapply-selector&gt;) &lt;unapply&gt; ((q @ _), (a @ _), (n @ _)))) =&gt; {
+      &lt;stable&gt; &lt;accessor&gt; lazy val npath: scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC] = scales.xml.`package`.addAndFocus(path, elem, scales.xml.`package`.addAndFocus$default$3);
+      val npos: List[Int] = {
+        &lt;synthetic&gt; &lt;artifact&gt; val x$1: Int = pos.head.+(1);
+        pos.tail.::[Int](x$1)
+      };
+      val could: Boolean = toGo.head.==(npos.head);
+      if (pos.size.==(before.size.+(1)))
+        if (toGo.size.==(1).&amp;&amp;(could))
+          scalaz.iteratee.StepT.Done.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch](scala.Some.apply[scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](npath), scalaz.iteratee.Input.Empty.apply[scales.xml.PullType])
+        else
+          if (npos.head.&gt;(toGo.head))
+            dEof
+          else
+            if (could)
+              scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+                &lt;synthetic&gt; val eta$0$1: List[Int] = before.:+[Int, List[Int]](toGo.head)(immutable.this.List.canBuildFrom[Int]);
+                &lt;synthetic&gt; val eta$1$1: List[Int] = {
+                  &lt;synthetic&gt; &lt;artifact&gt; val x$2: Int = 0;
+                  npos.::[Int](x$2)
+                };
+                &lt;synthetic&gt; val eta$2$1: List[Int] = toGo.tail;
+                ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(eta$0$1, eta$1$1, eta$2$1, npath)(s))
+              })
+            else
+              scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+                &lt;synthetic&gt; val eta$0$2: List[Int] = {
+                  &lt;synthetic&gt; &lt;artifact&gt; val x$3: Int = 0;
+                  npos.::[Int](x$3)
+                };
+                ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(before, eta$0$2, toGo, npath)(s))
+              })
+      else
+        scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+          &lt;synthetic&gt; val eta$0$3: List[Int] = {
+            &lt;synthetic&gt; &lt;artifact&gt; val x$4: Int = 0;
+            npos.::[Int](x$4)
+          };
+          ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(before, eta$0$3, toGo, npath)(s))
+        })
+    }
+    case (value: scales.xml.XmlEvent)scala.util.Left[scales.xml.XmlEvent,scales.xml.EndElem]((x @ (_: scales.xml.XmlItem))) =&gt; scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+      ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(before, pos, toGo, path)(s))
+    })
+    case (value: scales.xml.EndElem)scala.util.Right[scales.xml.XmlEvent,scales.xml.EndElem]((name: scales.xml.QName, namespaces: scala.collection.immutable.Map[String,String])scales.xml.EndElem((q @ _), (n @ _))) =&gt; if (pos.size.&gt;(0).&amp;&amp;(pos.size.==(before.size.+(1))))
+      scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+        &lt;synthetic&gt; val eta$0$4: List[Int] = before.dropRight(1);
+        &lt;synthetic&gt; val eta$1$2: List[Int] = pos.tail;
+        &lt;synthetic&gt; val eta$2$2: List[Int] = {
+          &lt;synthetic&gt; &lt;artifact&gt; val x$5: Int = before.last;
+          toGo.::[Int](x$5)
+        };
+        &lt;synthetic&gt; val eta$3$1: scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC] = path.removeAndUp().getOrElse[scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scales.xml.`package`.noXmlPath);
+        ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(eta$0$4, eta$1$2, eta$2$2, eta$3$1)(s))
+      })
+    else
+      scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+        &lt;synthetic&gt; val eta$0$5: List[Int] = pos.tail;
+        &lt;synthetic&gt; val eta$1$3: scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC] = path.removeAndUp().getOrElse[scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scales.xml.`package`.noXmlPath);
+        ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(before, eta$0$5, toGo, eta$1$3)(s))
+      })
+  });
+  &lt;artifact&gt; val x$2: () =&gt; scalaz.iteratee.StepT[scales.xml.PullType,F,scales.xml.parser.pull.PullIteratees.PeekMatch] = (() =&gt; scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+    ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(before, pos, toGo, path)(s))
+  }));
+  &lt;artifact&gt; val x$3: () =&gt; scalaz.iteratee.StepT[scales.xml.PullType,F,scales.xml.parser.pull.PullIteratees.PeekMatch] = (() =&gt; dEof);
+  s.apply[scalaz.iteratee.StepT[scales.xml.PullType,F,scales.xml.parser.pull.PullIteratees.PeekMatch]](x$2.apply(), x$1, x$3.apply())
+})
+        </td>
+      </tr><tr>
+        <td>
+          261
+        </td>
+        <td>
+          4001
+        </td>
+        <td>
+          10953
+          -
+          12615
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.IterateeTFunctions.iterateeT
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.Iteratee.iterateeT[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch](F.point[scalaz.iteratee.StepT[scales.xml.PullType,F,scales.xml.parser.pull.PullIteratees.PeekMatch]]({
+  &lt;artifact&gt; val x$1: (=&gt; scales.xml.PullType) =&gt; scalaz.iteratee.StepT[scales.xml.PullType,F,scales.xml.parser.pull.PullIteratees.PeekMatch] = ((x0$1: =&gt; scales.xml.PullType) =&gt; x0$1 match {
+    case (value: scales.xml.XmlEvent)scala.util.Left[scales.xml.XmlEvent,scales.xml.EndElem]((elem @ scales.xml.Elem.unapply(&lt;unapply-selector&gt;) &lt;unapply&gt; ((q @ _), (a @ _), (n @ _)))) =&gt; {
+      &lt;stable&gt; &lt;accessor&gt; lazy val npath: scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC] = scales.xml.`package`.addAndFocus(path, elem, scales.xml.`package`.addAndFocus$default$3);
+      val npos: List[Int] = {
+        &lt;synthetic&gt; &lt;artifact&gt; val x$1: Int = pos.head.+(1);
+        pos.tail.::[Int](x$1)
+      };
+      val could: Boolean = toGo.head.==(npos.head);
+      if (pos.size.==(before.size.+(1)))
+        if (toGo.size.==(1).&amp;&amp;(could))
+          scalaz.iteratee.StepT.Done.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch](scala.Some.apply[scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](npath), scalaz.iteratee.Input.Empty.apply[scales.xml.PullType])
+        else
+          if (npos.head.&gt;(toGo.head))
+            dEof
+          else
+            if (could)
+              scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+                &lt;synthetic&gt; val eta$0$1: List[Int] = before.:+[Int, List[Int]](toGo.head)(immutable.this.List.canBuildFrom[Int]);
+                &lt;synthetic&gt; val eta$1$1: List[Int] = {
+                  &lt;synthetic&gt; &lt;artifact&gt; val x$2: Int = 0;
+                  npos.::[Int](x$2)
+                };
+                &lt;synthetic&gt; val eta$2$1: List[Int] = toGo.tail;
+                ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(eta$0$1, eta$1$1, eta$2$1, npath)(s))
+              })
+            else
+              scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+                &lt;synthetic&gt; val eta$0$2: List[Int] = {
+                  &lt;synthetic&gt; &lt;artifact&gt; val x$3: Int = 0;
+                  npos.::[Int](x$3)
+                };
+                ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(before, eta$0$2, toGo, npath)(s))
+              })
+      else
+        scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+          &lt;synthetic&gt; val eta$0$3: List[Int] = {
+            &lt;synthetic&gt; &lt;artifact&gt; val x$4: Int = 0;
+            npos.::[Int](x$4)
+          };
+          ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(before, eta$0$3, toGo, npath)(s))
+        })
+    }
+    case (value: scales.xml.XmlEvent)scala.util.Left[scales.xml.XmlEvent,scales.xml.EndElem]((x @ (_: scales.xml.XmlItem))) =&gt; scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+      ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(before, pos, toGo, path)(s))
+    })
+    case (value: scales.xml.EndElem)scala.util.Right[scales.xml.XmlEvent,scales.xml.EndElem]((name: scales.xml.QName, namespaces: scala.collection.immutable.Map[String,String])scales.xml.EndElem((q @ _), (n @ _))) =&gt; if (pos.size.&gt;(0).&amp;&amp;(pos.size.==(before.size.+(1))))
+      scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+        &lt;synthetic&gt; val eta$0$4: List[Int] = before.dropRight(1);
+        &lt;synthetic&gt; val eta$1$2: List[Int] = pos.tail;
+        &lt;synthetic&gt; val eta$2$2: List[Int] = {
+          &lt;synthetic&gt; &lt;artifact&gt; val x$5: Int = before.last;
+          toGo.::[Int](x$5)
+        };
+        &lt;synthetic&gt; val eta$3$1: scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC] = path.removeAndUp().getOrElse[scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scales.xml.`package`.noXmlPath);
+        ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(eta$0$4, eta$1$2, eta$2$2, eta$3$1)(s))
+      })
+    else
+      scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+        &lt;synthetic&gt; val eta$0$5: List[Int] = pos.tail;
+        &lt;synthetic&gt; val eta$1$3: scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC] = path.removeAndUp().getOrElse[scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scales.xml.`package`.noXmlPath);
+        ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(before, eta$0$5, toGo, eta$1$3)(s))
+      })
+  });
+  &lt;artifact&gt; val x$2: () =&gt; scalaz.iteratee.StepT[scales.xml.PullType,F,scales.xml.parser.pull.PullIteratees.PeekMatch] = (() =&gt; scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+    ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(before, pos, toGo, path)(s))
+  }));
+  &lt;artifact&gt; val x$3: () =&gt; scalaz.iteratee.StepT[scales.xml.PullType,F,scales.xml.parser.pull.PullIteratees.PeekMatch] = (() =&gt; dEof);
+  s.apply[scalaz.iteratee.StepT[scales.xml.PullType,F,scales.xml.parser.pull.PullIteratees.PeekMatch]](x$2.apply(), x$1, x$3.apply())
+}))
+        </td>
+      </tr><tr>
+        <td>
+          262
+        </td>
+        <td>
+          3999
+        </td>
+        <td>
+          10980
+          -
+          12606
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.Input.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          s.apply[scalaz.iteratee.StepT[scales.xml.PullType,F,scales.xml.parser.pull.PullIteratees.PeekMatch]](x$2.apply(), x$1, x$3.apply())
+        </td>
+      </tr><tr>
+        <td>
+          264
+        </td>
+        <td>
+          3980
+        </td>
+        <td>
+          11035
+          -
+          11833
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  &lt;stable&gt; &lt;accessor&gt; lazy val npath: scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC] = scales.xml.`package`.addAndFocus(path, elem, scales.xml.`package`.addAndFocus$default$3);
+  val npos: List[Int] = {
+    &lt;synthetic&gt; &lt;artifact&gt; val x$1: Int = pos.head.+(1);
+    pos.tail.::[Int](x$1)
+  };
+  val could: Boolean = toGo.head.==(npos.head);
+  if (pos.size.==(before.size.+(1)))
+    if (toGo.size.==(1).&amp;&amp;(could))
+      scalaz.iteratee.StepT.Done.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch](scala.Some.apply[scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](npath), scalaz.iteratee.Input.Empty.apply[scales.xml.PullType])
+    else
+      if (npos.head.&gt;(toGo.head))
+        dEof
+      else
+        if (could)
+          scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+            &lt;synthetic&gt; val eta$0$1: List[Int] = before.:+[Int, List[Int]](toGo.head)(immutable.this.List.canBuildFrom[Int]);
+            &lt;synthetic&gt; val eta$1$1: List[Int] = {
+              &lt;synthetic&gt; &lt;artifact&gt; val x$2: Int = 0;
+              npos.::[Int](x$2)
+            };
+            &lt;synthetic&gt; val eta$2$1: List[Int] = toGo.tail;
+            ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(eta$0$1, eta$1$1, eta$2$1, npath)(s))
+          })
+        else
+          scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+            &lt;synthetic&gt; val eta$0$2: List[Int] = {
+              &lt;synthetic&gt; &lt;artifact&gt; val x$3: Int = 0;
+              npos.::[Int](x$3)
+            };
+            ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(before, eta$0$2, toGo, npath)(s))
+          })
+  else
+    scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+      &lt;synthetic&gt; val eta$0$3: List[Int] = {
+        &lt;synthetic&gt; &lt;artifact&gt; val x$4: Int = 0;
+        npos.::[Int](x$4)
+      };
+      ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(before, eta$0$3, toGo, npath)(s))
+    })
+}
+        </td>
+      </tr><tr>
+        <td>
+          266
+        </td>
+        <td>
+          3955
+        </td>
+        <td>
+          11117
+          -
+          11141
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.List.::
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          pos.tail.::[Int](x$1)
+        </td>
+      </tr><tr>
+        <td>
+          267
+        </td>
+        <td>
+          3956
+        </td>
+        <td>
+          11181
+          -
+          11190
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.IterableLike.head
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          npos.head
+        </td>
+      </tr><tr>
+        <td>
+          267
+        </td>
+        <td>
+          3957
+        </td>
+        <td>
+          11168
+          -
+          11190
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          toGo.head.==(npos.head)
+        </td>
+      </tr><tr>
+        <td>
+          269
+        </td>
+        <td>
+          3958
+        </td>
+        <td>
+          11305
+          -
+          11320
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          before.size.+(1)
+        </td>
+      </tr><tr>
+        <td>
+          269
+        </td>
+        <td>
+          3959
+        </td>
+        <td>
+          11292
+          -
+          11321
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          pos.size.==(before.size.+(1))
+        </td>
+      </tr><tr>
+        <td>
+          270
+        </td>
+        <td>
+          3960
+        </td>
+        <td>
+          11360
+          -
+          11383
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          toGo.size.==(1).&amp;&amp;(could)
+        </td>
+      </tr><tr>
+        <td>
+          270
+        </td>
+        <td>
+          3976
+        </td>
+        <td>
+          11356
+          -
+          11740
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (toGo.size.==(1).&amp;&amp;(could))
+  scalaz.iteratee.StepT.Done.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch](scala.Some.apply[scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](npath), scalaz.iteratee.Input.Empty.apply[scales.xml.PullType])
+else
+  if (npos.head.&gt;(toGo.head))
+    dEof
+  else
+    if (could)
+      scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+        &lt;synthetic&gt; val eta$0$1: List[Int] = before.:+[Int, List[Int]](toGo.head)(immutable.this.List.canBuildFrom[Int]);
+        &lt;synthetic&gt; val eta$1$1: List[Int] = {
+          &lt;synthetic&gt; &lt;artifact&gt; val x$2: Int = 0;
+          npos.::[Int](x$2)
+        };
+        &lt;synthetic&gt; val eta$2$1: List[Int] = toGo.tail;
+        ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(eta$0$1, eta$1$1, eta$2$1, npath)(s))
+      })
+    else
+      scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+        &lt;synthetic&gt; val eta$0$2: List[Int] = {
+          &lt;synthetic&gt; &lt;artifact&gt; val x$3: Int = 0;
+          npos.::[Int](x$3)
+        };
+        ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(before, eta$0$2, toGo, npath)(s))
+      })
+        </td>
+      </tr><tr>
+        <td>
+          271
+        </td>
+        <td>
+          3961
+        </td>
+        <td>
+          11408
+          -
+          11419
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](npath)
+        </td>
+      </tr><tr>
+        <td>
+          271
+        </td>
+        <td>
+          3962
+        </td>
+        <td>
+          11421
+          -
+          11436
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scalaz.iteratee.Input.Empty.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scalaz.iteratee.Input.Empty.apply[scales.xml.PullType]
+        </td>
+      </tr><tr>
+        <td>
+          271
+        </td>
+        <td>
+          3963
+        </td>
+        <td>
+          11403
+          -
+          11437
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Done.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.StepT.Done.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch](scala.Some.apply[scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](npath), scalaz.iteratee.Input.Empty.apply[scales.xml.PullType])
+        </td>
+      </tr><tr>
+        <td>
+          271
+        </td>
+        <td>
+          3964
+        </td>
+        <td>
+          11403
+          -
+          11437
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Done.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.StepT.Done.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch](scala.Some.apply[scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](npath), scalaz.iteratee.Input.Empty.apply[scales.xml.PullType])
+        </td>
+      </tr><tr>
+        <td>
+          272
+        </td>
+        <td>
+          3965
+        </td>
+        <td>
+          11475
+          -
+          11484
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.IterableLike.head
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          toGo.head
+        </td>
+      </tr><tr>
+        <td>
+          272
+        </td>
+        <td>
+          3966
+        </td>
+        <td>
+          11463
+          -
+          11484
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          npos.head.&gt;(toGo.head)
+        </td>
+      </tr><tr>
+        <td>
+          272
+        </td>
+        <td>
+          3975
+        </td>
+        <td>
+          11459
+          -
+          11740
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (npos.head.&gt;(toGo.head))
+  dEof
+else
+  if (could)
+    scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+      &lt;synthetic&gt; val eta$0$1: List[Int] = before.:+[Int, List[Int]](toGo.head)(immutable.this.List.canBuildFrom[Int]);
+      &lt;synthetic&gt; val eta$1$1: List[Int] = {
+        &lt;synthetic&gt; &lt;artifact&gt; val x$2: Int = 0;
+        npos.::[Int](x$2)
+      };
+      &lt;synthetic&gt; val eta$2$1: List[Int] = toGo.tail;
+      ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(eta$0$1, eta$1$1, eta$2$1, npath)(s))
+    })
+  else
+    scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+      &lt;synthetic&gt; val eta$0$2: List[Int] = {
+        &lt;synthetic&gt; &lt;artifact&gt; val x$3: Int = 0;
+        npos.::[Int](x$3)
+      };
+      ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(before, eta$0$2, toGo, npath)(s))
+    })
+        </td>
+      </tr><tr>
+        <td>
+          273
+        </td>
+        <td>
+          3967
+        </td>
+        <td>
+          11504
+          -
+          11508
+        </td>
+        <td>
+          Ident
+        </td>
+        <td>
+          scales.xml.parser.pull.PullIteratees.dEof
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          dEof
+        </td>
+      </tr><tr>
+        <td>
+          274
+        </td>
+        <td>
+          3974
+        </td>
+        <td>
+          11530
+          -
+          11740
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (could)
+  scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+    &lt;synthetic&gt; val eta$0$1: List[Int] = before.:+[Int, List[Int]](toGo.head)(immutable.this.List.canBuildFrom[Int]);
+    &lt;synthetic&gt; val eta$1$1: List[Int] = {
+      &lt;synthetic&gt; &lt;artifact&gt; val x$2: Int = 0;
+      npos.::[Int](x$2)
+    };
+    &lt;synthetic&gt; val eta$2$1: List[Int] = toGo.tail;
+    ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(eta$0$1, eta$1$1, eta$2$1, npath)(s))
+  })
+else
+  scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+    &lt;synthetic&gt; val eta$0$2: List[Int] = {
+      &lt;synthetic&gt; &lt;artifact&gt; val x$3: Int = 0;
+      npos.::[Int](x$3)
+    };
+    ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(before, eta$0$2, toGo, npath)(s))
+  })
+        </td>
+      </tr><tr>
+        <td>
+          276
+        </td>
+        <td>
+          3968
+        </td>
+        <td>
+          11603
+          -
+          11657
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.PullIteratees.step
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          step(eta$0$1, eta$1$1, eta$2$1, npath)(s)
+        </td>
+      </tr><tr>
+        <td>
+          276
+        </td>
+        <td>
+          3969
+        </td>
+        <td>
+          11598
+          -
+          11658
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Cont.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+  &lt;synthetic&gt; val eta$0$1: List[Int] = before.:+[Int, List[Int]](toGo.head)(immutable.this.List.canBuildFrom[Int]);
+  &lt;synthetic&gt; val eta$1$1: List[Int] = {
+    &lt;synthetic&gt; &lt;artifact&gt; val x$2: Int = 0;
+    npos.::[Int](x$2)
+  };
+  &lt;synthetic&gt; val eta$2$1: List[Int] = toGo.tail;
+  ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(eta$0$1, eta$1$1, eta$2$1, npath)(s))
+})
+        </td>
+      </tr><tr>
+        <td>
+          276
+        </td>
+        <td>
+          3970
+        </td>
+        <td>
+          11598
+          -
+          11658
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Cont.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+  &lt;synthetic&gt; val eta$0$1: List[Int] = before.:+[Int, List[Int]](toGo.head)(immutable.this.List.canBuildFrom[Int]);
+  &lt;synthetic&gt; val eta$1$1: List[Int] = {
+    &lt;synthetic&gt; &lt;artifact&gt; val x$2: Int = 0;
+    npos.::[Int](x$2)
+  };
+  &lt;synthetic&gt; val eta$2$1: List[Int] = toGo.tail;
+  ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(eta$0$1, eta$1$1, eta$2$1, npath)(s))
+})
+        </td>
+      </tr><tr>
+        <td>
+          278
+        </td>
+        <td>
+          3971
+        </td>
+        <td>
+          11703
+          -
+          11739
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.PullIteratees.step
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          step(before, eta$0$2, toGo, npath)(s)
+        </td>
+      </tr><tr>
+        <td>
+          278
+        </td>
+        <td>
+          3972
+        </td>
+        <td>
+          11698
+          -
+          11740
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Cont.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+  &lt;synthetic&gt; val eta$0$2: List[Int] = {
+    &lt;synthetic&gt; &lt;artifact&gt; val x$3: Int = 0;
+    npos.::[Int](x$3)
+  };
+  ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(before, eta$0$2, toGo, npath)(s))
+})
+        </td>
+      </tr><tr>
+        <td>
+          278
+        </td>
+        <td>
+          3973
+        </td>
+        <td>
+          11698
+          -
+          11740
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Cont.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+  &lt;synthetic&gt; val eta$0$2: List[Int] = {
+    &lt;synthetic&gt; &lt;artifact&gt; val x$3: Int = 0;
+    npos.::[Int](x$3)
+  };
+  ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(before, eta$0$2, toGo, npath)(s))
+})
+        </td>
+      </tr><tr>
+        <td>
+          280
+        </td>
+        <td>
+          3977
+        </td>
+        <td>
+          11781
+          -
+          11817
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.PullIteratees.step
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          step(before, eta$0$3, toGo, npath)(s)
+        </td>
+      </tr><tr>
+        <td>
+          280
+        </td>
+        <td>
+          3978
+        </td>
+        <td>
+          11776
+          -
+          11818
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Cont.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+  &lt;synthetic&gt; val eta$0$3: List[Int] = {
+    &lt;synthetic&gt; &lt;artifact&gt; val x$4: Int = 0;
+    npos.::[Int](x$4)
+  };
+  ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(before, eta$0$3, toGo, npath)(s))
+})
+        </td>
+      </tr><tr>
+        <td>
+          280
+        </td>
+        <td>
+          3979
+        </td>
+        <td>
+          11776
+          -
+          11818
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Cont.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+  &lt;synthetic&gt; val eta$0$3: List[Int] = {
+    &lt;synthetic&gt; &lt;artifact&gt; val x$4: Int = 0;
+    npos.::[Int](x$4)
+  };
+  ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(before, eta$0$3, toGo, npath)(s))
+})
+        </td>
+      </tr><tr>
+        <td>
+          286
+        </td>
+        <td>
+          3981
+        </td>
+        <td>
+          11929
+          -
+          11958
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.PullIteratees.step
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          step(before, pos, toGo, path)(s)
+        </td>
+      </tr><tr>
+        <td>
+          286
+        </td>
+        <td>
+          3982
+        </td>
+        <td>
+          11924
+          -
+          11959
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Cont.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+  ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(before, pos, toGo, path)(s))
+})
+        </td>
+      </tr><tr>
+        <td>
+          286
+        </td>
+        <td>
+          3983
+        </td>
+        <td>
+          11924
+          -
+          11959
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Cont.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+  ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(before, pos, toGo, path)(s))
+})
+        </td>
+      </tr><tr>
+        <td>
+          291
+        </td>
+        <td>
+          3984
+        </td>
+        <td>
+          12151
+          -
+          12152
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          291
+        </td>
+        <td>
+          3985
+        </td>
+        <td>
+          12168
+          -
+          12183
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          before.size.+(1)
+        </td>
+      </tr><tr>
+        <td>
+          291
+        </td>
+        <td>
+          3986
+        </td>
+        <td>
+          12156
+          -
+          12183
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          pos.size.==(before.size.+(1))
+        </td>
+      </tr><tr>
+        <td>
+          291
+        </td>
+        <td>
+          3987
+        </td>
+        <td>
+          12140
+          -
+          12183
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          pos.size.&gt;(0).&amp;&amp;(pos.size.==(before.size.+(1)))
+        </td>
+      </tr><tr>
+        <td>
+          291
+        </td>
+        <td>
+          3994
+        </td>
+        <td>
+          12136
+          -
+          12461
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (pos.size.&gt;(0).&amp;&amp;(pos.size.==(before.size.+(1))))
+  scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+    &lt;synthetic&gt; val eta$0$4: List[Int] = before.dropRight(1);
+    &lt;synthetic&gt; val eta$1$2: List[Int] = pos.tail;
+    &lt;synthetic&gt; val eta$2$2: List[Int] = {
+      &lt;synthetic&gt; &lt;artifact&gt; val x$5: Int = before.last;
+      toGo.::[Int](x$5)
+    };
+    &lt;synthetic&gt; val eta$3$1: scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC] = path.removeAndUp().getOrElse[scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scales.xml.`package`.noXmlPath);
+    ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(eta$0$4, eta$1$2, eta$2$2, eta$3$1)(s))
+  })
+else
+  scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+    &lt;synthetic&gt; val eta$0$5: List[Int] = pos.tail;
+    &lt;synthetic&gt; val eta$1$3: scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC] = path.removeAndUp().getOrElse[scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scales.xml.`package`.noXmlPath);
+    ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(before, eta$0$5, toGo, eta$1$3)(s))
+  })
+        </td>
+      </tr><tr>
+        <td>
+          293
+        </td>
+        <td>
+          3988
+        </td>
+        <td>
+          12252
+          -
+          12349
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.PullIteratees.step
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          step(eta$0$4, eta$1$2, eta$2$2, eta$3$1)(s)
+        </td>
+      </tr><tr>
+        <td>
+          293
+        </td>
+        <td>
+          3989
+        </td>
+        <td>
+          12247
+          -
+          12350
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Cont.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+  &lt;synthetic&gt; val eta$0$4: List[Int] = before.dropRight(1);
+  &lt;synthetic&gt; val eta$1$2: List[Int] = pos.tail;
+  &lt;synthetic&gt; val eta$2$2: List[Int] = {
+    &lt;synthetic&gt; &lt;artifact&gt; val x$5: Int = before.last;
+    toGo.::[Int](x$5)
+  };
+  &lt;synthetic&gt; val eta$3$1: scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC] = path.removeAndUp().getOrElse[scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scales.xml.`package`.noXmlPath);
+  ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(eta$0$4, eta$1$2, eta$2$2, eta$3$1)(s))
+})
+        </td>
+      </tr><tr>
+        <td>
+          293
+        </td>
+        <td>
+          3990
+        </td>
+        <td>
+          12247
+          -
+          12350
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Cont.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+  &lt;synthetic&gt; val eta$0$4: List[Int] = before.dropRight(1);
+  &lt;synthetic&gt; val eta$1$2: List[Int] = pos.tail;
+  &lt;synthetic&gt; val eta$2$2: List[Int] = {
+    &lt;synthetic&gt; &lt;artifact&gt; val x$5: Int = before.last;
+    toGo.::[Int](x$5)
+  };
+  &lt;synthetic&gt; val eta$3$1: scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC] = path.removeAndUp().getOrElse[scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scales.xml.`package`.noXmlPath);
+  ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(eta$0$4, eta$1$2, eta$2$2, eta$3$1)(s))
+})
+        </td>
+      </tr><tr>
+        <td>
+          295
+        </td>
+        <td>
+          3991
+        </td>
+        <td>
+          12391
+          -
+          12460
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.PullIteratees.step
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          step(before, eta$0$5, toGo, eta$1$3)(s)
+        </td>
+      </tr><tr>
+        <td>
+          295
+        </td>
+        <td>
+          3992
+        </td>
+        <td>
+          12386
+          -
+          12461
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Cont.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+  &lt;synthetic&gt; val eta$0$5: List[Int] = pos.tail;
+  &lt;synthetic&gt; val eta$1$3: scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC] = path.removeAndUp().getOrElse[scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scales.xml.`package`.noXmlPath);
+  ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(before, eta$0$5, toGo, eta$1$3)(s))
+})
+        </td>
+      </tr><tr>
+        <td>
+          295
+        </td>
+        <td>
+          3993
+        </td>
+        <td>
+          12386
+          -
+          12461
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Cont.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+  &lt;synthetic&gt; val eta$0$5: List[Int] = pos.tail;
+  &lt;synthetic&gt; val eta$1$3: scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC] = path.removeAndUp().getOrElse[scales.utils.collection.path.Path[scales.xml.XmlItem,scales.xml.Elem,scales.xml.XCC]](scales.xml.`package`.noXmlPath);
+  ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(before, eta$0$5, toGo, eta$1$3)(s))
+})
+        </td>
+      </tr><tr>
+        <td>
+          298
+        </td>
+        <td>
+          3995
+        </td>
+        <td>
+          12499
+          -
+          12528
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.PullIteratees.step
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          step(before, pos, toGo, path)(s)
+        </td>
+      </tr><tr>
+        <td>
+          298
+        </td>
+        <td>
+          3996
+        </td>
+        <td>
+          12494
+          -
+          12529
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Cont.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+  ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(before, pos, toGo, path)(s))
+})
+        </td>
+      </tr><tr>
+        <td>
+          298
+        </td>
+        <td>
+          3997
+        </td>
+        <td>
+          12498
+          -
+          12498
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function0.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          x$2.apply()
+        </td>
+      </tr><tr>
+        <td>
+          299
+        </td>
+        <td>
+          3998
+        </td>
+        <td>
+          12547
+          -
+          12547
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function0.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$3.apply()
+        </td>
+      </tr><tr>
+        <td>
+          303
+        </td>
+        <td>
+          4002
+        </td>
+        <td>
+          12646
+          -
+          12696
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.PullIteratees.step
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          step(scala.collection.immutable.Nil, eta$0$1, eta$1$1, scales.xml.`package`.noXmlPath)(s)
+        </td>
+      </tr><tr>
+        <td>
+          303
+        </td>
+        <td>
+          4003
+        </td>
+        <td>
+          12641
+          -
+          12697
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.StepT.Cont.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+  &lt;synthetic&gt; val eta$0$1: List[Int] = scala.collection.immutable.List.apply[Int](0);
+  &lt;synthetic&gt; val eta$1$1: List[Int] = {
+    &lt;synthetic&gt; &lt;artifact&gt; val x$6: Int = 1;
+    downTo.::[Int](x$6)
+  };
+  ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(scala.collection.immutable.Nil, eta$0$1, eta$1$1, scales.xml.`package`.noXmlPath)(s))
+})
+        </td>
+      </tr><tr>
+        <td>
+          303
+        </td>
+        <td>
+          4004
+        </td>
+        <td>
+          12632
+          -
+          12699
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.Applicative.point
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          F.point[scalaz.iteratee.StepT[scales.xml.PullType,F,scales.xml.parser.pull.PullIteratees.PeekMatch]](scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+  &lt;synthetic&gt; val eta$0$1: List[Int] = scala.collection.immutable.List.apply[Int](0);
+  &lt;synthetic&gt; val eta$1$1: List[Int] = {
+    &lt;synthetic&gt; &lt;artifact&gt; val x$6: Int = 1;
+    downTo.::[Int](x$6)
+  };
+  ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(scala.collection.immutable.Nil, eta$0$1, eta$1$1, scales.xml.`package`.noXmlPath)(s))
+}))
+        </td>
+      </tr><tr>
+        <td>
+          303
+        </td>
+        <td>
+          4005
+        </td>
+        <td>
+          12621
+          -
+          12701
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.iteratee.IterateeTFunctions.iterateeT
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.iteratee.Iteratee.iterateeT[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch](F.point[scalaz.iteratee.StepT[scales.xml.PullType,F,scales.xml.parser.pull.PullIteratees.PeekMatch]](scalaz.iteratee.StepT.Cont.apply[scales.xml.PullType, F, scales.xml.parser.pull.PullIteratees.PeekMatch]({
+  &lt;synthetic&gt; val eta$0$1: List[Int] = scala.collection.immutable.List.apply[Int](0);
+  &lt;synthetic&gt; val eta$1$1: List[Int] = {
+    &lt;synthetic&gt; &lt;artifact&gt; val x$6: Int = 1;
+    downTo.::[Int](x$6)
+  };
+  ((s: scalaz.iteratee.Input[scales.xml.PullType]) =&gt; step(scala.collection.immutable.Nil, eta$0$1, eta$1$1, scales.xml.`package`.noXmlPath)(s))
+})))
+        </td>
+      </tr><tr>
+        <td>
+          315
+        </td>
+        <td>
+          4006
+        </td>
+        <td>
+          13025
+          -
+          13029
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.Iterate.path
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.path
+        </td>
+      </tr><tr>
+        <td>
+          317
+        </td>
+        <td>
+          4007
+        </td>
+        <td>
+          13037
+          -
+          13051
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.SeqLike.isEmpty
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.qnames.isEmpty
+        </td>
+      </tr><tr>
+        <td>
+          317
+        </td>
+        <td>
+          4008
+        </td>
+        <td>
+          13053
+          -
+          13077
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.iteratee.Iteratees.error
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.utils.`package`.error(&quot;QNames is empty&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          317
+        </td>
+        <td>
+          4009
+        </td>
+        <td>
+          13053
+          -
+          13077
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.iteratee.Iteratees.error
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.utils.`package`.error(&quot;QNames is empty&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          317
+        </td>
+        <td>
+          4010
+        </td>
+        <td>
+          13033
+          -
+          13033
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          317
+        </td>
+        <td>
+          4011
+        </td>
+        <td>
+          13033
+          -
+          13033
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          322
+        </td>
+        <td>
+          4012
+        </td>
+        <td>
+          13184
+          -
+          13201
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.TreeProxies.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new scales.xml.impl.TreeProxies()
+        </td>
+      </tr><tr>
+        <td>
+          326
+        </td>
+        <td>
+          4013
+        </td>
+        <td>
+          13255
+          -
+          13258
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.immutable.Nil
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.collection.immutable.Nil
+        </td>
+      </tr><tr>
+        <td>
+          326
+        </td>
+        <td>
+          4014
+        </td>
+        <td>
+          13260
+          -
+          13273
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.TreeProxies.reuse
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.proxies.reuse()
+        </td>
+      </tr><tr>
+        <td>
+          326
+        </td>
+        <td>
+          4015
+        </td>
+        <td>
+          13275
+          -
+          13280
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          326
+        </td>
+        <td>
+          4016
+        </td>
+        <td>
+          13251
+          -
+          13281
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.Iterate.set
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.set(scala.collection.immutable.Nil, Iterate.this.proxies.reuse(), false)
+        </td>
+      </tr><tr>
+        <td>
+          329
+        </td>
+        <td>
+          4017
+        </td>
+        <td>
+          13289
+          -
+          13294
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.Iterate.reset
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.reset
+        </td>
+      </tr><tr>
+        <td>
+          332
+        </td>
+        <td>
+          4018
+        </td>
+        <td>
+          13376
+          -
+          13396
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.Iterate.before_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          this.before_=(before)
+        </td>
+      </tr><tr>
+        <td>
+          333
+        </td>
+        <td>
+          4019
+        </td>
+        <td>
+          13401
+          -
+          13423
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.Iterate.proxies_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          this.proxies_=(proxies)
+        </td>
+      </tr><tr>
+        <td>
+          334
+        </td>
+        <td>
+          4020
+        </td>
+        <td>
+          13428
+          -
+          13456
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.Iterate.collecting_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          this.collecting_=(collecting)
+        </td>
+      </tr><tr>
+        <td>
+          337
+        </td>
+        <td>
+          4021
+        </td>
+        <td>
+          13478
+          -
+          13482
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.Iterate.step
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.step
+        </td>
+      </tr><tr>
+        <td>
+          338
+        </td>
+        <td>
+          4022
+        </td>
+        <td>
+          13495
+          -
+          13502
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.Iterate.getNext
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.getNext
+        </td>
+      </tr><tr>
+        <td>
+          340
+        </td>
+        <td>
+          4023
+        </td>
+        <td>
+          13520
+          -
+          13531
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.ne
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.cur.ne(null)
+        </td>
+      </tr><tr>
+        <td>
+          342
+        </td>
+        <td>
+          4024
+        </td>
+        <td>
+          13559
+          -
+          13562
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.Iterate.cur
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.cur
+        </td>
+      </tr><tr>
+        <td>
+          343
+        </td>
+        <td>
+          4025
+        </td>
+        <td>
+          13573
+          -
+          13580
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.Iterate.getNext
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.getNext
+        </td>
+      </tr><tr>
+        <td>
+          343
+        </td>
+        <td>
+          4026
+        </td>
+        <td>
+          13567
+          -
+          13580
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.Iterate.cur_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.cur_=(Iterate.this.getNext)
+        </td>
+      </tr><tr>
+        <td>
+          348
+        </td>
+        <td>
+          4027
+        </td>
+        <td>
+          13641
+          -
+          13645
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          348
+        </td>
+        <td>
+          4028
+        </td>
+        <td>
+          13641
+          -
+          13667
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          null.asInstanceOf[scales.xml.XmlPath]
+        </td>
+      </tr><tr>
+        <td>
+          349
+        </td>
+        <td>
+          4029
+        </td>
+        <td>
+          13693
+          -
+          13704
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          res.==(null)
+        </td>
+      </tr><tr>
+        <td>
+          349
+        </td>
+        <td>
+          4030
+        </td>
+        <td>
+          13678
+          -
+          13704
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.xml.hasNext.&amp;&amp;(res.==(null))
+        </td>
+      </tr><tr>
+        <td>
+          349
+        </td>
+        <td>
+          4084
+        </td>
+        <td>
+          13706
+          -
+          13706
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.Iterate.while$1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          while$1()
+        </td>
+      </tr><tr>
+        <td>
+          349
+        </td>
+        <td>
+          4085
+        </td>
+        <td>
+          13706
+          -
+          14955
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  {
+    val e: scales.xml.PullType = Iterate.this.xml.next();
+    e match {
+      case (value: scales.xml.XmlEvent)scala.util.Left[scales.xml.XmlEvent,scales.xml.EndElem]((elem @ scales.xml.Elem.unapply(&lt;unapply-selector&gt;) &lt;unapply&gt; ((q @ _), (a @ _), (n @ _)))) =&gt; {
+        Iterate.this.proxies.beginSub(elem, scales.xml.`package`.XmlBuilder());
+        val shouldCollect: Boolean = Iterate.this.collecting.||(Iterate.this.before.size.==(Iterate.this.qnames.size.-(1)).&amp;&amp;(Iterate.this.before.:+[scales.xml.QName, List[scales.xml.QName]](q)(immutable.this.List.canBuildFrom[scales.xml.QName]).zip[scales.xml.QName, scales.xml.QName, List[(scales.xml.QName, scales.xml.QName)]](Iterate.this.qnames.dropRight(1))(immutable.this.List.canBuildFrom[(scales.xml.QName, scales.xml.QName)]).forall(((p: (scales.xml.QName, scales.xml.QName)) =&gt; scalaz.Scalaz.ToEqualOps[scales.xml.QName](p._1)(Iterate.this.qe).===(p._2)))));
+        Iterate.this.set(Iterate.this.before.:+[scales.xml.QName, List[scales.xml.QName]](q)(immutable.this.List.canBuildFrom[scales.xml.QName]), Iterate.this.proxies, shouldCollect)
+      }
+      case (value: scales.xml.XmlEvent)scala.util.Left[scales.xml.XmlEvent,scales.xml.EndElem]((x @ (_: scales.xml.XmlItem))) =&gt; {
+        if (Iterate.this.collecting)
+          Iterate.this.proxies.addChild(x)
+        else
+          ();
+        Iterate.this.set(Iterate.this.before, Iterate.this.proxies, Iterate.this.collecting)
+      }
+      case (value: scales.xml.EndElem)scala.util.Right[scales.xml.XmlEvent,scales.xml.EndElem]((name: scales.xml.QName, namespaces: scala.collection.immutable.Map[String,String])scales.xml.EndElem((q @ _), (n @ _))) =&gt; {
+        val haveCollected: Boolean = Iterate.this.collecting.&amp;&amp;(Iterate.this.before.size.==(Iterate.this.qnames.size)).&amp;&amp;(Iterate.this.before.zip[scales.xml.QName, scales.xml.QName, List[(scales.xml.QName, scales.xml.QName)]](Iterate.this.qnames)(immutable.this.List.canBuildFrom[(scales.xml.QName, scales.xml.QName)]).forall(((p: (scales.xml.QName, scales.xml.QName)) =&gt; scalaz.Scalaz.ToEqualOps[scales.xml.QName](p._1)(Iterate.this.qe).===(p._2))));
+        if (haveCollected)
+          res = Iterate.this.proxies.proxyPath()
+        else
+          if (Iterate.this.collecting)
+            Iterate.this.proxies.elementEnd()
+          else
+            Iterate.this.proxies.proxyRemoveAndUp();
+        Iterate.this.set(Iterate.this.before.dropRight(1), Iterate.this.proxies, Iterate.this.collecting.&amp;&amp;(haveCollected.unary_!))
+      }
+    }
+  };
+  while$1()
+}
+        </td>
+      </tr><tr>
+        <td>
+          349
+        </td>
+        <td>
+          4086
+        </td>
+        <td>
+          13672
+          -
+          13672
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          349
+        </td>
+        <td>
+          4087
+        </td>
+        <td>
+          13672
+          -
+          13672
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          350
+        </td>
+        <td>
+          4031
+        </td>
+        <td>
+          13722
+          -
+          13730
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.Iterator.next
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.xml.next()
+        </td>
+      </tr><tr>
+        <td>
+          353
+        </td>
+        <td>
+          4049
+        </td>
+        <td>
+          13786
+          -
+          14108
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  Iterate.this.proxies.beginSub(elem, scales.xml.`package`.XmlBuilder());
+  val shouldCollect: Boolean = Iterate.this.collecting.||(Iterate.this.before.size.==(Iterate.this.qnames.size.-(1)).&amp;&amp;(Iterate.this.before.:+[scales.xml.QName, List[scales.xml.QName]](q)(immutable.this.List.canBuildFrom[scales.xml.QName]).zip[scales.xml.QName, scales.xml.QName, List[(scales.xml.QName, scales.xml.QName)]](Iterate.this.qnames.dropRight(1))(immutable.this.List.canBuildFrom[(scales.xml.QName, scales.xml.QName)]).forall(((p: (scales.xml.QName, scales.xml.QName)) =&gt; scalaz.Scalaz.ToEqualOps[scales.xml.QName](p._1)(Iterate.this.qe).===(p._2)))));
+  Iterate.this.set(Iterate.this.before.:+[scales.xml.QName, List[scales.xml.QName]](q)(immutable.this.List.canBuildFrom[scales.xml.QName]), Iterate.this.proxies, shouldCollect)
+}
+        </td>
+      </tr><tr>
+        <td>
+          354
+        </td>
+        <td>
+          4032
+        </td>
+        <td>
+          13822
+          -
+          13834
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.XmlTypes.XmlBuilder
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.`package`.XmlBuilder()
+        </td>
+      </tr><tr>
+        <td>
+          354
+        </td>
+        <td>
+          4033
+        </td>
+        <td>
+          13799
+          -
+          13835
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.TreeProxies.beginSub
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.proxies.beginSub(elem, scales.xml.`package`.XmlBuilder())
+        </td>
+      </tr><tr>
+        <td>
+          356
+        </td>
+        <td>
+          4044
+        </td>
+        <td>
+          13867
+          -
+          14057
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.||
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.collecting.||(Iterate.this.before.size.==(Iterate.this.qnames.size.-(1)).&amp;&amp;(Iterate.this.before.:+[scales.xml.QName, List[scales.xml.QName]](q)(immutable.this.List.canBuildFrom[scales.xml.QName]).zip[scales.xml.QName, scales.xml.QName, List[(scales.xml.QName, scales.xml.QName)]](Iterate.this.qnames.dropRight(1))(immutable.this.List.canBuildFrom[(scales.xml.QName, scales.xml.QName)]).forall(((p: (scales.xml.QName, scales.xml.QName)) =&gt; scalaz.Scalaz.ToEqualOps[scales.xml.QName](p._1)(Iterate.this.qe).===(p._2)))))
+        </td>
+      </tr><tr>
+        <td>
+          357
+        </td>
+        <td>
+          4034
+        </td>
+        <td>
+          13911
+          -
+          13926
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.-
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.qnames.size.-(1)
+        </td>
+      </tr><tr>
+        <td>
+          357
+        </td>
+        <td>
+          4043
+        </td>
+        <td>
+          13895
+          -
+          14045
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.before.size.==(Iterate.this.qnames.size.-(1)).&amp;&amp;(Iterate.this.before.:+[scales.xml.QName, List[scales.xml.QName]](q)(immutable.this.List.canBuildFrom[scales.xml.QName]).zip[scales.xml.QName, scales.xml.QName, List[(scales.xml.QName, scales.xml.QName)]](Iterate.this.qnames.dropRight(1))(immutable.this.List.canBuildFrom[(scales.xml.QName, scales.xml.QName)]).forall(((p: (scales.xml.QName, scales.xml.QName)) =&gt; scalaz.Scalaz.ToEqualOps[scales.xml.QName](p._1)(Iterate.this.qe).===(p._2))))
+        </td>
+      </tr><tr>
+        <td>
+          359
+        </td>
+        <td>
+          4035
+        </td>
+        <td>
+          13988
+          -
+          13988
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.immutable.List.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          immutable.this.List.canBuildFrom[scales.xml.QName]
+        </td>
+      </tr><tr>
+        <td>
+          359
+        </td>
+        <td>
+          4036
+        </td>
+        <td>
+          13998
+          -
+          14017
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.LinearSeqOptimized.dropRight
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.qnames.dropRight(1)
+        </td>
+      </tr><tr>
+        <td>
+          359
+        </td>
+        <td>
+          4037
+        </td>
+        <td>
+          13997
+          -
+          13997
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.immutable.List.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          immutable.this.List.canBuildFrom[(scales.xml.QName, scales.xml.QName)]
+        </td>
+      </tr><tr>
+        <td>
+          359
+        </td>
+        <td>
+          4038
+        </td>
+        <td>
+          14031
+          -
+          14035
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          p._1
+        </td>
+      </tr><tr>
+        <td>
+          359
+        </td>
+        <td>
+          4039
+        </td>
+        <td>
+          14033
+          -
+          14033
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.Iterate.qe
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.qe
+        </td>
+      </tr><tr>
+        <td>
+          359
+        </td>
+        <td>
+          4040
+        </td>
+        <td>
+          14040
+          -
+          14044
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          p._2
+        </td>
+      </tr><tr>
+        <td>
+          359
+        </td>
+        <td>
+          4041
+        </td>
+        <td>
+          14031
+          -
+          14044
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.syntax.EqualOps.===
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.Scalaz.ToEqualOps[scales.xml.QName](p._1)(Iterate.this.qe).===(p._2)
+        </td>
+      </tr><tr>
+        <td>
+          359
+        </td>
+        <td>
+          4042
+        </td>
+        <td>
+          13980
+          -
+          14045
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.LinearSeqOptimized.forall
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.before.:+[scales.xml.QName, List[scales.xml.QName]](q)(immutable.this.List.canBuildFrom[scales.xml.QName]).zip[scales.xml.QName, scales.xml.QName, List[(scales.xml.QName, scales.xml.QName)]](Iterate.this.qnames.dropRight(1))(immutable.this.List.canBuildFrom[(scales.xml.QName, scales.xml.QName)]).forall(((p: (scales.xml.QName, scales.xml.QName)) =&gt; scalaz.Scalaz.ToEqualOps[scales.xml.QName](p._1)(Iterate.this.qe).===(p._2)))
+        </td>
+      </tr><tr>
+        <td>
+          361
+        </td>
+        <td>
+          4045
+        </td>
+        <td>
+          14079
+          -
+          14079
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.immutable.List.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          immutable.this.List.canBuildFrom[scales.xml.QName]
+        </td>
+      </tr><tr>
+        <td>
+          361
+        </td>
+        <td>
+          4046
+        </td>
+        <td>
+          14072
+          -
+          14083
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.SeqLike.:+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.before.:+[scales.xml.QName, List[scales.xml.QName]](q)(immutable.this.List.canBuildFrom[scales.xml.QName])
+        </td>
+      </tr><tr>
+        <td>
+          361
+        </td>
+        <td>
+          4047
+        </td>
+        <td>
+          14085
+          -
+          14092
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.Iterate.proxies
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.proxies
+        </td>
+      </tr><tr>
+        <td>
+          361
+        </td>
+        <td>
+          4048
+        </td>
+        <td>
+          14068
+          -
+          14108
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.Iterate.set
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.set(Iterate.this.before.:+[scales.xml.QName, List[scales.xml.QName]](q)(immutable.this.List.canBuildFrom[scales.xml.QName]), Iterate.this.proxies, shouldCollect)
+        </td>
+      </tr><tr>
+        <td>
+          363
+        </td>
+        <td>
+          4059
+        </td>
+        <td>
+          14140
+          -
+          14257
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  if (Iterate.this.collecting)
+    Iterate.this.proxies.addChild(x)
+  else
+    ();
+  Iterate.this.set(Iterate.this.before, Iterate.this.proxies, Iterate.this.collecting)
+}
+        </td>
+      </tr><tr>
+        <td>
+          364
+        </td>
+        <td>
+          4050
+        </td>
+        <td>
+          14157
+          -
+          14167
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.Iterate.collecting
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.collecting
+        </td>
+      </tr><tr>
+        <td>
+          364
+        </td>
+        <td>
+          4053
+        </td>
+        <td>
+          14153
+          -
+          14153
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          364
+        </td>
+        <td>
+          4054
+        </td>
+        <td>
+          14153
+          -
+          14153
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          365
+        </td>
+        <td>
+          4051
+        </td>
+        <td>
+          14183
+          -
+          14202
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.TreeProxies.addChild
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.proxies.addChild(x)
+        </td>
+      </tr><tr>
+        <td>
+          365
+        </td>
+        <td>
+          4052
+        </td>
+        <td>
+          14183
+          -
+          14202
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.impl.TreeProxies.addChild
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.proxies.addChild(x)
+        </td>
+      </tr><tr>
+        <td>
+          367
+        </td>
+        <td>
+          4055
+        </td>
+        <td>
+          14229
+          -
+          14235
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.Iterate.before
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.before
+        </td>
+      </tr><tr>
+        <td>
+          367
+        </td>
+        <td>
+          4056
+        </td>
+        <td>
+          14237
+          -
+          14244
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.Iterate.proxies
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.proxies
+        </td>
+      </tr><tr>
+        <td>
+          367
+        </td>
+        <td>
+          4057
+        </td>
+        <td>
+          14246
+          -
+          14256
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.Iterate.collecting
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.collecting
+        </td>
+      </tr><tr>
+        <td>
+          367
+        </td>
+        <td>
+          4058
+        </td>
+        <td>
+          14225
+          -
+          14257
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.Iterate.set
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.set(Iterate.this.before, Iterate.this.proxies, Iterate.this.collecting)
+        </td>
+      </tr><tr>
+        <td>
+          369
+        </td>
+        <td>
+          4083
+        </td>
+        <td>
+          14293
+          -
+          14941
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val haveCollected: Boolean = Iterate.this.collecting.&amp;&amp;(Iterate.this.before.size.==(Iterate.this.qnames.size)).&amp;&amp;(Iterate.this.before.zip[scales.xml.QName, scales.xml.QName, List[(scales.xml.QName, scales.xml.QName)]](Iterate.this.qnames)(immutable.this.List.canBuildFrom[(scales.xml.QName, scales.xml.QName)]).forall(((p: (scales.xml.QName, scales.xml.QName)) =&gt; scalaz.Scalaz.ToEqualOps[scales.xml.QName](p._1)(Iterate.this.qe).===(p._2))));
+  if (haveCollected)
+    res = Iterate.this.proxies.proxyPath()
+  else
+    if (Iterate.this.collecting)
+      Iterate.this.proxies.elementEnd()
+    else
+      Iterate.this.proxies.proxyRemoveAndUp();
+  Iterate.this.set(Iterate.this.before.dropRight(1), Iterate.this.proxies, Iterate.this.collecting.&amp;&amp;(haveCollected.unary_!))
+}
+        </td>
+      </tr><tr>
+        <td>
+          373
+        </td>
+        <td>
+          4060
+        </td>
+        <td>
+          14527
+          -
+          14538
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.SeqLike.size
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.qnames.size
+        </td>
+      </tr><tr>
+        <td>
+          373
+        </td>
+        <td>
+          4061
+        </td>
+        <td>
+          14512
+          -
+          14538
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.before.size.==(Iterate.this.qnames.size)
+        </td>
+      </tr><tr>
+        <td>
+          373
+        </td>
+        <td>
+          4062
+        </td>
+        <td>
+          14553
+          -
+          14559
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.Iterate.qnames
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.qnames
+        </td>
+      </tr><tr>
+        <td>
+          373
+        </td>
+        <td>
+          4063
+        </td>
+        <td>
+          14552
+          -
+          14552
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.immutable.List.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          immutable.this.List.canBuildFrom[(scales.xml.QName, scales.xml.QName)]
+        </td>
+      </tr><tr>
+        <td>
+          373
+        </td>
+        <td>
+          4064
+        </td>
+        <td>
+          14573
+          -
+          14577
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          p._1
+        </td>
+      </tr><tr>
+        <td>
+          373
+        </td>
+        <td>
+          4065
+        </td>
+        <td>
+          14575
+          -
+          14575
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.Iterate.qe
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.qe
+        </td>
+      </tr><tr>
+        <td>
+          373
+        </td>
+        <td>
+          4066
+        </td>
+        <td>
+          14582
+          -
+          14586
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          p._2
+        </td>
+      </tr><tr>
+        <td>
+          373
+        </td>
+        <td>
+          4067
+        </td>
+        <td>
+          14573
+          -
+          14586
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.syntax.EqualOps.===
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.Scalaz.ToEqualOps[scales.xml.QName](p._1)(Iterate.this.qe).===(p._2)
+        </td>
+      </tr><tr>
+        <td>
+          373
+        </td>
+        <td>
+          4068
+        </td>
+        <td>
+          14542
+          -
+          14587
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.LinearSeqOptimized.forall
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.before.zip[scales.xml.QName, scales.xml.QName, List[(scales.xml.QName, scales.xml.QName)]](Iterate.this.qnames)(immutable.this.List.canBuildFrom[(scales.xml.QName, scales.xml.QName)]).forall(((p: (scales.xml.QName, scales.xml.QName)) =&gt; scalaz.Scalaz.ToEqualOps[scales.xml.QName](p._1)(Iterate.this.qe).===(p._2)))
+        </td>
+      </tr><tr>
+        <td>
+          373
+        </td>
+        <td>
+          4069
+        </td>
+        <td>
+          14498
+          -
+          14587
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.collecting.&amp;&amp;(Iterate.this.before.size.==(Iterate.this.qnames.size)).&amp;&amp;(Iterate.this.before.zip[scales.xml.QName, scales.xml.QName, List[(scales.xml.QName, scales.xml.QName)]](Iterate.this.qnames)(immutable.this.List.canBuildFrom[(scales.xml.QName, scales.xml.QName)]).forall(((p: (scales.xml.QName, scales.xml.QName)) =&gt; scalaz.Scalaz.ToEqualOps[scales.xml.QName](p._1)(Iterate.this.qe).===(p._2))))
+        </td>
+      </tr><tr>
+        <td>
+          375
+        </td>
+        <td>
+          4070
+        </td>
+        <td>
+          14637
+          -
+          14654
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.TreeProxies.proxyPath
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.proxies.proxyPath()
+        </td>
+      </tr><tr>
+        <td>
+          375
+        </td>
+        <td>
+          4071
+        </td>
+        <td>
+          14631
+          -
+          14654
+        </td>
+        <td>
+          Assign
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          res = Iterate.this.proxies.proxyPath()
+        </td>
+      </tr><tr>
+        <td>
+          377
+        </td>
+        <td>
+          4072
+        </td>
+        <td>
+          14688
+          -
+          14698
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.Iterate.collecting
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.collecting
+        </td>
+      </tr><tr>
+        <td>
+          377
+        </td>
+        <td>
+          4077
+        </td>
+        <td>
+          14684
+          -
+          14866
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (Iterate.this.collecting)
+  Iterate.this.proxies.elementEnd()
+else
+  Iterate.this.proxies.proxyRemoveAndUp()
+        </td>
+      </tr><tr>
+        <td>
+          379
+        </td>
+        <td>
+          4073
+        </td>
+        <td>
+          14770
+          -
+          14790
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.TreeProxies.elementEnd
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.proxies.elementEnd()
+        </td>
+      </tr><tr>
+        <td>
+          379
+        </td>
+        <td>
+          4074
+        </td>
+        <td>
+          14770
+          -
+          14790
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.impl.TreeProxies.elementEnd
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.proxies.elementEnd()
+        </td>
+      </tr><tr>
+        <td>
+          381
+        </td>
+        <td>
+          4075
+        </td>
+        <td>
+          14826
+          -
+          14852
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.TreeProxies.proxyRemoveAndUp
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.proxies.proxyRemoveAndUp()
+        </td>
+      </tr><tr>
+        <td>
+          381
+        </td>
+        <td>
+          4076
+        </td>
+        <td>
+          14826
+          -
+          14852
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.impl.TreeProxies.proxyRemoveAndUp
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.proxies.proxyRemoveAndUp()
+        </td>
+      </tr><tr>
+        <td>
+          384
+        </td>
+        <td>
+          4078
+        </td>
+        <td>
+          14882
+          -
+          14901
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.LinearSeqOptimized.dropRight
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.before.dropRight(1)
+        </td>
+      </tr><tr>
+        <td>
+          384
+        </td>
+        <td>
+          4079
+        </td>
+        <td>
+          14903
+          -
+          14910
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.parser.pull.Iterate.proxies
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.proxies
+        </td>
+      </tr><tr>
+        <td>
+          384
+        </td>
+        <td>
+          4080
+        </td>
+        <td>
+          14926
+          -
+          14940
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          haveCollected.unary_!
+        </td>
+      </tr><tr>
+        <td>
+          384
+        </td>
+        <td>
+          4081
+        </td>
+        <td>
+          14912
+          -
+          14940
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.collecting.&amp;&amp;(haveCollected.unary_!)
+        </td>
+      </tr><tr>
+        <td>
+          384
+        </td>
+        <td>
+          4082
+        </td>
+        <td>
+          14878
+          -
+          14941
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.pull.Iterate.set
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Iterate.this.set(Iterate.this.before.dropRight(1), Iterate.this.proxies, Iterate.this.collecting.&amp;&amp;(haveCollected.unary_!))
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

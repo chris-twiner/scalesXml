@@ -1,0 +1,911 @@
+<html>
+      <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+      <title id="title">Scoverage Code Coverage</title>
+      <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+      <style>
+        .meter {
+        height: 14px;
+        position: relative;
+        background: #BB2020;
+}
+
+.meter span {
+	display: block;
+	height: 100%;
+	background-color: rgb(43,194,83);
+	background-image: -webkit-gradient(
+	  linear,
+	  left bottom,
+	  left top,
+	  color-stop(0, rgb(43,194,83)),
+	  color-stop(1, rgb(84,240,84))
+	 );
+	background-image: -webkit-linear-gradient(
+	  center bottom,
+	  rgb(43,194,83) 37%,
+	  rgb(84,240,84) 69%
+	 );
+	background-image: -moz-linear-gradient(
+	  center bottom,
+	  rgb(43,194,83) 37%,
+	  rgb(84,240,84) 69%
+	 );
+	background-image: -ms-linear-gradient(
+	  center bottom,
+	  rgb(43,194,83) 37%,
+	  rgb(84,240,84) 69%
+	 );
+	background-image: -o-linear-gradient(
+	  center bottom,
+	  rgb(43,194,83) 37%,
+	  rgb(84,240,84) 69%
+	 );
+	-webkit-box-shadow:
+	  inset 0 2px 9px  rgba(255,255,255,0.3),
+	  inset 0 -2px 6px rgba(0,0,0,0.4);
+	-moz-box-shadow:
+	  inset 0 2px 9px  rgba(255,255,255,0.3),
+	  inset 0 -2px 6px rgba(0,0,0,0.4);
+	position: relative;
+	overflow: hidden;
+}
+      </style>
+    </head><body style="font-family: monospace;">
+      <table class="tablesorter table table-striped" style="font-size:13px">
+      <thead>
+        <tr>
+          <th>
+            Class
+          </th>
+          <th>
+            Source file
+          </th>
+          <th>
+            Lines
+          </th>
+          <th>
+            Methods
+          </th>
+          <th>
+            Statements
+          </th>
+          <th>
+            Invoked
+          </th>
+          <th>
+            Coverage
+          </th>
+          <th>
+          </th>
+          <th>
+            Branches
+          </th>
+          <th>
+            Invoked
+          </th>
+          <th>
+            Coverage
+          </th>
+          <th>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+      <td>
+        <a href="scales/utils/collection/BuilderHelper.scala.html">
+          BuilderHelper
+        </a>
+      </td>
+      <td>
+        BuilderHelper.scala
+      </td>
+      <td>
+        18
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="scales/utils/collection/IterableUtils.scala.html">
+          CapturedIterator
+        </a>
+      </td>
+      <td>
+        IterableUtils.scala
+      </td>
+      <td>
+        57
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        13
+      </td>
+      <td>
+        13
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="scales/utils/collection/ConcurrentMapUtils.scala.html">
+          ConcurrentMapUtils
+        </a>
+      </td>
+      <td>
+        ConcurrentMapUtils.scala
+      </td>
+      <td>
+        55
+      </td>
+      <td>
+        5
+      </td>
+      <td>
+        20
+      </td>
+      <td>
+        10
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 50%"></span>
+        </div>
+      </td>
+      <td>
+        50.00
+        %
+      </td>
+      <td>
+        6
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 50%"></span>
+        </div>
+      </td>
+      <td>
+        50.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="scales/utils/collection/DuplicateFilter.scala.html">
+          DuplicateFilter
+        </a>
+      </td>
+      <td>
+        DuplicateFilter.scala
+      </td>
+      <td>
+        74
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        39
+      </td>
+      <td>
+        35
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 90%"></span>
+        </div>
+      </td>
+      <td>
+        89.74
+        %
+      </td>
+      <td>
+        12
+      </td>
+      <td>
+        10
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 83%"></span>
+        </div>
+      </td>
+      <td>
+        83.33
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="scales/utils/collection/ImmutableArray.scala.html">
+          ImmutableArrayProxy
+        </a>
+      </td>
+      <td>
+        ImmutableArray.scala
+      </td>
+      <td>
+        190
+      </td>
+      <td>
+        5
+      </td>
+      <td>
+        6
+      </td>
+      <td>
+        5
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 83%"></span>
+        </div>
+      </td>
+      <td>
+        83.33
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="scales/utils/collection/ImmutableArray.scala.html">
+          ImmutableArrayProxy.ImmutableArrayProxyCBF
+        </a>
+      </td>
+      <td>
+        ImmutableArray.scala
+      </td>
+      <td>
+        197
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 50%"></span>
+        </div>
+      </td>
+      <td>
+        50.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="scales/utils/collection/ImmutableArray.scala.html">
+          ImmutableArrayProxyBuilder
+        </a>
+      </td>
+      <td>
+        ImmutableArray.scala
+      </td>
+      <td>
+        153
+      </td>
+      <td>
+        8
+      </td>
+      <td>
+        132
+      </td>
+      <td>
+        123
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 93%"></span>
+        </div>
+      </td>
+      <td>
+        93.18
+        %
+      </td>
+      <td>
+        37
+      </td>
+      <td>
+        33
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 89%"></span>
+        </div>
+      </td>
+      <td>
+        89.19
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="scales/utils/collection/SeqLikeThing.scala.html">
+          ImmutableArrayProxyLikeThing
+        </a>
+      </td>
+      <td>
+        SeqLikeThing.scala
+      </td>
+      <td>
+        59
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="scales/utils/collection/SeqLikeThing.scala.html">
+          IndexedSeqLikeThing
+        </a>
+      </td>
+      <td>
+        SeqLikeThing.scala
+      </td>
+      <td>
+        69
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="scales/utils/collection/IterableUtils.scala.html">
+          IterableUtils
+        </a>
+      </td>
+      <td>
+        IterableUtils.scala
+      </td>
+      <td>
+        35
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        23
+      </td>
+      <td>
+        15
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 65%"></span>
+        </div>
+      </td>
+      <td>
+        65.22
+        %
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="scales/utils/collection/IterableUtils.scala.html">
+          IterableUtilsImplicits
+        </a>
+      </td>
+      <td>
+        IterableUtils.scala
+      </td>
+      <td>
+        74
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        9
+      </td>
+      <td>
+        9
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="scales/utils/collection/SeqLikeThing.scala.html">
+          ListSeqLikeThing
+        </a>
+      </td>
+      <td>
+        SeqLikeThing.scala
+      </td>
+      <td>
+        78
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="scales/utils/collection/ListSet.scala.html">
+          ListSet
+        </a>
+      </td>
+      <td>
+        ListSet.scala
+      </td>
+      <td>
+        110
+      </td>
+      <td>
+        15
+      </td>
+      <td>
+        29
+      </td>
+      <td>
+        21
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 72%"></span>
+        </div>
+      </td>
+      <td>
+        72.41
+        %
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 50%"></span>
+        </div>
+      </td>
+      <td>
+        50.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="scales/utils/collection/ListSet.scala.html">
+          ListSet.Node
+        </a>
+      </td>
+      <td>
+        ListSet.scala
+      </td>
+      <td>
+        188
+      </td>
+      <td>
+        8
+      </td>
+      <td>
+        53
+      </td>
+      <td>
+        47
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 89%"></span>
+        </div>
+      </td>
+      <td>
+        88.68
+        %
+      </td>
+      <td>
+        12
+      </td>
+      <td>
+        10
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 83%"></span>
+        </div>
+      </td>
+      <td>
+        83.33
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="scales/utils/collection/SeqLikeThing.scala.html">
+          SeqLikeThing
+        </a>
+      </td>
+      <td>
+        SeqLikeThing.scala
+      </td>
+      <td>
+        89
+      </td>
+      <td>
+        13
+      </td>
+      <td>
+        26
+      </td>
+      <td>
+        22
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 85%"></span>
+        </div>
+      </td>
+      <td>
+        84.62
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="scales/utils/collection/StackUtils.scala.html">
+          StackUtils
+        </a>
+      </td>
+      <td>
+        StackUtils.scala
+      </td>
+      <td>
+        53
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        55
+      </td>
+      <td>
+        52
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 95%"></span>
+        </div>
+      </td>
+      <td>
+        94.55
+        %
+      </td>
+      <td>
+        18
+      </td>
+      <td>
+        17
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 94%"></span>
+        </div>
+      </td>
+      <td>
+        94.44
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="scales/utils/collection/Trees.scala.html">
+          Tree
+        </a>
+      </td>
+      <td>
+        Trees.scala
+      </td>
+      <td>
+        76
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        28
+      </td>
+      <td>
+        28
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="scales/utils/collection/Trees.scala.html">
+          Trees
+        </a>
+      </td>
+      <td>
+        Trees.scala
+      </td>
+      <td>
+        17
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr>
+      </tbody>
+    </table>
+    </body>
+    </html>

@@ -1,0 +1,732 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/utils/io/Proxied.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.utils.io
+</span>2 <span style=''>
+</span>3 <span style=''>import scales.utils.resources.CloseOnNeed
+</span>4 <span style=''>
+</span>5 <span style=''>/**
+</span>6 <span style=''> * Wrap the Reader to allow better bracketing etc.
+</span>7 <span style=''> */ 
+</span>8 <span style=''>case class ProxiedCloseOnNeedReader(orig : java.io.Reader) extends java.io.Reader with CloseOnNeed {
+</span>9 <span style=''>  </span><span style='background: #AEF1AE'>require(orig != null, </span><span style='background: #F0ADAD'>&quot;original reader cannot be null&quot;</span><span style='background: #AEF1AE'>)</span><span style=''>
+</span>10 <span style=''>
+</span>11 <span style=''>  override def close() </span><span style='background: #AEF1AE'>{}</span><span style=''>//NOOP
+</span>12 <span style=''>  override def mark(rah : Int) = </span><span style='background: #F0ADAD'>orig.mark(rah)</span><span style=''>
+</span>13 <span style=''>  override def markSupported() = </span><span style='background: #F0ADAD'>orig.markSupported()</span><span style=''>
+</span>14 <span style=''>  override def read() = </span><span style='background: #F0ADAD'>orig.read()</span><span style=''>
+</span>15 <span style=''>  override def read(cbuf : Array[Char]) = </span><span style='background: #AEF1AE'>orig.read(cbuf)</span><span style=''> 
+</span>16 <span style=''>  override def read(cbuf : Array[Char], off : Int, len : Int) = </span><span style='background: #AEF1AE'>orig.read(cbuf,off,len)</span><span style=''> 
+</span>17 <span style=''>  override def read(target : java.nio.CharBuffer) = </span><span style='background: #F0ADAD'>orig.read(target)</span><span style=''> 
+</span>18 <span style=''>  override def ready() = </span><span style='background: #F0ADAD'>orig.ready</span><span style=''> 
+</span>19 <span style=''>  override def reset() = </span><span style='background: #F0ADAD'>orig.reset</span><span style=''> 
+</span>20 <span style=''>  override def skip(n : Long) = </span><span style='background: #F0ADAD'>orig.skip(n)</span><span style=''> 
+</span>21 <span style=''>
+</span>22 <span style=''>  def doClose(){</span><span style='background: #AEF1AE'>orig.close</span><span style=''>}
+</span>23 <span style=''>}
+</span>24 <span style=''>
+</span>25 <span style=''>/**
+</span>26 <span style=''> * Wrap the InputStream to allow better bracketing etc.
+</span>27 <span style=''> */ 
+</span>28 <span style=''>case class ProxiedCloseOnNeedInputStream(orig : java.io.InputStream) extends java.io.InputStream with CloseOnNeed {
+</span>29 <span style=''>  </span><span style='background: #AEF1AE'>require(orig != null, </span><span style='background: #F0ADAD'>&quot;original stream cannot be null&quot;</span><span style='background: #AEF1AE'>)</span><span style=''>
+</span>30 <span style=''>
+</span>31 <span style=''>  override def close() </span><span style='background: #AEF1AE'>{}</span><span style=''>//NOOP
+</span>32 <span style=''>  override def available() = </span><span style='background: #F0ADAD'>orig.available</span><span style=''>
+</span>33 <span style=''>  override def mark(rah : Int) = </span><span style='background: #F0ADAD'>orig.mark(rah)</span><span style=''>
+</span>34 <span style=''>  override def markSupported() = </span><span style='background: #F0ADAD'>orig.markSupported()</span><span style=''>
+</span>35 <span style=''>  override def read() = </span><span style='background: #AEF1AE'>orig.read()</span><span style=''>
+</span>36 <span style=''>  override def read(cbuf : Array[Byte]) = </span><span style='background: #F0ADAD'>orig.read(cbuf)</span><span style=''> 
+</span>37 <span style=''>  override def read(cbuf : Array[Byte], off : Int, len : Int) = </span><span style='background: #AEF1AE'>orig.read(cbuf,off,len)</span><span style=''> 
+</span>38 <span style=''>  override def reset() = </span><span style='background: #F0ADAD'>orig.reset</span><span style=''> 
+</span>39 <span style=''>  override def skip(n : Long) = </span><span style='background: #F0ADAD'>orig.skip(n)</span><span style=''> 
+</span>40 <span style=''>
+</span>41 <span style=''>  def doClose(){</span><span style='background: #AEF1AE'>orig.close</span><span style=''>}
+</span>42 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          9
+        </td>
+        <td>
+          1249
+        </td>
+        <td>
+          239
+          -
+          251
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.!=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ProxiedCloseOnNeedReader.this.orig.!=(null)
+        </td>
+      </tr><tr>
+        <td>
+          9
+        </td>
+        <td>
+          1250
+        </td>
+        <td>
+          253
+          -
+          285
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;original reader cannot be null&quot;
+        </td>
+      </tr><tr>
+        <td>
+          9
+        </td>
+        <td>
+          1251
+        </td>
+        <td>
+          231
+          -
+          286
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.require
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.require(ProxiedCloseOnNeedReader.this.orig.!=(null), &quot;original reader cannot be null&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          11
+        </td>
+        <td>
+          1252
+        </td>
+        <td>
+          311
+          -
+          313
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          12
+        </td>
+        <td>
+          1253
+        </td>
+        <td>
+          353
+          -
+          367
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.Reader.mark
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ProxiedCloseOnNeedReader.this.orig.mark(rah)
+        </td>
+      </tr><tr>
+        <td>
+          13
+        </td>
+        <td>
+          1254
+        </td>
+        <td>
+          401
+          -
+          421
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.Reader.markSupported
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ProxiedCloseOnNeedReader.this.orig.markSupported()
+        </td>
+      </tr><tr>
+        <td>
+          14
+        </td>
+        <td>
+          1255
+        </td>
+        <td>
+          446
+          -
+          457
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.Reader.read
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ProxiedCloseOnNeedReader.this.orig.read()
+        </td>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          1256
+        </td>
+        <td>
+          500
+          -
+          515
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.Reader.read
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ProxiedCloseOnNeedReader.this.orig.read(cbuf)
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          1257
+        </td>
+        <td>
+          581
+          -
+          604
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.Reader.read
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ProxiedCloseOnNeedReader.this.orig.read(cbuf, off, len)
+        </td>
+      </tr><tr>
+        <td>
+          17
+        </td>
+        <td>
+          1258
+        </td>
+        <td>
+          658
+          -
+          675
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.Reader.read
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ProxiedCloseOnNeedReader.this.orig.read(target)
+        </td>
+      </tr><tr>
+        <td>
+          18
+        </td>
+        <td>
+          1259
+        </td>
+        <td>
+          702
+          -
+          712
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.Reader.ready
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ProxiedCloseOnNeedReader.this.orig.ready()
+        </td>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          1260
+        </td>
+        <td>
+          739
+          -
+          749
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.Reader.reset
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ProxiedCloseOnNeedReader.this.orig.reset()
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          1261
+        </td>
+        <td>
+          783
+          -
+          795
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.Reader.skip
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ProxiedCloseOnNeedReader.this.orig.skip(n)
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          1262
+        </td>
+        <td>
+          814
+          -
+          824
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.Reader.close
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ProxiedCloseOnNeedReader.this.orig.close()
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          1263
+        </td>
+        <td>
+          1020
+          -
+          1032
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.!=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ProxiedCloseOnNeedInputStream.this.orig.!=(null)
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          1264
+        </td>
+        <td>
+          1034
+          -
+          1066
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;original stream cannot be null&quot;
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          1265
+        </td>
+        <td>
+          1012
+          -
+          1067
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.require
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.require(ProxiedCloseOnNeedInputStream.this.orig.!=(null), &quot;original stream cannot be null&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          1266
+        </td>
+        <td>
+          1092
+          -
+          1094
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          1267
+        </td>
+        <td>
+          1130
+          -
+          1144
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.InputStream.available
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ProxiedCloseOnNeedInputStream.this.orig.available()
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          1268
+        </td>
+        <td>
+          1178
+          -
+          1192
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.InputStream.mark
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ProxiedCloseOnNeedInputStream.this.orig.mark(rah)
+        </td>
+      </tr><tr>
+        <td>
+          34
+        </td>
+        <td>
+          1269
+        </td>
+        <td>
+          1226
+          -
+          1246
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.InputStream.markSupported
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ProxiedCloseOnNeedInputStream.this.orig.markSupported()
+        </td>
+      </tr><tr>
+        <td>
+          35
+        </td>
+        <td>
+          1270
+        </td>
+        <td>
+          1271
+          -
+          1282
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.InputStream.read
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ProxiedCloseOnNeedInputStream.this.orig.read()
+        </td>
+      </tr><tr>
+        <td>
+          36
+        </td>
+        <td>
+          1271
+        </td>
+        <td>
+          1325
+          -
+          1340
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.InputStream.read
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ProxiedCloseOnNeedInputStream.this.orig.read(cbuf)
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          1272
+        </td>
+        <td>
+          1406
+          -
+          1429
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.InputStream.read
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ProxiedCloseOnNeedInputStream.this.orig.read(cbuf, off, len)
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          1273
+        </td>
+        <td>
+          1456
+          -
+          1466
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.InputStream.reset
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ProxiedCloseOnNeedInputStream.this.orig.reset()
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          1274
+        </td>
+        <td>
+          1500
+          -
+          1512
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.InputStream.skip
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ProxiedCloseOnNeedInputStream.this.orig.skip(n)
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          1275
+        </td>
+        <td>
+          1531
+          -
+          1541
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.io.InputStream.close
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ProxiedCloseOnNeedInputStream.this.orig.close()
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

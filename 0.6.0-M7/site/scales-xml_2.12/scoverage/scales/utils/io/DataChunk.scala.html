@@ -1,0 +1,379 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/utils/io/DataChunk.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.utils.io
+</span>2 <span style=''>
+</span>3 <span style=''>/**
+</span>4 <span style=''> * Represents a chunk of data to feed into an async parser.
+</span>5 <span style=''> * The instance is deemed &quot;owned&quot; by the asnyc parser until it requires more input. 
+</span>6 <span style=''> */ 
+</span>7 <span style=''>sealed trait DataChunk {
+</span>8 <span style=''>  def array: Array[Byte]
+</span>9 <span style=''>  def offset: Int
+</span>10 <span style=''>  def length: Int
+</span>11 <span style=''>
+</span>12 <span style=''>  def isEOF: Boolean = </span><span style='background: #F0ADAD'>false</span><span style=''>
+</span>13 <span style=''>  def isEmpty: Boolean = </span><span style='background: #F0ADAD'>false</span><span style=''>
+</span>14 <span style=''>}
+</span>15 <span style=''>
+</span>16 <span style=''>/**
+</span>17 <span style=''> * Represents the end of a stream, no more Bytes are available
+</span>18 <span style=''> */ 
+</span>19 <span style=''>object EOFData extends DataChunk {
+</span>20 <span style=''>  val array = </span><span style='background: #F0ADAD'>Array.empty[Byte]</span><span style=''>
+</span>21 <span style=''>  val offset = </span><span style='background: #F0ADAD'>0</span><span style=''>
+</span>22 <span style=''>  val length = </span><span style='background: #F0ADAD'>-1</span><span style=''>
+</span>23 <span style=''>
+</span>24 <span style=''>  override val isEOF = </span><span style='background: #F0ADAD'>true</span><span style=''>
+</span>25 <span style=''>}
+</span>26 <span style=''>
+</span>27 <span style=''>/**
+</span>28 <span style=''> * Represents a data stream with no immediate data to return.
+</span>29 <span style=''> */ 
+</span>30 <span style=''>object EmptyData extends DataChunk {
+</span>31 <span style=''>  val array = </span><span style='background: #F0ADAD'>Array.empty[Byte]</span><span style=''>
+</span>32 <span style=''>  val offset = </span><span style='background: #F0ADAD'>0</span><span style=''>
+</span>33 <span style=''>  val length = </span><span style='background: #F0ADAD'>0</span><span style=''>
+</span>34 <span style=''>
+</span>35 <span style=''>  override val isEmpty = </span><span style='background: #F0ADAD'>true</span><span style=''>
+</span>36 <span style=''>}
+</span>37 <span style=''>
+</span>38 <span style=''>/**
+</span>39 <span style=''> * Represents the full array
+</span>40 <span style=''> */ 
+</span>41 <span style=''>final case class FullChunk( array: Array[Byte] ) extends DataChunk {
+</span>42 <span style=''>  def offset = </span><span style='background: #F0ADAD'>0</span><span style=''>
+</span>43 <span style=''>  def length = </span><span style='background: #F0ADAD'>array.length</span><span style=''>
+</span>44 <span style=''>}
+</span>45 <span style=''>
+</span>46 <span style=''>/**
+</span>47 <span style=''> * A section of a Byte array.
+</span>48 <span style=''> */ 
+</span>49 <span style=''>final case class Chunk( array: Array[Byte], offset: Int, length: Int) extends DataChunk
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          12
+        </td>
+        <td>
+          1238
+        </td>
+        <td>
+          289
+          -
+          294
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          13
+        </td>
+        <td>
+          1239
+        </td>
+        <td>
+          320
+          -
+          325
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          1240
+        </td>
+        <td>
+          450
+          -
+          467
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.Array.empty
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Array.empty[Byte]((ClassTag.Byte: scala.reflect.ClassTag[Byte]))
+        </td>
+      </tr><tr>
+        <td>
+          21
+        </td>
+        <td>
+          1241
+        </td>
+        <td>
+          483
+          -
+          484
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          1242
+        </td>
+        <td>
+          500
+          -
+          502
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          -1
+        </td>
+      </tr><tr>
+        <td>
+          24
+        </td>
+        <td>
+          1243
+        </td>
+        <td>
+          527
+          -
+          531
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          1244
+        </td>
+        <td>
+          657
+          -
+          674
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.Array.empty
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Array.empty[Byte]((ClassTag.Byte: scala.reflect.ClassTag[Byte]))
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          1245
+        </td>
+        <td>
+          690
+          -
+          691
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          1246
+        </td>
+        <td>
+          707
+          -
+          708
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          35
+        </td>
+        <td>
+          1247
+        </td>
+        <td>
+          735
+          -
+          739
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          42
+        </td>
+        <td>
+          1248
+        </td>
+        <td>
+          865
+          -
+          866
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          1249
+        </td>
+        <td>
+          882
+          -
+          894
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Array.length
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          FullChunk.this.array.length
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

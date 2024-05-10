@@ -1,0 +1,301 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/xml/impl/EqualsHelpers.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.xml.impl
+</span>2 <span style=''>
+</span>3 <span style=''>import scalaz.Equal._
+</span>4 <span style=''>import scalaz._
+</span>5 <span style=''>import Scalaz._
+</span>6 <span style=''>
+</span>7 <span style=''>/**
+</span>8 <span style=''> * Needed to help with cyclic issues in multi threaded MODULE$ access, after startup no problem, but we can't gaurantee that.
+</span>9 <span style=''> */ 
+</span>10 <span style=''>object EqualsHelpers extends scales.xml.equals.DefaultQNameEquals {
+</span>11 <span style=''>  
+</span>12 <span style=''>  import scales.xml.{Attribute, QName, AttributeQName}
+</span>13 <span style=''>  
+</span>14 <span style=''>  // only used for default attribute comparisoms in Attributes
+</span>15 <span style=''>  implicit val aqnameEqual = </span><span style='background: #AEF1AE'>equal { (a: Attribute, b: Attribute) =&gt; a.name =:= b.name }</span><span style=''>
+</span>16 <span style=''>  implicit val qnameEquiv : scales.utils.Equiv[QName] = </span><span style='background: #AEF1AE'>new scales.utils.Equiv[QName]</span><span style=''>
+</span>17 <span style=''>  implicit def toQName(attribQName: AttributeQName): QName = </span><span style='background: #AEF1AE'>attribQName.asInstanceOf[QName]</span><span style=''> // otherwise it blows the stack calling itself
+</span>18 <span style=''>  implicit val toQNameF = (a: Attribute) =&gt; { </span><span style='background: #AEF1AE'>a.name</span><span style=''> : QName }
+</span>19 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          3213
+        </td>
+        <td>
+          476
+          -
+          482
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Attribute.name
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          a.name
+        </td>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          3214
+        </td>
+        <td>
+          487
+          -
+          493
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Attribute.name
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          b.name
+        </td>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          3215
+        </td>
+        <td>
+          487
+          -
+          493
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scales.xml.impl.EqualsHelpers.toQName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          EqualsHelpers.this.toQName(b.name)
+        </td>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          3216
+        </td>
+        <td>
+          476
+          -
+          493
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.QName.=:=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          EqualsHelpers.this.toQName(a.name).=:=(EqualsHelpers.this.toQName(b.name))
+        </td>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          3217
+        </td>
+        <td>
+          436
+          -
+          495
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.Equal.equal
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.Equal.equal[scales.xml.Attribute](((a: scales.xml.Attribute, b: scales.xml.Attribute) =&gt; EqualsHelpers.this.toQName(a.name).=:=(EqualsHelpers.this.toQName(b.name))))
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          3218
+        </td>
+        <td>
+          552
+          -
+          552
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.DefaultQNameEquals.qnameEqual
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          EqualsHelpers.this.qnameEqual
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          3219
+        </td>
+        <td>
+          552
+          -
+          581
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.Equiv.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new scales.utils.Equiv[scales.xml.QName]()(EqualsHelpers.this.qnameEqual)
+        </td>
+      </tr><tr>
+        <td>
+          17
+        </td>
+        <td>
+          3220
+        </td>
+        <td>
+          643
+          -
+          674
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          attribQName.asInstanceOf[scales.xml.QName]
+        </td>
+      </tr><tr>
+        <td>
+          18
+        </td>
+        <td>
+          3221
+        </td>
+        <td>
+          768
+          -
+          774
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Attribute.name
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          a.name
+        </td>
+      </tr><tr>
+        <td>
+          18
+        </td>
+        <td>
+          3222
+        </td>
+        <td>
+          768
+          -
+          774
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scales.xml.impl.EqualsHelpers.toQName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          EqualsHelpers.this.toQName(a.name)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

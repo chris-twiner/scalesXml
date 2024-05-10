@@ -1,0 +1,4861 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/xml/XmlTypes.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.xml
+</span>2 <span style=''>
+</span>3 <span style=''>import scala.collection.immutable.Map
+</span>4 <span style=''>
+</span>5 <span style=''>import scala.collection.generic.CanBuildFrom
+</span>6 <span style=''>
+</span>7 <span style=''>import scalaz._
+</span>8 <span style=''>import Scalaz._
+</span>9 <span style=''>
+</span>10 <span style=''>import scales.utils.{EitherLike, LeftLike}
+</span>11 <span style=''>import scales.utils.collection.{ListSet, Tree}
+</span>12 <span style=''>
+</span>13 <span style=''>import java.nio.charset.Charset
+</span>14 <span style=''>
+</span>15 <span style=''>import scales.xml.impl.{FromParser, IsFromParser, NotFromParser, EqualsHelpers}
+</span>16 <span style=''>
+</span>17 <span style=''>/**
+</span>18 <span style=''> * Attributes can only work with either a prefixed qname or an empty ns name
+</span>19 <span style=''> */
+</span>20 <span style=''>case class Attribute(name: AttributeQName, value: String)
+</span>21 <span style=''>
+</span>22 <span style=''>/**
+</span>23 <span style=''> * Allows easy patterns for attribute values
+</span>24 <span style=''> */
+</span>25 <span style=''>object Attr {
+</span>26 <span style=''>  def unapply(attr: Attribute) = </span><span style='background: #AEF1AE'>Some(attr.value)</span><span style=''>
+</span>27 <span style=''>}
+</span>28 <span style=''>
+</span>29 <span style=''>/**
+</span>30 <span style=''> * Basis for typed pull api
+</span>31 <span style=''> */
+</span>32 <span style=''>sealed trait XmlEvent
+</span>33 <span style=''>
+</span>34 <span style=''>/**
+</span>35 <span style=''> * The namespaces map refers to sax startPrefixMapping events before this element.  These are used
+</span>36 <span style=''> * in order to properly write the same XML back out, otherwise we end up with new xmlns:pre declarations
+</span>37 <span style=''> * for each step.
+</span>38 <span style=''> *
+</span>39 <span style=''> * The namespaces map may of course contain a DefaultNamespace.
+</span>40 <span style=''> *
+</span>41 <span style=''> * QName -&gt; Attribute as the map functions need the lowest QName to search for not an either
+</span>42 <span style=''> *
+</span>43 <span style=''> * @author Chris
+</span>44 <span style=''> *
+</span>45 <span style=''> */
+</span>46 <span style=''>
+</span>47 <span style=''>import ScalesXml._
+</span>48 <span style=''>
+</span>49 <span style=''>import scales.xml.impl.DefaultHashes._
+</span>50 <span style=''>
+</span>51 <span style=''>sealed trait Elem extends XmlEvent {
+</span>52 <span style=''>  val name : QName
+</span>53 <span style=''>  def attributes : Attributes
+</span>54 <span style=''>  def namespaces : Map[String, String] = </span><span style='background: #AEF1AE'>emptyNamespaces</span><span style=''>
+</span>55 <span style=''>
+</span>56 <span style=''>  def copy(name: QName = name, attributes: Attributes = attributes, namespaces: Map[String, String] = namespaces)(implicit fromParser : FromParser) : Elem
+</span>57 <span style=''>
+</span>58 <span style=''>  override def equals( other : Any ) = other match {
+</span>59 <span style=''>    case o : Elem =&gt; 
+</span>60 <span style=''>      </span><span style='background: #AEF1AE'>if ((name ==== o.name) // exact match needed?? 
+</span>61 <span style=''></span><span style='background: #AEF1AE'>	  &amp;&amp; (attributes == o.attributes)
+</span>62 <span style=''></span><span style='background: #AEF1AE'>	  &amp;&amp; (namespaces == o.namespaces) )
+</span>63 <span style=''></span><span style='background: #AEF1AE'>	true
+</span>64 <span style=''></span><span style='background: #AEF1AE'>      else
+</span>65 <span style=''></span><span style='background: #AEF1AE'>	</span><span style='background: #F0ADAD'>false</span><span style=''>
+</span>66 <span style=''>    case _ =&gt; </span><span style='background: #F0ADAD'>false</span><span style=''>
+</span>67 <span style=''>  }
+</span>68 <span style=''>
+</span>69 <span style=''>  override def hashCode() : Int = {
+</span>70 <span style=''>    var hs = </span><span style='background: #F0ADAD'>1</span><span style=''>
+</span>71 <span style=''>    hs = </span><span style='background: #F0ADAD'>(hs * 31) + name.hashCode</span><span style=''>
+</span>72 <span style=''>    hs = </span><span style='background: #F0ADAD'>(hs * 31) + (
+</span>73 <span style=''></span><span style='background: #F0ADAD'>      if (emptyAttributes eq attributes)
+</span>74 <span style=''></span><span style='background: #F0ADAD'>	emptyAttributesHash // don't do it more than once
+</span>75 <span style=''></span><span style='background: #F0ADAD'>      else
+</span>76 <span style=''></span><span style='background: #F0ADAD'>	attributes.hashCode
+</span>77 <span style=''></span><span style='background: #F0ADAD'>      )</span><span style=''>
+</span>78 <span style=''>    hs = </span><span style='background: #F0ADAD'>(hs * 31) + (
+</span>79 <span style=''></span><span style='background: #F0ADAD'>      if (namespaces eq emptyNamespaces)
+</span>80 <span style=''></span><span style='background: #F0ADAD'>	emptyNamespacesHash // don't do it more than once
+</span>81 <span style=''></span><span style='background: #F0ADAD'>      else
+</span>82 <span style=''></span><span style='background: #F0ADAD'>	namespaces.hashCode
+</span>83 <span style=''></span><span style='background: #F0ADAD'>      )</span><span style=''>
+</span>84 <span style=''>
+</span>85 <span style=''>    hs    
+</span>86 <span style=''>  }
+</span>87 <span style=''>
+</span>88 <span style=''>  override def toString(): String = {
+</span>89 <span style=''>    var sb = </span><span style='background: #AEF1AE'>new java.lang.StringBuilder()</span><span style=''>
+</span>90 <span style=''>    </span><span style='background: #AEF1AE'>sb.append(&quot;Elem(&quot;).
+</span>91 <span style=''></span><span style='background: #AEF1AE'>       append(name)</span><span style=''>
+</span>92 <span style=''>    if (</span><span style='background: #AEF1AE'>emptyAttributes ne attributes</span><span style=''>)
+</span>93 <span style=''>      </span><span style='background: #F0ADAD'>sb.append(&quot;, &quot;).
+</span>94 <span style=''></span><span style='background: #F0ADAD'>	append(attributes)</span><span style=''>
+</span>95 <span style=''>    if (</span><span style='background: #AEF1AE'>emptyNamespaces ne namespaces</span><span style=''>)
+</span>96 <span style=''>      </span><span style='background: #F0ADAD'>sb.append(&quot;, &quot;).
+</span>97 <span style=''></span><span style='background: #F0ADAD'>	append(namespaces)</span><span style=''>
+</span>98 <span style=''>
+</span>99 <span style=''>    </span><span style='background: #AEF1AE'>sb.append(&quot;)&quot;).toString()</span><span style=''>
+</span>100 <span style=''>  }
+</span>101 <span style=''>}
+</span>102 <span style=''>
+</span>103 <span style=''>object Elem {
+</span>104 <span style=''>
+</span>105 <span style=''>  def apply(name : QName, attributes : Attributes, namespaces :  Iterable[ PrefixedNamespace ] )(implicit fromParser : FromParser) : Elem = 
+</span>106 <span style=''>    </span><span style='background: #AEF1AE'>apply(name, attributes, namespaces.map( p =&gt; p.prefix -&gt; p.ns.uri ).toMap)(fromParser)</span><span style=''>
+</span>107 <span style=''>
+</span>108 <span style=''>  def apply(name : QName, namespaces :  Iterable[ PrefixedNamespace ] )(implicit fromParser : FromParser) : Elem = 
+</span>109 <span style=''>    </span><span style='background: #AEF1AE'>apply(name, emptyAttributes, namespaces.map( p =&gt; p.prefix -&gt; p.ns.uri ).toMap)(fromParser)</span><span style=''>
+</span>110 <span style=''>
+</span>111 <span style=''>  def apply(name : QName , namespace : PrefixedNamespace, namespaces : PrefixedNamespace * )(implicit fromParser : FromParser) : Elem = 
+</span>112 <span style=''>    </span><span style='background: #AEF1AE'>apply(name, emptyAttributes, (namespace +: namespaces).map( p =&gt; p.prefix -&gt; p.ns.uri ).toMap)(fromParser)</span><span style=''>
+</span>113 <span style=''>
+</span>114 <span style=''>  def apply(name : QName, attributes : Attributes, namespace : PrefixedNamespace, namespaces : PrefixedNamespace * )(implicit fromParser : FromParser) : Elem = 
+</span>115 <span style=''>    </span><span style='background: #AEF1AE'>apply(name, attributes, (namespace +: namespaces).map( p =&gt; p.prefix -&gt; p.ns.uri ).toMap)(fromParser)</span><span style=''>
+</span>116 <span style=''>
+</span>117 <span style=''>  private[Elem] final class NoNamespacesElem( namei : QName, attributesi : Attributes ) extends Elem {
+</span>118 <span style=''>    // most elements won't need to redefine, if its present we'll keep it.  Perhaps another option or optimiser should take care of this (i.e. already defined in the document we won't need to keep it around).
+</span>119 <span style=''>
+</span>120 <span style=''>    val name = </span><span style='background: #AEF1AE'>namei</span><span style=''>
+</span>121 <span style=''>    val attributes = </span><span style='background: #AEF1AE'>attributesi</span><span style=''>
+</span>122 <span style=''>    
+</span>123 <span style=''>    def copy(name: QName = name, attributes: Attributes = attributes, namespaces: Map[String, String] = namespaces)(implicit fromParseri : FromParser) : Elem =
+</span>124 <span style=''>      </span><span style='background: #AEF1AE'>apply(name, attributes, namespaces)(fromParseri)</span><span style=''>
+</span>125 <span style=''>
+</span>126 <span style=''>  }
+</span>127 <span style=''>
+</span>128 <span style=''>  private[Elem] final class QNameOnlyElem( namei : QName ) extends Elem {
+</span>129 <span style=''>    val name = </span><span style='background: #AEF1AE'>namei</span><span style=''>
+</span>130 <span style=''>    def attributes = </span><span style='background: #AEF1AE'>emptyAttributes</span><span style=''>
+</span>131 <span style=''>    
+</span>132 <span style=''>    def copy(name: QName = name, attributes: Attributes = attributes, namespaces: Map[String, String] = namespaces)(implicit fromParseri : FromParser) : Elem =
+</span>133 <span style=''>      </span><span style='background: #AEF1AE'>apply(name, attributes, namespaces)(fromParseri)</span><span style=''>
+</span>134 <span style=''>  }
+</span>135 <span style=''>
+</span>136 <span style=''>  private[Elem] final class FullElem(namei: QName, attributesi: Attributes, namespacesi: Map[String, String]) extends Elem {
+</span>137 <span style=''>
+</span>138 <span style=''>    val name = </span><span style='background: #AEF1AE'>namei</span><span style=''>
+</span>139 <span style=''>    val attributes = </span><span style='background: #AEF1AE'>attributesi</span><span style=''>
+</span>140 <span style=''>    override val namespaces = </span><span style='background: #AEF1AE'>namespacesi</span><span style=''>
+</span>141 <span style=''>
+</span>142 <span style=''>    def copy(name: QName = name, attributes: Attributes = attributes, namespaces: Map[String, String] = namespaces)(implicit fromParseri : FromParser) : Elem =
+</span>143 <span style=''>      </span><span style='background: #AEF1AE'>apply(name, attributes, namespaces)(fromParseri)</span><span style=''>
+</span>144 <span style=''>
+</span>145 <span style=''>  }
+</span>146 <span style=''>
+</span>147 <span style=''>  private[Elem] final class NoAttribsElem(namei: QName, namespacesi: Map[String, String]) extends Elem {
+</span>148 <span style=''>
+</span>149 <span style=''>    val name = </span><span style='background: #AEF1AE'>namei</span><span style=''>
+</span>150 <span style=''>    def attributes = </span><span style='background: #AEF1AE'>emptyAttributes</span><span style=''>
+</span>151 <span style=''>    override val namespaces = </span><span style='background: #AEF1AE'>namespacesi</span><span style=''>
+</span>152 <span style=''>
+</span>153 <span style=''>    def copy(name: QName = name, attributes: Attributes = attributes, namespaces: Map[String, String] = namespaces)(implicit fromParseri : FromParser) : Elem =
+</span>154 <span style=''>      </span><span style='background: #F0ADAD'>apply(name, attributes, namespaces)(fromParseri)</span><span style=''>
+</span>155 <span style=''>
+</span>156 <span style=''>  }
+</span>157 <span style=''>
+</span>158 <span style=''>//  @inline doesn't anything measurable here
+</span>159 <span style=''>  /**
+</span>160 <span style=''>   * Dependent on the inputs creates the smallest footprint implementation of Elem.
+</span>161 <span style=''>   */
+</span>162 <span style=''>  def apply(namei: QName, attributesi: Attributes = emptyAttributes, namespacesi: Map[String, String] = emptyNamespaces)(implicit fromParser : FromParser) : Elem = {
+</span>163 <span style=''>//    checkElemName(namei)(fromParser)
+</span>164 <span style=''>    if (</span><span style='background: #AEF1AE'>fromParser eq NotFromParser</span><span style=''>) {
+</span>165 <span style=''>      </span><span style='background: #AEF1AE'>require(!(namei.prefix.map { p =&gt;
+</span>166 <span style=''></span><span style='background: #AEF1AE'>	(p eq PrefixedNamespace.xmlPRE) ||
+</span>167 <span style=''></span><span style='background: #AEF1AE'>				  (p eq PrefixedNamespace.xmlnsPRE)
+</span>168 <span style=''></span><span style='background: #AEF1AE'>				}.getOrElse(false)), &quot;Prefixes (xmlns, xml) are not allowed for elements&quot;)</span><span style=''>
+</span>169 <span style=''>    }
+</span>170 <span style=''>
+</span>171 <span style=''>    if (</span><span style='background: #AEF1AE'>namespacesi.isEmpty</span><span style=''>)
+</span>172 <span style=''>      </span><span style='background: #AEF1AE'>if (!attributesi.isEmpty)
+</span>173 <span style=''></span><span style='background: #AEF1AE'>	new NoNamespacesElem( namei, attributesi )
+</span>174 <span style=''></span><span style='background: #AEF1AE'>      else 
+</span>175 <span style=''></span><span style='background: #AEF1AE'>	new QNameOnlyElem( namei )</span><span style=''>
+</span>176 <span style=''>    else
+</span>177 <span style=''>      </span><span style='background: #AEF1AE'>if (!attributesi.isEmpty)
+</span>178 <span style=''></span><span style='background: #AEF1AE'>	new FullElem( namei, attributesi, namespacesi )
+</span>179 <span style=''></span><span style='background: #AEF1AE'>      else
+</span>180 <span style=''></span><span style='background: #AEF1AE'>	new NoAttribsElem( namei, namespacesi )</span><span style=''>
+</span>181 <span style=''>  }
+</span>182 <span style=''>
+</span>183 <span style=''>  def unapply( el : Elem) = </span><span style='background: #AEF1AE'>Some((el.name, el.attributes, el.namespaces))</span><span style=''>
+</span>184 <span style=''>}
+</span>185 <span style=''>
+</span>186 <span style=''>sealed trait XmlItem extends LeftLike[XmlItem, Tree[XmlItem, Elem, XCC]] with XmlEvent {
+</span>187 <span style=''>  val value: String
+</span>188 <span style=''>
+</span>189 <span style=''>  override def hashCode() : Int = 
+</span>190 <span style=''>    </span><span style='background: #AEF1AE'>value.hashCode</span><span style=''>
+</span>191 <span style=''>
+</span>192 <span style=''>  def doEquals( other : Any, clazz : Class[_] ) = 
+</span>193 <span style=''>    if (</span><span style='background: #F0ADAD'>clazz.isInstance(other)</span><span style=''>) </span><span style='background: #F0ADAD'>{
+</span>194 <span style=''></span><span style='background: #F0ADAD'>	val o = other.asInstanceOf[XmlItem]
+</span>195 <span style=''></span><span style='background: #F0ADAD'>	if (o eq this) true
+</span>196 <span style=''></span><span style='background: #F0ADAD'>	else (o.value == value)
+</span>197 <span style=''></span><span style='background: #F0ADAD'>    }</span><span style=''> else </span><span style='background: #F0ADAD'>false</span><span style=''>
+</span>198 <span style=''>
+</span>199 <span style=''>}
+</span>200 <span style=''>
+</span>201 <span style=''>case class Text(value: String) extends XmlItem
+</span>202 <span style=''>
+</span>203 <span style=''>/**
+</span>204 <span style=''> * Comments aren't escaped and will throw a CommentCannotBeEncoded error if the contents cannot be serialized, xalan just tries to serialize directly which can't work.
+</span>205 <span style=''> *
+</span>206 <span style=''> * Note: Will throw if &quot;--&quot; is found in the value
+</span>207 <span style=''> */
+</span>208 <span style=''>trait Comment extends XmlItem {
+</span>209 <span style=''>  override def equals( other : Any ) = </span><span style='background: #F0ADAD'>doEquals(other, Comment.commentClass)</span><span style=''>
+</span>210 <span style=''>}
+</span>211 <span style=''>
+</span>212 <span style=''>object Comment {
+</span>213 <span style=''>
+</span>214 <span style=''>  val commentClass = </span><span style='background: #AEF1AE'>Comment(&quot;a&quot;)(IsFromParser).getClass</span><span style=''>
+</span>215 <span style=''>
+</span>216 <span style=''>  def apply(valuei : String)(implicit fromParser : FromParser) = </span><span style='background: #AEF1AE'>new</span><span style=''> Comment {
+</span>217 <span style=''>    if (</span><span style='background: #AEF1AE'>fromParser eq NotFromParser</span><span style=''>) 
+</span>218 <span style=''>      </span><span style='background: #AEF1AE'>require(valuei.indexOf(&quot;--&quot;) == -1, </span><span style='background: #F0ADAD'>&quot;Comments cannot contain the sequence --&quot;</span><span style='background: #AEF1AE'>)</span><span style=''>
+</span>219 <span style=''>
+</span>220 <span style=''>    val value = valuei
+</span>221 <span style=''>  }
+</span>222 <span style=''>
+</span>223 <span style=''>  def unapply(cmt : Comment) = </span><span style='background: #AEF1AE'>Some(cmt.value)</span><span style=''>
+</span>224 <span style=''>}
+</span>225 <span style=''>
+</span>226 <span style=''>/**
+</span>227 <span style=''> * Might be tempting to use, but think twice, XOM removes it for a
+</span>228 <span style=''>good reason, and I'm sorely tempted to, but I've worked with enough
+</span>229 <span style=''>applications that really thought they needed it.
+</span>230 <span style=''> * CData serialization is dependent on the encoding, if your CData contains
+</span>231 <span style=''>umlauts etc but you choose US-ACSII you will receive a
+</span>232 <span style=''>CDataCannotBeEncoded for your efforts.  Choose not to use CData in the
+</span>233 <span style=''>first place.
+</span>234 <span style=''> * Note: Will throw if given the CData end sequence
+</span>235 <span style=''> */
+</span>236 <span style=''>trait CData extends XmlItem {
+</span>237 <span style=''>  override def equals( other : Any ) = </span><span style='background: #F0ADAD'>doEquals(other, CData.cdataClass)</span><span style=''>
+</span>238 <span style=''>}
+</span>239 <span style=''>
+</span>240 <span style=''>object CData {
+</span>241 <span style=''>  val cdataClass = </span><span style='background: #AEF1AE'>CData(&quot;&quot;)(IsFromParser).getClass</span><span style=''>
+</span>242 <span style=''>
+</span>243 <span style=''>  def apply(valuei : String)(implicit fromParser : FromParser) = </span><span style='background: #AEF1AE'>new</span><span style=''> CData {
+</span>244 <span style=''>    if (</span><span style='background: #AEF1AE'>fromParser eq NotFromParser</span><span style=''>)
+</span>245 <span style=''>      </span><span style='background: #AEF1AE'>require(valuei.indexOf(&quot;]]&gt;&quot;) == -1, 
+</span>246 <span style=''></span><span style='background: #AEF1AE'>	</span><span style='background: #F0ADAD'>&quot;CData sections cannot contain the sequence ]]&gt;&quot;</span><span style='background: #AEF1AE'>)</span><span style=''>
+</span>247 <span style=''> 
+</span>248 <span style=''>    val value = valuei
+</span>249 <span style=''>  }
+</span>250 <span style=''>
+</span>251 <span style=''>  def unapply(cmt : CData) = </span><span style='background: #AEF1AE'>Some(cmt.value)</span><span style=''>
+</span>252 <span style=''>}
+</span>253 <span style=''>
+</span>254 <span style=''>trait PI extends XmlItem {
+</span>255 <span style=''>
+</span>256 <span style=''>  override def equals( other : Any ) = 
+</span>257 <span style=''>    if (</span><span style='background: #F0ADAD'>other.isInstanceOf[PI]</span><span style=''>) </span><span style='background: #F0ADAD'>{
+</span>258 <span style=''></span><span style='background: #F0ADAD'>      val o = other.asInstanceOf[PI]
+</span>259 <span style=''></span><span style='background: #F0ADAD'>      (o.value == value) &amp;&amp; (o.target == target)
+</span>260 <span style=''></span><span style='background: #F0ADAD'>    }</span><span style=''> else </span><span style='background: #F0ADAD'>false</span><span style=''>
+</span>261 <span style=''>
+</span>262 <span style=''>  override def hashCode() : Int = {
+</span>263 <span style=''>    var hs = </span><span style='background: #F0ADAD'>1</span><span style=''>
+</span>264 <span style=''>    hs = </span><span style='background: #F0ADAD'>(hs * 31) + value.hashCode</span><span style=''>
+</span>265 <span style=''>    hs = </span><span style='background: #F0ADAD'>(hs * 31) + target.hashCode</span><span style=''>
+</span>266 <span style=''>    hs    
+</span>267 <span style=''>  }
+</span>268 <span style=''>
+</span>269 <span style=''>  val target : String
+</span>270 <span style=''>}
+</span>271 <span style=''>
+</span>272 <span style=''>object PI {
+</span>273 <span style=''>
+</span>274 <span style=''>  def apply(targeti : String, valuei : String)(implicit fromParser : FromParser) = </span><span style='background: #AEF1AE'>new</span><span style=''> PI {
+</span>275 <span style=''>    if (</span><span style='background: #AEF1AE'>fromParser eq NotFromParser</span><span style=''>) </span><span style='background: #AEF1AE'>{
+</span>276 <span style=''></span><span style='background: #AEF1AE'>      require(valuei.indexOf(&quot;?&gt;&quot;) == -1, </span><span style='background: #F0ADAD'>&quot;PI Processing Instructions cannot contain the sequence ?&gt; in the value&quot;</span><span style='background: #AEF1AE'>)
+</span>277 <span style=''></span><span style='background: #AEF1AE'>      require(targeti.indexOf(&quot;?&gt;&quot;) == -1, </span><span style='background: #F0ADAD'>&quot;PI Processing Instructions cannot contain the sequence ?&gt; in the value&quot;</span><span style='background: #AEF1AE'>)
+</span>278 <span style=''></span><span style='background: #AEF1AE'>      require(!targeti.toLowerCase.startsWith(&quot;xml&quot;), </span><span style='background: #F0ADAD'>&quot;PI Processing Instructions targets cannot start with ?&gt;&quot;</span><span style='background: #AEF1AE'>)
+</span>279 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>280 <span style=''>
+</span>281 <span style=''>    val value = valuei
+</span>282 <span style=''>    val target = targeti
+</span>283 <span style=''>  }
+</span>284 <span style=''>
+</span>285 <span style=''>  def unapply(pi : PI) = </span><span style='background: #AEF1AE'>Some((pi.target, pi.value))</span><span style=''>
+</span>286 <span style=''>}
+</span>287 <span style=''>
+</span>288 <span style=''>/**
+</span>289 <span style=''> * Xml declaration
+</span>290 <span style=''> */
+</span>291 <span style=''>case class Declaration(version: XmlVersion = defaultVersion, encoding: Charset = scales.utils.defaultCharset, standalone: Boolean = false)
+</span>292 <span style=''>
+</span>293 <span style=''>/**
+</span>294 <span style=''> * DTD is not part of the tree, nor a stream, it can only occur once and as such is neither an XmlEvent nor an XmlItem directly
+</span>295 <span style=''> */
+</span>296 <span style=''>case class DTD(name: String, publicId: String, systemId: String)
+</span>297 <span style=''>
+</span>298 <span style=''>/**
+</span>299 <span style=''> * Includes all information before the root elem
+</span>300 <span style=''> */
+</span>301 <span style=''>case class Prolog(
+</span>302 <span style=''>  decl: Declaration = Declaration(),
+</span>303 <span style=''>  misc: Miscs = emptyMiscs,
+</span>304 <span style=''>  dtd: Option[DTD] = None)
+</span>305 <span style=''>
+</span>306 <span style=''>/**
+</span>307 <span style=''> * The information after the root elem
+</span>308 <span style=''> */
+</span>309 <span style=''>case class EndMisc(misc: Miscs = emptyMiscs)
+</span>310 <span style=''>
+</span>311 <span style=''>/**
+</span>312 <span style=''> * All documents look similar to this, even when stream
+</span>313 <span style=''> */
+</span>314 <span style=''>trait DocLike {
+</span>315 <span style=''>  def prolog: Prolog
+</span>316 <span style=''>  def end: EndMisc
+</span>317 <span style=''>}
+</span>318 <span style=''>
+</span>319 <span style=''>/**
+</span>320 <span style=''> * Provides a simple empty document for streams etc
+</span>321 <span style=''> */
+</span>322 <span style=''>case class EmptyDoc(prolog: Prolog = Prolog(), end: EndMisc = EndMisc()) extends DocLike
+</span>323 <span style=''>
+</span>324 <span style=''>/**
+</span>325 <span style=''> * Tree based document
+</span>326 <span style=''> */
+</span>327 <span style=''>case class Doc(rootElem: XmlTree, prolog: Prolog = Prolog(), end: EndMisc = EndMisc()) extends DocLike {
+</span>328 <span style=''>  override def toString() = </span><span style='background: #F0ADAD'>&quot;scales.xml.doc&quot;</span><span style=''>
+</span>329 <span style=''>}
+</span>330 <span style=''>
+</span>331 <span style=''>/**
+</span>332 <span style=''> * Exists purely to satisfy staxs events and indicate to the client code that the xml &quot;stack&quot; should be popped
+</span>333 <span style=''> */
+</span>334 <span style=''>case class EndElem(name: QName, namespaces: Map[String, String] = Map[String, String]())
+</span>335 <span style=''>
+</span>336 <span style=''>
+</span>337 <span style=''>/**
+</span>338 <span style=''> * Simple constructor for Attributes
+</span>339 <span style=''> */ 
+</span>340 <span style=''>object Attribs {
+</span>341 <span style=''>  def apply( attribs : Attribute * ) : Attributes = {
+</span>342 <span style=''>    import EqualsHelpers._
+</span>343 <span style=''>    </span><span style='background: #AEF1AE'>ListSet[Attribute](attribs :_*)</span><span style=''>
+</span>344 <span style=''>  }
+</span>345 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          2230
+        </td>
+        <td>
+          592
+          -
+          602
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Attribute.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          attr.value
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          2231
+        </td>
+        <td>
+          587
+          -
+          603
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[String](attr.value)
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          2232
+        </td>
+        <td>
+          1270
+          -
+          1285
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.XmlTypes.emptyNamespaces
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          xml.this.`package`.emptyNamespaces
+        </td>
+      </tr><tr>
+        <td>
+          60
+        </td>
+        <td>
+          2233
+        </td>
+        <td>
+          1539
+          -
+          1545
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Elem.name
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          o.name
+        </td>
+      </tr><tr>
+        <td>
+          60
+        </td>
+        <td>
+          2243
+        </td>
+        <td>
+          1524
+          -
+          1667
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (Elem.this.name.====(o.name).&amp;&amp;(Elem.this.attributes.==(o.attributes)).&amp;&amp;(Elem.this.namespaces.==(o.namespaces)))
+  true
+else
+  false
+        </td>
+      </tr><tr>
+        <td>
+          61
+        </td>
+        <td>
+          2234
+        </td>
+        <td>
+          1593
+          -
+          1605
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Elem.attributes
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          o.attributes
+        </td>
+      </tr><tr>
+        <td>
+          61
+        </td>
+        <td>
+          2235
+        </td>
+        <td>
+          1579
+          -
+          1605
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Elem.this.attributes.==(o.attributes)
+        </td>
+      </tr><tr>
+        <td>
+          62
+        </td>
+        <td>
+          2236
+        </td>
+        <td>
+          1628
+          -
+          1640
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Elem.namespaces
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          o.namespaces
+        </td>
+      </tr><tr>
+        <td>
+          62
+        </td>
+        <td>
+          2237
+        </td>
+        <td>
+          1614
+          -
+          1640
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Elem.this.namespaces.==(o.namespaces)
+        </td>
+      </tr><tr>
+        <td>
+          62
+        </td>
+        <td>
+          2238
+        </td>
+        <td>
+          1528
+          -
+          1641
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Elem.this.name.====(o.name).&amp;&amp;(Elem.this.attributes.==(o.attributes)).&amp;&amp;(Elem.this.namespaces.==(o.namespaces))
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          2239
+        </td>
+        <td>
+          1645
+          -
+          1649
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          2240
+        </td>
+        <td>
+          1645
+          -
+          1649
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          65
+        </td>
+        <td>
+          2241
+        </td>
+        <td>
+          1662
+          -
+          1667
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          65
+        </td>
+        <td>
+          2242
+        </td>
+        <td>
+          1662
+          -
+          1667
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          66
+        </td>
+        <td>
+          2244
+        </td>
+        <td>
+          1682
+          -
+          1687
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          66
+        </td>
+        <td>
+          2245
+        </td>
+        <td>
+          1682
+          -
+          1687
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          2246
+        </td>
+        <td>
+          1742
+          -
+          1743
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          71
+        </td>
+        <td>
+          2247
+        </td>
+        <td>
+          1759
+          -
+          1761
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          31
+        </td>
+      </tr><tr>
+        <td>
+          71
+        </td>
+        <td>
+          2248
+        </td>
+        <td>
+          1765
+          -
+          1778
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.QName.hashCode
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Elem.this.name.hashCode()
+        </td>
+      </tr><tr>
+        <td>
+          71
+        </td>
+        <td>
+          2249
+        </td>
+        <td>
+          1753
+          -
+          1778
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          hs.*(31).+(Elem.this.name.hashCode())
+        </td>
+      </tr><tr>
+        <td>
+          72
+        </td>
+        <td>
+          2250
+        </td>
+        <td>
+          1794
+          -
+          1796
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          31
+        </td>
+      </tr><tr>
+        <td>
+          72
+        </td>
+        <td>
+          2257
+        </td>
+        <td>
+          1788
+          -
+          1933
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          hs.*(31).+(if (xml.this.`package`.emptyAttributes.eq(Elem.this.attributes))
+  scales.xml.impl.DefaultHashes.emptyAttributesHash
+else
+  Elem.this.attributes.hashCode())
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          2251
+        </td>
+        <td>
+          1831
+          -
+          1841
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Elem.attributes
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Elem.this.attributes
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          2252
+        </td>
+        <td>
+          1812
+          -
+          1841
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          xml.this.`package`.emptyAttributes.eq(Elem.this.attributes)
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          2253
+        </td>
+        <td>
+          1844
+          -
+          1863
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.DefaultHashes.emptyAttributesHash
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.xml.impl.DefaultHashes.emptyAttributesHash
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          2254
+        </td>
+        <td>
+          1844
+          -
+          1863
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.impl.DefaultHashes.emptyAttributesHash
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.xml.impl.DefaultHashes.emptyAttributesHash
+        </td>
+      </tr><tr>
+        <td>
+          76
+        </td>
+        <td>
+          2255
+        </td>
+        <td>
+          1906
+          -
+          1925
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.hashCode
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Elem.this.attributes.hashCode()
+        </td>
+      </tr><tr>
+        <td>
+          76
+        </td>
+        <td>
+          2256
+        </td>
+        <td>
+          1906
+          -
+          1925
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          java.lang.Object.hashCode
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Elem.this.attributes.hashCode()
+        </td>
+      </tr><tr>
+        <td>
+          78
+        </td>
+        <td>
+          2258
+        </td>
+        <td>
+          1949
+          -
+          1951
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          31
+        </td>
+      </tr><tr>
+        <td>
+          78
+        </td>
+        <td>
+          2265
+        </td>
+        <td>
+          1943
+          -
+          2088
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          hs.*(31).+(if (Elem.this.namespaces.eq(xml.this.`package`.emptyNamespaces))
+  scales.xml.impl.DefaultHashes.emptyNamespacesHash
+else
+  Elem.this.namespaces.hashCode())
+        </td>
+      </tr><tr>
+        <td>
+          79
+        </td>
+        <td>
+          2259
+        </td>
+        <td>
+          1981
+          -
+          1996
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.XmlTypes.emptyNamespaces
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          xml.this.`package`.emptyNamespaces
+        </td>
+      </tr><tr>
+        <td>
+          79
+        </td>
+        <td>
+          2260
+        </td>
+        <td>
+          1967
+          -
+          1996
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Elem.this.namespaces.eq(xml.this.`package`.emptyNamespaces)
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          2261
+        </td>
+        <td>
+          1999
+          -
+          2018
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.DefaultHashes.emptyNamespacesHash
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.xml.impl.DefaultHashes.emptyNamespacesHash
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          2262
+        </td>
+        <td>
+          1999
+          -
+          2018
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.impl.DefaultHashes.emptyNamespacesHash
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.xml.impl.DefaultHashes.emptyNamespacesHash
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          2263
+        </td>
+        <td>
+          2061
+          -
+          2080
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.GenMapLike.hashCode
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Elem.this.namespaces.hashCode()
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          2264
+        </td>
+        <td>
+          2061
+          -
+          2080
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.collection.GenMapLike.hashCode
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Elem.this.namespaces.hashCode()
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          2266
+        </td>
+        <td>
+          2157
+          -
+          2186
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.StringBuilder.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new java.lang.StringBuilder()
+        </td>
+      </tr><tr>
+        <td>
+          90
+        </td>
+        <td>
+          2267
+        </td>
+        <td>
+          2201
+          -
+          2208
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;Elem(&quot;
+        </td>
+      </tr><tr>
+        <td>
+          91
+        </td>
+        <td>
+          2268
+        </td>
+        <td>
+          2225
+          -
+          2229
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Elem.name
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Elem.this.name
+        </td>
+      </tr><tr>
+        <td>
+          91
+        </td>
+        <td>
+          2269
+        </td>
+        <td>
+          2191
+          -
+          2230
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.StringBuilder.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          sb.append(&quot;Elem(&quot;).append(Elem.this.name)
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          2270
+        </td>
+        <td>
+          2258
+          -
+          2268
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Elem.attributes
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Elem.this.attributes
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          2271
+        </td>
+        <td>
+          2239
+          -
+          2268
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.ne
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          xml.this.`package`.emptyAttributes.ne(Elem.this.attributes)
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          2276
+        </td>
+        <td>
+          2235
+          -
+          2235
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          2277
+        </td>
+        <td>
+          2235
+          -
+          2235
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          93
+        </td>
+        <td>
+          2272
+        </td>
+        <td>
+          2286
+          -
+          2290
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;, &quot;
+        </td>
+      </tr><tr>
+        <td>
+          94
+        </td>
+        <td>
+          2273
+        </td>
+        <td>
+          2301
+          -
+          2311
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Elem.attributes
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Elem.this.attributes
+        </td>
+      </tr><tr>
+        <td>
+          94
+        </td>
+        <td>
+          2274
+        </td>
+        <td>
+          2276
+          -
+          2312
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.StringBuilder.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          sb.append(&quot;, &quot;).append(Elem.this.attributes)
+        </td>
+      </tr><tr>
+        <td>
+          94
+        </td>
+        <td>
+          2275
+        </td>
+        <td>
+          2276
+          -
+          2312
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          java.lang.StringBuilder.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          sb.append(&quot;, &quot;).append(Elem.this.attributes)
+        </td>
+      </tr><tr>
+        <td>
+          95
+        </td>
+        <td>
+          2278
+        </td>
+        <td>
+          2340
+          -
+          2350
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Elem.namespaces
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Elem.this.namespaces
+        </td>
+      </tr><tr>
+        <td>
+          95
+        </td>
+        <td>
+          2279
+        </td>
+        <td>
+          2321
+          -
+          2350
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.ne
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          xml.this.`package`.emptyNamespaces.ne(Elem.this.namespaces)
+        </td>
+      </tr><tr>
+        <td>
+          95
+        </td>
+        <td>
+          2284
+        </td>
+        <td>
+          2317
+          -
+          2317
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          95
+        </td>
+        <td>
+          2285
+        </td>
+        <td>
+          2317
+          -
+          2317
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          2280
+        </td>
+        <td>
+          2368
+          -
+          2372
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;, &quot;
+        </td>
+      </tr><tr>
+        <td>
+          97
+        </td>
+        <td>
+          2281
+        </td>
+        <td>
+          2383
+          -
+          2393
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Elem.namespaces
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Elem.this.namespaces
+        </td>
+      </tr><tr>
+        <td>
+          97
+        </td>
+        <td>
+          2282
+        </td>
+        <td>
+          2358
+          -
+          2394
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.StringBuilder.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          sb.append(&quot;, &quot;).append(Elem.this.namespaces)
+        </td>
+      </tr><tr>
+        <td>
+          97
+        </td>
+        <td>
+          2283
+        </td>
+        <td>
+          2358
+          -
+          2394
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          java.lang.StringBuilder.append
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          sb.append(&quot;, &quot;).append(Elem.this.namespaces)
+        </td>
+      </tr><tr>
+        <td>
+          99
+        </td>
+        <td>
+          2286
+        </td>
+        <td>
+          2400
+          -
+          2425
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.StringBuilder.toString
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          sb.append(&quot;)&quot;).toString()
+        </td>
+      </tr><tr>
+        <td>
+          106
+        </td>
+        <td>
+          2287
+        </td>
+        <td>
+          2593
+          -
+          2679
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Elem.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Elem.this.apply(name, attributes, namespaces.map[(String, String), Iterable[(String, String)]](((p: scales.xml.PrefixedNamespace) =&gt; scala.Predef.ArrowAssoc[String](p.prefix).-&gt;[String](p.ns.uri)))(collection.this.Iterable.canBuildFrom[(String, String)]).toMap[String, String](scala.Predef.$conforms[(String, String)]))(fromParser)
+        </td>
+      </tr><tr>
+        <td>
+          109
+        </td>
+        <td>
+          2288
+        </td>
+        <td>
+          2801
+          -
+          2892
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Elem.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Elem.this.apply(name, xml.this.`package`.emptyAttributes, namespaces.map[(String, String), Iterable[(String, String)]](((p: scales.xml.PrefixedNamespace) =&gt; scala.Predef.ArrowAssoc[String](p.prefix).-&gt;[String](p.ns.uri)))(collection.this.Iterable.canBuildFrom[(String, String)]).toMap[String, String](scala.Predef.$conforms[(String, String)]))(fromParser)
+        </td>
+      </tr><tr>
+        <td>
+          112
+        </td>
+        <td>
+          2289
+        </td>
+        <td>
+          3035
+          -
+          3141
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Elem.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Elem.this.apply(name, xml.this.`package`.emptyAttributes, {
+  &lt;synthetic&gt; &lt;artifact&gt; val x$1: scales.xml.PrefixedNamespace = namespace;
+  namespaces.+:[scales.xml.PrefixedNamespace, Seq[scales.xml.PrefixedNamespace]](x$1)(collection.this.Seq.canBuildFrom[scales.xml.PrefixedNamespace])
+}.map[(String, String), Seq[(String, String)]](((p: scales.xml.PrefixedNamespace) =&gt; scala.Predef.ArrowAssoc[String](p.prefix).-&gt;[String](p.ns.uri)))(collection.this.Seq.canBuildFrom[(String, String)]).toMap[String, String](scala.Predef.$conforms[(String, String)]))(fromParser)
+        </td>
+      </tr><tr>
+        <td>
+          115
+        </td>
+        <td>
+          2290
+        </td>
+        <td>
+          3308
+          -
+          3409
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Elem.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Elem.this.apply(name, attributes, {
+  &lt;synthetic&gt; &lt;artifact&gt; val x$2: scales.xml.PrefixedNamespace = namespace;
+  namespaces.+:[scales.xml.PrefixedNamespace, Seq[scales.xml.PrefixedNamespace]](x$2)(collection.this.Seq.canBuildFrom[scales.xml.PrefixedNamespace])
+}.map[(String, String), Seq[(String, String)]](((p: scales.xml.PrefixedNamespace) =&gt; scala.Predef.ArrowAssoc[String](p.prefix).-&gt;[String](p.ns.uri)))(collection.this.Seq.canBuildFrom[(String, String)]).toMap[String, String](scala.Predef.$conforms[(String, String)]))(fromParser)
+        </td>
+      </tr><tr>
+        <td>
+          120
+        </td>
+        <td>
+          2291
+        </td>
+        <td>
+          3739
+          -
+          3744
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Elem.NoNamespacesElem.namei
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          NoNamespacesElem.this.namei
+        </td>
+      </tr><tr>
+        <td>
+          121
+        </td>
+        <td>
+          2292
+        </td>
+        <td>
+          3766
+          -
+          3777
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Elem.NoNamespacesElem.attributesi
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          NoNamespacesElem.this.attributesi
+        </td>
+      </tr><tr>
+        <td>
+          124
+        </td>
+        <td>
+          2293
+        </td>
+        <td>
+          3949
+          -
+          3997
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Elem.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Elem.this.apply(name, attributes, namespaces)(fromParseri)
+        </td>
+      </tr><tr>
+        <td>
+          129
+        </td>
+        <td>
+          2294
+        </td>
+        <td>
+          4093
+          -
+          4098
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Elem.QNameOnlyElem.namei
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          QNameOnlyElem.this.namei
+        </td>
+      </tr><tr>
+        <td>
+          130
+        </td>
+        <td>
+          2295
+        </td>
+        <td>
+          4120
+          -
+          4135
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.XmlTypes.emptyAttributes
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          xml.this.`package`.emptyAttributes
+        </td>
+      </tr><tr>
+        <td>
+          133
+        </td>
+        <td>
+          2296
+        </td>
+        <td>
+          4307
+          -
+          4355
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Elem.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Elem.this.apply(name, attributes, namespaces)(fromParseri)
+        </td>
+      </tr><tr>
+        <td>
+          138
+        </td>
+        <td>
+          2297
+        </td>
+        <td>
+          4502
+          -
+          4507
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Elem.FullElem.namei
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FullElem.this.namei
+        </td>
+      </tr><tr>
+        <td>
+          139
+        </td>
+        <td>
+          2298
+        </td>
+        <td>
+          4529
+          -
+          4540
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Elem.FullElem.attributesi
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FullElem.this.attributesi
+        </td>
+      </tr><tr>
+        <td>
+          140
+        </td>
+        <td>
+          2299
+        </td>
+        <td>
+          4571
+          -
+          4582
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Elem.FullElem.namespacesi
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          FullElem.this.namespacesi
+        </td>
+      </tr><tr>
+        <td>
+          143
+        </td>
+        <td>
+          2300
+        </td>
+        <td>
+          4750
+          -
+          4798
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Elem.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Elem.this.apply(name, attributes, namespaces)(fromParseri)
+        </td>
+      </tr><tr>
+        <td>
+          149
+        </td>
+        <td>
+          2301
+        </td>
+        <td>
+          4926
+          -
+          4931
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Elem.NoAttribsElem.namei
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          NoAttribsElem.this.namei
+        </td>
+      </tr><tr>
+        <td>
+          150
+        </td>
+        <td>
+          2302
+        </td>
+        <td>
+          4953
+          -
+          4968
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.XmlTypes.emptyAttributes
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          xml.this.`package`.emptyAttributes
+        </td>
+      </tr><tr>
+        <td>
+          151
+        </td>
+        <td>
+          2303
+        </td>
+        <td>
+          4999
+          -
+          5010
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Elem.NoAttribsElem.namespacesi
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          NoAttribsElem.this.namespacesi
+        </td>
+      </tr><tr>
+        <td>
+          154
+        </td>
+        <td>
+          2304
+        </td>
+        <td>
+          5178
+          -
+          5226
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Elem.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Elem.this.apply(name, attributes, namespaces)(fromParseri)
+        </td>
+      </tr><tr>
+        <td>
+          164
+        </td>
+        <td>
+          2305
+        </td>
+        <td>
+          5601
+          -
+          5614
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.NotFromParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.impl.NotFromParser
+        </td>
+      </tr><tr>
+        <td>
+          164
+        </td>
+        <td>
+          2306
+        </td>
+        <td>
+          5587
+          -
+          5614
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          fromParser.eq(scales.xml.impl.NotFromParser)
+        </td>
+      </tr><tr>
+        <td>
+          164
+        </td>
+        <td>
+          2316
+        </td>
+        <td>
+          5583
+          -
+          5583
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          164
+        </td>
+        <td>
+          2317
+        </td>
+        <td>
+          5583
+          -
+          5583
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          165
+        </td>
+        <td>
+          2312
+        </td>
+        <td>
+          5632
+          -
+          5757
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          namei.prefix.map[Boolean](((p: String) =&gt; p.eq(PrefixedNamespace.xmlPRE).||(p.eq(PrefixedNamespace.xmlnsPRE)))).getOrElse[Boolean](false).unary_!
+        </td>
+      </tr><tr>
+        <td>
+          165
+        </td>
+        <td>
+          2314
+        </td>
+        <td>
+          5624
+          -
+          5812
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.require
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.require(namei.prefix.map[Boolean](((p: String) =&gt; p.eq(PrefixedNamespace.xmlPRE).||(p.eq(PrefixedNamespace.xmlnsPRE)))).getOrElse[Boolean](false).unary_!, &quot;Prefixes (xmlns, xml) are not allowed for elements&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          165
+        </td>
+        <td>
+          2315
+        </td>
+        <td>
+          5624
+          -
+          5812
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Predef.require
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.require(namei.prefix.map[Boolean](((p: String) =&gt; p.eq(PrefixedNamespace.xmlPRE).||(p.eq(PrefixedNamespace.xmlnsPRE)))).getOrElse[Boolean](false).unary_!, &quot;Prefixes (xmlns, xml) are not allowed for elements&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          166
+        </td>
+        <td>
+          2307
+        </td>
+        <td>
+          5665
+          -
+          5689
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.PrefixedNamespace.xmlPRE
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          PrefixedNamespace.xmlPRE
+        </td>
+      </tr><tr>
+        <td>
+          166
+        </td>
+        <td>
+          2310
+        </td>
+        <td>
+          5659
+          -
+          5733
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.||
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          p.eq(PrefixedNamespace.xmlPRE).||(p.eq(PrefixedNamespace.xmlnsPRE))
+        </td>
+      </tr><tr>
+        <td>
+          167
+        </td>
+        <td>
+          2308
+        </td>
+        <td>
+          5706
+          -
+          5732
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.PrefixedNamespace.xmlnsPRE
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          PrefixedNamespace.xmlnsPRE
+        </td>
+      </tr><tr>
+        <td>
+          167
+        </td>
+        <td>
+          2309
+        </td>
+        <td>
+          5701
+          -
+          5732
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          p.eq(PrefixedNamespace.xmlnsPRE)
+        </td>
+      </tr><tr>
+        <td>
+          168
+        </td>
+        <td>
+          2311
+        </td>
+        <td>
+          5750
+          -
+          5755
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          168
+        </td>
+        <td>
+          2313
+        </td>
+        <td>
+          5759
+          -
+          5811
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;Prefixes (xmlns, xml) are not allowed for elements&quot;
+        </td>
+      </tr><tr>
+        <td>
+          171
+        </td>
+        <td>
+          2318
+        </td>
+        <td>
+          5828
+          -
+          5847
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.MapLike.isEmpty
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          namespacesi.isEmpty
+        </td>
+      </tr><tr>
+        <td>
+          172
+        </td>
+        <td>
+          2319
+        </td>
+        <td>
+          5859
+          -
+          5879
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          attributesi.isEmpty.unary_!
+        </td>
+      </tr><tr>
+        <td>
+          172
+        </td>
+        <td>
+          2324
+        </td>
+        <td>
+          5855
+          -
+          5964
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (attributesi.isEmpty.unary_!)
+  new Elem.this.NoNamespacesElem(namei, attributesi)
+else
+  new Elem.this.QNameOnlyElem(namei)
+        </td>
+      </tr><tr>
+        <td>
+          173
+        </td>
+        <td>
+          2320
+        </td>
+        <td>
+          5882
+          -
+          5924
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Elem.NoNamespacesElem.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new Elem.this.NoNamespacesElem(namei, attributesi)
+        </td>
+      </tr><tr>
+        <td>
+          173
+        </td>
+        <td>
+          2321
+        </td>
+        <td>
+          5882
+          -
+          5924
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.Elem.NoNamespacesElem.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new Elem.this.NoNamespacesElem(namei, attributesi)
+        </td>
+      </tr><tr>
+        <td>
+          175
+        </td>
+        <td>
+          2322
+        </td>
+        <td>
+          5938
+          -
+          5964
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Elem.QNameOnlyElem.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new Elem.this.QNameOnlyElem(namei)
+        </td>
+      </tr><tr>
+        <td>
+          175
+        </td>
+        <td>
+          2323
+        </td>
+        <td>
+          5938
+          -
+          5964
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.Elem.QNameOnlyElem.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new Elem.this.QNameOnlyElem(namei)
+        </td>
+      </tr><tr>
+        <td>
+          177
+        </td>
+        <td>
+          2325
+        </td>
+        <td>
+          5984
+          -
+          6004
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          attributesi.isEmpty.unary_!
+        </td>
+      </tr><tr>
+        <td>
+          177
+        </td>
+        <td>
+          2330
+        </td>
+        <td>
+          5980
+          -
+          6106
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (attributesi.isEmpty.unary_!)
+  new Elem.this.FullElem(namei, attributesi, namespacesi)
+else
+  new Elem.this.NoAttribsElem(namei, namespacesi)
+        </td>
+      </tr><tr>
+        <td>
+          178
+        </td>
+        <td>
+          2326
+        </td>
+        <td>
+          6007
+          -
+          6054
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Elem.FullElem.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new Elem.this.FullElem(namei, attributesi, namespacesi)
+        </td>
+      </tr><tr>
+        <td>
+          178
+        </td>
+        <td>
+          2327
+        </td>
+        <td>
+          6007
+          -
+          6054
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.Elem.FullElem.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new Elem.this.FullElem(namei, attributesi, namespacesi)
+        </td>
+      </tr><tr>
+        <td>
+          180
+        </td>
+        <td>
+          2328
+        </td>
+        <td>
+          6067
+          -
+          6106
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Elem.NoAttribsElem.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new Elem.this.NoAttribsElem(namei, namespacesi)
+        </td>
+      </tr><tr>
+        <td>
+          180
+        </td>
+        <td>
+          2329
+        </td>
+        <td>
+          6067
+          -
+          6106
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.Elem.NoAttribsElem.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new Elem.this.NoAttribsElem(namei, namespacesi)
+        </td>
+      </tr><tr>
+        <td>
+          183
+        </td>
+        <td>
+          2331
+        </td>
+        <td>
+          6146
+          -
+          6153
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Elem.name
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          el.name
+        </td>
+      </tr><tr>
+        <td>
+          183
+        </td>
+        <td>
+          2332
+        </td>
+        <td>
+          6155
+          -
+          6168
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Elem.attributes
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          el.attributes
+        </td>
+      </tr><tr>
+        <td>
+          183
+        </td>
+        <td>
+          2333
+        </td>
+        <td>
+          6170
+          -
+          6183
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Elem.namespaces
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          el.namespaces
+        </td>
+      </tr><tr>
+        <td>
+          183
+        </td>
+        <td>
+          2334
+        </td>
+        <td>
+          6145
+          -
+          6184
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple3.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple3.apply[scales.xml.QName, scales.xml.Attributes, scala.collection.immutable.Map[String,String]](el.name, el.attributes, el.namespaces)
+        </td>
+      </tr><tr>
+        <td>
+          183
+        </td>
+        <td>
+          2335
+        </td>
+        <td>
+          6140
+          -
+          6185
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[(scales.xml.QName, scales.xml.Attributes, scala.collection.immutable.Map[String,String])](scala.Tuple3.apply[scales.xml.QName, scales.xml.Attributes, scala.collection.immutable.Map[String,String]](el.name, el.attributes, el.namespaces))
+        </td>
+      </tr><tr>
+        <td>
+          190
+        </td>
+        <td>
+          2336
+        </td>
+        <td>
+          6338
+          -
+          6352
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.hashCode
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlItem.this.value.hashCode()
+        </td>
+      </tr><tr>
+        <td>
+          193
+        </td>
+        <td>
+          2337
+        </td>
+        <td>
+          6413
+          -
+          6436
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Class.isInstance
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          clazz.isInstance(other)
+        </td>
+      </tr><tr>
+        <td>
+          193
+        </td>
+        <td>
+          2345
+        </td>
+        <td>
+          6438
+          -
+          6528
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          {
+  val o: scales.xml.XmlItem = other.asInstanceOf[scales.xml.XmlItem];
+  if (o.eq(this))
+    true
+  else
+    o.value.==(XmlItem.this.value)
+}
+        </td>
+      </tr><tr>
+        <td>
+          194
+        </td>
+        <td>
+          2338
+        </td>
+        <td>
+          6449
+          -
+          6476
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          other.asInstanceOf[scales.xml.XmlItem]
+        </td>
+      </tr><tr>
+        <td>
+          195
+        </td>
+        <td>
+          2339
+        </td>
+        <td>
+          6482
+          -
+          6491
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          o.eq(this)
+        </td>
+      </tr><tr>
+        <td>
+          195
+        </td>
+        <td>
+          2340
+        </td>
+        <td>
+          6493
+          -
+          6497
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          195
+        </td>
+        <td>
+          2341
+        </td>
+        <td>
+          6493
+          -
+          6497
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          196
+        </td>
+        <td>
+          2342
+        </td>
+        <td>
+          6516
+          -
+          6521
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.XmlItem.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          XmlItem.this.value
+        </td>
+      </tr><tr>
+        <td>
+          196
+        </td>
+        <td>
+          2343
+        </td>
+        <td>
+          6505
+          -
+          6521
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          o.value.==(XmlItem.this.value)
+        </td>
+      </tr><tr>
+        <td>
+          196
+        </td>
+        <td>
+          2344
+        </td>
+        <td>
+          6505
+          -
+          6521
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          o.value.==(XmlItem.this.value)
+        </td>
+      </tr><tr>
+        <td>
+          197
+        </td>
+        <td>
+          2346
+        </td>
+        <td>
+          6534
+          -
+          6539
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          197
+        </td>
+        <td>
+          2347
+        </td>
+        <td>
+          6534
+          -
+          6539
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          209
+        </td>
+        <td>
+          2348
+        </td>
+        <td>
+          6908
+          -
+          6928
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Comment.commentClass
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Comment.commentClass
+        </td>
+      </tr><tr>
+        <td>
+          209
+        </td>
+        <td>
+          2349
+        </td>
+        <td>
+          6892
+          -
+          6929
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.XmlItem.doEquals
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Comment.this.doEquals(other, Comment.commentClass)
+        </td>
+      </tr><tr>
+        <td>
+          214
+        </td>
+        <td>
+          2350
+        </td>
+        <td>
+          6972
+          -
+          7007
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.getClass
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Comment.apply(&quot;a&quot;)(scales.xml.impl.IsFromParser).getClass()
+        </td>
+      </tr><tr>
+        <td>
+          216
+        </td>
+        <td>
+          2359
+        </td>
+        <td>
+          7074
+          -
+          7077
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.Comment.$anon.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          217
+        </td>
+        <td>
+          2351
+        </td>
+        <td>
+          7110
+          -
+          7123
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.NotFromParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.impl.NotFromParser
+        </td>
+      </tr><tr>
+        <td>
+          217
+        </td>
+        <td>
+          2352
+        </td>
+        <td>
+          7096
+          -
+          7123
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          fromParser.eq(scales.xml.impl.NotFromParser)
+        </td>
+      </tr><tr>
+        <td>
+          217
+        </td>
+        <td>
+          2357
+        </td>
+        <td>
+          7092
+          -
+          7092
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          217
+        </td>
+        <td>
+          2358
+        </td>
+        <td>
+          7092
+          -
+          7092
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          218
+        </td>
+        <td>
+          2353
+        </td>
+        <td>
+          7140
+          -
+          7166
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          valuei.indexOf(&quot;--&quot;).==(-1)
+        </td>
+      </tr><tr>
+        <td>
+          218
+        </td>
+        <td>
+          2354
+        </td>
+        <td>
+          7168
+          -
+          7209
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;Comments cannot contain the sequence --&quot;
+        </td>
+      </tr><tr>
+        <td>
+          218
+        </td>
+        <td>
+          2355
+        </td>
+        <td>
+          7132
+          -
+          7210
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.require
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.require(valuei.indexOf(&quot;--&quot;).==(-1), &quot;Comments cannot contain the sequence --&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          218
+        </td>
+        <td>
+          2356
+        </td>
+        <td>
+          7132
+          -
+          7210
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Predef.require
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.require(valuei.indexOf(&quot;--&quot;).==(-1), &quot;Comments cannot contain the sequence --&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          223
+        </td>
+        <td>
+          2360
+        </td>
+        <td>
+          7276
+          -
+          7285
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.XmlItem.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          cmt.value
+        </td>
+      </tr><tr>
+        <td>
+          223
+        </td>
+        <td>
+          2361
+        </td>
+        <td>
+          7271
+          -
+          7286
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[String](cmt.value)
+        </td>
+      </tr><tr>
+        <td>
+          237
+        </td>
+        <td>
+          2362
+        </td>
+        <td>
+          7834
+          -
+          7850
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.CData.cdataClass
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          CData.cdataClass
+        </td>
+      </tr><tr>
+        <td>
+          237
+        </td>
+        <td>
+          2363
+        </td>
+        <td>
+          7818
+          -
+          7851
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.XmlItem.doEquals
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          CData.this.doEquals(other, CData.cdataClass)
+        </td>
+      </tr><tr>
+        <td>
+          241
+        </td>
+        <td>
+          2364
+        </td>
+        <td>
+          7889
+          -
+          7921
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.getClass
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          CData.apply(&quot;&quot;)(scales.xml.impl.IsFromParser).getClass()
+        </td>
+      </tr><tr>
+        <td>
+          243
+        </td>
+        <td>
+          2373
+        </td>
+        <td>
+          7988
+          -
+          7991
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.CData.$anon.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          244
+        </td>
+        <td>
+          2365
+        </td>
+        <td>
+          8022
+          -
+          8035
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.NotFromParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.impl.NotFromParser
+        </td>
+      </tr><tr>
+        <td>
+          244
+        </td>
+        <td>
+          2366
+        </td>
+        <td>
+          8008
+          -
+          8035
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          fromParser.eq(scales.xml.impl.NotFromParser)
+        </td>
+      </tr><tr>
+        <td>
+          244
+        </td>
+        <td>
+          2371
+        </td>
+        <td>
+          8004
+          -
+          8004
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          244
+        </td>
+        <td>
+          2372
+        </td>
+        <td>
+          8004
+          -
+          8004
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          245
+        </td>
+        <td>
+          2367
+        </td>
+        <td>
+          8051
+          -
+          8078
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          valuei.indexOf(&quot;]]&gt;&quot;).==(-1)
+        </td>
+      </tr><tr>
+        <td>
+          245
+        </td>
+        <td>
+          2369
+        </td>
+        <td>
+          8043
+          -
+          8131
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.require
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.require(valuei.indexOf(&quot;]]&gt;&quot;).==(-1), &quot;CData sections cannot contain the sequence ]]&gt;&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          245
+        </td>
+        <td>
+          2370
+        </td>
+        <td>
+          8043
+          -
+          8131
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Predef.require
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.require(valuei.indexOf(&quot;]]&gt;&quot;).==(-1), &quot;CData sections cannot contain the sequence ]]&gt;&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          246
+        </td>
+        <td>
+          2368
+        </td>
+        <td>
+          8082
+          -
+          8130
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;CData sections cannot contain the sequence ]]&gt;&quot;
+        </td>
+      </tr><tr>
+        <td>
+          251
+        </td>
+        <td>
+          2374
+        </td>
+        <td>
+          8196
+          -
+          8205
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.XmlItem.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          cmt.value
+        </td>
+      </tr><tr>
+        <td>
+          251
+        </td>
+        <td>
+          2375
+        </td>
+        <td>
+          8191
+          -
+          8206
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[String](cmt.value)
+        </td>
+      </tr><tr>
+        <td>
+          257
+        </td>
+        <td>
+          2376
+        </td>
+        <td>
+          8286
+          -
+          8308
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.isInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          other.isInstanceOf[scales.xml.PI]
+        </td>
+      </tr><tr>
+        <td>
+          257
+        </td>
+        <td>
+          2382
+        </td>
+        <td>
+          8310
+          -
+          8403
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          {
+  val o: scales.xml.PI = other.asInstanceOf[scales.xml.PI];
+  o.value.==(PI.this.value).&amp;&amp;(o.target.==(PI.this.target))
+}
+        </td>
+      </tr><tr>
+        <td>
+          258
+        </td>
+        <td>
+          2377
+        </td>
+        <td>
+          8326
+          -
+          8348
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          other.asInstanceOf[scales.xml.PI]
+        </td>
+      </tr><tr>
+        <td>
+          259
+        </td>
+        <td>
+          2378
+        </td>
+        <td>
+          8367
+          -
+          8372
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.XmlItem.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          PI.this.value
+        </td>
+      </tr><tr>
+        <td>
+          259
+        </td>
+        <td>
+          2379
+        </td>
+        <td>
+          8390
+          -
+          8396
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.PI.target
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          PI.this.target
+        </td>
+      </tr><tr>
+        <td>
+          259
+        </td>
+        <td>
+          2380
+        </td>
+        <td>
+          8378
+          -
+          8396
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          o.target.==(PI.this.target)
+        </td>
+      </tr><tr>
+        <td>
+          259
+        </td>
+        <td>
+          2381
+        </td>
+        <td>
+          8355
+          -
+          8397
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          o.value.==(PI.this.value).&amp;&amp;(o.target.==(PI.this.target))
+        </td>
+      </tr><tr>
+        <td>
+          260
+        </td>
+        <td>
+          2383
+        </td>
+        <td>
+          8409
+          -
+          8414
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          260
+        </td>
+        <td>
+          2384
+        </td>
+        <td>
+          8409
+          -
+          8414
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          263
+        </td>
+        <td>
+          2385
+        </td>
+        <td>
+          8465
+          -
+          8466
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          264
+        </td>
+        <td>
+          2386
+        </td>
+        <td>
+          8482
+          -
+          8484
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          31
+        </td>
+      </tr><tr>
+        <td>
+          264
+        </td>
+        <td>
+          2387
+        </td>
+        <td>
+          8488
+          -
+          8502
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.hashCode
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          PI.this.value.hashCode()
+        </td>
+      </tr><tr>
+        <td>
+          264
+        </td>
+        <td>
+          2388
+        </td>
+        <td>
+          8476
+          -
+          8502
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          hs.*(31).+(PI.this.value.hashCode())
+        </td>
+      </tr><tr>
+        <td>
+          265
+        </td>
+        <td>
+          2389
+        </td>
+        <td>
+          8518
+          -
+          8520
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          31
+        </td>
+      </tr><tr>
+        <td>
+          265
+        </td>
+        <td>
+          2390
+        </td>
+        <td>
+          8524
+          -
+          8539
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.hashCode
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          PI.this.target.hashCode()
+        </td>
+      </tr><tr>
+        <td>
+          265
+        </td>
+        <td>
+          2391
+        </td>
+        <td>
+          8512
+          -
+          8539
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          hs.*(31).+(PI.this.target.hashCode())
+        </td>
+      </tr><tr>
+        <td>
+          274
+        </td>
+        <td>
+          2407
+        </td>
+        <td>
+          8677
+          -
+          8680
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.PI.$anon.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          275
+        </td>
+        <td>
+          2392
+        </td>
+        <td>
+          8708
+          -
+          8721
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.NotFromParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.impl.NotFromParser
+        </td>
+      </tr><tr>
+        <td>
+          275
+        </td>
+        <td>
+          2393
+        </td>
+        <td>
+          8694
+          -
+          8721
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          fromParser.eq(scales.xml.impl.NotFromParser)
+        </td>
+      </tr><tr>
+        <td>
+          275
+        </td>
+        <td>
+          2404
+        </td>
+        <td>
+          8723
+          -
+          9076
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  scala.Predef.require(valuei.indexOf(&quot;?&gt;&quot;).==(-1), &quot;PI Processing Instructions cannot contain the sequence ?&gt; in the value&quot;);
+  scala.Predef.require(targeti.indexOf(&quot;?&gt;&quot;).==(-1), &quot;PI Processing Instructions cannot contain the sequence ?&gt; in the value&quot;);
+  scala.Predef.require(targeti.toLowerCase().startsWith(&quot;xml&quot;).unary_!, &quot;PI Processing Instructions targets cannot start with ?&gt;&quot;)
+}
+        </td>
+      </tr><tr>
+        <td>
+          275
+        </td>
+        <td>
+          2405
+        </td>
+        <td>
+          8690
+          -
+          8690
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          275
+        </td>
+        <td>
+          2406
+        </td>
+        <td>
+          8690
+          -
+          8690
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          276
+        </td>
+        <td>
+          2394
+        </td>
+        <td>
+          8739
+          -
+          8765
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          valuei.indexOf(&quot;?&gt;&quot;).==(-1)
+        </td>
+      </tr><tr>
+        <td>
+          276
+        </td>
+        <td>
+          2395
+        </td>
+        <td>
+          8767
+          -
+          8839
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;PI Processing Instructions cannot contain the sequence ?&gt; in the value&quot;
+        </td>
+      </tr><tr>
+        <td>
+          276
+        </td>
+        <td>
+          2396
+        </td>
+        <td>
+          8731
+          -
+          8840
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.require
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.require(valuei.indexOf(&quot;?&gt;&quot;).==(-1), &quot;PI Processing Instructions cannot contain the sequence ?&gt; in the value&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          277
+        </td>
+        <td>
+          2397
+        </td>
+        <td>
+          8855
+          -
+          8882
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          targeti.indexOf(&quot;?&gt;&quot;).==(-1)
+        </td>
+      </tr><tr>
+        <td>
+          277
+        </td>
+        <td>
+          2398
+        </td>
+        <td>
+          8884
+          -
+          8956
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;PI Processing Instructions cannot contain the sequence ?&gt; in the value&quot;
+        </td>
+      </tr><tr>
+        <td>
+          277
+        </td>
+        <td>
+          2399
+        </td>
+        <td>
+          8847
+          -
+          8957
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.require
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.require(targeti.indexOf(&quot;?&gt;&quot;).==(-1), &quot;PI Processing Instructions cannot contain the sequence ?&gt; in the value&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          278
+        </td>
+        <td>
+          2400
+        </td>
+        <td>
+          9004
+          -
+          9009
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;xml&quot;
+        </td>
+      </tr><tr>
+        <td>
+          278
+        </td>
+        <td>
+          2401
+        </td>
+        <td>
+          8972
+          -
+          9010
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          targeti.toLowerCase().startsWith(&quot;xml&quot;).unary_!
+        </td>
+      </tr><tr>
+        <td>
+          278
+        </td>
+        <td>
+          2402
+        </td>
+        <td>
+          9012
+          -
+          9069
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;PI Processing Instructions targets cannot start with ?&gt;&quot;
+        </td>
+      </tr><tr>
+        <td>
+          278
+        </td>
+        <td>
+          2403
+        </td>
+        <td>
+          8964
+          -
+          9070
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.require
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.require(targeti.toLowerCase().startsWith(&quot;xml&quot;).unary_!, &quot;PI Processing Instructions targets cannot start with ?&gt;&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          285
+        </td>
+        <td>
+          2408
+        </td>
+        <td>
+          9162
+          -
+          9171
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.PI.target
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          pi.target
+        </td>
+      </tr><tr>
+        <td>
+          285
+        </td>
+        <td>
+          2409
+        </td>
+        <td>
+          9173
+          -
+          9181
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.XmlItem.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          pi.value
+        </td>
+      </tr><tr>
+        <td>
+          285
+        </td>
+        <td>
+          2410
+        </td>
+        <td>
+          9161
+          -
+          9182
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[String, String](pi.target, pi.value)
+        </td>
+      </tr><tr>
+        <td>
+          285
+        </td>
+        <td>
+          2411
+        </td>
+        <td>
+          9156
+          -
+          9183
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[(String, String)](scala.Tuple2.apply[String, String](pi.target, pi.value))
+        </td>
+      </tr><tr>
+        <td>
+          328
+        </td>
+        <td>
+          2412
+        </td>
+        <td>
+          10255
+          -
+          10271
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;scales.xml.doc&quot;
+        </td>
+      </tr><tr>
+        <td>
+          343
+        </td>
+        <td>
+          2413
+        </td>
+        <td>
+          10651
+          -
+          10651
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.EqualsHelpers.aqnameEqual
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.impl.EqualsHelpers.aqnameEqual
+        </td>
+      </tr><tr>
+        <td>
+          343
+        </td>
+        <td>
+          2414
+        </td>
+        <td>
+          10633
+          -
+          10664
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.ListSet.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.collection.ListSet.apply[scales.xml.Attribute]((attribs: _*))(scales.xml.impl.EqualsHelpers.aqnameEqual)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

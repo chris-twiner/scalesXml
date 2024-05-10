@@ -1,0 +1,1077 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/xml/impl/NameCreators.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.xml.impl
+</span>2 <span style=''>
+</span>3 <span style=''>import scales.xml.{QName, AttributeQName, UnprefixedQName, Namespace, NoNamespaceQName, XmlVersion}
+</span>4 <span style=''>
+</span>5 <span style=''>import scales.xml.parser.strategies.{MemoryOptimisationStrategy, OptimisationToken}
+</span>6 <span style=''>
+</span>7 <span style=''>/**
+</span>8 <span style=''> * Given an optimisation strategy create QNames for elements and attributes.
+</span>9 <span style=''> *
+</span>10 <span style=''> * These are primarily of use from parsers and handle 0 length uris and qNames with &quot;:&quot; in them.
+</span>11 <span style=''> */ 
+</span>12 <span style=''>object NameCreators {
+</span>13 <span style=''>
+</span>14 <span style=''>  /** Elems can have any QName, attribs only prefixed or default */
+</span>15 <span style=''>  def eqn[Token &lt;: OptimisationToken](uri: String,
+</span>16 <span style=''>    localName: String,
+</span>17 <span style=''>    qName: String, strategy : MemoryOptimisationStrategy[Token], token : Token): QName =
+</span>18 <span style=''>    if (</span><span style='background: #AEF1AE'>uri.length() == 0</span><span style=''>) {
+</span>19 <span style=''>      // can only be in qName
+</span>20 <span style=''>      </span><span style='background: #AEF1AE'>strategy.noNamespaceQName(qName, token)</span><span style=''>
+</span>21 <span style=''>    } else {
+</span>22 <span style=''>      // might have a prefix
+</span>23 <span style=''>      </span><span style='background: #AEF1AE'>if (qName == localName) {
+</span>24 <span style=''></span><span style='background: #AEF1AE'>        // no prefix
+</span>25 <span style=''></span><span style='background: #AEF1AE'>	strategy.unprefixedQName(localName, uri, token)
+</span>26 <span style=''></span><span style='background: #AEF1AE'>      } else {
+</span>27 <span style=''></span><span style='background: #AEF1AE'>        // break up the prefix
+</span>28 <span style=''></span><span style='background: #AEF1AE'>        val bits = qName.split(':')
+</span>29 <span style=''></span><span style='background: #AEF1AE'>	
+</span>30 <span style=''></span><span style='background: #AEF1AE'>	strategy.prefixedQName(localName, uri, bits(0), token)
+</span>31 <span style=''></span><span style='background: #AEF1AE'>      }</span><span style=''>
+</span>32 <span style=''>    }
+</span>33 <span style=''>
+</span>34 <span style=''>  /** attribs only prefixed or default */
+</span>35 <span style=''>  def aqn[Token &lt;: OptimisationToken](uri: String,
+</span>36 <span style=''>    localName: String,
+</span>37 <span style=''>    qName: String, strategy : MemoryOptimisationStrategy[Token], token : Token): AttributeQName =
+</span>38 <span style=''>    if (</span><span style='background: #AEF1AE'>uri.length() == 0</span><span style=''>) {
+</span>39 <span style=''>      // can only be in qName
+</span>40 <span style=''>      </span><span style='background: #AEF1AE'>strategy.noNamespaceQName(qName, token)</span><span style=''> // Right
+</span>41 <span style=''>    } else {
+</span>42 <span style=''>      // might have a prefix
+</span>43 <span style=''>      </span><span style='background: #AEF1AE'>if (qName == localName) {
+</span>44 <span style=''></span><span style='background: #AEF1AE'>        // no prefix
+</span>45 <span style=''></span><span style='background: #AEF1AE'>        </span><span style='background: #F0ADAD'>scales.utils.error(&quot;Should not have an attribute with a unprefixed namspace&quot;)</span><span style='background: #AEF1AE'>
+</span>46 <span style=''></span><span style='background: #AEF1AE'>      } else {
+</span>47 <span style=''></span><span style='background: #AEF1AE'>        // break up the prefix
+</span>48 <span style=''></span><span style='background: #AEF1AE'>        val bits = qName.split(':')
+</span>49 <span style=''></span><span style='background: #AEF1AE'>        strategy.prefixedQName(localName, uri,bits(0), token) // Left
+</span>50 <span style=''></span><span style='background: #AEF1AE'>      }</span><span style=''>
+</span>51 <span style=''>    }
+</span>52 <span style=''>}
+</span>53 <span style=''>
+</span>54 <span style=''>
+</span>55 <span style=''>trait QNameImplicits {
+</span>56 <span style=''>
+</span>57 <span style=''>  implicit def stringToNoNamespace( localOnly : String )(implicit ver : XmlVersion, fromParser: FromParser) = </span><span style='background: #AEF1AE'>NoNamespaceQName(localOnly)</span><span style=''>
+</span>58 <span style=''>
+</span>59 <span style=''>  implicit def localStringToNSBuilder( local : String)(implicit ver : XmlVersion, fromParser: FromParser) = </span><span style='background: #AEF1AE'>new StringToNSBuilder(local)</span><span style=''>
+</span>60 <span style=''>}
+</span>61 <span style=''>
+</span>62 <span style=''>/**
+</span>63 <span style=''> * Pimps a string for namespace handling
+</span>64 <span style=''> */ 
+</span>65 <span style=''>class StringToNSBuilder(local: String)(implicit ver : XmlVersion, fromParser: FromParser) {
+</span>66 <span style=''>
+</span>67 <span style=''>  /**
+</span>68 <span style=''>   * ns :: localname pimp.
+</span>69 <span style=''>   */ 
+</span>70 <span style=''>  def ::( namespace : String ) = if (</span><span style='background: #AEF1AE'>(namespace eq null) || namespace == &quot;&quot;</span><span style=''>) </span><span style='background: #F0ADAD'>scales.utils.error(&quot;Namespace should not be non empty or null&quot;)</span><span style=''> else </span><span style='background: #AEF1AE'>UnprefixedQName(local, Namespace(namespace))</span><span style=''>
+</span>71 <span style=''>
+</span>72 <span style=''>  /**
+</span>73 <span style=''>   * When there are other implicits after the string conversion gold add an &quot;l&quot; for local only 
+</span>74 <span style=''>   */
+</span>75 <span style=''>  def l(implicit ver : XmlVersion, fromParser : FromParser) = </span><span style='background: #AEF1AE'>NoNamespaceQName(local)</span><span style=''>
+</span>76 <span style=''>
+</span>77 <span style=''>  /**
+</span>78 <span style=''>   * When there are other implicits after the string conversion gold add an &quot;localOnly&quot; or &quot;l&quot; for local only 
+</span>79 <span style=''>   */
+</span>80 <span style=''>  def localOnly(implicit ver : XmlVersion, fromParser : FromParser) = </span><span style='background: #AEF1AE'>NoNamespaceQName(local)</span><span style=''>
+</span>81 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          18
+        </td>
+        <td>
+          3381
+        </td>
+        <td>
+          659
+          -
+          676
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          uri.length().==(0)
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          3382
+        </td>
+        <td>
+          716
+          -
+          755
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.strategies.MemoryOptimisationStrategy.noNamespaceQName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          strategy.noNamespaceQName(qName, token)
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          3383
+        </td>
+        <td>
+          716
+          -
+          755
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.parser.strategies.MemoryOptimisationStrategy.noNamespaceQName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          strategy.noNamespaceQName(qName, token)
+        </td>
+      </tr><tr>
+        <td>
+          23
+        </td>
+        <td>
+          3384
+        </td>
+        <td>
+          808
+          -
+          826
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          qName.==(localName)
+        </td>
+      </tr><tr>
+        <td>
+          23
+        </td>
+        <td>
+          3391
+        </td>
+        <td>
+          804
+          -
+          1047
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (qName.==(localName))
+  strategy.unprefixedQName(localName, uri, token)
+else
+  {
+    val bits: Array[String] = scala.Predef.augmentString(qName).split(':');
+    strategy.prefixedQName(localName, uri, bits.apply(0), token)
+  }
+        </td>
+      </tr><tr>
+        <td>
+          25
+        </td>
+        <td>
+          3385
+        </td>
+        <td>
+          852
+          -
+          899
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.strategies.MemoryOptimisationStrategy.unprefixedQName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          strategy.unprefixedQName(localName, uri, token)
+        </td>
+      </tr><tr>
+        <td>
+          25
+        </td>
+        <td>
+          3386
+        </td>
+        <td>
+          852
+          -
+          899
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.parser.strategies.MemoryOptimisationStrategy.unprefixedQName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          strategy.unprefixedQName(localName, uri, token)
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          3390
+        </td>
+        <td>
+          913
+          -
+          1047
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val bits: Array[String] = scala.Predef.augmentString(qName).split(':');
+  strategy.prefixedQName(localName, uri, bits.apply(0), token)
+}
+        </td>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          3387
+        </td>
+        <td>
+          965
+          -
+          981
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.StringLike.split
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.augmentString(qName).split(':')
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          3388
+        </td>
+        <td>
+          1024
+          -
+          1031
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Array.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          bits.apply(0)
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          3389
+        </td>
+        <td>
+          985
+          -
+          1039
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.strategies.MemoryOptimisationStrategy.prefixedQName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          strategy.prefixedQName(localName, uri, bits.apply(0), token)
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          3392
+        </td>
+        <td>
+          1277
+          -
+          1294
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          uri.length().==(0)
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          3393
+        </td>
+        <td>
+          1334
+          -
+          1373
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.strategies.MemoryOptimisationStrategy.noNamespaceQName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          strategy.noNamespaceQName(qName, token)
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          3394
+        </td>
+        <td>
+          1334
+          -
+          1373
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.parser.strategies.MemoryOptimisationStrategy.noNamespaceQName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          strategy.noNamespaceQName(qName, token)
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          3395
+        </td>
+        <td>
+          1435
+          -
+          1453
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          qName.==(localName)
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          3402
+        </td>
+        <td>
+          1431
+          -
+          1723
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (qName.==(localName))
+  scales.utils.`package`.error(&quot;Should not have an attribute with a unprefixed namspace&quot;)
+else
+  {
+    val bits: Array[String] = scala.Predef.augmentString(qName).split(':');
+    strategy.prefixedQName(localName, uri, bits.apply(0), token)
+  }
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          3396
+        </td>
+        <td>
+          1486
+          -
+          1563
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.iteratee.Iteratees.error
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.utils.`package`.error(&quot;Should not have an attribute with a unprefixed namspace&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          3397
+        </td>
+        <td>
+          1486
+          -
+          1563
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.iteratee.Iteratees.error
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.utils.`package`.error(&quot;Should not have an attribute with a unprefixed namspace&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          3401
+        </td>
+        <td>
+          1577
+          -
+          1723
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val bits: Array[String] = scala.Predef.augmentString(qName).split(':');
+  strategy.prefixedQName(localName, uri, bits.apply(0), token)
+}
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          3398
+        </td>
+        <td>
+          1629
+          -
+          1645
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.StringLike.split
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.augmentString(qName).split(':')
+        </td>
+      </tr><tr>
+        <td>
+          49
+        </td>
+        <td>
+          3399
+        </td>
+        <td>
+          1692
+          -
+          1699
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Array.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          bits.apply(0)
+        </td>
+      </tr><tr>
+        <td>
+          49
+        </td>
+        <td>
+          3400
+        </td>
+        <td>
+          1654
+          -
+          1707
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.parser.strategies.MemoryOptimisationStrategy.prefixedQName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          strategy.prefixedQName(localName, uri, bits.apply(0), token)
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          3403
+        </td>
+        <td>
+          1868
+          -
+          1895
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.NoNamespaceQName.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.NoNamespaceQName.apply(localOnly)(ver, fromParser)
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          3404
+        </td>
+        <td>
+          2005
+          -
+          2033
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.impl.StringToNSBuilder.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new StringToNSBuilder(local)(ver, fromParser)
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          3405
+        </td>
+        <td>
+          2271
+          -
+          2275
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          3406
+        </td>
+        <td>
+          2280
+          -
+          2295
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          namespace.==(&quot;&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          3407
+        </td>
+        <td>
+          2257
+          -
+          2295
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.||
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          namespace.eq(null).||(namespace.==(&quot;&quot;))
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          3408
+        </td>
+        <td>
+          2297
+          -
+          2360
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.iteratee.Iteratees.error
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.utils.`package`.error(&quot;Namespace should not be non empty or null&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          3409
+        </td>
+        <td>
+          2297
+          -
+          2360
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.iteratee.Iteratees.error
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scales.utils.`package`.error(&quot;Namespace should not be non empty or null&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          3410
+        </td>
+        <td>
+          2382
+          -
+          2387
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.StringToNSBuilder.local
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          StringToNSBuilder.this.local
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          3411
+        </td>
+        <td>
+          2398
+          -
+          2398
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.StringToNSBuilder.ver
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          StringToNSBuilder.this.ver
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          3412
+        </td>
+        <td>
+          2398
+          -
+          2398
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.StringToNSBuilder.fromParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          StringToNSBuilder.this.fromParser
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          3413
+        </td>
+        <td>
+          2389
+          -
+          2409
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.Namespace.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.Namespace.apply(namespace)(StringToNSBuilder.this.ver, StringToNSBuilder.this.fromParser)
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          3414
+        </td>
+        <td>
+          2381
+          -
+          2381
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.StringToNSBuilder.ver
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          StringToNSBuilder.this.ver
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          3415
+        </td>
+        <td>
+          2381
+          -
+          2381
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.StringToNSBuilder.fromParser
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          StringToNSBuilder.this.fromParser
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          3416
+        </td>
+        <td>
+          2366
+          -
+          2410
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.UnprefixedQName.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.UnprefixedQName.apply(StringToNSBuilder.this.local, scales.xml.Namespace.apply(namespace)(StringToNSBuilder.this.ver, StringToNSBuilder.this.fromParser))(StringToNSBuilder.this.ver, StringToNSBuilder.this.fromParser)
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          3417
+        </td>
+        <td>
+          2366
+          -
+          2410
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.UnprefixedQName.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.UnprefixedQName.apply(StringToNSBuilder.this.local, scales.xml.Namespace.apply(namespace)(StringToNSBuilder.this.ver, StringToNSBuilder.this.fromParser))(StringToNSBuilder.this.ver, StringToNSBuilder.this.fromParser)
+        </td>
+      </tr><tr>
+        <td>
+          75
+        </td>
+        <td>
+          3418
+        </td>
+        <td>
+          2582
+          -
+          2605
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.NoNamespaceQName.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.NoNamespaceQName.apply(StringToNSBuilder.this.local)(ver, fromParser)
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          3419
+        </td>
+        <td>
+          2800
+          -
+          2823
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.xml.NoNamespaceQName.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.NoNamespaceQName.apply(StringToNSBuilder.this.local)(ver, fromParser)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

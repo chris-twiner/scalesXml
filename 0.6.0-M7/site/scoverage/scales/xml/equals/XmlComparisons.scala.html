@@ -1,0 +1,3216 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/xml/equals/XmlComparisons.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.xml.equals
+</span>2 <span style=''>
+</span>3 <span style=''>import scales.xml.{QName, Elem, Attribs, Attributes, Attribute, XmlItem, Text, PI, CData, Comment, PullType, EndElem, Misc, Miscs, DocLike, impl}
+</span>4 <span style=''>
+</span>5 <span style=''>import impl.EqualsHelpers
+</span>6 <span style=''>
+</span>7 <span style=''>import XmlEquals._
+</span>8 <span style=''>
+</span>9 <span style=''>import scalaz.Equal._
+</span>10 <span style=''>import scalaz._
+</span>11 <span style=''>import Scalaz._
+</span>12 <span style=''>
+</span>13 <span style=''>import SomeDifference.noCalculation
+</span>14 <span style=''>
+</span>15 <span style=''>/**
+</span>16 <span style=''> * Like Equals but also gives a path in addition to the fun reason
+</span>17 <span style=''> * 
+</span>18 <span style=''> */ 
+</span>19 <span style=''>trait XmlComparison[-T] {
+</span>20 <span style=''>
+</span>21 <span style=''>  /**
+</span>22 <span style=''>   * Takes the context for information reasons (works for streams as well).  The return is either None == boolean or the reason
+</span>23 <span style=''>   */ 
+</span>24 <span style=''>  def compare( calculate : Boolean , context : ComparisonContext, left : T, right : T) : Option[(XmlDifference[_], ComparisonContext)]
+</span>25 <span style=''>}
+</span>26 <span style=''>
+</span>27 <span style=''>trait DefaultQNameEquals {
+</span>28 <span style=''>  implicit val qnameEqual = </span><span style='background: #AEF1AE'>equal { (a: QName, b: QName) =&gt; a =:= b }</span><span style=''>
+</span>29 <span style=''>}
+</span>30 <span style=''>
+</span>31 <span style=''>/**
+</span>32 <span style=''> * Only added to provide a complete `compare` set
+</span>33 <span style=''> */ 
+</span>34 <span style=''>class QNameComparison( implicit qe : Equal[QName] ) extends XmlComparison[QName] {
+</span>35 <span style=''>  def compare( calculate : Boolean , context : ComparisonContext, left : QName, right : QName ) = {
+</span>36 <span style=''>    if (</span><span style='background: #AEF1AE'>left === right</span><span style=''>)
+</span>37 <span style=''>      </span><span style='background: #AEF1AE'>None</span><span style=''>
+</span>38 <span style=''>    else
+</span>39 <span style=''>      </span><span style='background: #F0ADAD'>if (calculate)
+</span>40 <span style=''></span><span style='background: #F0ADAD'>	Some((QNameDifference(left, right), context))
+</span>41 <span style=''></span><span style='background: #F0ADAD'>      else
+</span>42 <span style=''></span><span style='background: #F0ADAD'>	noCalculation</span><span style=''>
+</span>43 <span style=''>  }
+</span>44 <span style=''>}
+</span>45 <span style=''>
+</span>46 <span style=''>trait QNameEquals {
+</span>47 <span style=''>  implicit def qnameComparison( implicit qe : Equal[QName] ) : XmlComparison[QName] = </span><span style='background: #AEF1AE'>new QNameComparison()(qe)</span><span style=''>
+</span>48 <span style=''>}
+</span>49 <span style=''>
+</span>50 <span style=''>object QNameEquals extends DefaultQNameEquals with QNameEquals {
+</span>51 <span style=''>}
+</span>52 <span style=''>
+</span>53 <span style=''>trait DefaultQNameToken {
+</span>54 <span style=''>
+</span>55 <span style=''>  /**
+</span>56 <span style=''>   * Finally decides if a Text/CData node or Attribute value should be compared as if containing a qname (prefix:local). 
+</span>57 <span style=''>   */ 
+</span>58 <span style=''>  implicit val defaultQNameTokenComparison : Option[(ComparisonContext, String, String) =&gt; Boolean] = </span><span style='background: #AEF1AE'>None</span><span style=''>
+</span>59 <span style=''>
+</span>60 <span style=''>}
+</span>61 <span style=''>
+</span>62 <span style=''>object DefaultQNameToken extends DefaultQNameToken {
+</span>63 <span style=''>}
+</span>64 <span style=''>
+</span>65 <span style=''>/**
+</span>66 <span style=''> * Compares XmlItems, providing Some qnameTokenComparison will force that to be used to decide if qname comparison should be used or not
+</span>67 <span style=''> */ 
+</span>68 <span style=''>class XmlItemComparison()(implicit qnameTokenComparison : Option[(ComparisonContext, String, String) =&gt; Boolean]) extends XmlComparison[XmlItem] {
+</span>69 <span style=''>  def compare( calculate : Boolean , context : ComparisonContext, left : XmlItem, right : XmlItem) : Option[(XmlDifference[_], ComparisonContext)] = {
+</span>70 <span style=''>    def check( str : String, str2 : String, isQNameRelevant : Boolean = false ) = {
+</span>71 <span style=''>      val res = 
+</span>72 <span style=''>	if (isQNameRelevant)
+</span>73 <span style=''>	  </span><span style='background: #AEF1AE'>compareTokens(context, qnameTokenComparison, str, str2)</span><span style=''>
+</span>74 <span style=''>	else
+</span>75 <span style=''>	  </span><span style='background: #AEF1AE'>str == str2</span><span style=''> // qnames don't make sense for non Text / CData
+</span>76 <span style=''>
+</span>77 <span style=''>      if (res) </span><span style='background: #AEF1AE'>None</span><span style=''>
+</span>78 <span style=''>      else {
+</span>79 <span style=''>	</span><span style='background: #AEF1AE'>if (calculate) 
+</span>80 <span style=''></span><span style='background: #AEF1AE'>	  Some((ItemDifference(left, right), context))
+</span>81 <span style=''></span><span style='background: #AEF1AE'>	else
+</span>82 <span style=''></span><span style='background: #AEF1AE'>	  noCalculation</span><span style=''>
+</span>83 <span style=''>      }
+</span>84 <span style=''>    }
+</span>85 <span style=''>
+</span>86 <span style=''>    if (</span><span style='background: #AEF1AE'>left eq right</span><span style=''>)
+</span>87 <span style=''>      </span><span style='background: #AEF1AE'>None</span><span style=''> // worth checking
+</span>88 <span style=''>    else </span><span style='background: #AEF1AE'>(left, right) match { // we have to do it on types as well
+</span>89 <span style=''></span><span style='background: #AEF1AE'>      case (Text(valu), Text(value)) =&gt; check(valu, value, true)
+</span>90 <span style=''></span><span style='background: #AEF1AE'>      case (Comment(com), Comment(comm)) =&gt; check(com, comm)
+</span>91 <span style=''></span><span style='background: #AEF1AE'>      case (CData(cd), CData(cda)) =&gt; check(cd, cda, true)
+</span>92 <span style=''></span><span style='background: #AEF1AE'>      case (PI(ta, valu), PI(tar, value)) =&gt; 
+</span>93 <span style=''></span><span style='background: #AEF1AE'>	check(ta, tar) orElse check(valu,  value)
+</span>94 <span style=''></span><span style='background: #AEF1AE'>      case _ =&gt; 
+</span>95 <span style=''></span><span style='background: #AEF1AE'>	if (calculate)
+</span>96 <span style=''></span><span style='background: #AEF1AE'>	  Some((DifferentTypes(left, right), context))
+</span>97 <span style=''></span><span style='background: #AEF1AE'>	else
+</span>98 <span style=''></span><span style='background: #AEF1AE'>	  noCalculation
+</span>99 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>100 <span style=''>  }
+</span>101 <span style=''>}
+</span>102 <span style=''>
+</span>103 <span style=''>trait DefaultItemEquals {
+</span>104 <span style=''>
+</span>105 <span style=''>  /**
+</span>106 <span style=''>   * creates an XmlItem comparison given a given qnameTokenComparison function (should it compare using qnames or not).
+</span>107 <span style=''>   */ 
+</span>108 <span style=''>  implicit def defaultXmlItemComparison(implicit qnameTokenComparison : Option[(ComparisonContext, String, String) =&gt; Boolean]) : XmlComparison[XmlItem] = </span><span style='background: #AEF1AE'>new XmlItemComparison()(qnameTokenComparison)</span><span style=''>
+</span>109 <span style=''>  
+</span>110 <span style=''>}
+</span>111 <span style=''>
+</span>112 <span style=''>object ItemEquals extends DefaultItemEquals {}
+</span>113 <span style=''>
+</span>114 <span style=''>/**
+</span>115 <span style=''> * Comparison between attributes, requires an Equal type class for QNames
+</span>116 <span style=''> */ 
+</span>117 <span style=''>class AttributeComparison(implicit eqn : Equal[QName], qnameTokenComparison : Option[(ComparisonContext, String, String) =&gt; Boolean]) extends XmlComparison[Attribute] {
+</span>118 <span style=''>  import EqualsHelpers.toQName
+</span>119 <span style=''>
+</span>120 <span style=''>  def compare( calculate : Boolean, context : ComparisonContext, left: Attribute, right : Attribute) : Option[(XmlDifference[_], ComparisonContext)] = {
+</span>121 <span style=''>    if (</span><span style='background: #AEF1AE'>left eq right</span><span style=''>)
+</span>122 <span style=''>      </span><span style='background: #AEF1AE'>None</span><span style=''>
+</span>123 <span style=''>    else </span><span style='background: #AEF1AE'>if (!eqn.equal(toQName(left.name), toQName(right.name)))
+</span>124 <span style=''></span><span style='background: #AEF1AE'>      if (calculate)
+</span>125 <span style=''></span><span style='background: #AEF1AE'>	Some((AttributeNameDifference( left, right), context))
+</span>126 <span style=''></span><span style='background: #AEF1AE'>      else
+</span>127 <span style=''></span><span style='background: #AEF1AE'>	noCalculation
+</span>128 <span style=''></span><span style='background: #AEF1AE'>    else {
+</span>129 <span style=''></span><span style='background: #AEF1AE'>      if (!compareTokens( context, qnameTokenComparison, left.value, right.value ))
+</span>130 <span style=''></span><span style='background: #AEF1AE'>	if (calculate)
+</span>131 <span style=''></span><span style='background: #AEF1AE'>	  Some((AttributeValueDifference( left, right), context))
+</span>132 <span style=''></span><span style='background: #AEF1AE'>	else
+</span>133 <span style=''></span><span style='background: #AEF1AE'>	  noCalculation
+</span>134 <span style=''></span><span style='background: #AEF1AE'>      else
+</span>135 <span style=''></span><span style='background: #AEF1AE'>	None // a ok
+</span>136 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>137 <span style=''>  }
+</span>138 <span style=''>}
+</span>139 <span style=''>
+</span>140 <span style=''>trait DefaultAttributeEquals {
+</span>141 <span style=''>  /**
+</span>142 <span style=''>   * QNames are not compared with prefix
+</span>143 <span style=''>   */ 
+</span>144 <span style=''>  implicit def defaultAttributeComparison(implicit qe : Equal[QName], qnameTokenComparison : Option[(ComparisonContext, String, String) =&gt; Boolean]) : XmlComparison[Attribute] = </span><span style='background: #AEF1AE'>new AttributeComparison()(qe, qnameTokenComparison)</span><span style=''>
+</span>145 <span style=''>  
+</span>146 <span style=''>}
+</span>147 <span style=''>
+</span>148 <span style=''>object AttributeEquals extends DefaultAttributeEquals with DefaultQNameEquals {}
+</span>149 <span style=''>
+</span>150 <span style=''>trait ExactQName{
+</span>151 <span style=''>  /**
+</span>152 <span style=''>   * QNames are compared with prefix
+</span>153 <span style=''>   */ 
+</span>154 <span style=''>  implicit def prefixAttributeComparison(implicit qnameTokenComparison : Option[(ComparisonContext, String, String) =&gt; Boolean]) = </span><span style='background: #AEF1AE'>new AttributeComparison()(equal { (a: QName, b: QName) =&gt; a.====(b) }, qnameTokenComparison)</span><span style=''>
+</span>155 <span style=''>  
+</span>156 <span style=''>}
+</span>157 <span style=''>
+</span>158 <span style=''>/**
+</span>159 <span style=''> * Comparisoms built on exact qname comparisom, prefixes can be important for some systems
+</span>160 <span style=''> */ 
+</span>161 <span style=''>object ExactQName extends ExactQName {}
+</span>162 <span style=''>
+</span>163 <span style=''>/**
+</span>164 <span style=''> * Comparison for attributes, requires a comparison for individual attributes, allowing flexible definitions of equality
+</span>165 <span style=''> */ 
+</span>166 <span style=''>class AttributesComparison( implicit ac : XmlComparison[Attribute]) extends XmlComparison[Attributes] {
+</span>167 <span style=''>  def compare( calculate : Boolean, context : ComparisonContext, left : Attributes, right : Attributes) : Option[(XmlDifference[_], ComparisonContext)] = {
+</span>168 <span style=''>    import EqualsHelpers._
+</span>169 <span style=''>    import scales.utils.collectFirst
+</span>170 <span style=''>
+</span>171 <span style=''>    if (</span><span style='background: #AEF1AE'>left eq right</span><span style=''>)
+</span>172 <span style=''>      </span><span style='background: #AEF1AE'>None</span><span style=''>
+</span>173 <span style=''>    else
+</span>174 <span style=''>    </span><span style='background: #AEF1AE'>if (left.size != right.size)
+</span>175 <span style=''></span><span style='background: #AEF1AE'>      if (calculate)
+</span>176 <span style=''></span><span style='background: #AEF1AE'>	Some((DifferentNumberOfAttributes(left,right), context))
+</span>177 <span style=''></span><span style='background: #AEF1AE'>      else
+</span>178 <span style=''></span><span style='background: #AEF1AE'>	noCalculation
+</span>179 <span style=''></span><span style='background: #AEF1AE'>      else 
+</span>180 <span style=''></span><span style='background: #AEF1AE'>	// get the first error
+</span>181 <span style=''></span><span style='background: #AEF1AE'>	collectFirst[Attribute, (XmlDifference[_], ComparisonContext)](left){ 
+</span>182 <span style=''></span><span style='background: #AEF1AE'>	  x1 =&gt;
+</span>183 <span style=''></span><span style='background: #AEF1AE'>	    right( x1.name ).cata( x2 =&gt; {// if we have it check the attributes
+</span>184 <span style=''></span><span style='background: #AEF1AE'>	      val r = ac.compare(calculate, context, x1, x2)
+</span>185 <span style=''></span><span style='background: #AEF1AE'>	      if (r.isDefined) {
+</span>186 <span style=''></span><span style='background: #AEF1AE'>		// it can only be AttributeValueDifference
+</span>187 <span style=''></span><span style='background: #AEF1AE'>		if (calculate)
+</span>188 <span style=''></span><span style='background: #AEF1AE'>		  Some( (DifferentValueAttributes( left, right, x1 ), context) )
+</span>189 <span style=''></span><span style='background: #AEF1AE'>		else
+</span>190 <span style=''></span><span style='background: #AEF1AE'>		  noCalculation
+</span>191 <span style=''></span><span style='background: #AEF1AE'>	      } else None
+</span>192 <span style=''></span><span style='background: #AEF1AE'>	    } , 
+</span>193 <span style=''></span><span style='background: #AEF1AE'>	    if (calculate)
+</span>194 <span style=''></span><span style='background: #AEF1AE'>	      Some( ( MissingAttributes( left, right, x1 ), context) )
+</span>195 <span style=''></span><span style='background: #AEF1AE'>	    else
+</span>196 <span style=''></span><span style='background: #AEF1AE'>	      noCalculation     
+</span>197 <span style=''></span><span style='background: #AEF1AE'>	    )
+</span>198 <span style=''></span><span style='background: #AEF1AE'>	}</span><span style=''>
+</span>199 <span style=''>  }
+</span>200 <span style=''>}
+</span>201 <span style=''>
+</span>202 <span style=''>trait DefaultAttributesEquals {
+</span>203 <span style=''>
+</span>204 <span style=''>  implicit def defaultAttributesComparison(implicit ac : XmlComparison[Attribute]) : XmlComparison[Attributes]  = </span><span style='background: #AEF1AE'>new AttributesComparison()( ac )</span><span style=''>
+</span>205 <span style=''>
+</span>206 <span style=''>}
+</span>207 <span style=''>
+</span>208 <span style=''>object AttributesEquals extends DefaultAttributesEquals 
+</span>209 <span style=''>  with DefaultAttributeEquals with DefaultQNameEquals {}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          3026
+        </td>
+        <td>
+          786
+          -
+          793
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.QName.=:=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          a.=:=(b)
+        </td>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          3027
+        </td>
+        <td>
+          754
+          -
+          795
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.Equal.equal
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.Equal.equal[scales.xml.QName](((a: scales.xml.QName, b: scales.xml.QName) =&gt; a.=:=(b)))
+        </td>
+      </tr><tr>
+        <td>
+          36
+        </td>
+        <td>
+          3028
+        </td>
+        <td>
+          1049
+          -
+          1063
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.syntax.EqualOps.===
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.Scalaz.ToEqualOps[scales.xml.QName](left)(QNameComparison.this.qe).===(right)
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          3029
+        </td>
+        <td>
+          1071
+          -
+          1075
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          3030
+        </td>
+        <td>
+          1071
+          -
+          1075
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          3037
+        </td>
+        <td>
+          1091
+          -
+          1178
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          if (calculate)
+  scala.Some.apply[(scales.xml.equals.QNameDifference, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.QNameDifference, scales.xml.equals.ComparisonContext](QNameDifference.apply(left, right), context))
+else
+  SomeDifference.noCalculation
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          3031
+        </td>
+        <td>
+          1113
+          -
+          1141
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.QNameDifference.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          QNameDifference.apply(left, right)
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          3032
+        </td>
+        <td>
+          1112
+          -
+          1151
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Tuple2.apply[scales.xml.equals.QNameDifference, scales.xml.equals.ComparisonContext](QNameDifference.apply(left, right), context)
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          3033
+        </td>
+        <td>
+          1107
+          -
+          1152
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Some.apply[(scales.xml.equals.QNameDifference, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.QNameDifference, scales.xml.equals.ComparisonContext](QNameDifference.apply(left, right), context))
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          3034
+        </td>
+        <td>
+          1107
+          -
+          1152
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Some.apply[(scales.xml.equals.QNameDifference, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.QNameDifference, scales.xml.equals.ComparisonContext](QNameDifference.apply(left, right), context))
+        </td>
+      </tr><tr>
+        <td>
+          42
+        </td>
+        <td>
+          3035
+        </td>
+        <td>
+          1165
+          -
+          1178
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.SomeDifference.noCalculation
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          SomeDifference.noCalculation
+        </td>
+      </tr><tr>
+        <td>
+          42
+        </td>
+        <td>
+          3036
+        </td>
+        <td>
+          1165
+          -
+          1178
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.equals.SomeDifference.noCalculation
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          SomeDifference.noCalculation
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          3038
+        </td>
+        <td>
+          1292
+          -
+          1317
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.QNameComparison.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new QNameComparison()(qe)
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          3039
+        </td>
+        <td>
+          1653
+          -
+          1657
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          3040
+        </td>
+        <td>
+          2311
+          -
+          2331
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.XmlItemComparison.qnameTokenComparison
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlItemComparison.this.qnameTokenComparison
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          3041
+        </td>
+        <td>
+          2288
+          -
+          2343
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.XmlEquals.compareTokens
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlEquals.compareTokens(context, XmlItemComparison.this.qnameTokenComparison, str, str2)
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          3042
+        </td>
+        <td>
+          2288
+          -
+          2343
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.equals.XmlEquals.compareTokens
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlEquals.compareTokens(context, XmlItemComparison.this.qnameTokenComparison, str, str2)
+        </td>
+      </tr><tr>
+        <td>
+          75
+        </td>
+        <td>
+          3043
+        </td>
+        <td>
+          2353
+          -
+          2364
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          str.==(str2)
+        </td>
+      </tr><tr>
+        <td>
+          75
+        </td>
+        <td>
+          3044
+        </td>
+        <td>
+          2353
+          -
+          2364
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          str.==(str2)
+        </td>
+      </tr><tr>
+        <td>
+          77
+        </td>
+        <td>
+          3045
+        </td>
+        <td>
+          2429
+          -
+          2433
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          77
+        </td>
+        <td>
+          3046
+        </td>
+        <td>
+          2429
+          -
+          2433
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          79
+        </td>
+        <td>
+          3053
+        </td>
+        <td>
+          2448
+          -
+          2534
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (calculate)
+  scala.Some.apply[(scales.xml.equals.ItemDifference, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.ItemDifference, scales.xml.equals.ComparisonContext](ItemDifference.apply(left, right), context))
+else
+  SomeDifference.noCalculation
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          3047
+        </td>
+        <td>
+          2473
+          -
+          2500
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.ItemDifference.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ItemDifference.apply(left, right)
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          3048
+        </td>
+        <td>
+          2472
+          -
+          2510
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[scales.xml.equals.ItemDifference, scales.xml.equals.ComparisonContext](ItemDifference.apply(left, right), context)
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          3049
+        </td>
+        <td>
+          2467
+          -
+          2511
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[(scales.xml.equals.ItemDifference, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.ItemDifference, scales.xml.equals.ComparisonContext](ItemDifference.apply(left, right), context))
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          3050
+        </td>
+        <td>
+          2467
+          -
+          2511
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[(scales.xml.equals.ItemDifference, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.ItemDifference, scales.xml.equals.ComparisonContext](ItemDifference.apply(left, right), context))
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          3051
+        </td>
+        <td>
+          2521
+          -
+          2534
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.SomeDifference.noCalculation
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SomeDifference.noCalculation
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          3052
+        </td>
+        <td>
+          2521
+          -
+          2534
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.equals.SomeDifference.noCalculation
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SomeDifference.noCalculation
+        </td>
+      </tr><tr>
+        <td>
+          86
+        </td>
+        <td>
+          3054
+        </td>
+        <td>
+          2558
+          -
+          2571
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          left.eq(right)
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          3055
+        </td>
+        <td>
+          2579
+          -
+          2583
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          3056
+        </td>
+        <td>
+          2579
+          -
+          2583
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          88
+        </td>
+        <td>
+          3070
+        </td>
+        <td>
+          2611
+          -
+          3053
+        </td>
+        <td>
+          Match
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[scales.xml.XmlItem, scales.xml.XmlItem](left, right) match {
+  case (_1: scales.xml.XmlItem, _2: scales.xml.XmlItem)(scales.xml.XmlItem, scales.xml.XmlItem)((value: String)scales.xml.Text((valu @ _)), (value: String)scales.xml.Text((value @ _))) =&gt; check(valu, value, true)
+  case (_1: scales.xml.XmlItem, _2: scales.xml.XmlItem)(scales.xml.XmlItem, scales.xml.XmlItem)(scales.xml.Comment.unapply(&lt;unapply-selector&gt;) &lt;unapply&gt; ((com @ _)), scales.xml.Comment.unapply(&lt;unapply-selector&gt;) &lt;unapply&gt; ((comm @ _))) =&gt; check(com, comm, check$default$3)
+  case (_1: scales.xml.XmlItem, _2: scales.xml.XmlItem)(scales.xml.XmlItem, scales.xml.XmlItem)(scales.xml.CData.unapply(&lt;unapply-selector&gt;) &lt;unapply&gt; ((cd @ _)), scales.xml.CData.unapply(&lt;unapply-selector&gt;) &lt;unapply&gt; ((cda @ _))) =&gt; check(cd, cda, true)
+  case (_1: scales.xml.XmlItem, _2: scales.xml.XmlItem)(scales.xml.XmlItem, scales.xml.XmlItem)(scales.xml.PI.unapply(&lt;unapply-selector&gt;) &lt;unapply&gt; ((ta @ _), (valu @ _)), scales.xml.PI.unapply(&lt;unapply-selector&gt;) &lt;unapply&gt; ((tar @ _), (value @ _))) =&gt; check(ta, tar, check$default$3).orElse[(scales.xml.equals.XmlDifference[_], scales.xml.equals.ComparisonContext)](check(valu, value, check$default$3))
+  case _ =&gt; if (calculate)
+    scala.Some.apply[(scales.xml.equals.DifferentTypes, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.DifferentTypes, scales.xml.equals.ComparisonContext](DifferentTypes.apply(xml.this.`package`.toLeft(left), xml.this.`package`.toLeft(right)), context))
+  else
+    SomeDifference.noCalculation
+}
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          3057
+        </td>
+        <td>
+          2710
+          -
+          2734
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.XmlItemComparison.check
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          check(valu, value, true)
+        </td>
+      </tr><tr>
+        <td>
+          90
+        </td>
+        <td>
+          3058
+        </td>
+        <td>
+          2779
+          -
+          2795
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.XmlItemComparison.check
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          check(com, comm, check$default$3)
+        </td>
+      </tr><tr>
+        <td>
+          91
+        </td>
+        <td>
+          3059
+        </td>
+        <td>
+          2834
+          -
+          2854
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.XmlItemComparison.check
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          check(cd, cda, true)
+        </td>
+      </tr><tr>
+        <td>
+          93
+        </td>
+        <td>
+          3060
+        </td>
+        <td>
+          2924
+          -
+          2943
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.XmlItemComparison.check
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          check(valu, value, check$default$3)
+        </td>
+      </tr><tr>
+        <td>
+          93
+        </td>
+        <td>
+          3061
+        </td>
+        <td>
+          2902
+          -
+          2943
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.orElse
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          check(ta, tar, check$default$3).orElse[(scales.xml.equals.XmlDifference[_], scales.xml.equals.ComparisonContext)](check(valu, value, check$default$3))
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          3062
+        </td>
+        <td>
+          3001
+          -
+          3005
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPulls.toLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          xml.this.`package`.toLeft(left)
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          3063
+        </td>
+        <td>
+          3007
+          -
+          3012
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scales.xml.parser.pull.XmlPulls.toLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          xml.this.`package`.toLeft(right)
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          3064
+        </td>
+        <td>
+          2986
+          -
+          3013
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.DifferentTypes.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          DifferentTypes.apply(xml.this.`package`.toLeft(left), xml.this.`package`.toLeft(right))
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          3065
+        </td>
+        <td>
+          2985
+          -
+          3023
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[scales.xml.equals.DifferentTypes, scales.xml.equals.ComparisonContext](DifferentTypes.apply(xml.this.`package`.toLeft(left), xml.this.`package`.toLeft(right)), context)
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          3066
+        </td>
+        <td>
+          2980
+          -
+          3024
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[(scales.xml.equals.DifferentTypes, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.DifferentTypes, scales.xml.equals.ComparisonContext](DifferentTypes.apply(xml.this.`package`.toLeft(left), xml.this.`package`.toLeft(right)), context))
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          3067
+        </td>
+        <td>
+          2980
+          -
+          3024
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[(scales.xml.equals.DifferentTypes, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.DifferentTypes, scales.xml.equals.ComparisonContext](DifferentTypes.apply(xml.this.`package`.toLeft(left), xml.this.`package`.toLeft(right)), context))
+        </td>
+      </tr><tr>
+        <td>
+          98
+        </td>
+        <td>
+          3068
+        </td>
+        <td>
+          3034
+          -
+          3047
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.SomeDifference.noCalculation
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SomeDifference.noCalculation
+        </td>
+      </tr><tr>
+        <td>
+          98
+        </td>
+        <td>
+          3069
+        </td>
+        <td>
+          3034
+          -
+          3047
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.equals.SomeDifference.noCalculation
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SomeDifference.noCalculation
+        </td>
+      </tr><tr>
+        <td>
+          108
+        </td>
+        <td>
+          3071
+        </td>
+        <td>
+          3376
+          -
+          3421
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.XmlItemComparison.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new XmlItemComparison()(qnameTokenComparison)
+        </td>
+      </tr><tr>
+        <td>
+          121
+        </td>
+        <td>
+          3072
+        </td>
+        <td>
+          3921
+          -
+          3934
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          left.eq(right)
+        </td>
+      </tr><tr>
+        <td>
+          122
+        </td>
+        <td>
+          3073
+        </td>
+        <td>
+          3942
+          -
+          3946
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          122
+        </td>
+        <td>
+          3074
+        </td>
+        <td>
+          3942
+          -
+          3946
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          123
+        </td>
+        <td>
+          3075
+        </td>
+        <td>
+          3979
+          -
+          3988
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Attribute.name
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          left.name
+        </td>
+      </tr><tr>
+        <td>
+          123
+        </td>
+        <td>
+          3076
+        </td>
+        <td>
+          3971
+          -
+          3989
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.EqualsHelpers.toQName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.impl.EqualsHelpers.toQName(left.name)
+        </td>
+      </tr><tr>
+        <td>
+          123
+        </td>
+        <td>
+          3077
+        </td>
+        <td>
+          3999
+          -
+          4009
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Attribute.name
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          right.name
+        </td>
+      </tr><tr>
+        <td>
+          123
+        </td>
+        <td>
+          3078
+        </td>
+        <td>
+          3991
+          -
+          4010
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.EqualsHelpers.toQName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.impl.EqualsHelpers.toQName(right.name)
+        </td>
+      </tr><tr>
+        <td>
+          123
+        </td>
+        <td>
+          3079
+        </td>
+        <td>
+          3960
+          -
+          4011
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AttributeComparison.this.eqn.equal(scales.xml.impl.EqualsHelpers.toQName(left.name), scales.xml.impl.EqualsHelpers.toQName(right.name)).unary_!
+        </td>
+      </tr><tr>
+        <td>
+          123
+        </td>
+        <td>
+          3101
+        </td>
+        <td>
+          3956
+          -
+          4339
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (AttributeComparison.this.eqn.equal(scales.xml.impl.EqualsHelpers.toQName(left.name), scales.xml.impl.EqualsHelpers.toQName(right.name)).unary_!)
+  if (calculate)
+    scala.Some.apply[(scales.xml.equals.AttributeNameDifference, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.AttributeNameDifference, scales.xml.equals.ComparisonContext](AttributeNameDifference.apply(left, right), context))
+  else
+    SomeDifference.noCalculation
+else
+  if (XmlEquals.compareTokens(context, AttributeComparison.this.qnameTokenComparison, left.value, right.value).unary_!)
+    if (calculate)
+      scala.Some.apply[(scales.xml.equals.AttributeValueDifference, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.AttributeValueDifference, scales.xml.equals.ComparisonContext](AttributeValueDifference.apply(left, right), context))
+    else
+      SomeDifference.noCalculation
+  else
+    scala.None
+        </td>
+      </tr><tr>
+        <td>
+          124
+        </td>
+        <td>
+          3086
+        </td>
+        <td>
+          4019
+          -
+          4115
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (calculate)
+  scala.Some.apply[(scales.xml.equals.AttributeNameDifference, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.AttributeNameDifference, scales.xml.equals.ComparisonContext](AttributeNameDifference.apply(left, right), context))
+else
+  SomeDifference.noCalculation
+        </td>
+      </tr><tr>
+        <td>
+          125
+        </td>
+        <td>
+          3080
+        </td>
+        <td>
+          4041
+          -
+          4078
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.AttributeNameDifference.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AttributeNameDifference.apply(left, right)
+        </td>
+      </tr><tr>
+        <td>
+          125
+        </td>
+        <td>
+          3081
+        </td>
+        <td>
+          4040
+          -
+          4088
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[scales.xml.equals.AttributeNameDifference, scales.xml.equals.ComparisonContext](AttributeNameDifference.apply(left, right), context)
+        </td>
+      </tr><tr>
+        <td>
+          125
+        </td>
+        <td>
+          3082
+        </td>
+        <td>
+          4035
+          -
+          4089
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[(scales.xml.equals.AttributeNameDifference, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.AttributeNameDifference, scales.xml.equals.ComparisonContext](AttributeNameDifference.apply(left, right), context))
+        </td>
+      </tr><tr>
+        <td>
+          125
+        </td>
+        <td>
+          3083
+        </td>
+        <td>
+          4035
+          -
+          4089
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[(scales.xml.equals.AttributeNameDifference, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.AttributeNameDifference, scales.xml.equals.ComparisonContext](AttributeNameDifference.apply(left, right), context))
+        </td>
+      </tr><tr>
+        <td>
+          127
+        </td>
+        <td>
+          3084
+        </td>
+        <td>
+          4102
+          -
+          4115
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.SomeDifference.noCalculation
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SomeDifference.noCalculation
+        </td>
+      </tr><tr>
+        <td>
+          127
+        </td>
+        <td>
+          3085
+        </td>
+        <td>
+          4102
+          -
+          4115
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.equals.SomeDifference.noCalculation
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SomeDifference.noCalculation
+        </td>
+      </tr><tr>
+        <td>
+          129
+        </td>
+        <td>
+          3087
+        </td>
+        <td>
+          4162
+          -
+          4182
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.AttributeComparison.qnameTokenComparison
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AttributeComparison.this.qnameTokenComparison
+        </td>
+      </tr><tr>
+        <td>
+          129
+        </td>
+        <td>
+          3088
+        </td>
+        <td>
+          4184
+          -
+          4194
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Attribute.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          left.value
+        </td>
+      </tr><tr>
+        <td>
+          129
+        </td>
+        <td>
+          3089
+        </td>
+        <td>
+          4196
+          -
+          4207
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Attribute.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          right.value
+        </td>
+      </tr><tr>
+        <td>
+          129
+        </td>
+        <td>
+          3090
+        </td>
+        <td>
+          4137
+          -
+          4209
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          XmlEquals.compareTokens(context, AttributeComparison.this.qnameTokenComparison, left.value, right.value).unary_!
+        </td>
+      </tr><tr>
+        <td>
+          129
+        </td>
+        <td>
+          3100
+        </td>
+        <td>
+          4133
+          -
+          4325
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (XmlEquals.compareTokens(context, AttributeComparison.this.qnameTokenComparison, left.value, right.value).unary_!)
+  if (calculate)
+    scala.Some.apply[(scales.xml.equals.AttributeValueDifference, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.AttributeValueDifference, scales.xml.equals.ComparisonContext](AttributeValueDifference.apply(left, right), context))
+  else
+    SomeDifference.noCalculation
+else
+  scala.None
+        </td>
+      </tr><tr>
+        <td>
+          130
+        </td>
+        <td>
+          3097
+        </td>
+        <td>
+          4212
+          -
+          4308
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (calculate)
+  scala.Some.apply[(scales.xml.equals.AttributeValueDifference, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.AttributeValueDifference, scales.xml.equals.ComparisonContext](AttributeValueDifference.apply(left, right), context))
+else
+  SomeDifference.noCalculation
+        </td>
+      </tr><tr>
+        <td>
+          131
+        </td>
+        <td>
+          3091
+        </td>
+        <td>
+          4236
+          -
+          4274
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.AttributeValueDifference.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AttributeValueDifference.apply(left, right)
+        </td>
+      </tr><tr>
+        <td>
+          131
+        </td>
+        <td>
+          3092
+        </td>
+        <td>
+          4235
+          -
+          4284
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[scales.xml.equals.AttributeValueDifference, scales.xml.equals.ComparisonContext](AttributeValueDifference.apply(left, right), context)
+        </td>
+      </tr><tr>
+        <td>
+          131
+        </td>
+        <td>
+          3093
+        </td>
+        <td>
+          4230
+          -
+          4285
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[(scales.xml.equals.AttributeValueDifference, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.AttributeValueDifference, scales.xml.equals.ComparisonContext](AttributeValueDifference.apply(left, right), context))
+        </td>
+      </tr><tr>
+        <td>
+          131
+        </td>
+        <td>
+          3094
+        </td>
+        <td>
+          4230
+          -
+          4285
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[(scales.xml.equals.AttributeValueDifference, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.AttributeValueDifference, scales.xml.equals.ComparisonContext](AttributeValueDifference.apply(left, right), context))
+        </td>
+      </tr><tr>
+        <td>
+          133
+        </td>
+        <td>
+          3095
+        </td>
+        <td>
+          4295
+          -
+          4308
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.SomeDifference.noCalculation
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SomeDifference.noCalculation
+        </td>
+      </tr><tr>
+        <td>
+          133
+        </td>
+        <td>
+          3096
+        </td>
+        <td>
+          4295
+          -
+          4308
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.equals.SomeDifference.noCalculation
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SomeDifference.noCalculation
+        </td>
+      </tr><tr>
+        <td>
+          135
+        </td>
+        <td>
+          3098
+        </td>
+        <td>
+          4321
+          -
+          4325
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          135
+        </td>
+        <td>
+          3099
+        </td>
+        <td>
+          4321
+          -
+          4325
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          144
+        </td>
+        <td>
+          3102
+        </td>
+        <td>
+          4610
+          -
+          4661
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.AttributeComparison.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new AttributeComparison()(qe, qnameTokenComparison)
+        </td>
+      </tr><tr>
+        <td>
+          154
+        </td>
+        <td>
+          3103
+        </td>
+        <td>
+          5007
+          -
+          5016
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.QName.====
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          a.====(b)
+        </td>
+      </tr><tr>
+        <td>
+          154
+        </td>
+        <td>
+          3104
+        </td>
+        <td>
+          4975
+          -
+          5018
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.Equal.equal
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.Equal.equal[scales.xml.QName](((a: scales.xml.QName, b: scales.xml.QName) =&gt; a.====(b)))
+        </td>
+      </tr><tr>
+        <td>
+          154
+        </td>
+        <td>
+          3105
+        </td>
+        <td>
+          4949
+          -
+          5041
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.AttributeComparison.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new AttributeComparison()(scalaz.Equal.equal[scales.xml.QName](((a: scales.xml.QName, b: scales.xml.QName) =&gt; a.====(b))), qnameTokenComparison)
+        </td>
+      </tr><tr>
+        <td>
+          171
+        </td>
+        <td>
+          3106
+        </td>
+        <td>
+          5652
+          -
+          5665
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          left.eq(right)
+        </td>
+      </tr><tr>
+        <td>
+          172
+        </td>
+        <td>
+          3107
+        </td>
+        <td>
+          5673
+          -
+          5677
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          172
+        </td>
+        <td>
+          3108
+        </td>
+        <td>
+          5673
+          -
+          5677
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          174
+        </td>
+        <td>
+          3109
+        </td>
+        <td>
+          5708
+          -
+          5718
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.ListSet.size
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          right.size
+        </td>
+      </tr><tr>
+        <td>
+          174
+        </td>
+        <td>
+          3110
+        </td>
+        <td>
+          5695
+          -
+          5718
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.!=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          left.size.!=(right.size)
+        </td>
+      </tr><tr>
+        <td>
+          174
+        </td>
+        <td>
+          3143
+        </td>
+        <td>
+          5691
+          -
+          6407
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (left.size.!=(right.size))
+  if (calculate)
+    scala.Some.apply[(scales.xml.equals.DifferentNumberOfAttributes, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.DifferentNumberOfAttributes, scales.xml.equals.ComparisonContext](DifferentNumberOfAttributes.apply(left, right), context))
+  else
+    SomeDifference.noCalculation
+else
+  scales.utils.`package`.collectFirst[scales.xml.Attribute, (scales.xml.equals.XmlDifference[_], scales.xml.equals.ComparisonContext)](left)(((x1: scales.xml.Attribute) =&gt; scalaz.Scalaz.ToOptionOpsFromOption[scales.xml.Attribute](right.apply[scales.xml.AttributeQName, scales.xml.QName](x1.name)(scales.xml.impl.EqualsHelpers.qnameEquiv, scales.xml.impl.EqualsHelpers.toQNameF, {
+  ((attribQName: scales.xml.AttributeQName) =&gt; scales.xml.impl.EqualsHelpers.toQName(attribQName))
+})).cata[Option[(scales.xml.equals.XmlDifference[_], scales.xml.equals.ComparisonContext)]](((x2: scales.xml.Attribute) =&gt; {
+    val r: Option[(scales.xml.equals.XmlDifference[_], scales.xml.equals.ComparisonContext)] = AttributesComparison.this.ac.compare(calculate, context, x1, x2);
+    if (r.isDefined)
+      if (calculate)
+        scala.Some.apply[(scales.xml.equals.DifferentValueAttributes, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.DifferentValueAttributes, scales.xml.equals.ComparisonContext](DifferentValueAttributes.apply(left, right, x1), context))
+      else
+        SomeDifference.noCalculation
+    else
+      scala.None
+  }), if (calculate)
+    scala.Some.apply[(scales.xml.equals.MissingAttributes, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.MissingAttributes, scales.xml.equals.ComparisonContext](MissingAttributes.apply(left, right, x1), context))
+  else
+    SomeDifference.noCalculation)))
+        </td>
+      </tr><tr>
+        <td>
+          175
+        </td>
+        <td>
+          3117
+        </td>
+        <td>
+          5726
+          -
+          5824
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (calculate)
+  scala.Some.apply[(scales.xml.equals.DifferentNumberOfAttributes, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.DifferentNumberOfAttributes, scales.xml.equals.ComparisonContext](DifferentNumberOfAttributes.apply(left, right), context))
+else
+  SomeDifference.noCalculation
+        </td>
+      </tr><tr>
+        <td>
+          176
+        </td>
+        <td>
+          3111
+        </td>
+        <td>
+          5748
+          -
+          5787
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.DifferentNumberOfAttributes.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          DifferentNumberOfAttributes.apply(left, right)
+        </td>
+      </tr><tr>
+        <td>
+          176
+        </td>
+        <td>
+          3112
+        </td>
+        <td>
+          5747
+          -
+          5797
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[scales.xml.equals.DifferentNumberOfAttributes, scales.xml.equals.ComparisonContext](DifferentNumberOfAttributes.apply(left, right), context)
+        </td>
+      </tr><tr>
+        <td>
+          176
+        </td>
+        <td>
+          3113
+        </td>
+        <td>
+          5742
+          -
+          5798
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[(scales.xml.equals.DifferentNumberOfAttributes, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.DifferentNumberOfAttributes, scales.xml.equals.ComparisonContext](DifferentNumberOfAttributes.apply(left, right), context))
+        </td>
+      </tr><tr>
+        <td>
+          176
+        </td>
+        <td>
+          3114
+        </td>
+        <td>
+          5742
+          -
+          5798
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[(scales.xml.equals.DifferentNumberOfAttributes, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.DifferentNumberOfAttributes, scales.xml.equals.ComparisonContext](DifferentNumberOfAttributes.apply(left, right), context))
+        </td>
+      </tr><tr>
+        <td>
+          178
+        </td>
+        <td>
+          3115
+        </td>
+        <td>
+          5811
+          -
+          5824
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.SomeDifference.noCalculation
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SomeDifference.noCalculation
+        </td>
+      </tr><tr>
+        <td>
+          178
+        </td>
+        <td>
+          3116
+        </td>
+        <td>
+          5811
+          -
+          5824
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.equals.SomeDifference.noCalculation
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SomeDifference.noCalculation
+        </td>
+      </tr><tr>
+        <td>
+          181
+        </td>
+        <td>
+          3141
+        </td>
+        <td>
+          5862
+          -
+          6407
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.IterableUtils.collectFirst
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.collectFirst[scales.xml.Attribute, (scales.xml.equals.XmlDifference[_], scales.xml.equals.ComparisonContext)](left)(((x1: scales.xml.Attribute) =&gt; scalaz.Scalaz.ToOptionOpsFromOption[scales.xml.Attribute](right.apply[scales.xml.AttributeQName, scales.xml.QName](x1.name)(scales.xml.impl.EqualsHelpers.qnameEquiv, scales.xml.impl.EqualsHelpers.toQNameF, {
+  ((attribQName: scales.xml.AttributeQName) =&gt; scales.xml.impl.EqualsHelpers.toQName(attribQName))
+})).cata[Option[(scales.xml.equals.XmlDifference[_], scales.xml.equals.ComparisonContext)]](((x2: scales.xml.Attribute) =&gt; {
+  val r: Option[(scales.xml.equals.XmlDifference[_], scales.xml.equals.ComparisonContext)] = AttributesComparison.this.ac.compare(calculate, context, x1, x2);
+  if (r.isDefined)
+    if (calculate)
+      scala.Some.apply[(scales.xml.equals.DifferentValueAttributes, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.DifferentValueAttributes, scales.xml.equals.ComparisonContext](DifferentValueAttributes.apply(left, right, x1), context))
+    else
+      SomeDifference.noCalculation
+  else
+    scala.None
+}), if (calculate)
+  scala.Some.apply[(scales.xml.equals.MissingAttributes, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.MissingAttributes, scales.xml.equals.ComparisonContext](MissingAttributes.apply(left, right, x1), context))
+else
+  SomeDifference.noCalculation)))
+        </td>
+      </tr><tr>
+        <td>
+          181
+        </td>
+        <td>
+          3142
+        </td>
+        <td>
+          5862
+          -
+          6407
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.collection.IterableUtils.collectFirst
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.utils.`package`.collectFirst[scales.xml.Attribute, (scales.xml.equals.XmlDifference[_], scales.xml.equals.ComparisonContext)](left)(((x1: scales.xml.Attribute) =&gt; scalaz.Scalaz.ToOptionOpsFromOption[scales.xml.Attribute](right.apply[scales.xml.AttributeQName, scales.xml.QName](x1.name)(scales.xml.impl.EqualsHelpers.qnameEquiv, scales.xml.impl.EqualsHelpers.toQNameF, {
+  ((attribQName: scales.xml.AttributeQName) =&gt; scales.xml.impl.EqualsHelpers.toQName(attribQName))
+})).cata[Option[(scales.xml.equals.XmlDifference[_], scales.xml.equals.ComparisonContext)]](((x2: scales.xml.Attribute) =&gt; {
+  val r: Option[(scales.xml.equals.XmlDifference[_], scales.xml.equals.ComparisonContext)] = AttributesComparison.this.ac.compare(calculate, context, x1, x2);
+  if (r.isDefined)
+    if (calculate)
+      scala.Some.apply[(scales.xml.equals.DifferentValueAttributes, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.DifferentValueAttributes, scales.xml.equals.ComparisonContext](DifferentValueAttributes.apply(left, right, x1), context))
+    else
+      SomeDifference.noCalculation
+  else
+    scala.None
+}), if (calculate)
+  scala.Some.apply[(scales.xml.equals.MissingAttributes, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.MissingAttributes, scales.xml.equals.ComparisonContext](MissingAttributes.apply(left, right, x1), context))
+else
+  SomeDifference.noCalculation)))
+        </td>
+      </tr><tr>
+        <td>
+          183
+        </td>
+        <td>
+          3118
+        </td>
+        <td>
+          5954
+          -
+          5961
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.Attribute.name
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x1.name
+        </td>
+      </tr><tr>
+        <td>
+          183
+        </td>
+        <td>
+          3119
+        </td>
+        <td>
+          5952
+          -
+          5952
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.EqualsHelpers.qnameEquiv
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.impl.EqualsHelpers.qnameEquiv
+        </td>
+      </tr><tr>
+        <td>
+          183
+        </td>
+        <td>
+          3120
+        </td>
+        <td>
+          5952
+          -
+          5952
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.impl.EqualsHelpers.toQNameF
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.impl.EqualsHelpers.toQNameF
+        </td>
+      </tr><tr>
+        <td>
+          183
+        </td>
+        <td>
+          3121
+        </td>
+        <td>
+          5952
+          -
+          5952
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.impl.EqualsHelpers.toQName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scales.xml.impl.EqualsHelpers.toQName(attribQName)
+        </td>
+      </tr><tr>
+        <td>
+          183
+        </td>
+        <td>
+          3122
+        </td>
+        <td>
+          5947
+          -
+          5963
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.ListSet.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          right.apply[scales.xml.AttributeQName, scales.xml.QName](x1.name)(scales.xml.impl.EqualsHelpers.qnameEquiv, scales.xml.impl.EqualsHelpers.toQNameF, {
+  ((attribQName: scales.xml.AttributeQName) =&gt; scales.xml.impl.EqualsHelpers.toQName(attribQName))
+})
+        </td>
+      </tr><tr>
+        <td>
+          183
+        </td>
+        <td>
+          3140
+        </td>
+        <td>
+          5947
+          -
+          6404
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.syntax.std.OptionOps.cata
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scalaz.Scalaz.ToOptionOpsFromOption[scales.xml.Attribute](right.apply[scales.xml.AttributeQName, scales.xml.QName](x1.name)(scales.xml.impl.EqualsHelpers.qnameEquiv, scales.xml.impl.EqualsHelpers.toQNameF, {
+  ((attribQName: scales.xml.AttributeQName) =&gt; scales.xml.impl.EqualsHelpers.toQName(attribQName))
+})).cata[Option[(scales.xml.equals.XmlDifference[_], scales.xml.equals.ComparisonContext)]](((x2: scales.xml.Attribute) =&gt; {
+  val r: Option[(scales.xml.equals.XmlDifference[_], scales.xml.equals.ComparisonContext)] = AttributesComparison.this.ac.compare(calculate, context, x1, x2);
+  if (r.isDefined)
+    if (calculate)
+      scala.Some.apply[(scales.xml.equals.DifferentValueAttributes, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.DifferentValueAttributes, scales.xml.equals.ComparisonContext](DifferentValueAttributes.apply(left, right, x1), context))
+    else
+      SomeDifference.noCalculation
+  else
+    scala.None
+}), if (calculate)
+  scala.Some.apply[(scales.xml.equals.MissingAttributes, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.MissingAttributes, scales.xml.equals.ComparisonContext](MissingAttributes.apply(left, right, x1), context))
+else
+  SomeDifference.noCalculation)
+        </td>
+      </tr><tr>
+        <td>
+          184
+        </td>
+        <td>
+          3123
+        </td>
+        <td>
+          6030
+          -
+          6068
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.XmlComparison.compare
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          AttributesComparison.this.ac.compare(calculate, context, x1, x2)
+        </td>
+      </tr><tr>
+        <td>
+          185
+        </td>
+        <td>
+          3124
+        </td>
+        <td>
+          6080
+          -
+          6091
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Option.isDefined
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          r.isDefined
+        </td>
+      </tr><tr>
+        <td>
+          187
+        </td>
+        <td>
+          3131
+        </td>
+        <td>
+          6142
+          -
+          6248
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (calculate)
+  scala.Some.apply[(scales.xml.equals.DifferentValueAttributes, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.DifferentValueAttributes, scales.xml.equals.ComparisonContext](DifferentValueAttributes.apply(left, right, x1), context))
+else
+  SomeDifference.noCalculation
+        </td>
+      </tr><tr>
+        <td>
+          188
+        </td>
+        <td>
+          3125
+        </td>
+        <td>
+          6168
+          -
+          6211
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.DifferentValueAttributes.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          DifferentValueAttributes.apply(left, right, x1)
+        </td>
+      </tr><tr>
+        <td>
+          188
+        </td>
+        <td>
+          3126
+        </td>
+        <td>
+          6167
+          -
+          6221
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[scales.xml.equals.DifferentValueAttributes, scales.xml.equals.ComparisonContext](DifferentValueAttributes.apply(left, right, x1), context)
+        </td>
+      </tr><tr>
+        <td>
+          188
+        </td>
+        <td>
+          3127
+        </td>
+        <td>
+          6161
+          -
+          6223
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[(scales.xml.equals.DifferentValueAttributes, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.DifferentValueAttributes, scales.xml.equals.ComparisonContext](DifferentValueAttributes.apply(left, right, x1), context))
+        </td>
+      </tr><tr>
+        <td>
+          188
+        </td>
+        <td>
+          3128
+        </td>
+        <td>
+          6161
+          -
+          6223
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[(scales.xml.equals.DifferentValueAttributes, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.DifferentValueAttributes, scales.xml.equals.ComparisonContext](DifferentValueAttributes.apply(left, right, x1), context))
+        </td>
+      </tr><tr>
+        <td>
+          190
+        </td>
+        <td>
+          3129
+        </td>
+        <td>
+          6235
+          -
+          6248
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.SomeDifference.noCalculation
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SomeDifference.noCalculation
+        </td>
+      </tr><tr>
+        <td>
+          190
+        </td>
+        <td>
+          3130
+        </td>
+        <td>
+          6235
+          -
+          6248
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.equals.SomeDifference.noCalculation
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SomeDifference.noCalculation
+        </td>
+      </tr><tr>
+        <td>
+          191
+        </td>
+        <td>
+          3132
+        </td>
+        <td>
+          6263
+          -
+          6267
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          191
+        </td>
+        <td>
+          3133
+        </td>
+        <td>
+          6263
+          -
+          6267
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          194
+        </td>
+        <td>
+          3134
+        </td>
+        <td>
+          6313
+          -
+          6349
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.MissingAttributes.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          MissingAttributes.apply(left, right, x1)
+        </td>
+      </tr><tr>
+        <td>
+          194
+        </td>
+        <td>
+          3135
+        </td>
+        <td>
+          6311
+          -
+          6359
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[scales.xml.equals.MissingAttributes, scales.xml.equals.ComparisonContext](MissingAttributes.apply(left, right, x1), context)
+        </td>
+      </tr><tr>
+        <td>
+          194
+        </td>
+        <td>
+          3136
+        </td>
+        <td>
+          6305
+          -
+          6361
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[(scales.xml.equals.MissingAttributes, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.MissingAttributes, scales.xml.equals.ComparisonContext](MissingAttributes.apply(left, right, x1), context))
+        </td>
+      </tr><tr>
+        <td>
+          194
+        </td>
+        <td>
+          3137
+        </td>
+        <td>
+          6305
+          -
+          6361
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[(scales.xml.equals.MissingAttributes, scales.xml.equals.ComparisonContext)](scala.Tuple2.apply[scales.xml.equals.MissingAttributes, scales.xml.equals.ComparisonContext](MissingAttributes.apply(left, right, x1), context))
+        </td>
+      </tr><tr>
+        <td>
+          196
+        </td>
+        <td>
+          3138
+        </td>
+        <td>
+          6379
+          -
+          6392
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.xml.equals.SomeDifference.noCalculation
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SomeDifference.noCalculation
+        </td>
+      </tr><tr>
+        <td>
+          196
+        </td>
+        <td>
+          3139
+        </td>
+        <td>
+          6379
+          -
+          6392
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.xml.equals.SomeDifference.noCalculation
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SomeDifference.noCalculation
+        </td>
+      </tr><tr>
+        <td>
+          204
+        </td>
+        <td>
+          3144
+        </td>
+        <td>
+          6562
+          -
+          6594
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.equals.AttributesComparison.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new AttributesComparison()(ac)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

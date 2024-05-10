@@ -1,0 +1,1386 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/xml/jaxen/Expr.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.xml.jaxen
+</span>2 <span style=''>
+</span>3 <span style=''>import org.jaxen._
+</span>4 <span style=''>import pattern.Pattern
+</span>5 <span style=''>import expr._
+</span>6 <span style=''>
+</span>7 <span style=''>import java.util.{Iterator =&gt; JIterator, ArrayList, List =&gt; JList, HashSet, Collections}
+</span>8 <span style=''>
+</span>9 <span style=''>import scales.utils._
+</span>10 <span style=''>import ScalesUtils._
+</span>11 <span style=''>import scales.xml._
+</span>12 <span style=''>import ScalesXml._
+</span>13 <span style=''>
+</span>14 <span style=''>class ScalesDefaultLocationPath() extends DefaultLocationPath {
+</span>15 <span style=''>
+</span>16 <span style=''>  @throws(classOf[JaxenException])
+</span>17 <span style=''>  override def evaluate( context : Context ) : AnyRef= {
+</span>18 <span style=''>    val nodeSet = </span><span style='background: #AEF1AE'>context.getNodeSet()</span><span style=''>
+</span>19 <span style=''>    var contextNodeSet : JList[AnyRef] = </span><span style='background: #AEF1AE'>new ArrayList[AnyRef](nodeSet.asInstanceOf[ java.util.Collection[AnyRef]] )</span><span style=''>
+</span>20 <span style=''>    val support = </span><span style='background: #AEF1AE'>context.getContextSupport</span><span style=''>
+</span>21 <span style=''>    val stepContext = </span><span style='background: #AEF1AE'>new Context(support)</span><span style=''>
+</span>22 <span style=''>    val stepIter = </span><span style='background: #AEF1AE'>getSteps().iterator()</span><span style=''>
+</span>23 <span style=''>    while(</span><span style='background: #AEF1AE'>stepIter.hasNext</span><span style=''>)</span><span style='background: #AEF1AE'>{
+</span>24 <span style=''></span><span style='background: #AEF1AE'>      val eachStep = stepIter.next().asInstanceOf[Step]
+</span>25 <span style=''></span><span style='background: #AEF1AE'>      stepContext.setNodeSet(contextNodeSet);
+</span>26 <span style=''></span><span style='background: #AEF1AE'>      contextNodeSet = eachStep.evaluate(stepContext).asInstanceOf[ JList[AnyRef]];
+</span>27 <span style=''></span><span style='background: #AEF1AE'>      // now we need to reverse the list if this is a reverse axis
+</span>28 <span style=''></span><span style='background: #AEF1AE'>      if (isReverseAxis(eachStep)) {
+</span>29 <span style=''></span><span style='background: #AEF1AE'>        Collections.reverse(contextNodeSet);
+</span>30 <span style=''></span><span style='background: #AEF1AE'>      }
+</span>31 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>32 <span style=''>    
+</span>33 <span style=''>    //if (getSteps().size() &gt; 1 || nodeSet.size() &gt; 1) {
+</span>34 <span style=''>    //  Collections.sort(contextNodeSet, ScalesComparator);
+</span>35 <span style=''>    //}
+</span>36 <span style=''>  
+</span>37 <span style=''>    contextNodeSet
+</span>38 <span style=''>  }
+</span>39 <span style=''>  
+</span>40 <span style=''>  /**
+</span>41 <span style=''>   * Was private
+</span>42 <span style=''>   */ 
+</span>43 <span style=''>  def isReverseAxis(step : Step) = {
+</span>44 <span style=''>    val axis =</span><span style='background: #AEF1AE'>step.getAxis()</span><span style=''>
+</span>45 <span style=''>    </span><span style='background: #AEF1AE'>axis == org.jaxen.saxpath.Axis.PRECEDING ||
+</span>46 <span style=''></span><span style='background: #AEF1AE'>     axis == org.jaxen.saxpath.Axis.PRECEDING_SIBLING ||
+</span>47 <span style=''></span><span style='background: #AEF1AE'>     axis == org.jaxen.saxpath.Axis.ANCESTOR ||
+</span>48 <span style=''></span><span style='background: #AEF1AE'>     axis == org.jaxen.saxpath.Axis.ANCESTOR_OR_SELF</span><span style=''>;
+</span>49 <span style=''>  }
+</span>50 <span style=''>}
+</span>51 <span style=''>
+</span>52 <span style=''>/**
+</span>53 <span style=''> * To use a proper comparator
+</span>54 <span style=''> */ 
+</span>55 <span style=''>class ScalesUnionExpr(lhs : Expr, rhs : Expr) extends DefaultBinaryExpr(lhs,rhs) with UnionExpr {
+</span>56 <span style=''>  def getOperator() = </span><span style='background: #F0ADAD'>&quot;|&quot;</span><span style=''>
+</span>57 <span style=''>  override def toString() = </span><span style='background: #F0ADAD'>&quot;[(ScalesUnionExpr): &quot; + getLHS() + &quot;, &quot; + getRHS() + &quot;]&quot;</span><span style=''>
+</span>58 <span style=''>
+</span>59 <span style=''>  def evaluate( context : Context) = {
+</span>60 <span style=''>    val results = </span><span style='background: #AEF1AE'>new ArrayList[AnyRef]()</span><span style=''>
+</span>61 <span style=''>    try{
+</span>62 <span style=''>      </span><span style='background: #AEF1AE'>val lhsResults = getLHS().evaluate( context ).asInstanceOf[JList[AnyRef]]
+</span>63 <span style=''></span><span style='background: #AEF1AE'>      val rhsResults = getRHS().evaluate( context ).asInstanceOf[JList[AnyRef]]
+</span>64 <span style=''></span><span style='background: #AEF1AE'>    
+</span>65 <span style=''></span><span style='background: #AEF1AE'>      results.addAll( lhsResults )
+</span>66 <span style=''></span><span style='background: #AEF1AE'>
+</span>67 <span style=''></span><span style='background: #AEF1AE'>      val unique = new HashSet[AnyRef]()
+</span>68 <span style=''></span><span style='background: #AEF1AE'>      unique.addAll( lhsResults )
+</span>69 <span style=''></span><span style='background: #AEF1AE'>    
+</span>70 <span style=''></span><span style='background: #AEF1AE'>      var rhsIter = rhsResults.iterator
+</span>71 <span style=''></span><span style='background: #AEF1AE'>      while ( rhsIter.hasNext ) {
+</span>72 <span style=''></span><span style='background: #AEF1AE'>	val each = rhsIter.next
+</span>73 <span style=''></span><span style='background: #AEF1AE'>	if (!unique.contains(each)) {
+</span>74 <span style=''></span><span style='background: #AEF1AE'>	  results.add(each)
+</span>75 <span style=''></span><span style='background: #AEF1AE'>	  unique.add(each)
+</span>76 <span style=''></span><span style='background: #AEF1AE'>	}
+</span>77 <span style=''></span><span style='background: #AEF1AE'>      }
+</span>78 <span style=''></span><span style='background: #AEF1AE'>      
+</span>79 <span style=''></span><span style='background: #AEF1AE'>      //Collections.sort(results, ScalesComparator);
+</span>80 <span style=''></span><span style='background: #AEF1AE'>      results</span><span style=''>
+</span>81 <span style=''>    }
+</span>82 <span style=''>    catch {
+</span>83 <span style=''>      case e : ClassCastException </span><span style='background: #F0ADAD'>=&gt;
+</span>84 <span style=''></span><span style='background: #F0ADAD'>	e.printStackTrace
+</span>85 <span style=''></span><span style='background: #F0ADAD'>        throw new XPathSyntaxException(this.getText(), context.getPosition(), &quot;Unions are only allowed over node-sets &quot;+e)</span><span style=''>;
+</span>86 <span style=''>    }
+</span>87 <span style=''>  }
+</span>88 <span style=''>
+</span>89 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          18
+        </td>
+        <td>
+          1
+        </td>
+        <td>
+          448
+          -
+          468
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.jaxen.Context.getNodeSet
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          context.getNodeSet()
+        </td>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          2
+        </td>
+        <td>
+          533
+          -
+          584
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          nodeSet.asInstanceOf[java.util.Collection[AnyRef]]
+        </td>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          3
+        </td>
+        <td>
+          511
+          -
+          586
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.ArrayList.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new java.util.ArrayList[AnyRef](nodeSet.asInstanceOf[java.util.Collection[AnyRef]])
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          4
+        </td>
+        <td>
+          606
+          -
+          631
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.jaxen.Context.getContextSupport
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          context.getContextSupport()
+        </td>
+      </tr><tr>
+        <td>
+          21
+        </td>
+        <td>
+          5
+        </td>
+        <td>
+          655
+          -
+          675
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.jaxen.Context.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new org.jaxen.Context(support)
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          6
+        </td>
+        <td>
+          696
+          -
+          717
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.List.iterator
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesDefaultLocationPath.this.getSteps().iterator()
+        </td>
+      </tr><tr>
+        <td>
+          23
+        </td>
+        <td>
+          7
+        </td>
+        <td>
+          729
+          -
+          745
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.Iterator.hasNext
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          stepIter.hasNext()
+        </td>
+      </tr><tr>
+        <td>
+          23
+        </td>
+        <td>
+          16
+        </td>
+        <td>
+          746
+          -
+          746
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.jaxen.ScalesDefaultLocationPath.while$1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          while$1()
+        </td>
+      </tr><tr>
+        <td>
+          23
+        </td>
+        <td>
+          17
+        </td>
+        <td>
+          746
+          -
+          1104
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  {
+    val eachStep: org.jaxen.expr.Step = stepIter.next().asInstanceOf[org.jaxen.expr.Step];
+    stepContext.setNodeSet(contextNodeSet);
+    contextNodeSet = eachStep.evaluate(stepContext).asInstanceOf[java.util.List[AnyRef]];
+    if (ScalesDefaultLocationPath.this.isReverseAxis(eachStep))
+      java.util.Collections.reverse(contextNodeSet)
+    else
+      ()
+  };
+  while$1()
+}
+        </td>
+      </tr><tr>
+        <td>
+          23
+        </td>
+        <td>
+          18
+        </td>
+        <td>
+          723
+          -
+          723
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          23
+        </td>
+        <td>
+          19
+        </td>
+        <td>
+          723
+          -
+          723
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          24
+        </td>
+        <td>
+          8
+        </td>
+        <td>
+          770
+          -
+          804
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          stepIter.next().asInstanceOf[org.jaxen.expr.Step]
+        </td>
+      </tr><tr>
+        <td>
+          25
+        </td>
+        <td>
+          9
+        </td>
+        <td>
+          812
+          -
+          850
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.jaxen.Context.setNodeSet
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          stepContext.setNodeSet(contextNodeSet)
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          10
+        </td>
+        <td>
+          876
+          -
+          935
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          eachStep.evaluate(stepContext).asInstanceOf[java.util.List[AnyRef]]
+        </td>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          11
+        </td>
+        <td>
+          1016
+          -
+          1039
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.jaxen.ScalesDefaultLocationPath.isReverseAxis
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesDefaultLocationPath.this.isReverseAxis(eachStep)
+        </td>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          14
+        </td>
+        <td>
+          1012
+          -
+          1012
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          15
+        </td>
+        <td>
+          1012
+          -
+          1012
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          12
+        </td>
+        <td>
+          1052
+          -
+          1087
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.Collections.reverse
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          java.util.Collections.reverse(contextNodeSet)
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          13
+        </td>
+        <td>
+          1052
+          -
+          1087
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          java.util.Collections.reverse
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          java.util.Collections.reverse(contextNodeSet)
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          20
+        </td>
+        <td>
+          1358
+          -
+          1372
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.jaxen.expr.Step.getAxis
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          step.getAxis()
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          21
+        </td>
+        <td>
+          1386
+          -
+          1418
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          8
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          22
+        </td>
+        <td>
+          1428
+          -
+          1476
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          axis.==(6)
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          23
+        </td>
+        <td>
+          1486
+          -
+          1525
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          axis.==(4)
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          25
+        </td>
+        <td>
+          1378
+          -
+          1582
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.||
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          axis.==(8).||(axis.==(6)).||(axis.==(4)).||(axis.==(13))
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          24
+        </td>
+        <td>
+          1535
+          -
+          1582
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          axis.==(13)
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          26
+        </td>
+        <td>
+          1758
+          -
+          1761
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;|&quot;
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          27
+        </td>
+        <td>
+          1791
+          -
+          1848
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;[(ScalesUnionExpr): &quot;.+(ScalesUnionExpr.this.getLHS()).+(&quot;, &quot;).+(ScalesUnionExpr.this.getRHS()).+(&quot;]&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          60
+        </td>
+        <td>
+          28
+        </td>
+        <td>
+          1910
+          -
+          1933
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.ArrayList.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new java.util.ArrayList[AnyRef]()
+        </td>
+      </tr><tr>
+        <td>
+          61
+        </td>
+        <td>
+          47
+        </td>
+        <td>
+          1951
+          -
+          2499
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val lhsResults: java.util.List[AnyRef] = ScalesUnionExpr.this.getLHS().evaluate(context).asInstanceOf[java.util.List[AnyRef]];
+  val rhsResults: java.util.List[AnyRef] = ScalesUnionExpr.this.getRHS().evaluate(context).asInstanceOf[java.util.List[AnyRef]];
+  results.addAll(lhsResults);
+  val unique: java.util.HashSet[AnyRef] = new java.util.HashSet[AnyRef]();
+  unique.addAll(lhsResults);
+  var rhsIter: java.util.Iterator[AnyRef] = rhsResults.iterator();
+  while$2(){
+    if (rhsIter.hasNext())
+      {
+        {
+          val each: AnyRef = rhsIter.next();
+          if (unique.contains(each).unary_!)
+            {
+              results.add(each);
+              unique.add(each)
+            }
+          else
+            ()
+        };
+        while$2()
+      }
+    else
+      ()
+  };
+  results
+}
+        </td>
+      </tr><tr>
+        <td>
+          62
+        </td>
+        <td>
+          29
+        </td>
+        <td>
+          1968
+          -
+          2024
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesUnionExpr.this.getLHS().evaluate(context).asInstanceOf[java.util.List[AnyRef]]
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          30
+        </td>
+        <td>
+          2049
+          -
+          2105
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ScalesUnionExpr.this.getRHS().evaluate(context).asInstanceOf[java.util.List[AnyRef]]
+        </td>
+      </tr><tr>
+        <td>
+          65
+        </td>
+        <td>
+          31
+        </td>
+        <td>
+          2119
+          -
+          2147
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.ArrayList.addAll
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          results.addAll(lhsResults)
+        </td>
+      </tr><tr>
+        <td>
+          67
+        </td>
+        <td>
+          32
+        </td>
+        <td>
+          2170
+          -
+          2191
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.HashSet.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new java.util.HashSet[AnyRef]()
+        </td>
+      </tr><tr>
+        <td>
+          68
+        </td>
+        <td>
+          33
+        </td>
+        <td>
+          2199
+          -
+          2226
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.AbstractCollection.addAll
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          unique.addAll(lhsResults)
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          34
+        </td>
+        <td>
+          2254
+          -
+          2273
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.List.iterator
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          rhsResults.iterator()
+        </td>
+      </tr><tr>
+        <td>
+          71
+        </td>
+        <td>
+          35
+        </td>
+        <td>
+          2289
+          -
+          2304
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.Iterator.hasNext
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          rhsIter.hasNext()
+        </td>
+      </tr><tr>
+        <td>
+          71
+        </td>
+        <td>
+          43
+        </td>
+        <td>
+          2307
+          -
+          2307
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.xml.jaxen.ScalesUnionExpr.while$2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          while$2()
+        </td>
+      </tr><tr>
+        <td>
+          71
+        </td>
+        <td>
+          44
+        </td>
+        <td>
+          2307
+          -
+          2422
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  {
+    val each: AnyRef = rhsIter.next();
+    if (unique.contains(each).unary_!)
+      {
+        results.add(each);
+        unique.add(each)
+      }
+    else
+      ()
+  };
+  while$2()
+}
+        </td>
+      </tr><tr>
+        <td>
+          71
+        </td>
+        <td>
+          45
+        </td>
+        <td>
+          2281
+          -
+          2281
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          71
+        </td>
+        <td>
+          46
+        </td>
+        <td>
+          2281
+          -
+          2281
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          72
+        </td>
+        <td>
+          36
+        </td>
+        <td>
+          2322
+          -
+          2334
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.Iterator.next
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          rhsIter.next()
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          37
+        </td>
+        <td>
+          2341
+          -
+          2363
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          unique.contains(each).unary_!
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          40
+        </td>
+        <td>
+          2365
+          -
+          2413
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  results.add(each);
+  unique.add(each)
+}
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          41
+        </td>
+        <td>
+          2337
+          -
+          2337
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          42
+        </td>
+        <td>
+          2337
+          -
+          2337
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          38
+        </td>
+        <td>
+          2371
+          -
+          2388
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.ArrayList.add
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          results.add(each)
+        </td>
+      </tr><tr>
+        <td>
+          75
+        </td>
+        <td>
+          39
+        </td>
+        <td>
+          2393
+          -
+          2409
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.HashSet.add
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          unique.add(each)
+        </td>
+      </tr><tr>
+        <td>
+          83
+        </td>
+        <td>
+          50
+        </td>
+        <td>
+          2555
+          -
+          2701
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          {
+  e.printStackTrace();
+  throw new org.jaxen.XPathSyntaxException(this.getText(), context.getPosition(), &quot;Unions are only allowed over node-sets &quot;.+(e))
+}
+        </td>
+      </tr><tr>
+        <td>
+          84
+        </td>
+        <td>
+          48
+        </td>
+        <td>
+          2560
+          -
+          2577
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Throwable.printStackTrace
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          e.printStackTrace()
+        </td>
+      </tr><tr>
+        <td>
+          85
+        </td>
+        <td>
+          49
+        </td>
+        <td>
+          2587
+          -
+          2701
+        </td>
+        <td>
+          Throw
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          throw new org.jaxen.XPathSyntaxException(this.getText(), context.getPosition(), &quot;Unions are only allowed over node-sets &quot;.+(e))
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

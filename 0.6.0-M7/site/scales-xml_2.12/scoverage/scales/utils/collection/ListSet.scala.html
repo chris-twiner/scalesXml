@@ -1,0 +1,2216 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          scales/utils/collection/ListSet.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package scales.utils.collection
+</span>2 <span style=''>
+</span>3 <span style=''>import annotation.tailrec
+</span>4 <span style=''>
+</span>5 <span style=''>import scales.utils.Equiv
+</span>6 <span style=''>
+</span>7 <span style=''>import scalaz._
+</span>8 <span style=''>import Scalaz._
+</span>9 <span style=''>
+</span>10 <span style=''>//TODO also integrate the non quadratic add/apply from PaulPs fixes, tough as we can't use hashCode or == directly we can't re-use hashset....
+</span>11 <span style=''>
+</span>12 <span style=''>object ListSet {
+</span>13 <span style=''>  def empty[A : Equal] = </span><span style='background: #AEF1AE'>new ListSet[A]</span><span style=''>
+</span>14 <span style=''>  def apply[A : Equal]( a : A*) = </span><span style='background: #AEF1AE'>empty[A] ++ (a)</span><span style=''>
+</span>15 <span style=''>}
+</span>16 <span style=''>
+</span>17 <span style=''>/** 
+</span>18 <span style=''> *  Based on Scala ListSet, users provide the
+</span>19 <span style=''> *  comparisom operator and comparisom type for lookups.
+</span>20 <span style=''> *
+</span>21 <span style=''> *  Because the equality is defined outside of the object + always acts as add/replace
+</span>22 <span style=''> *  
+</span>23 <span style=''> *  @tparam A    the type of the elements contained in this list set.
+</span>24 <span style=''> *  
+</span>25 <span style=''> *  @author Originally Matthias Zenger
+</span>26 <span style=''> *  @author &lt;- corrupted by Chris Twiner with a number of PaulPs fixes
+</span>27 <span style=''> *  @version 1.0, 30/12/2010
+</span>28 <span style=''> */
+</span>29 <span style=''>class ListSet[A : Equal](val plusFast : Boolean = false) extends Iterable[A] with Serializable { self =&gt;
+</span>30 <span style=''>
+</span>31 <span style=''>  val equal = </span><span style='background: #AEF1AE'>implicitly[Equal[A]]</span><span style=''>
+</span>32 <span style=''>
+</span>33 <span style=''>  def ++( other : Traversable[A] ) = </span><span style='background: #AEF1AE'>other.foldLeft(this)(_ + _)</span><span style=''>
+</span>34 <span style=''>
+</span>35 <span style=''>  def --( other : Traversable[A] ) = </span><span style='background: #F0ADAD'>other.foldLeft(this)(_ - _)</span><span style=''>
+</span>36 <span style=''>
+</span>37 <span style=''>  def --[B,C]( other : Traversable[B] )(implicit equiv: Equiv[C], viewA: A =&gt; C, viewB: B =&gt; C) = </span><span style='background: #AEF1AE'>other.foldLeft(this)(_ - _)</span><span style=''>
+</span>38 <span style=''>
+</span>39 <span style=''>  /** Returns the number of elements in this set.
+</span>40 <span style=''>   *
+</span>41 <span style=''>   *  @return number of set elements.
+</span>42 <span style=''>   */
+</span>43 <span style=''>  override def size: Int = </span><span style='background: #AEF1AE'>0</span><span style=''>
+</span>44 <span style=''>  override def isEmpty: Boolean = </span><span style='background: #AEF1AE'>true</span><span style=''>;
+</span>45 <span style=''>
+</span>46 <span style=''>  /** Checks if this set contains element &lt;code&gt;elem&lt;/code&gt;.
+</span>47 <span style=''>   *
+</span>48 <span style=''>   *  @param  elem    the element to check for membership.
+</span>49 <span style=''>   *  @return true, iff &lt;code&gt;elem&lt;/code&gt; is contained in this set.
+</span>50 <span style=''>   */
+</span>51 <span style=''>  def contains(elem: A): Boolean = </span><span style='background: #F0ADAD'>false</span><span style=''>
+</span>52 <span style=''>
+</span>53 <span style=''>  /**
+</span>54 <span style=''>   * The default empty doesn't really work for us as we can't hide away the equality, so doing it here
+</span>55 <span style=''>  override def empty = new ListSet[A]
+</span>56 <span style=''>   */
+</span>57 <span style=''>
+</span>58 <span style=''>  /**
+</span>59 <span style=''>   * With another level of indirection, the caller decides what Equal to use.
+</span>60 <span style=''>   */ 
+</span>61 <span style=''>  def contains[B,C]( b : B )(implicit equiv: Equiv[C], viewA: A =&gt; C, viewB: B =&gt; C) = </span><span style='background: #AEF1AE'>false</span><span style=''>
+</span>62 <span style=''>
+</span>63 <span style=''>  /**
+</span>64 <span style=''>   * Access the set like a map with an alternate equals and conversion function
+</span>65 <span style=''>   */ 
+</span>66 <span style=''>  def apply[B,C]( b : B )(implicit equiv: Equiv[C], viewA: A =&gt; C, viewB: B =&gt; C) : Option[A] = </span><span style='background: #AEF1AE'>None</span><span style=''>
+</span>67 <span style=''>
+</span>68 <span style=''>  /** This method creates a new set with an additional element.
+</span>69 <span style=''>   */
+</span>70 <span style=''>  def + (elem: A): ListSet[A] = </span><span style='background: #AEF1AE'>new Node(elem)</span><span style=''>
+</span>71 <span style=''>  
+</span>72 <span style=''>  /**
+</span>73 <span style=''>   * Does not remove any existing As first, hence not safe.
+</span>74 <span style=''>   */ 
+</span>75 <span style=''>  def unsafePlus(e: A): ListSet[A] = </span><span style='background: #AEF1AE'>new Node(e)</span><span style=''>
+</span>76 <span style=''>
+</span>77 <span style=''>  /** &lt;code&gt;-&lt;/code&gt; can be used to remove a single element from
+</span>78 <span style=''>   *  a set.
+</span>79 <span style=''>   */
+</span>80 <span style=''>  def - (elem: A): ListSet[A] = this
+</span>81 <span style=''>
+</span>82 <span style=''>  def -[B,C]( b : B )(implicit equiv: Equiv[C], viewA: A =&gt; C, viewB: B =&gt; C) : ListSet[A] = this
+</span>83 <span style=''>	  
+</span>84 <span style=''>  private[ListSet] def unchecked_outer: ListSet[A] =
+</span>85 <span style=''>    </span><span style='background: #F0ADAD'>throw new NoSuchElementException(&quot;Empty ListSet has no outer pointer&quot;)</span><span style=''>
+</span>86 <span style=''>
+</span>87 <span style=''>  /** Creates a new iterator over all elements contained in this set.
+</span>88 <span style=''>   *
+</span>89 <span style=''>   *  @throws Predef.NoSuchElementException
+</span>90 <span style=''>   *  @return the new iterator
+</span>91 <span style=''>   */
+</span>92 <span style=''>  def iterator: Iterator[A] = </span><span style='background: #AEF1AE'>new</span><span style=''> Iterator[A] {
+</span>93 <span style=''>    var that: ListSet[A] = self;
+</span>94 <span style=''>    def hasNext = </span><span style='background: #AEF1AE'>!that.isEmpty</span><span style=''>;
+</span>95 <span style=''>    def next: A =
+</span>96 <span style=''>      if (</span><span style='background: #AEF1AE'>!hasNext</span><span style=''>) </span><span style='background: #F0ADAD'>throw new NoSuchElementException(&quot;next on empty iterator&quot;)</span><span style=''>
+</span>97 <span style=''>      else </span><span style='background: #AEF1AE'>{ val res = that.elem; that = that.next; res }</span><span style=''>
+</span>98 <span style=''>  }
+</span>99 <span style=''>
+</span>100 <span style=''>  /**
+</span>101 <span style=''>   *  @throws Predef.NoSuchElementException
+</span>102 <span style=''>   */
+</span>103 <span style=''>  protected def elem: A = </span><span style='background: #F0ADAD'>throw new NoSuchElementException(&quot;Set has no elements&quot;)</span><span style=''>;
+</span>104 <span style=''>
+</span>105 <span style=''>  /**
+</span>106 <span style=''>   *  @throws Predef.NoSuchElementException
+</span>107 <span style=''>   */
+</span>108 <span style=''>  protected def next: ListSet[A] = </span><span style='background: #F0ADAD'>throw new NoSuchElementException(&quot;Next of an empty set&quot;)</span><span style=''>;
+</span>109 <span style=''>
+</span>110 <span style=''>  protected def newThis(a : A) = </span><span style='background: #AEF1AE'>new Node(a)</span><span style=''>
+</span>111 <span style=''>
+</span>112 <span style=''>  /** Represents an entry in the `ListSet`.
+</span>113 <span style=''>   */
+</span>114 <span style=''>  protected class Node(override protected val elem: A) extends ListSet[A] with Serializable {
+</span>115 <span style=''>
+</span>116 <span style=''>    override private[ListSet] def unchecked_outer = self
+</span>117 <span style=''>
+</span>118 <span style=''>    /** Returns the number of elements in this set.
+</span>119 <span style=''>     *
+</span>120 <span style=''>     *  @return number of set elements.
+</span>121 <span style=''>     */
+</span>122 <span style=''>    override def size = {
+</span>123 <span style=''>      @tailrec def sizeInternal(n: ListSet[A], acc: Int): Int =
+</span>124 <span style=''>	if (</span><span style='background: #AEF1AE'>n.isEmpty</span><span style=''>) </span><span style='background: #AEF1AE'>acc</span><span style=''>
+</span>125 <span style=''>	else </span><span style='background: #AEF1AE'>sizeInternal(n.unchecked_outer, acc + 1)</span><span style=''>
+</span>126 <span style=''>      
+</span>127 <span style=''>      </span><span style='background: #AEF1AE'>sizeInternal(this, 0)</span><span style=''>
+</span>128 <span style=''>    }
+</span>129 <span style=''>    /** Checks if this set is empty.
+</span>130 <span style=''>     *
+</span>131 <span style=''>     *  @return true, iff there is no element in the set.
+</span>132 <span style=''>     */
+</span>133 <span style=''>    override def isEmpty: Boolean = </span><span style='background: #AEF1AE'>false</span><span style=''>
+</span>134 <span style=''>  
+</span>135 <span style=''>    /** Checks if this set contains element &lt;code&gt;elem&lt;/code&gt;.
+</span>136 <span style=''>     *
+</span>137 <span style=''>     *  @param  elem    the element to check for membership.
+</span>138 <span style=''>     *  @return true, iff &lt;code&gt;elem&lt;/code&gt; is contained in this set.
+</span>139 <span style=''>     */
+</span>140 <span style=''>    override def contains(e: A) = { 
+</span>141 <span style=''>      @tailrec def containsInternal(n: ListSet[A], e: A): Boolean = 
+</span>142 <span style=''>	</span><span style='background: #AEF1AE'>!n.isEmpty &amp;&amp; (equal.equal(e, n.elem) || containsInternal(n.unchecked_outer, e))</span><span style=''>
+</span>143 <span style=''>
+</span>144 <span style=''>      </span><span style='background: #AEF1AE'>containsInternal(this, e)</span><span style=''>
+</span>145 <span style=''>    }
+</span>146 <span style=''>
+</span>147 <span style=''>    override def contains[B,C]( e : B )(implicit equiv: Equiv[C], viewA: A =&gt; C, viewB: B =&gt; C) = {
+</span>148 <span style=''>      @tailrec def containsInternal(n: ListSet[A], e: B): Boolean = 
+</span>149 <span style=''>	</span><span style='background: #AEF1AE'>!n.isEmpty &amp;&amp; (
+</span>150 <span style=''></span><span style='background: #AEF1AE'>	  equiv(e, n.elem)
+</span>151 <span style=''></span><span style='background: #AEF1AE'>	  || containsInternal(n.unchecked_outer, e) )</span><span style=''>
+</span>152 <span style=''>
+</span>153 <span style=''>      </span><span style='background: #AEF1AE'>containsInternal(this, e)</span><span style=''>
+</span>154 <span style=''>    }
+</span>155 <span style=''>
+</span>156 <span style=''>    override def apply[B,C]( e : B )(implicit equiv: Equiv[C], viewA: A =&gt; C, viewB: B =&gt; C) : Option[A] = {
+</span>157 <span style=''>      @tailrec def applyInternal(n : ListSet[A], e : B) : Option[A] =
+</span>158 <span style=''>	if (</span><span style='background: #AEF1AE'>n.isEmpty</span><span style=''>)
+</span>159 <span style=''>	  </span><span style='background: #AEF1AE'>None</span><span style=''>
+</span>160 <span style=''>        else
+</span>161 <span style=''>	  </span><span style='background: #AEF1AE'>if (equiv(e, n.elem))
+</span>162 <span style=''></span><span style='background: #AEF1AE'>	    Some(n.elem)
+</span>163 <span style=''></span><span style='background: #AEF1AE'>	  else
+</span>164 <span style=''></span><span style='background: #AEF1AE'>	    applyInternal(n.unchecked_outer, e)</span><span style=''>
+</span>165 <span style=''>
+</span>166 <span style=''>      </span><span style='background: #AEF1AE'>applyInternal(this, e)</span><span style=''>
+</span>167 <span style=''>    }
+</span>168 <span style=''>  
+</span>169 <span style=''>    /** This method creates a new set with an additional element.
+</span>170 <span style=''>     * Note if plusFast is true then the 
+</span>171 <span style=''>     */
+</span>172 <span style=''>    override def +(e: A): ListSet[A] = if (</span><span style='background: #AEF1AE'>contains(e)</span><span style=''>) </span><span style='background: #AEF1AE'>this.-(e).newThis(e)</span><span style=''> else </span><span style='background: #AEF1AE'>new Node(e)</span><span style=''>
+</span>173 <span style=''>        
+</span>174 <span style=''>    override def unsafePlus(e: A): ListSet[A] = </span><span style='background: #AEF1AE'>new Node(e)</span><span style=''>
+</span>175 <span style=''>
+</span>176 <span style=''>    /** &lt;code&gt;-&lt;/code&gt; can be used to remove a single element from
+</span>177 <span style=''>     *  a set.
+</span>178 <span style=''>     */
+</span>179 <span style=''>    override def -(e: A): ListSet[A] = if (</span><span style='background: #AEF1AE'>equal.equal(e, elem)</span><span style=''>) </span><span style='background: #AEF1AE'>self</span><span style=''> else </span><span style='background: #AEF1AE'>{
+</span>180 <span style=''></span><span style='background: #AEF1AE'>      val tail = self - e; new tail.Node(elem)
+</span>181 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>182 <span style=''>
+</span>183 <span style=''>    override def -[B,C]( e : B )(implicit equiv: Equiv[C], viewA: A =&gt; C, viewB: B =&gt; C) : ListSet[A] = 
+</span>184 <span style=''>      if (</span><span style='background: #F0ADAD'>equiv(e, elem)</span><span style=''>) </span><span style='background: #F0ADAD'>self</span><span style=''> else </span><span style='background: #F0ADAD'>{
+</span>185 <span style=''></span><span style='background: #F0ADAD'>	val tail = self - e; new tail.Node(elem)
+</span>186 <span style=''></span><span style='background: #F0ADAD'>      }</span><span style=''>
+</span>187 <span style=''>
+</span>188 <span style=''>    override protected def newThis(a : A) = </span><span style='background: #AEF1AE'>new Node(a)</span><span style=''>
+</span>189 <span style=''>
+</span>190 <span style=''>    override protected def next: ListSet[A] = self
+</span>191 <span style=''>    
+</span>192 <span style=''>  }
+</span>193 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          13
+        </td>
+        <td>
+          542
+        </td>
+        <td>
+          306
+          -
+          320
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.ListSet.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new scales.utils.collection.ListSet[A](collection.this.ListSet.&lt;init&gt;$default$1[A])(evidence$1)
+        </td>
+      </tr><tr>
+        <td>
+          14
+        </td>
+        <td>
+          543
+        </td>
+        <td>
+          355
+          -
+          370
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.ListSet.++
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ListSet.this.empty[A](evidence$2).++(a)
+        </td>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          544
+        </td>
+        <td>
+          915
+          -
+          935
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.Predef.implicitly
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.implicitly[scalaz.Equal[A]](ListSet.this.evidence$3)
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          545
+        </td>
+        <td>
+          995
+          -
+          1000
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.ListSet.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$1.+(x$2)
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          546
+        </td>
+        <td>
+          974
+          -
+          1001
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.TraversableOnce.foldLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          other.foldLeft[scales.utils.collection.ListSet[A]](this)(((x$1: scales.utils.collection.ListSet[A], x$2: A) =&gt; x$1.+(x$2)))
+        </td>
+      </tr><tr>
+        <td>
+          35
+        </td>
+        <td>
+          547
+        </td>
+        <td>
+          1061
+          -
+          1066
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.ListSet.-
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          x$3.-(x$4)
+        </td>
+      </tr><tr>
+        <td>
+          35
+        </td>
+        <td>
+          548
+        </td>
+        <td>
+          1040
+          -
+          1067
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.TraversableOnce.foldLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          other.foldLeft[scales.utils.collection.ListSet[A]](this)(((x$3: scales.utils.collection.ListSet[A], x$4: A) =&gt; x$3.-(x$4)))
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          549
+        </td>
+        <td>
+          1188
+          -
+          1193
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.ListSet.-
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$5.-[B, C](x$6)(equiv, viewA, viewB)
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          550
+        </td>
+        <td>
+          1167
+          -
+          1194
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.TraversableOnce.foldLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          other.foldLeft[scales.utils.collection.ListSet[A]](this)(((x$5: scales.utils.collection.ListSet[A], x$6: B) =&gt; x$5.-[B, C](x$6)(equiv, viewA, viewB)))
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          551
+        </td>
+        <td>
+          1322
+          -
+          1323
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          552
+        </td>
+        <td>
+          1358
+          -
+          1362
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          553
+        </td>
+        <td>
+          1599
+          -
+          1604
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          61
+        </td>
+        <td>
+          554
+        </td>
+        <td>
+          1938
+          -
+          1943
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          66
+        </td>
+        <td>
+          555
+        </td>
+        <td>
+          2134
+          -
+          2138
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          556
+        </td>
+        <td>
+          2242
+          -
+          2256
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.ListSet.Node.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new ListSet.this.Node(elem)
+        </td>
+      </tr><tr>
+        <td>
+          75
+        </td>
+        <td>
+          557
+        </td>
+        <td>
+          2370
+          -
+          2381
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.ListSet.Node.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new ListSet.this.Node(e)
+        </td>
+      </tr><tr>
+        <td>
+          85
+        </td>
+        <td>
+          558
+        </td>
+        <td>
+          2664
+          -
+          2734
+        </td>
+        <td>
+          Throw
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          throw new scala.`package`.NoSuchElementException(&quot;Empty ListSet has no outer pointer&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          567
+        </td>
+        <td>
+          2922
+          -
+          2925
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.ListSet.$anon.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          94
+        </td>
+        <td>
+          559
+        </td>
+        <td>
+          2991
+          -
+          3004
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.that.isEmpty.unary_!
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          560
+        </td>
+        <td>
+          3034
+          -
+          3042
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.hasNext.unary_!
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          561
+        </td>
+        <td>
+          3044
+          -
+          3102
+        </td>
+        <td>
+          Throw
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          throw new scala.`package`.NoSuchElementException(&quot;next on empty iterator&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          562
+        </td>
+        <td>
+          3044
+          -
+          3102
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          throw new scala.`package`.NoSuchElementException(&quot;next on empty iterator&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          97
+        </td>
+        <td>
+          563
+        </td>
+        <td>
+          3126
+          -
+          3135
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.ListSet.elem
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.that.elem
+        </td>
+      </tr><tr>
+        <td>
+          97
+        </td>
+        <td>
+          564
+        </td>
+        <td>
+          3144
+          -
+          3153
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.ListSet.next
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.that.next
+        </td>
+      </tr><tr>
+        <td>
+          97
+        </td>
+        <td>
+          565
+        </td>
+        <td>
+          3137
+          -
+          3153
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.ListSet.$anon.that_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          $anon.this.that_=($anon.this.that.next)
+        </td>
+      </tr><tr>
+        <td>
+          97
+        </td>
+        <td>
+          566
+        </td>
+        <td>
+          3114
+          -
+          3160
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val res: A = $anon.this.that.elem;
+  $anon.this.that_=($anon.this.that.next);
+  res
+}
+        </td>
+      </tr><tr>
+        <td>
+          103
+        </td>
+        <td>
+          568
+        </td>
+        <td>
+          3248
+          -
+          3303
+        </td>
+        <td>
+          Throw
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          throw new scala.`package`.NoSuchElementException(&quot;Set has no elements&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          108
+        </td>
+        <td>
+          569
+        </td>
+        <td>
+          3397
+          -
+          3453
+        </td>
+        <td>
+          Throw
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          throw new scala.`package`.NoSuchElementException(&quot;Next of an empty set&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          110
+        </td>
+        <td>
+          570
+        </td>
+        <td>
+          3489
+          -
+          3500
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.ListSet.Node.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new ListSet.this.Node(a)
+        </td>
+      </tr><tr>
+        <td>
+          124
+        </td>
+        <td>
+          571
+        </td>
+        <td>
+          3907
+          -
+          3916
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.ListSet.isEmpty
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          n.isEmpty
+        </td>
+      </tr><tr>
+        <td>
+          124
+        </td>
+        <td>
+          572
+        </td>
+        <td>
+          3918
+          -
+          3921
+        </td>
+        <td>
+          Ident
+        </td>
+        <td>
+          scales.utils.collection.ListSet.Node.acc
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          acc
+        </td>
+      </tr><tr>
+        <td>
+          125
+        </td>
+        <td>
+          573
+        </td>
+        <td>
+          3941
+          -
+          3958
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.ListSet.unchecked_outer
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          n.unchecked_outer
+        </td>
+      </tr><tr>
+        <td>
+          125
+        </td>
+        <td>
+          574
+        </td>
+        <td>
+          3960
+          -
+          3967
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          acc.+(1)
+        </td>
+      </tr><tr>
+        <td>
+          125
+        </td>
+        <td>
+          575
+        </td>
+        <td>
+          3928
+          -
+          3968
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.ListSet.Node.sizeInternal
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          sizeInternal(n.unchecked_outer, acc.+(1))
+        </td>
+      </tr><tr>
+        <td>
+          125
+        </td>
+        <td>
+          576
+        </td>
+        <td>
+          3928
+          -
+          3968
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.collection.ListSet.Node.sizeInternal
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          sizeInternal(n.unchecked_outer, acc.+(1))
+        </td>
+      </tr><tr>
+        <td>
+          127
+        </td>
+        <td>
+          577
+        </td>
+        <td>
+          4001
+          -
+          4002
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          127
+        </td>
+        <td>
+          578
+        </td>
+        <td>
+          3982
+          -
+          4003
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.ListSet.Node.sizeInternal
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          sizeInternal(this, 0)
+        </td>
+      </tr><tr>
+        <td>
+          133
+        </td>
+        <td>
+          579
+        </td>
+        <td>
+          4156
+          -
+          4161
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          142
+        </td>
+        <td>
+          580
+        </td>
+        <td>
+          4511
+          -
+          4517
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.ListSet.elem
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          n.elem
+        </td>
+      </tr><tr>
+        <td>
+          142
+        </td>
+        <td>
+          581
+        </td>
+        <td>
+          4539
+          -
+          4556
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.ListSet.unchecked_outer
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          n.unchecked_outer
+        </td>
+      </tr><tr>
+        <td>
+          142
+        </td>
+        <td>
+          582
+        </td>
+        <td>
+          4522
+          -
+          4560
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.ListSet.Node.containsInternal
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          containsInternal(n.unchecked_outer, e)
+        </td>
+      </tr><tr>
+        <td>
+          142
+        </td>
+        <td>
+          583
+        </td>
+        <td>
+          4496
+          -
+          4560
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.||
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Node.this.equal.equal(e, n.elem).||(containsInternal(n.unchecked_outer, e))
+        </td>
+      </tr><tr>
+        <td>
+          142
+        </td>
+        <td>
+          584
+        </td>
+        <td>
+          4481
+          -
+          4561
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          n.isEmpty.unary_!.&amp;&amp;(Node.this.equal.equal(e, n.elem).||(containsInternal(n.unchecked_outer, e)))
+        </td>
+      </tr><tr>
+        <td>
+          144
+        </td>
+        <td>
+          585
+        </td>
+        <td>
+          4569
+          -
+          4594
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.ListSet.Node.containsInternal
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          containsInternal(this, e)
+        </td>
+      </tr><tr>
+        <td>
+          149
+        </td>
+        <td>
+          590
+        </td>
+        <td>
+          4772
+          -
+          4854
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          n.isEmpty.unary_!.&amp;&amp;(equiv.apply[B, A](e, n.elem)(viewB, viewA).||(containsInternal(n.unchecked_outer, e)))
+        </td>
+      </tr><tr>
+        <td>
+          150
+        </td>
+        <td>
+          586
+        </td>
+        <td>
+          4800
+          -
+          4806
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.ListSet.elem
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          n.elem
+        </td>
+      </tr><tr>
+        <td>
+          151
+        </td>
+        <td>
+          587
+        </td>
+        <td>
+          4831
+          -
+          4848
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.ListSet.unchecked_outer
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          n.unchecked_outer
+        </td>
+      </tr><tr>
+        <td>
+          151
+        </td>
+        <td>
+          588
+        </td>
+        <td>
+          4814
+          -
+          4852
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.ListSet.Node.containsInternal
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          containsInternal(n.unchecked_outer, e)
+        </td>
+      </tr><tr>
+        <td>
+          151
+        </td>
+        <td>
+          589
+        </td>
+        <td>
+          4791
+          -
+          4852
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.||
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          equiv.apply[B, A](e, n.elem)(viewB, viewA).||(containsInternal(n.unchecked_outer, e))
+        </td>
+      </tr><tr>
+        <td>
+          153
+        </td>
+        <td>
+          591
+        </td>
+        <td>
+          4862
+          -
+          4887
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.ListSet.Node.containsInternal
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          containsInternal(this, e)
+        </td>
+      </tr><tr>
+        <td>
+          158
+        </td>
+        <td>
+          592
+        </td>
+        <td>
+          5079
+          -
+          5088
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.ListSet.isEmpty
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          n.isEmpty
+        </td>
+      </tr><tr>
+        <td>
+          159
+        </td>
+        <td>
+          593
+        </td>
+        <td>
+          5093
+          -
+          5097
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          159
+        </td>
+        <td>
+          594
+        </td>
+        <td>
+          5093
+          -
+          5097
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          161
+        </td>
+        <td>
+          595
+        </td>
+        <td>
+          5118
+          -
+          5134
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.Equiv.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          equiv.apply[B, A](e, n.elem)(viewB, viewA)
+        </td>
+      </tr><tr>
+        <td>
+          161
+        </td>
+        <td>
+          602
+        </td>
+        <td>
+          5114
+          -
+          5202
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          if (equiv.apply[B, A](e, n.elem)(viewB, viewA))
+  scala.Some.apply[A](n.elem)
+else
+  applyInternal(n.unchecked_outer, e)
+        </td>
+      </tr><tr>
+        <td>
+          162
+        </td>
+        <td>
+          596
+        </td>
+        <td>
+          5146
+          -
+          5152
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.ListSet.elem
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          n.elem
+        </td>
+      </tr><tr>
+        <td>
+          162
+        </td>
+        <td>
+          597
+        </td>
+        <td>
+          5141
+          -
+          5153
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[A](n.elem)
+        </td>
+      </tr><tr>
+        <td>
+          162
+        </td>
+        <td>
+          598
+        </td>
+        <td>
+          5141
+          -
+          5153
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[A](n.elem)
+        </td>
+      </tr><tr>
+        <td>
+          164
+        </td>
+        <td>
+          599
+        </td>
+        <td>
+          5181
+          -
+          5198
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.ListSet.unchecked_outer
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          n.unchecked_outer
+        </td>
+      </tr><tr>
+        <td>
+          164
+        </td>
+        <td>
+          600
+        </td>
+        <td>
+          5167
+          -
+          5202
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.ListSet.Node.applyInternal
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          applyInternal(n.unchecked_outer, e)
+        </td>
+      </tr><tr>
+        <td>
+          164
+        </td>
+        <td>
+          601
+        </td>
+        <td>
+          5167
+          -
+          5202
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.collection.ListSet.Node.applyInternal
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          applyInternal(n.unchecked_outer, e)
+        </td>
+      </tr><tr>
+        <td>
+          166
+        </td>
+        <td>
+          603
+        </td>
+        <td>
+          5210
+          -
+          5232
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.ListSet.Node.applyInternal
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          applyInternal(this, e)
+        </td>
+      </tr><tr>
+        <td>
+          172
+        </td>
+        <td>
+          604
+        </td>
+        <td>
+          5401
+          -
+          5412
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.ListSet.Node.contains
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Node.this.contains(e)
+        </td>
+      </tr><tr>
+        <td>
+          172
+        </td>
+        <td>
+          605
+        </td>
+        <td>
+          5414
+          -
+          5434
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.ListSet.newThis
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          this.-(e).newThis(e)
+        </td>
+      </tr><tr>
+        <td>
+          172
+        </td>
+        <td>
+          606
+        </td>
+        <td>
+          5414
+          -
+          5434
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.collection.ListSet.newThis
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          this.-(e).newThis(e)
+        </td>
+      </tr><tr>
+        <td>
+          172
+        </td>
+        <td>
+          607
+        </td>
+        <td>
+          5440
+          -
+          5451
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.ListSet.Node.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new Node.this.Node(e)
+        </td>
+      </tr><tr>
+        <td>
+          172
+        </td>
+        <td>
+          608
+        </td>
+        <td>
+          5440
+          -
+          5451
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scales.utils.collection.ListSet.Node.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new Node.this.Node(e)
+        </td>
+      </tr><tr>
+        <td>
+          174
+        </td>
+        <td>
+          609
+        </td>
+        <td>
+          5509
+          -
+          5520
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.ListSet.Node.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new Node.this.Node(e)
+        </td>
+      </tr><tr>
+        <td>
+          179
+        </td>
+        <td>
+          610
+        </td>
+        <td>
+          5670
+          -
+          5674
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.ListSet.Node.elem
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Node.this.elem
+        </td>
+      </tr><tr>
+        <td>
+          179
+        </td>
+        <td>
+          611
+        </td>
+        <td>
+          5655
+          -
+          5675
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scalaz.Equal.equal
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Node.this.equal.equal(e, Node.this.elem)
+        </td>
+      </tr><tr>
+        <td>
+          179
+        </td>
+        <td>
+          612
+        </td>
+        <td>
+          5677
+          -
+          5681
+        </td>
+        <td>
+          This
+        </td>
+        <td>
+          scales.utils.collection.ListSet
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ListSet.this
+        </td>
+      </tr><tr>
+        <td>
+          179
+        </td>
+        <td>
+          616
+        </td>
+        <td>
+          5687
+          -
+          5741
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val tail: scales.utils.collection.ListSet[A] = ListSet.this.-(e);
+  new tail.Node(Node.this.elem)
+}
+        </td>
+      </tr><tr>
+        <td>
+          180
+        </td>
+        <td>
+          613
+        </td>
+        <td>
+          5706
+          -
+          5714
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.ListSet.-
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ListSet.this.-(e)
+        </td>
+      </tr><tr>
+        <td>
+          180
+        </td>
+        <td>
+          614
+        </td>
+        <td>
+          5730
+          -
+          5734
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.ListSet.Node.elem
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          Node.this.elem
+        </td>
+      </tr><tr>
+        <td>
+          180
+        </td>
+        <td>
+          615
+        </td>
+        <td>
+          5716
+          -
+          5735
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.ListSet.Node.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new tail.Node(Node.this.elem)
+        </td>
+      </tr><tr>
+        <td>
+          184
+        </td>
+        <td>
+          617
+        </td>
+        <td>
+          5858
+          -
+          5872
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.Equiv.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          equiv.apply[B, A](e, Node.this.elem)(viewB, viewA)
+        </td>
+      </tr><tr>
+        <td>
+          184
+        </td>
+        <td>
+          618
+        </td>
+        <td>
+          5874
+          -
+          5878
+        </td>
+        <td>
+          This
+        </td>
+        <td>
+          scales.utils.collection.ListSet
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ListSet.this
+        </td>
+      </tr><tr>
+        <td>
+          184
+        </td>
+        <td>
+          622
+        </td>
+        <td>
+          5884
+          -
+          5935
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          {
+  val tail: scales.utils.collection.ListSet[A] = ListSet.this.-[B, C](e)(equiv, viewA, viewB);
+  new tail.Node(Node.this.elem)
+}
+        </td>
+      </tr><tr>
+        <td>
+          185
+        </td>
+        <td>
+          619
+        </td>
+        <td>
+          5898
+          -
+          5906
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scales.utils.collection.ListSet.-
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ListSet.this.-[B, C](e)(equiv, viewA, viewB)
+        </td>
+      </tr><tr>
+        <td>
+          185
+        </td>
+        <td>
+          620
+        </td>
+        <td>
+          5922
+          -
+          5926
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scales.utils.collection.ListSet.Node.elem
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          Node.this.elem
+        </td>
+      </tr><tr>
+        <td>
+          185
+        </td>
+        <td>
+          621
+        </td>
+        <td>
+          5908
+          -
+          5927
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.ListSet.Node.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new tail.Node(Node.this.elem)
+        </td>
+      </tr><tr>
+        <td>
+          188
+        </td>
+        <td>
+          623
+        </td>
+        <td>
+          5981
+          -
+          5992
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scales.utils.collection.ListSet.Node.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new Node.this.Node(a)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>
