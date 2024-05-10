@@ -66,6 +66,13 @@ trait PullIteratees {
 
   type QNamesMatch = (List[QName], Option[XmlPath])
 
+  /**
+   * Collects all data belonging to an element that matches
+   * the list. <top><middle><ofInterest> content </ofInterest><ofInterest....
+   * onQNames(List("top"l, "middle"l, "ofInterest"l))
+   * would return an iteratee that returned every <ofInterest> content </ofInterest>
+   * as a path (each parent node containing only one child node).
+   */
   def onQNames[F[_]: Monad](qnames: List[QName]): ResumableIter[PullType, F, QNamesMatch] = onQNamesI(qnames)(ScalesXml.qnameEqual, implicitly[Monad[F]])
 
   /**
@@ -74,13 +81,15 @@ trait PullIteratees {
    * onQNames(List("top"l, "middle"l, "ofInterest"l))
    * would return an iteratee that returned every <ofInterest> content </ofInterest>
    * as a path (each parent node containing only one child node).
+   *
+   * This version of onQNamesI allows a custom QName Equal to be passed.
    */
   def onQNamesI[F[_]](qnames: List[QName])(implicit qe: Equal[QName], F: Monad[F]): ResumableIter[PullType, F, QNamesMatch] = {
 
     /*
      * The pairs allow the depth of each element to be followed.  In particular this stops both descent and ascent problems in the
      * pushing and popping on the stack.  I.e. it covers the case where you have nested repeating QNames, both when you are looking for them
-     * and when your are not.  Don't pop to early and don't incorrectly force a done.
+     * and when your are not.  Don't pop too early and don't incorrectly force a done.
      */
 
     lazy val starter = Cont(step(Nil, (qnames.head, 0), qnames.tail.map((_, 0)), noXmlPath, false))
@@ -89,8 +98,12 @@ trait PullIteratees {
       iterateeT( Monad[F].point(
         s(el = {
             case Left(elem@Elem(q, a, n)) => {
-              val nfocus = if (q === focus._1) (focus._1, focus._2 + 1)
-              else focus
+              val nfocus =
+                if (q === focus._1)
+                  (focus._1, focus._2 + 1)
+                else
+                  focus
+
               val npath = addAndFocus(path, elem)
 
               val shouldCollect = collecting || (toGo.isEmpty && q === focus._1)
@@ -248,23 +261,18 @@ class Iterate(path: List[QName], xml: Iterator[PullType])(implicit qe: Equal[QNa
 
   /* see onQName for implementation basis */
 
-  var before: List[(QName, Int)] = _
-  var focus: (QName, Int) = _
-  var toGo: List[(QName, Int)] = _
+  var before: List[QName] = _
   var proxies: TreeProxies = new TreeProxies()
   var collecting: Boolean = _
 
   def reset {
-    set(Nil, (qnames.head, 0), qnames.tail.map((_,0)),
-	    proxies.reuse, false)
+    set(Nil, proxies.reuse, false)
   }
 
   reset
 
-  def set(before: List[(QName, Int)], focus: (QName, Int), toGo: List[(QName, Int)], proxies: TreeProxies, collecting: Boolean) {
+  def set(before: List[QName], proxies: TreeProxies, collecting: Boolean) {
     this.before = before
-    this.focus = focus
-    this.toGo = toGo
     this.proxies = proxies
     this.collecting = collecting
   }
@@ -285,74 +293,37 @@ class Iterate(path: List[QName], xml: Iterator[PullType])(implicit qe: Equal[QNa
       val e = xml.next
       e match {
 
-	case Left(elem@Elem(q, a, n)) => {
-	  val nfocus =
-	    if (q === focus._1) (focus._1, focus._2 + 1)
-	    else focus
+        case Left(elem@Elem(q, a, n)) =>
+          proxies.beginSub(elem, XmlBuilder())
 
-	  proxies.beginSub(elem, XmlBuilder())
-	  //val npath = addAndFocus(path, elem)
+          val shouldCollect = collecting || (
+            before.size == path.size -1 &&
+            (before.zip(path.dropRight(1)).forall(p => p._1 === p._2))
+          )
+          set(before :+ q, proxies, shouldCollect)
 
-	  val shouldCollect = collecting || (toGo.isEmpty && q === focus._1)
+        case Left(x: XmlItem) =>
+          if (collecting) {
+            proxies.addChild(x)
+          }
+          set(before, proxies, collecting)
 
-	  // is it our head?
-	  if ((!toGo.isEmpty) && q === focus._1)
-	    // move down
-	    set(before :+ focus, toGo.head, toGo.tail, proxies, false)
-	  else
-	    // wait for a down
-	    set(before, nfocus, toGo, proxies, shouldCollect)
-	}
+        case Right(EndElem(q, n)) =>
 
-	case Left(x: XmlItem) =>
-	  if (collecting) {// collect
-	    //addChild(path, x)
-	    proxies.addChild(x)
-	    set(before, focus, toGo, proxies, true)
-	  }
-	  else
-	    set(before, focus, toGo, proxies, false) // don't collect
+          // is this the end path ?
+          val haveCollected = before.size == path.size && before.zip(path).forall(p => p._1 === p._2)
+          if (haveCollected) {
+            res = proxies.proxyPath
+          } else {
+            if (collecting) {
+              // we are popping to the selected level
+              proxies.elementEnd()
+            } else {
+              proxies.proxyRemoveAndUp()
+            }
+          }
 
-	case Right(EndElem(q, n)) =>
-
-	  if (q === focus._1) {
-	    val ncfocus = (focus._1, focus._2 - 1)
-
-	      if (toGo.isEmpty && ncfocus._2 == 0) { // we are popping to the selected level
-		res = proxies.proxyPath
-		set(before, ncfocus, toGo,
-		    // remove all children on the next iteration path.removeAndUp.getOrElse(noXmlPath)
-		    proxies, false)
-	      }
-	      else {
-		if (before.isEmpty)
-		  reset // only when the root is asked for, could just refuse that of course?
-		else {
-		  if (collecting) {
-		    // we are collecting but we still have more than 0 repeated qnames deep
-		    proxies.elementEnd() // path.zipUp
-		    set(before, ncfocus, toGo, proxies, true)
-		  }
-		  else {
-		    // we aren't collecting but we are moving up, we just have repeated names
-		    val nfocus = before.last
-		    val nbefore = before.dropRight(1)
-		    set(nbefore, nfocus, focus :: toGo, // removeand
-			proxies.proxyRemoveAndUp(), false // we have NOT been collecting
-		      )
-		  }
-		}
-	      }
-	  } else {
-	    set(before, focus, toGo,
-		if (collecting) { // empty is not enough, it should also be definitely collecting
-		  //path.zipUp
-		  proxies.elementEnd
-		  proxies
-		} else
-		  proxies.proxyRemoveAndUp(), collecting)
-	  }
-
+          set(before.dropRight(1), proxies, collecting && !haveCollected)
       }
     }
 

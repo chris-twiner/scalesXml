@@ -543,7 +543,6 @@ class IterateeTest extends junit.framework.TestCase {
       }
     }
 
-    println("1st eval")
     val starter = (itrOdd &= iteratorEnumerator(liter)).eval
 
     val p =
@@ -553,7 +552,6 @@ class IterateeTest extends junit.framework.TestCase {
         starterV <- starter.value
         // check it does not blow up the stack and/or mem
         r <- (foldM[Int, TheF, ITER_STEP](starterV){ (itr, i) =>
-          println("evaling")
           val nitr = (extractContS(itr) &= iteratorEnumerator(liter)).eval
           Monad[TheF].map(nitr.value){
             nitrstep =>

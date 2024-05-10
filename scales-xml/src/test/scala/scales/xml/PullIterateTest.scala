@@ -66,9 +66,9 @@ class PullIterateTest extends junit.framework.TestCase {
 		   , text(x))
       val count = x.zipUp.children.size
       if (count != 1){
-	x.zipUp.children.foreach{x => printTree(x.getRight);println()}
-	printTree(rootPath(x).tree)
-	fail("more than one " + count +" at "+ println(elem(x)))
+        x.zipUp.children.foreach{x => printTree(x.getRight);println()}
+        printTree(rootPath(x).tree)
+        fail("more than one " + count +" at "+ println(elem(x)))
       }
     }
     
@@ -113,4 +113,34 @@ class PullIterateTest extends junit.framework.TestCase {
 
   }
 
+  // 56 depth handling is incorrect
+  def testOnQNameMultipleSameDepth(): Unit = {
+    val raw = """
+      <root>
+        <child>
+          <interesting>of interest</interesting>
+        </child>
+        <notMyChild>
+          <interesting>shouldn't be interesting</interesting>
+        </notMyChild>
+        <child>
+          <interesting>of interest again</interesting>
+        </child>
+      </root>
+    """
+
+    val xml = pullXml(new StringReader(raw))
+    val QNames = List("root"l, "child"l, "interesting"l)
+
+    val itr = iterate(QNames, xml)
+
+    assertTrue("failed to find a match", itr.hasNext)
+    val first = itr.next()
+    assertTrue("failed to find interesting", string(first) == "of interest")
+
+    assertTrue("failed to find a second match", itr.hasNext)
+    val second = itr.next()
+    assertTrue("failed to find interesting again", string(second) == "of interest again")
+
+  }
 }
