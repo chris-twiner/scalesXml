@@ -339,6 +339,12 @@ on both the qname matching (3 of them) and then the above combos
               Text("content "+(i + 1)),
 	    EndElem("interesting"l),
           EndElem("interesting"l),
+         Elem("shouldNotBeInteresting"l),
+         Text("interesting "),
+         Elem("interesting"l),
+         Text("BAAAD content "+(i + 1)),
+         EndElem("interesting"l),
+         EndElem("shouldNotBeInteresting"l),
         EndElem("child"l)
       ) ++ next
     }

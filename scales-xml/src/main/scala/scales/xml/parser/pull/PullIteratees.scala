@@ -297,8 +297,9 @@ class Iterate(path: List[QName], xml: Iterator[PullType])(implicit qe: Equal[QNa
           proxies.beginSub(elem, XmlBuilder())
 
           val shouldCollect = collecting || (
-            before.size == path.size -1 &&
-            (before.zip(path.dropRight(1)).forall(p => p._1 === p._2))
+            before.size == (path.size - 1) &&
+            // eval only when needed
+            before.zip(path.dropRight(1)).forall(p => p._1 === p._2)
           )
           set(before :+ q, proxies, shouldCollect)
 
@@ -310,18 +311,18 @@ class Iterate(path: List[QName], xml: Iterator[PullType])(implicit qe: Equal[QNa
 
         case Right(EndElem(q, n)) =>
 
-          // is this the end path ?
-          val haveCollected = before.size == path.size && before.zip(path).forall(p => p._1 === p._2)
+          // is this the end path ?  We have to re-verify the path, do so only when needed but stops same height (but not same path)
+          // and nested repeat issues
+          val haveCollected = collecting && before.size == path.size && before.zip(path).forall(p => p._1 === p._2)
           if (haveCollected) {
             res = proxies.proxyPath
-          } else {
+          } else
             if (collecting) {
               // we are popping to the selected level
               proxies.elementEnd()
             } else {
               proxies.proxyRemoveAndUp()
             }
-          }
 
           set(before.dropRight(1), proxies, collecting && !haveCollected)
       }
